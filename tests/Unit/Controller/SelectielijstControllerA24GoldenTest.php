@@ -93,7 +93,6 @@ class SelectielijstControllerA24GoldenTest extends TestCase {
 		$this->groups = $this->createMock(IGroupManager::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->controller = SelectielijstControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->service,
 			$this->settings,

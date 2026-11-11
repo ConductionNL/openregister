@@ -34,6 +34,9 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\CauseFrame;
 use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
 
@@ -49,88 +52,34 @@ use Throwable;
  */
 class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	/**
-	 * Register access.
-	 *
-	 * @var ExampleSetStore
+	 * The report an install starts from.
 	 */
-	private readonly ExampleSetStore $store;
-
-	/**
-	 * The cast's and the service accounts' accounts and groups.
-	 *
-	 * @var ExampleSetPeople
-	 */
-	private readonly ExampleSetPeople $people;
-
-	/**
-	 * Fills placeholders.
-	 *
-	 * @var ExampleSetValues
-	 */
-	private readonly ExampleSetValues $values;
-
-	/**
-	 * What an install made.
-	 *
-	 * @var ExampleSetRecord
-	 */
-	private readonly ExampleSetRecord $record;
-
-	/**
-	 * Compares sent with stored.
-	 *
-	 * @var ExampleSetProof
-	 */
-	private readonly ExampleSetProof $proof;
-
-	/**
-	 * Registers and organisations before the check, and the base context.
-	 *
-	 * @var ExampleSetPrerequisites
-	 */
-	private readonly ExampleSetPrerequisites $prerequisites;
-
-	/**
-	 * Changes objects the set did not create.
-	 *
-	 * @var ExampleSetChanges
-	 */
-	private readonly ExampleSetChanges $changes;
-
-	/**
-	 * Attaches files to objects.
-	 *
-	 * @var ExampleSetFiles
-	 */
-	private readonly ExampleSetFiles $files;
-
-	/**
-	 * Writes a fragment's own app config.
-	 *
-	 * @var ExampleSetAppConfig
-	 */
-	private readonly ExampleSetAppConfig $appConfig;
-
-	/**
-	 * Writes a fragment's own app's preferences of the set's accounts.
-	 *
-	 * @var ExampleSetUserPreferences
-	 */
-	private readonly ExampleSetUserPreferences $userPreferences;
-
-	/**
-	 * Writes the tasks and saved views a fragment declares; null refuses them.
-	 *
-	 * @var ExampleSetEngineKinds|null
-	 */
-	private readonly ?ExampleSetEngineKinds $engineRows;
-
-	/**
-	 * Rewrites a kept object on `--refresh`.
-	 *
-	 * @var ExampleSetRewriter
-	 */
-	private readonly ExampleSetRewriter $rewriter;
+	private const EMPTY_REPORT = [
+		'refusals'        => [],
+		'registers'       => [],
+		'users'           => [],
+		'groups'          => [],
+		'memberships'     => [],
+		'subAdmins'       => [],
+		'changes'         => [],
+		'appConfig'       => [],
+		'userPreferences' => [],
+		'tasks'           => [],
+		'views'           => [],
+		'watchers'        => [],
+		'parties'         => [],
+		'notes'           => [],
+		'readStates'      => [],
+		'flows'           => [],
+		'files'           => 0,
+		'passwords'       => [],
+		'types'           => [],
+		'dropped'         => [],
+		'left'            => [],
+		'missing'         => [],
+		'lost'            => [],
+		'ok'              => false,
+	];
 
 	/**
 	 * Constructor.
@@ -142,23 +91,11 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * @return void
 	 */
 	public function __construct(
-		ExampleSetInstallerObjects $objects,
-		ExampleSetInstallerSetup $setup,
-		ExampleSetInstallerWriters $writers,
+		private readonly ExampleSetInstallerObjects $objects,
+		private readonly ExampleSetInstallerSetup $setup,
+		private readonly ExampleSetInstallerWriters $writers,
 		private readonly ?ExampleSetLock $lock=null,
 	) {
-		$this->store           = $objects->store;
-		$this->people          = $setup->people;
-		$this->values          = $objects->values;
-		$this->record          = $objects->record;
-		$this->proof           = $objects->proof;
-		$this->prerequisites   = $setup->prerequisites;
-		$this->changes         = $writers->changes;
-		$this->files           = $writers->files;
-		$this->appConfig       = $setup->appConfig;
-		$this->userPreferences = $setup->userPreferences;
-		$this->engineRows      = $writers->engineRows;
-		$this->rewriter        = $writers->rewriter;
 	}//end __construct()
 
 	/**
@@ -183,70 +120,136 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function check(array $plan, array $adopt=[], ?DateTimeImmutable $today=null): array {
-		$today     = ($today ?? $this->today(timezone: (string) $plan['timezone']));
-		$record    = $this->record->read(set: (string) $plan['set']);
-		$ready     = $this->prerequisites->ensure(plan: $plan, record: $record);
-		$base      = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
-		$base['setGroups'] = $this->people->groupsOfSet(plan: $plan, record: $record);
-		$vouched   = new ExampleSetVouchedAccounts(record: $record, adopt: $adopt);
-		$refusals  = array_merge($ready['refusals'], $this->people->refusals(plan: $plan, vouched: $vouched));
-		$checked   = [];
-		$changes   = [];
-		$planned   = [];
-		$users     = $this->people->declaredUids(plan: $plan);
-		foreach ($plan['fragments'] as $fragment) {
-			$objects = [];
-			$files   = [];
-			foreach ($fragment['objects'] as $object) {
-				$type           = $object['register'].' '.$object['schema'];
-				$checked[$type] = (($checked[$type] ?? 0) + 1);
-				$where          = $fragment['file'].': object "'.$object['key'].'" ('.$type.')';
-				$resolved       = $this->resolve(
-					object: $object,
-					context: (['objects' => $objects, 'files' => $files] + $base),
-					planned: $planned
-				);
-				if ($resolved['refusal'] !== '') {
-					$refusals[] = $where.': '.$resolved['refusal'];
-					$objects[$object['key']] = $this->standIn(app: $fragment['app'], object: $object, data: []);
-					continue;
-				}
-
-				$messages = array_merge(
-					$this->store->validate(register: $object['register'], schema: $object['schema'], data: $resolved['sent'], plannedUsers: $users),
-					$this->files->refusals(dir: (string) $fragment['dir'], object: $object)
-				);
-				foreach ($messages as $message) {
-					$refusals[] = $where.': '.$message;
-				}
-
-				$standIn   = $this->standIn(app: $fragment['app'], object: $object, data: $resolved['data']);
-				$planned[] = ['register' => $object['register'], 'schema' => $object['schema'], 'row' => $standIn];
-				$kept      = $this->kept(record: $record, app: $fragment['app'], key: $object['key'])['row'];
-				$objects[$object['key']] = ($kept ?? $standIn);
-				$files[$object['key']]   = $this->plannedFileIds(record: $record, app: $fragment['app'], object: $object);
-			}//end foreach
-
-			$context  = [
-				'objects'     => $objects,
-				'flows'       => $this->values->flowsOf(fragment: $fragment, record: null),
-				'accessLinks' => ($this->engineRows ?? new ExampleSetEngineKinds())->accessLinksOf(fragment: $fragment, record: null),
-			] + $base;
-			$refusals = array_merge(
-				$refusals,
-				$this->checkChanges(fragment: $fragment, context: $context, checked: $changes, plannedUsers: $users),
-				$this->checkAppConfig(fragment: $fragment, context: $context),
-				$this->checkUserPreferences(
-					fragment: $fragment,
-					context: ($context + ['views' => $this->values->viewsOf(fragment: $fragment, record: null)]),
-					users: $users
-				),
-				($this->engineRows ?? new ExampleSetEngineKinds())->check(fragment: $fragment, context: $context, users: $users, values: $this->values)
-			);
-		}//end foreach
-
-		return ['refusals' => $refusals, 'checked' => $checked, 'checkedChanges' => $changes, 'registers' => $ready['registers']];
+		$today = ($today ?? $this->today(timezone: (string) $plan['timezone']));
+		return $this->checked(request: new ExampleSetInstallRequest(plan: $plan, adopt: $adopt, password: '', today: $today));
 	}//end check()
+
+	/**
+	 * Check a set as check() describes it.
+	 *
+	 * @param ExampleSetInstallRequest $request The plan, the adoptable account ids and the install day.
+	 *
+	 * @return array{refusals: array<int, string>, checked: array<string, int>, checkedChanges: array<string, int>, registers: array<string, string>}
+	 *         As check() returns it.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 */
+	private function checked(ExampleSetInstallRequest $request): array {
+		$plan      = $request->plan;
+		$record    = $this->objects->record->read(set: (string) $plan['set']);
+		$ready     = $this->setup->prerequisites->ensure(plan: $plan, record: $record);
+		$run       = new ExampleSetCheckRun(plan: $plan, record: $record);
+		$run->base = $this->withIds(plan: $plan, base: $this->setup->prerequisites->context(plan: $plan, today: $request->today));
+		$run->base['setGroups'] = $this->setup->people->groupsOfSet(plan: $plan, record: $run->record);
+		$vouched       = new ExampleSetVouchedAccounts(record: $run->record, adopt: $request->adopt);
+		$run->refusals = array_merge($ready['refusals'], $this->setup->people->refusals(plan: $plan, vouched: $vouched));
+		$run->users    = $this->setup->people->declaredUids(plan: $plan);
+		foreach ($plan['fragments'] as $fragment) {
+			$this->checkFragment(run: $run, fragment: $fragment);
+		}
+
+		return ['refusals' => $run->refusals, 'checked' => $run->checked, 'checkedChanges' => $run->checkedChanges, 'registers' => $ready['registers']];
+	}//end checked()
+
+	/**
+	 * Check one fragment: its objects, then its changes, app config, user preferences and engine rows.
+	 *
+	 * @param ExampleSetCheckRun   $run      The check; its refusals and counts grow.
+	 * @param array<string, mixed> $fragment The fragment.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 */
+	private function checkFragment(ExampleSetCheckRun $run, array $fragment): void {
+		$run->fragment = $fragment;
+		$run->objects  = [];
+		$run->files    = [];
+		foreach ($fragment['objects'] as $object) {
+			$this->checkObject(run: $run, object: $object);
+		}
+
+		$engineRows = ($this->writers->engineRows ?? new ExampleSetEngineKinds());
+		$context    = [
+			'objects'     => $run->objects,
+			'flows'       => $this->objects->values->flowsOf(fragment: $fragment, record: null),
+			'accessLinks' => $engineRows->accessLinksOf(fragment: $fragment, record: null),
+		] + $run->base;
+		$run->refusals = array_merge(
+			$run->refusals,
+			$this->checkChanges(run: $run, context: $context),
+			$this->checkAppConfig(fragment: $fragment, context: $context),
+			$this->checkUserPreferences(run: $run, context: ($context + ['views' => $this->objects->values->viewsOf(fragment: $fragment, record: null)])),
+			$engineRows->check(write: new ExampleSetFragmentWrite(fragment: $fragment, context: $context, values: $this->objects->values), users: $run->users)
+		);
+	}//end checkFragment()
+
+	/**
+	 * Check one declared object: it resolves, and what it would send is valid with its files.
+	 *
+	 * @param ExampleSetCheckRun   $run    The check; its refusals, counts and objects so far grow.
+	 * @param array<string, mixed> $object The declared object.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 */
+	private function checkObject(ExampleSetCheckRun $run, array $object): void {
+		$type = $object['register'].' '.$object['schema'];
+		$run->checked[$type] = (($run->checked[$type] ?? 0) + 1);
+		$resolved = $this->resolve(
+			object: $object,
+			scope: new ExampleSetResolveScope(context: $run->objectContext(), planned: $run->planned)
+		);
+		if ($resolved['refusal'] !== '') {
+			$run->refusals[] = $this->objectWhere(run: $run, object: $object).': '.$resolved['refusal'];
+			$run->objects[$object['key']] = $this->standIn(name: $run->fragment['app'].'/'.$object['key'], data: []);
+			return;
+		}
+
+		$this->planObject(run: $run, declared: new ExampleSetResolvedObject(object: $object, resolved: $resolved));
+	}//end checkObject()
+
+	/**
+	 * Validate a resolved object and its files, and let it stand in for the objects declared after it.
+	 *
+	 * @param ExampleSetCheckRun       $run      The check; its refusals, planned objects and objects so far grow.
+	 * @param ExampleSetResolvedObject $declared The declared object and its resolution.
+	 *
+	 * @return void
+	 */
+	private function planObject(ExampleSetCheckRun $run, ExampleSetResolvedObject $declared): void {
+		$object   = $declared->object;
+		$messages = array_merge(
+			$this->objects->store->refusalsFor(
+				table: new RegisterSchemaRef(register: $object['register'], schema: $object['schema']),
+				check: new ObjectCheck(object: $declared->resolved['sent'], plannedUsers: $run->users)
+			),
+			$this->writers->files->refusals(dir: (string) $run->fragment['dir'], object: $object)
+		);
+		foreach ($messages as $message) {
+			$run->refusals[] = $this->objectWhere(run: $run, object: $object).': '.$message;
+		}
+
+		$name         = $run->fragment['app'].'/'.$object['key'];
+		$standIn      = $this->standIn(name: $name, data: $declared->resolved['data']);
+		$run->planned[] = ['register' => $object['register'], 'schema' => $object['schema'], 'row' => $standIn];
+		$kept         = $this->kept(record: $run->record, name: $name)['row'];
+		$run->objects[$object['key']] = ($kept ?? $standIn);
+		$run->files[$object['key']]   = $this->plannedFileIds(run: $run, object: $object);
+	}//end planObject()
+
+	/**
+	 * Where a check names a declared object: the fragment file, the key, the register and schema.
+	 *
+	 * @param ExampleSetCheckRun   $run    The check.
+	 * @param array<string, mixed> $object The declared object.
+	 *
+	 * @return string
+	 */
+	private function objectWhere(ExampleSetCheckRun $run, array $object): string {
+		return $run->fragment['file'].': object "'.$object['key'].'" ('.$object['register'].' '.$object['schema'].')';
+	}//end objectWhere()
 
 	/**
 	 * Install a set: check, then write what the record lacks, then prove it.
@@ -262,39 +265,26 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 *                              run made), `types`, `dropped`, `missing`, `lost` and `ok`.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 */
+	public function install(array $plan, array $adopt=[], string $password='', ?DateTimeImmutable $today=null): array {
+		$today = ($today ?? $this->today(timezone: (string) $plan['timezone']));
+		return $this->installRequested(request: new ExampleSetInstallRequest(plan: $plan, adopt: $adopt, password: $password, today: $today));
+	}//end install()
+
+	/**
+	 * Install a set as install() describes it, one run of a set at a time.
+	 *
+	 * @param ExampleSetInstallRequest $request The plan, the adopted account ids, the password and the install day.
+	 *
+	 * @return array<string, mixed> As install() returns it.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::runAs() is the ambient audit-cause frame; there is no instance to inject.
 	 */
-	public function install(array $plan, array $adopt=[], string $password='', ?DateTimeImmutable $today=null): array {
-		$today  = ($today ?? $this->today(timezone: (string) $plan['timezone']));
-		$report = [
-			'refusals'    => [],
-			'registers'   => [],
-			'users'       => [],
-			'groups'      => [],
-			'memberships' => [],
-			'subAdmins'   => [],
-			'changes'     => [],
-			'appConfig'   => [],
-			'userPreferences' => [],
-			'tasks'       => [],
-			'views'       => [],
-			'watchers'    => [],
-			'parties'     => [],
-			'notes'       => [],
-			'readStates'  => [],
-			'flows'       => [],
-			'files'       => 0,
-			'passwords'   => [],
-			'types'       => [],
-			'dropped'     => [],
-			'left'        => [],
-			'missing'     => [],
-			'lost'        => [],
-			'ok'          => false,
-		];
-
-		$set = (string) $plan['set'];
+	private function installRequested(ExampleSetInstallRequest $request): array {
+		$report = self::EMPTY_REPORT;
+		$set    = (string) $request->plan['set'];
 		if ($this->lock !== null && $this->lock->hold(set: $set) === false) {
 			$report['refusals'] = [$this->lock->busy(set: $set)];
 			return $report;
@@ -304,17 +294,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			// Every write of the run is the set's import, its run the set, so a history can leave the set's upkeep
 			// out and the trail can find one load. A row the set declares with its own cause keeps that cause.
 			return WriteCause::runAs(
-				cause: WriteCause::IMPORT,
-				run: 'example-set:'.$set,
-				operation: fn (): array => $this->installHeld(
-					request: new ExampleSetInstallRequest(plan: $plan, adopt: $adopt, password: $password, today: $today),
-					report: $report
-				)
+				frame: new CauseFrame(cause: WriteCause::IMPORT, run: 'example-set:'.$set),
+				operation: fn (): array => $this->installHeld(request: $request, report: $report)
 			);
 		} finally {
 			$this->lock?->release(set: $set);
 		}
-	}//end install()
+	}//end installRequested()
 
 	/**
 	 * Install a set this run holds: check, then write what the record lacks, then prove it.
@@ -328,35 +314,25 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 */
 	private function installHeld(ExampleSetInstallRequest $request, array $report): array {
 		$plan                = $request->plan;
-		$adopt               = $request->adopt;
-		$password            = $request->password;
-		$today               = $request->today;
-		$checked             = $this->check(plan: $plan, adopt: $adopt, today: $today);
+		$checked             = $this->checked(request: $request);
 		$report['refusals']  = $checked['refusals'];
 		$report['registers'] = $checked['registers'];
 		if ($report['refusals'] !== []) {
 			return $report;
 		}
 
-		$set    = (string) $plan['set'];
-		$record = $this->record->read(set: $set);
-		$terms  = new ExampleSetAccountTerms(set: $set, adopt: $adopt, password: $password);
-		$report = array_merge($report, $this->people->install(install: new ExampleSetAccountsInstall(plan: $plan, terms: $terms), record: $record));
-
-		$base    = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
+		$run         = new ExampleSetInstallRun(plan: $plan, record: $this->objects->record->read(set: (string) $plan['set']));
+		$terms       = new ExampleSetAccountTerms(set: $run->set(), adopt: $request->adopt, password: $request->password);
+		$accounts    = new ExampleSetAccountsInstall(plan: $plan, terms: $terms);
+		$run->report = array_merge($report, $this->setup->people->install(install: $accounts, record: $run->record));
+		$run->base   = $this->withIds(plan: $plan, base: $this->setup->prerequisites->context(plan: $plan, today: $request->today));
 		// A grant goes only to a group this set created (ExampleSetGrants).
-		$base['setGroups'] = $record['groups'];
-		$written = [];
+		$run->base['setGroups'] = $run->record['groups'];
 		foreach ($plan['fragments'] as $fragment) {
-			$report = $this->installFragment(
-				run: new ExampleSetFragmentRun(plan: $plan, fragment: $fragment, base: $base),
-				report: $report,
-				record: $record,
-				written: $written
-			);
+			$this->installFragment(run: $run, fragment: $fragment);
 		}
 
-		return $this->proven(report: $report, record: $record, written: $written);
+		return $this->proven(run: $run);
 	}//end installHeld()
 
 	/**
@@ -379,41 +355,40 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$base['schemas']   = [];
 		preg_match_all('/\{\{\s*register:\s*([^{}\s]+)\s*\}\}/', $text, $registers);
 		foreach (array_unique($registers[1]) as $slug) {
-			$base['registers'][$slug] = $this->store->registerId(register: $slug);
+			$base['registers'][$slug] = $this->objects->store->registerId(register: $slug);
 		}
 
 		preg_match_all('/\{\{\s*schema:\s*([^{}\s\/]+)\/([^{}\s]+)\s*\}\}/', $text, $schemas, PREG_SET_ORDER);
 		foreach ($schemas as $match) {
-			$base['schemas'][$match[1].'/'.$match[2]] = $this->store->schemaId(register: $match[1], schema: $match[2]);
+			$base['schemas'][$match[1].'/'.$match[2]] = $this->objects->store->schemaId(register: $match[1], schema: $match[2]);
 		}
 
 		return $base;
 	}//end withIds()
-
 	/**
 	 * Check the changes of one fragment: each resolves, finds its object, and leaves it valid.
 	 *
 	 * The changed object is validated as it would be written, so a field kept
 	 * as JSON text is validated as text, as when the object was created.
 	 *
-	 * @param array<string, mixed> $fragment     The fragment.
-	 * @param array<string, mixed> $context      `cast`, `objects` and `today`.
-	 * @param array<string, int>   $checked      Counts of changes per register and schema; this fragment's are added.
-	 * @param array<int, string>   $plannedUsers Account ids the set creates, valid for a `user` format.
+	 * @param ExampleSetCheckRun   $run     The check: the fragment, the account ids the set creates (valid for a
+	 *                                      `user` format), and the counts of changes per register and schema.
+	 * @param array<string, mixed> $context `cast`, `objects` and `today`.
 	 *
 	 * @return array<int, string> Refusals.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
-	private function checkChanges(array $fragment, array $context, array &$checked, array $plannedUsers): array {
+	private function checkChanges(ExampleSetCheckRun $run, array $context): array {
+		$fragment = $run->fragment;
 		$refusals = [];
 		foreach ($fragment['changes'] as $change) {
-			$change         = $this->withObjectJsonFields(change: $change, fragment: $fragment);
-			$type           = $change['register'].' '.$change['schema'];
-			$checked[$type] = (($checked[$type] ?? 0) + 1);
-			$where          = $fragment['file'].': change "'.$change['key'].'" ('.$type.')';
-			$resolved       = $this->changes->resolve(change: $change, context: $context);
+			$change = $this->withObjectJsonFields(change: $change, fragment: $fragment);
+			$type   = $change['register'].' '.$change['schema'];
+			$run->checkedChanges[$type] = (($run->checkedChanges[$type] ?? 0) + 1);
+			$where    = $fragment['file'].': change "'.$change['key'].'" ('.$type.')';
+			$resolved = $this->writers->changes->resolve(change: $change, context: $context);
 			if ($resolved['refusal'] !== '') {
 				$refusals[] = $where.': '.$resolved['refusal'];
 				continue;
@@ -421,7 +396,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 			$merged = $resolved['merged'];
 			unset($merged['@self'], $merged['id']);
-			$messages = $this->store->validate(register: $change['register'], schema: $change['schema'], data: $merged, plannedUsers: $plannedUsers);
+			$messages = $this->objects->store->refusalsFor(
+				table: new RegisterSchemaRef(register: $change['register'], schema: $change['schema']),
+				check: new ObjectCheck(object: $merged, plannedUsers: $run->users)
+			);
 			foreach ($messages as $message) {
 				$refusals[] = $where.': '.$message;
 			}
@@ -433,127 +411,210 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	/**
 	 * Write the objects and changes of one fragment that the record does not hold.
 	 *
-	 * @param ExampleSetFragmentRun               $run     The plan, the fragment and the context every placeholder may draw on.
-	 * @param array<string, mixed>                $report  The report so far.
-	 * @param array<string, mixed>                $record  The record; updated and kept after every write.
-	 * @param array<string, array<string, mixed>> $written Collects what this run sent, by record key.
+	 * @param ExampleSetInstallRun $run      The install; its report, record and what it sent grow.
+	 * @param array<string, mixed> $fragment The fragment.
 	 *
-	 * @return array<string, mixed> The report.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  One pass per object: held, kept, refused,
-	 *                                                not made or written, each answered in place.
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The same pass, kept in one place.
+	 * @return void
 	 */
-	private function installFragment(ExampleSetFragmentRun $run, array $report, array &$record, array &$written): array {
-		$plan     = $run->plan;
-		$fragment = $run->fragment;
-		$base     = $run->base;
-		$objects = [];
-		$files   = [];
-		$save    = fn (array $kept) => $this->record->write(set: (string) $plan['set'], record: $kept);
+	private function installFragment(ExampleSetInstallRun $run, array $fragment): void {
+		$run->fragment = $fragment;
+		$run->objects  = [];
+		$run->files    = [];
 		foreach ($fragment['objects'] as $object) {
-			$type = $object['register'].' '.$object['schema'];
-			$name = $fragment['app'].'/'.$object['key'];
-			$report['types'][$type] ??= ['declared' => 0, 'created' => 0, 'kept' => 0, 'arrived' => 0];
-			$report['types'][$type]['declared']++;
-
-			$held = $this->kept(record: $record, app: $fragment['app'], key: $object['key']);
-			if ($held['error'] !== '') {
-				// A read that failed proves nothing about the object: writing it again would leave two copies and
-				// forget the original, so nothing is written and the recorded id stays.
-				$report['dropped'][] = $fragment['file'].': object "'.$object['key'].'": the object the record holds could not be read ('.$held['error'].')';
-				$objects[$object['key']] = ['id' => (string) $record['objects'][$name]['id']];
-				continue;
-			}
-
-			$kept = $held['row'];
-			if ($kept !== null) {
-				$report['types'][$type]['kept']++;
-				if (isset($record['files'][$name]) === false) {
-					$report = $this->attachFiles(run: $run, object: $object, report: $report, record: $record);
-				}
-
-				$files[$object['key']] = $this->heldFileIds(record: $record, name: $name);
-				$context = (['objects' => $objects, 'files' => $files] + $base);
-				$held    = new ExampleSetKeptObject(object: $object, row: $kept, context: $context);
-				if (($plan['refresh'] ?? false) !== true) {
-					$objects[$object['key']] = $this->refreshReferences(run: $run, held: $held, report: $report, record: $record);
-				} else {
-					$objects[$object['key']] = $this->rewriter->rewrite(
-						run: ['store' => $this->store, 'fragment' => $fragment, 'object' => $object, 'row' => $kept],
-						resolved: $this->resolve(object: $object, context: $context, planned: []),
-						report: $report,
-						written: $written
-					);
-				}
-
-				$this->rewriter->follow(record: $record, name: $name, written: $written, save: $save);
-
-				continue;
-			}
-
-			$resolved = $this->resolve(
-				object: $object,
-				context: (['objects' => $objects, 'files' => $files] + $base),
-				planned: []
-			);
-			if ($resolved['refusal'] !== '') {
-				$report['dropped'][] = $fragment['file'].': object "'.$object['key'].'": '.$resolved['refusal'];
-				continue;
-			}
-
-			$made = $this->store->create(register: $object['register'], schema: $object['schema'], data: $resolved['sent'], owner: $resolved['owner']);
-			if ($made['id'] === '') {
-				$report['dropped'][] = $fragment['file'].': object "'.$object['key'].'": '.$made['error'];
-				continue;
-			}
-
-			$report['types'][$type]['created']++;
-			$record['objects'][$name] = ['register' => $object['register'], 'schema' => $object['schema'], 'id' => $made['id']];
-			$refs                     = array_intersect_key($resolved['data'], array_flip($this->referenceFields(object: $object)));
-			if ($refs !== []) {
-				$record['objects'][$name]['refs'] = $refs;
-			}
-
-			$this->record->write(set: (string) $plan['set'], record: $record);
-			$written[$name] = $resolved['data'];
-			$report         = $this->attachFiles(run: $run, object: $object, report: $report, record: $record);
-			$files[$object['key']] = $this->heldFileIds(record: $record, name: $name);
-
-			// The row as stored, because a later object may quote a field the
-			// register made itself, such as a case number.
-			$objects[$object['key']] = ($this->store->get(register: $object['register'], schema: $object['schema'], id: $made['id']) ?? ['id' => $made['id']]);
-		}//end foreach
-
-		$context = (['objects' => $objects] + $base);
-		// A refresh updates the flows too, so it is known before they are written.
-		$context['refresh'] = (($plan['refresh'] ?? false) === true);
-
-		// Before the changes, so a change can quote a flow or an access link
-		// (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
-		$write = new ExampleSetFragmentWrite(fragment: $fragment, context: $context, values: $this->values);
-		$early = $this->engineRows?->installBeforeChanges(write: $write, report: $report, record: $record);
-		if ($early === true) {
-			$this->record->write(set: (string) $plan['set'], record: $record);
+			$this->installObject(run: $run, object: $object);
 		}
 
-		$context['flows']       = $this->values->flowsOf(fragment: $fragment, record: $record);
-		$context['accessLinks'] = ($this->engineRows?->accessLinksOf(fragment: $fragment, record: $record) ?? []);
-		$report           = $this->installChanges(run: $run, context: $context, report: $report, record: $record);
+		$run->context = (['objects' => $run->objects] + $run->base);
+		// A refresh updates the flows too, so it is known before they are written.
+		$run->context['refresh'] = $run->refresh();
+		$this->installFragmentRows(run: $run);
+	}//end installFragment()
 
-		$report = $this->installAppConfig(run: $run, context: $context, report: $report, record: $record);
+	/**
+	 * Write one declared object the record does not hold, or keep (and refresh) the one it holds.
+	 *
+	 * @param ExampleSetInstallRun $run    The install; its report, record and objects so far grow.
+	 * @param array<string, mixed> $object The declared object.
+	 *
+	 * @return void
+	 */
+	private function installObject(ExampleSetInstallRun $run, array $object): void {
+		$type = $object['register'].' '.$object['schema'];
+		$name = $run->fragment['app'].'/'.$object['key'];
+		$run->report['types'][$type] ??= ['declared' => 0, 'created' => 0, 'kept' => 0, 'arrived' => 0];
+		$run->report['types'][$type]['declared']++;
 
-		$write = new ExampleSetFragmentWrite(fragment: $fragment, context: $context, values: $this->values);
-		if ($this->engineRows?->install(write: $write, report: $report, record: $record) === true) {
-			$this->record->write(set: (string) $plan['set'], record: $record);
+		$held = $this->kept(record: $run->record, name: $name);
+		if ($held['error'] !== '') {
+			// A read that failed proves nothing about the object: writing it again would leave two copies and
+			// forget the original, so nothing is written and the recorded id stays.
+			$run->report['dropped'][] = $run->fragment['file'].': object "'.$object['key'].'": the object the record holds could not be read ('
+				.$held['error'].')';
+			$run->objects[$object['key']] = ['id' => (string) $run->record['objects'][$name]['id']];
+			return;
+		}
+
+		if ($held['row'] !== null) {
+			$this->keepObject(run: $run, held: new ExampleSetKeptObject(object: $object, row: $held['row'], context: []));
+			return;
+		}
+
+		$this->createObject(run: $run, object: $object);
+	}//end installObject()
+
+	/**
+	 * Keep an object an earlier run wrote: attach the files declared after it, then refresh its references or, on
+	 * `--refresh`, rewrite it.
+	 *
+	 * @param ExampleSetInstallRun $run  The install; its report, record and objects so far grow.
+	 * @param ExampleSetKeptObject $held The declared object and the object as stored.
+	 *
+	 * @return void
+	 */
+	private function keepObject(ExampleSetInstallRun $run, ExampleSetKeptObject $held): void {
+		$object = $held->object;
+		$name   = $run->fragment['app'].'/'.$object['key'];
+		$run->report['types'][$object['register'].' '.$object['schema']]['kept']++;
+		if (isset($run->record['files'][$name]) === false) {
+			$this->attachFiles(run: $run, object: $object);
+		}
+
+		$run->files[$object['key']] = $this->heldFileIds(record: $run->record, name: $name);
+		$held = new ExampleSetKeptObject(object: $object, row: $held->row, context: $run->objectContext());
+		$run->objects[$object['key']] = $this->refreshedOrRewritten(run: $run, held: $held);
+
+		if (isset($run->written[$name]) === true) {
+			$rewritten = new RewrittenObject(name: $name, data: $run->written[$name]);
+			if ($this->writers->rewriter->follow(record: $run->record, object: $rewritten) === true) {
+				$this->objects->record->write(set: $run->set(), record: $run->record);
+			}
+		}
+	}//end keepObject()
+
+	/**
+	 * A kept object after this run: with its references refreshed, or rewritten on `--refresh`.
+	 *
+	 * @param ExampleSetInstallRun $run  The install; its report and what it sent grow.
+	 * @param ExampleSetKeptObject $held The declared object, the object as stored and the context its placeholders draw on.
+	 *
+	 * @return array<string, mixed> The object as stored now.
+	 */
+	private function refreshedOrRewritten(ExampleSetInstallRun $run, ExampleSetKeptObject $held): array {
+		if ($run->refresh() === false) {
+			return $this->refreshReferences(run: $run, held: $held);
+		}
+
+		return $this->writers->rewriter->rewrite(
+			rewrite: new KeptObjectRewrite(
+				kept: ['store' => $this->objects->store, 'fragment' => $run->fragment, 'object' => $held->object, 'row' => $held->row],
+				resolved: $this->resolve(object: $held->object, scope: new ExampleSetResolveScope(context: $held->context))
+			),
+			tally: new RewriteTally(report: $run->report, written: $run->written)
+		);
+	}//end refreshedOrRewritten()
+
+	/**
+	 * Write a declared object the record does not hold, and record it.
+	 *
+	 * @param ExampleSetInstallRun $run    The install; its report, record, what it sent and objects so far grow.
+	 * @param array<string, mixed> $object The declared object.
+	 *
+	 * @return void
+	 */
+	private function createObject(ExampleSetInstallRun $run, array $object): void {
+		$resolved = $this->resolve(object: $object, scope: new ExampleSetResolveScope(context: $run->objectContext()));
+		$made     = ['id' => '', 'error' => $resolved['refusal']];
+		if ($resolved['refusal'] === '') {
+			$made = $this->objects->store->create(
+				register: $object['register'],
+				schema: $object['schema'],
+				data: $resolved['sent'],
+				owner: $resolved['owner']
+			);
+		}
+
+		if ($made['id'] === '') {
+			$run->report['dropped'][] = $run->fragment['file'].': object "'.$object['key'].'": '.$made['error'];
+			return;
+		}
+
+		$name = $run->fragment['app'].'/'.$object['key'];
+		$run->report['types'][$object['register'].' '.$object['schema']]['created']++;
+		$run->record['objects'][$name] = ['register' => $object['register'], 'schema' => $object['schema'], 'id' => $made['id']];
+		$this->recordCreated(run: $run, created: new ExampleSetResolvedObject(object: $object, resolved: $resolved));
+	}//end createObject()
+
+	/**
+	 * Record a just-written object: the references it was written with, what was sent, its files, and the row as
+	 * stored (a later object may quote a field the register made itself, such as a case number).
+	 *
+	 * @param ExampleSetInstallRun     $run     The install; the record holds the object's id.
+	 * @param ExampleSetResolvedObject $created The declared object and its resolution.
+	 *
+	 * @return void
+	 */
+	private function recordCreated(ExampleSetInstallRun $run, ExampleSetResolvedObject $created): void {
+		$object = $created->object;
+		$name   = $run->fragment['app'].'/'.$object['key'];
+		$data   = $created->resolved['data'];
+		$refs   = array_intersect_key($data, array_flip($this->referenceFields(object: $object)));
+		if ($refs !== []) {
+			$run->record['objects'][$name]['refs'] = $refs;
+		}
+
+		$this->written(run: $run);
+		$run->written[$name] = $data;
+		$this->attachFiles(run: $run, object: $object);
+		$run->files[$object['key']] = $this->heldFileIds(record: $run->record, name: $name);
+
+		$id = (string) $run->record['objects'][$name]['id'];
+		$ref = new ObjectRef(register: $object['register'], schema: $object['schema'], id: $id);
+		$run->objects[$object['key']] = ($this->objects->store->row(ref: $ref) ?? ['id' => $id]);
+	}//end recordCreated()
+
+	/**
+	 * Write the record as the run holds it now.
+	 *
+	 * @param ExampleSetInstallRun $run The install.
+	 *
+	 * @return void
+	 */
+	private function written(ExampleSetInstallRun $run): void {
+		$this->objects->record->write(set: $run->set(), record: $run->record);
+	}//end written()
+
+	/**
+	 * Write the rows of one fragment after its objects: the engine rows a change may quote, the changes, the app
+	 * config, the other engine rows, and the user preferences (after the views, which a preference may quote).
+	 *
+	 * @param ExampleSetInstallRun $run The install; its context holds the fragment's objects.
+	 *
+	 * @return void
+	 */
+	private function installFragmentRows(ExampleSetInstallRun $run): void {
+		$fragment = $run->fragment;
+		// Before the changes, so a change can quote a flow or an access link (`{{flow:key.uuid}}`, `{{accessLink:key.url}}`).
+		$write = new ExampleSetFragmentWrite(fragment: $fragment, context: $run->context, values: $this->objects->values);
+		$ledger = new RecordLedger(report: $run->report, record: $run->record);
+		if ($this->writers->engineRows?->installBeforeChanges(write: $write, ledger: $ledger) === true) {
+			$this->written(run: $run);
+		}
+
+		$run->context['flows']       = $this->objects->values->flowsOf(fragment: $fragment, record: $run->record);
+		$run->context['accessLinks'] = ($this->writers->engineRows?->accessLinksOf(fragment: $fragment, record: $run->record) ?? []);
+		$this->installChanges(run: $run);
+		$this->installAppConfig(run: $run);
+
+		$write = new ExampleSetFragmentWrite(fragment: $fragment, context: $run->context, values: $this->objects->values);
+		$ledger = new RecordLedger(report: $run->report, record: $run->record);
+		if ($this->writers->engineRows?->install(write: $write, ledger: $ledger) === true) {
+			$this->written(run: $run);
 		}
 
 		// After the views, so a preference can quote one (`{{view:key.uuid}}`).
-		$context['views'] = $this->values->viewsOf(fragment: $fragment, record: $record);
-		$report           = $this->installUserPreferences(run: $run, context: $context, report: $report, record: $record);
-
-		return $report;
-	}//end installFragment()
+		$run->context['views'] = $this->objects->values->viewsOf(fragment: $fragment, record: $run->record);
+		$this->installUserPreferences(run: $run);
+	}//end installFragmentRows()
 
 	/**
 	 * Point a kept object at the objects its declaration references now.
@@ -566,60 +627,90 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * `<app>/<key>#references`, so the proof checks it and remove stays exact.
 	 * The first recorded old value of a field is kept over later refreshes.
 	 *
-	 * @param ExampleSetFragmentRun $run    The plan and the fragment.
-	 * @param ExampleSetKeptObject  $held   The declared object, the object as stored and the context its placeholders draw on.
-	 * @param array<string, mixed>  $report The report; gains the outcome under `changes`.
-	 * @param array<string, mixed>  $record The record; gains the refresh.
+	 * @param ExampleSetInstallRun $run  The install; the report gains the outcome under `changes`, the record the refresh.
+	 * @param ExampleSetKeptObject $held The declared object, the object as stored and the context its placeholders draw on.
 	 *
 	 * @return array<string, mixed> The object as stored after the refresh.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
-	private function refreshReferences(ExampleSetFragmentRun $run, ExampleSetKeptObject $held, array &$report, array &$record): array {
-		$plan     = $run->plan;
-		$fragment = $run->fragment;
-		$object   = $held->object;
-		$row      = $held->row;
-		$context  = $held->context;
-		$fields = $this->referenceFields(object: $object);
-		if ($fields === []) {
-			return $row;
+	private function refreshReferences(ExampleSetInstallRun $run, ExampleSetKeptObject $held): array {
+		$object = $held->object;
+		if ($this->referenceFields(object: $object) === []) {
+			return $held->row;
 		}
 
-		$name     = $fragment['app'].'/'.$object['key'].'#references';
-		$resolved = $this->resolve(object: $object, context: $context, planned: []);
-		if ($resolved['refusal'] !== '') {
-			$report['dropped'][]      = $fragment['file'].': object "'.$object['key'].'": its references cannot be refreshed: '.$resolved['refusal'];
-			$report['changes'][$name] = 'failed';
-			return $row;
-		}
-
-		$made = $this->changes->refresh(
-			object: $object,
-			row: $row,
-			values: array_intersect_key($resolved['data'], array_flip($fields)),
-			written: $this->changes->writtenReferences(record: $record, name: $name, key: $fragment['app'].'/'.$object['key'])
-		);
-		foreach ($made['left'] as $field) {
-			$report['left'][] = $fragment['file'].': object "'.$object['key'].'": field "'.$field.'" was changed after the install and is left as it is';
-		}
-
+		$name = $run->fragment['app'].'/'.$object['key'].'#references';
+		$made = $this->refreshedReferences(run: $run, held: $held);
 		if ($made['error'] !== '') {
-			$report['dropped'][]      = $fragment['file'].': object "'.$object['key'].'": its references cannot be refreshed: '.$made['error'];
-			$report['changes'][$name] = 'failed';
-			return $row;
+			$run->report['dropped'][]      = $run->fragment['file'].': object "'.$object['key'].'": its references cannot be refreshed: '.$made['error'];
+			$run->report['changes'][$name] = 'failed';
+			return $held->row;
 		}
 
 		if ($made['entry'] === null) {
-			return $row;
+			return $held->row;
 		}
 
-		// Merge per field: a field refreshed in an earlier run and not in this one keeps its entry (its newest `new`
-		// is what the install last wrote, so a later run does not read it as edited by somebody), and a field
-		// refreshed again keeps the old value it was first replaced from.
-		$entry  = $made['entry'];
+		$this->recordReferences(run: $run, refreshed: new ExampleSetRecordedObject(name: $name, entry: $made['entry']));
+
+		$ref = new ObjectRef(register: $object['register'], schema: $object['schema'], id: (string) $made['entry']['id']);
+
+		return ($this->objects->store->row(ref: $ref) ?? $held->row);
+	}//end refreshReferences()
+
+	/**
+	 * Resolve a kept object's reference fields again and write the ones that differ; the fields somebody changed
+	 * since the install are left, and named under `left`.
+	 *
+	 * @param ExampleSetInstallRun $run  The install; the report gains what is left.
+	 * @param ExampleSetKeptObject $held The declared object, the object as stored and the context its placeholders draw on.
+	 *
+	 * @return array{entry: array<string, mixed>|null, error: string} The change entry the refresh made, or why it failed.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 */
+	private function refreshedReferences(ExampleSetInstallRun $run, ExampleSetKeptObject $held): array {
+		$object   = $held->object;
+		$key      = $run->fragment['app'].'/'.$object['key'];
+		$resolved = $this->resolve(object: $object, scope: new ExampleSetResolveScope(context: $held->context));
+		if ($resolved['refusal'] !== '') {
+			return ['entry' => null, 'error' => $resolved['refusal']];
+		}
+
+		$made = $this->writers->changes->refresh(
+			object: $object,
+			row: $held->row,
+			values: array_intersect_key($resolved['data'], array_flip($this->referenceFields(object: $object))),
+			written: $this->writers->changes->writtenReferences(record: $run->record, key: $key)
+		);
+		foreach ($made['left'] as $field) {
+			$run->report['left'][] = $run->fragment['file'].': object "'.$object['key'].'": field "'.$field
+				.'" was changed after the install and is left as it is';
+		}
+
+		return $made;
+	}//end refreshedReferences()
+
+	/**
+	 * Record a references refresh, merged per field with the one an earlier run recorded.
+	 *
+	 * A field refreshed in an earlier run and not in this one keeps its entry (its newest `new` is what the install
+	 * last wrote, so a later run does not read it as edited by somebody), and a field refreshed again keeps the old
+	 * value it was first replaced from.
+	 *
+	 * @param ExampleSetInstallRun     $run       The install; its record and report gain the refresh.
+	 * @param ExampleSetRecordedObject $refreshed The change's record key and the entry this run made.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 */
+	private function recordReferences(ExampleSetInstallRun $run, ExampleSetRecordedObject $refreshed): void {
+		$name   = $refreshed->name;
+		$entry  = $refreshed->entry;
 		$merged = [];
-		foreach ((array) ($record['changes'][$name]['set'] ?? []) as $earlier) {
+		foreach ((array) ($run->record['changes'][$name]['set'] ?? []) as $earlier) {
 			$merged[(string) $earlier['path']] = $earlier;
 		}
 
@@ -633,13 +724,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		}
 
 		$entry['set'] = array_values($merged);
-
-		$record['changes'][$name] = $entry;
-		$report['changes'][$name] = 'refreshed';
-		$this->record->write(set: (string) $plan['set'], record: $record);
-
-		return ($this->store->get(register: $object['register'], schema: $object['schema'], id: (string) $entry['id']) ?? $row);
-	}//end refreshReferences()
+		$run->record['changes'][$name] = $entry;
+		$run->report['changes'][$name] = 'refreshed';
+		$this->written(run: $run);
+	}//end recordReferences()
 
 	/**
 	 * The top-level fields of an object whose declared value references another object.
@@ -661,63 +749,99 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		return $fields;
 	}//end referenceFields()
-
 	/**
 	 * Make the changes of one fragment that the record does not hold, and let go of the held ones it no longer
 	 * declares.
 	 *
-	 * @param ExampleSetFragmentRun $run     The plan and the fragment.
-	 * @param array<string, mixed>  $context `cast`, `objects` and `today`.
-	 * @param array<string, mixed>  $report  The report so far.
-	 * @param array<string, mixed>  $record  The record; updated and kept after every change.
+	 * @param ExampleSetInstallRun $run The install: the fragment and the context (`cast`, `objects`, `today`); its
+	 *                                  report and record grow, and the record is kept after every change.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return void
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 * @spec openspec/specs/example-sets/spec.md#requirement-the-record-lets-go-of-a-held-entry-the-set-no-longer-declares
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExampleSetRecord::letGoUndeclared() is a pure function of its arguments, shared by every part.
 	 */
-	private function installChanges(ExampleSetFragmentRun $run, array $context, array $report, array &$record): array {
-		$plan     = $run->plan;
-		$fragment = $run->fragment;
-		$refresh = (($plan['refresh'] ?? false) === true);
-		foreach ($fragment['changes'] as $change) {
-			$change = $this->withObjectJsonFields(change: $change, fragment: $fragment);
-			$name   = $fragment['app'].'/'.$change['key'];
-			$report['changes'][$name] = 'kept';
-			if (isset($record['changes'][$name]) === true) {
-				$made   = $this->changes->follow(change: $change, entry: $record['changes'][$name], context: $context, refresh: $refresh);
-				$followed = new ExampleSetFollowedEntry(part: 'changes', name: $name, made: $made);
-				$report   = $this->record->hold(set: (string) $plan['set'], followed: $followed, report: $report, record: $record);
-				continue;
-			}
-
-			$resolved = $this->changes->resolve(change: $change, context: $context);
-			$made     = ['error' => $resolved['refusal'], 'entry' => null];
-			if ($resolved['refusal'] === '') {
-				$made = $this->changes->apply(change: $change, resolved: $resolved);
-			}
-
-			if ($made['error'] !== '') {
-				$report['dropped'][]      = $fragment['file'].': change "'.$change['key'].'": '.$made['error'];
-				$report['changes'][$name] = 'failed';
-				continue;
-			}
-
-			if ($made['entry'] !== null) {
-				$record['changes'][$name] = $made['entry'];
-				$report['changes'][$name] = 'created';
-				$this->record->write(set: (string) $plan['set'], record: $record);
-			}
-		}//end foreach
-
-		if (ExampleSetRecord::letGoUndeclared(part: self::changesPart(), fragment: $fragment, report: $report, record: $record) === true) {
-			$this->record->write(set: (string) $plan['set'], record: $record);
+	private function installChanges(ExampleSetInstallRun $run): void {
+		foreach ($run->fragment['changes'] as $change) {
+			$this->installChange(run: $run, change: $change);
 		}
 
-		return $report;
+		$declaring = new FragmentPart(fragment: $run->fragment, part: self::changesPart());
+		if (ExampleSetRecord::letGoUndeclared(declaring: $declaring, ledger: new RecordLedger(report: $run->report, record: $run->record)) === true) {
+			$this->written(run: $run);
+		}
 	}//end installChanges()
+
+	/**
+	 * Make one declared change the record does not hold, or follow the one it holds.
+	 *
+	 * @param ExampleSetInstallRun $run    The install; its report and record grow.
+	 * @param array<string, mixed> $change The declared change.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 */
+	private function installChange(ExampleSetInstallRun $run, array $change): void {
+		$change = $this->withObjectJsonFields(change: $change, fragment: $run->fragment);
+		$name   = $run->fragment['app'].'/'.$change['key'];
+		$run->report['changes'][$name] = 'kept';
+		if (isset($run->record['changes'][$name]) === true) {
+			$made = $this->writers->changes->follow(change: $change, entry: $run->record['changes'][$name], context: $run->context, refresh: $run->refresh());
+			$this->hold(run: $run, followed: new ExampleSetFollowedEntry(part: 'changes', name: $name, made: $made));
+			return;
+		}
+
+		$resolved = $this->writers->changes->resolve(change: $change, context: $run->context);
+		$made     = ['error' => $resolved['refusal'], 'entry' => null];
+		if ($resolved['refusal'] === '') {
+			$made = $this->writers->changes->apply(change: $change, resolved: $resolved);
+		}
+
+		if ($this->recordMade(run: $run, made: new ExampleSetMadeEntry(part: 'changes', name: $name, made: $made)) === false) {
+			$run->report['dropped'][] = $run->fragment['file'].': change "'.$change['key'].'": '.$made['error'];
+		}
+	}//end installChange()
+
+	/**
+	 * Keep a held entry the declaration still names, as the record's hold() follows it.
+	 *
+	 * @param ExampleSetInstallRun    $run      The install; its report and record follow the entry.
+	 * @param ExampleSetFollowedEntry $followed The record part, the entry's name and what following it made.
+	 *
+	 * @return void
+	 */
+	private function hold(ExampleSetInstallRun $run, ExampleSetFollowedEntry $followed): void {
+		if ($this->objects->record->hold(followed: $followed, ledger: new RecordLedger(report: $run->report, record: $run->record)) === true) {
+			$this->objects->record->write(set: $run->set(), record: $run->record);
+		}
+	}//end hold()
+
+	/**
+	 * Record what writing one entry made: `failed` (false; the caller names why under `dropped`), or `created` and
+	 * the entry kept in the record. A write that made no entry leaves it `kept`.
+	 *
+	 * @param ExampleSetInstallRun $run  The install; its report and record grow.
+	 * @param ExampleSetMadeEntry  $made The record part, the entry's name and what the write made (`error`, `entry`).
+	 *
+	 * @return bool
+	 */
+	private function recordMade(ExampleSetInstallRun $run, ExampleSetMadeEntry $made): bool {
+		if ($made->made['error'] !== '') {
+			$run->report[$made->part][$made->name] = 'failed';
+			return false;
+		}
+
+		if ($made->made['entry'] !== null) {
+			$run->record[$made->part][$made->name] = $made->made['entry'];
+			$run->report[$made->part][$made->name] = 'created';
+			$this->written(run: $run);
+		}
+
+		return true;
+	}//end recordMade()
 
 	/**
 	 * A change on an object of the same fragment, with that object's `jsonFields` added to its own.
@@ -748,24 +872,26 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		return $change;
 	}//end withObjectJsonFields()
-
 	/**
 	 * Resolve an object's lookups and fill its data.
 	 *
 	 * A field named in `jsonFields` is sent as JSON text, for a schema that
 	 * keeps it as text; `data` keeps the list, which is what a read hands back.
 	 *
-	 * @param array<string, mixed>             $object  The declared object.
-	 * @param array<string, mixed>             $context `cast`, `objects` and `today`.
-	 * @param array<int, array<string, mixed>> $planned Objects a check pass declared earlier, for lookups.
+	 * @param array<string, mixed>   $object The declared object.
+	 * @param ExampleSetResolveScope $scope  The context (`cast`, `objects`, `today`) and the objects a check declared
+	 *                                       earlier, for lookups.
 	 *
 	 * @return array{data: array<string, mixed>, sent: array<string, mixed>, refusal: string, owner?: string|null} The
 	 *         filled data, what to send and the declared owner, or why it cannot be filled.
 	 */
-	private function resolve(array $object, array $context, array $planned): array {
+	private function resolve(array $object, ExampleSetResolveScope $scope): array {
+		$context = $scope->context;
 		$context['lookups'] = [];
 		foreach ((array) ($object['lookups'] ?? []) as $name => $lookup) {
-			$found = $this->lookedUp(register: (string) $object['register'], lookup: (array) $lookup, context: $context, planned: $planned);
+			$lookup = (array) $lookup;
+			$lookup['register'] ??= (string) $object['register'];
+			$found  = $this->lookedUp(scope: new ExampleSetResolveScope(context: $context, planned: $scope->planned), lookup: $lookup);
 			if ($found['id'] === '') {
 				return ['data' => [], 'sent' => [], 'refusal' => 'lookup "'.$name.'" found '.$found['reason']];
 			}
@@ -774,13 +900,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		}
 
 		$gaps = [];
-		$data = $this->values->fillObject(object: $object, context: $context, gaps: $gaps);
+		$data = $this->objects->values->fillObject(object: $object, scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 		if ($gaps !== []) {
 			return ['data' => [], 'sent' => [], 'refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))];
 		}
 
-		$owner = $this->values->ownerOf(object: $object, context: $context);
-		$sent  = $this->changes->asSent(row: $data, fields: (array) ($object['jsonFields'] ?? []));
+		$owner = $this->objects->values->ownerOf(object: $object, context: $context);
+		$sent  = $this->writers->changes->asSent(row: $data, fields: (array) ($object['jsonFields'] ?? []));
 
 		return ['data' => $data, 'sent' => $sent, 'refusal' => $owner['refusal'], 'owner' => $owner['owner']];
 	}//end resolve()
@@ -793,18 +919,20 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * that was asked for. Two rows that match (two organisations may share a
 	 * business key) refuse the lookup, naming the count.
 	 *
-	 * @param string                           $register The register of the object being written.
-	 * @param array<string, mixed>             $lookup   `schema` and `where`; `register` when it is another one.
-	 * @param array<string, mixed>             $context  The cast, the lookups found so far and the day.
-	 * @param array<int, array<string, mixed>> $planned  Objects a check pass declared earlier.
+	 * @param ExampleSetResolveScope $scope  The cast, the lookups found so far and the day; the objects a check
+	 *                                       declared earlier.
+	 * @param array<string, mixed>   $lookup `register` (the object's own unless it names another), `schema` and `where`.
 	 *
 	 * @return array{id: string, reason: string}
 	 */
-	private function lookedUp(string $register, array $lookup, array $context, array $planned): array {
+	private function lookedUp(ExampleSetResolveScope $scope, array $lookup): array {
 		$gaps   = [];
-		$where  = (array) $this->values->fill(value: (array) ($lookup['where'] ?? []), context: $context, gaps: $gaps);
+		$where  = (array) $this->objects->values->fill(
+			value: (array) ($lookup['where'] ?? []),
+			scope: new ExampleSetFillScope(context: $scope->context, gaps: $gaps)
+		);
 		$schema = (string) ($lookup['schema'] ?? '');
-		$from   = (string) ($lookup['register'] ?? $register);
+		$from   = (string) $lookup['register'];
 		if ($gaps !== []) {
 			return ['id' => '', 'reason' => 'an unresolvable '.implode(', ', array_unique($gaps))];
 		}
@@ -813,16 +941,17 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			return ['id' => '', 'reason' => 'nothing: a lookup needs a schema and a where'];
 		}
 
-		$rows = $this->store->matching(register: $from, schema: $schema, where: $where);
+		$rows = $this->objects->store->rowsMatching(table: new RegisterSchemaRef(register: $from, schema: $schema), where: $where);
 		if (count($rows) > 1) {
 			return ['id' => '', 'reason' => count($rows).' '.$from.' '.$schema.' rows with '.$this->asWords(where: $where).'; a lookup needs exactly one'];
 		}
 
 		if ($rows !== []) {
-			return ['id' => $this->store->idOf(row: $rows[0]), 'reason' => ''];
+			return ['id' => $this->objects->store->idOf(row: $rows[0]), 'reason' => ''];
 		}
 
-		$id = $this->plannedMatch(planned: $planned, register: $from, schema: $schema, where: $where);
+		$planned = array_filter($scope->planned, static fn (array $object): bool => $object['register'] === $from && $object['schema'] === $schema);
+		$id      = $this->plannedMatch(planned: $planned, where: $where);
 		if ($id !== '') {
 			return ['id' => $id, 'reason' => ''];
 		}
@@ -845,20 +974,18 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		return implode(' and ', $words);
 	}//end asWords()
-
 	/**
 	 * The stand-in id of an object declared earlier in the set that a lookup describes, or ''.
 	 *
-	 * @param array<int, array<string, mixed>> $planned  Objects a check pass declared earlier.
-	 * @param string                           $register The register looked in.
-	 * @param string                           $schema   The schema looked in.
-	 * @param array<string, mixed>             $where    The asked values.
+	 * @param array<int, array<string, mixed>> $planned Objects a check pass declared earlier, in the register and
+	 *                                                  schema looked in.
+	 * @param array<string, mixed>             $where   The asked values.
 	 *
 	 * @return string
 	 */
-	private function plannedMatch(array $planned, string $register, string $schema, array $where): string {
+	private function plannedMatch(array $planned, array $where): string {
 		foreach ($planned as $object) {
-			if ($object['register'] === $register && $object['schema'] === $schema && $this->store->rowMatches(row: $object['row'], where: $where) === true) {
+			if ($this->objects->store->rowMatches(row: $object['row'], where: $where) === true) {
 				return (string) $object['row']['id'];
 			}
 		}
@@ -872,32 +999,31 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * A read that failed is not "it is gone": the error comes back and the caller must not write the object again.
 	 *
 	 * @param array<string, mixed> $record The record.
-	 * @param string               $app    The app of the fragment.
-	 * @param string               $key    The object key.
+	 * @param string               $name   The object's record key (`app/key`).
 	 *
 	 * @return array{row: array<string, mixed>|null, error: string} The row; null with '' when the record holds none or the
 	 *                                                              instance lost it; null with why when the read failed.
 	 */
-	private function kept(array $record, string $app, string $key): array {
-		$held = ($record['objects'][$app.'/'.$key] ?? null);
+	private function kept(array $record, string $name): array {
+		$held = ($record['objects'][$name] ?? null);
 		if ($held === null) {
 			return ['row' => null, 'error' => ''];
 		}
 
-		return $this->store->read(register: $held['register'], schema: $held['schema'], id: $held['id']);
+		return $this->objects->store->readRow(ref: new ObjectRef(register: $held['register'], schema: $held['schema'], id: $held['id']));
 	}//end kept()
 
 	/**
 	 * A row that stands in for an object a check does not write.
 	 *
-	 * @param string               $app    The app of the fragment.
-	 * @param array<string, mixed> $object The declared object.
-	 * @param array<string, mixed> $data   Its filled data, or [] when it could not be filled.
+	 * @param string               $name The object's record key (`app/key`).
+	 * @param array<string, mixed> $data Its filled data, or [] when it could not be filled.
 	 *
 	 * @return array<string, mixed>
 	 */
-	private function standIn(string $app, array $object, array $data): array {
-		$hash = md5($app.'/'.$object['key']);
+	private function standIn(string $name, array $data): array {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
+		$hash = md5($name);
 		$id   = sprintf(
 			'%s-%s-4%s-8%s-%s',
 			substr($hash, 0, 8),
@@ -927,22 +1053,20 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			array_values((array) ($record['files'][$name] ?? []))
 		);
 	}//end heldFileIds()
-
 	/**
 	 * The file ids `check` stands in for an object's declared files: the ids an
 	 * earlier install attached, else 1..n, so a field that holds a file id is
 	 * validated as the integer it will be. Nothing is written by a check.
 	 *
-	 * @param array<string, mixed> $record The record.
-	 * @param string               $app    The fragment's app.
+	 * @param ExampleSetCheckRun   $run    The check: the record and the fragment's app.
 	 * @param array<string, mixed> $object The declared object.
 	 *
 	 * @return array<int, int> The file ids.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-an-object-of-a-set-may-carry-files-from-its-fragment-req-exs-013
 	 */
-	private function plannedFileIds(array $record, string $app, array $object): array {
-		$held = $this->heldFileIds(record: $record, name: $app.'/'.$object['key']);
+	private function plannedFileIds(ExampleSetCheckRun $run, array $object): array {
+		$held = $this->heldFileIds(record: $run->record, name: $run->fragment['app'].'/'.$object['key']);
 		if ($held !== []) {
 			return $held;
 		}
@@ -961,16 +1085,15 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 * An object from an earlier run is counted, not compared: somebody may have
 	 * changed it since, and that is not a loss.
 	 *
-	 * @param array<string, mixed>                $report  The report so far.
-	 * @param array<string, mixed>                $record  The record as written.
-	 * @param array<string, array<string, mixed>> $written What this run sent, by record key.
+	 * @param ExampleSetInstallRun $run The install: the report so far, the record as written and what this run sent.
 	 *
 	 * @return array<string, mixed> The finished report.
 	 */
-	private function proven(array $report, array $record, array $written): array {
-		foreach ($record['objects'] as $name => $held) {
+	private function proven(ExampleSetInstallRun $run): array {
+		$report = $run->report;
+		foreach ($run->record['objects'] as $name => $held) {
 			$type   = $held['register'].' '.$held['schema'];
-			$stored = $this->store->get(register: $held['register'], schema: $held['schema'], id: $held['id']);
+			$stored = $this->objects->store->row(ref: new ObjectRef(register: $held['register'], schema: $held['schema'], id: $held['id']));
 			if ($stored === null) {
 				$report['missing'][] = $type.' '.$name;
 				continue;
@@ -980,13 +1103,13 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 				$report['types'][$type]['arrived']++;
 			}
 
-			foreach ($this->proof->lostPaths(declared: ($written[$name] ?? []), stored: $stored) as $path) {
+			foreach ($this->objects->proof->lostPaths(declared: ($run->written[$name] ?? []), stored: $stored) as $path) {
 				$report['lost'][] = $type.' '.$name.': '.$path;
 			}
 		}
 
-		$report            = $this->provenParts(report: $report, record: $record);
-		$report['missing'] = array_merge($report['missing'], $this->people->missing(record: $record));
+		$report            = $this->provenParts(report: $report, record: $run->record);
+		$report['missing'] = array_merge($report['missing'], $this->setup->people->missing(record: $run->record));
 		$report['ok']      = ($report['dropped'] === [] && $report['missing'] === [] && $report['lost'] === []);
 
 		return $report;
@@ -1002,33 +1125,33 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	 */
 	private function provenParts(array $report, array $record): array {
 		foreach ($record['changes'] as $name => $entry) {
-			foreach ($this->changes->lost(entry: $entry) as $path) {
+			foreach ($this->writers->changes->lost(entry: $entry) as $path) {
 				$report['lost'][] = 'change '.$name.': '.$path;
 			}
 		}
 
 		foreach ($record['files'] as $name => $files) {
-			$present = $this->files->names(objectId: (string) ($record['objects'][$name]['id'] ?? ''));
+			$present = $this->writers->files->names(objectId: (string) ($record['objects'][$name]['id'] ?? ''));
 			foreach ($files as $file) {
-				if ($this->files->present(file: $file, names: $present) === false) {
+				if ($this->writers->files->present(file: $file, names: $present) === false) {
 					$report['missing'][] = 'file '.$file['name'].' on '.$name;
 				}
 			}
 		}
 
 		foreach ($record['appConfig'] as $name => $entry) {
-			if ($this->appConfig->lost(entry: $entry) === true) {
+			if ($this->setup->appConfig->lost(entry: $entry) === true) {
 				$report['lost'][] = 'app config '.$entry['app'].' '.$entry['key'].' ('.$name.')';
 			}
 		}
 
-		foreach (array_keys(array_filter($record['userPreferences'], fn (array $entry): bool => $this->userPreferences->lost(entry: $entry))) as $name) {
+		$preferences = $this->setup->userPreferences;
+		foreach (array_keys(array_filter($record['userPreferences'], fn (array $entry): bool => $preferences->lost(entry: $entry))) as $name) {
 			$report['lost'][] = 'user preference '.$name;
 		}
 
-		return ($this->engineRows ?? new ExampleSetEngineKinds())->prove(report: $report, record: $record);
+		return ($this->writers->engineRows ?? new ExampleSetEngineKinds())->prove(report: $report, record: $record);
 	}//end provenParts()
-
 	/**
 	 * Check the app config of one fragment: each key may be written and each value resolves.
 	 *
@@ -1041,14 +1164,14 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 		$refusals = [];
 		foreach (($fragment['appConfig'] ?? []) as $entry) {
 			$where   = $fragment['file'].': app config "'.$entry['key'].'"';
-			$refusal = $this->appConfig->refusal(app: $fragment['app'], key: $entry['key'], generate: $entry['generate']);
+			$refusal = $this->setup->appConfig->refusal(at: new ExampleSetConfigKey(app: $fragment['app'], key: $entry['key']), generate: $entry['generate']);
 			if ($refusal !== '') {
 				$refusals[] = $where.': '.$refusal;
 				continue;
 			}
 
 			$gaps = [];
-			$this->values->fill(value: (string) $entry['value'], context: $context, gaps: $gaps);
+			$this->objects->values->fill(value: (string) $entry['value'], scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 			if ($entry['generate'] === false && $gaps !== []) {
 				$refusals[] = $where.': cannot resolve '.implode(', ', array_unique($gaps));
 			}
@@ -1056,80 +1179,74 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 
 		return $refusals;
 	}//end checkAppConfig()
-
 	/**
 	 * Write the app config of one fragment that the record does not hold.
 	 *
-	 * @param ExampleSetFragmentRun $run     The plan and the fragment.
-	 * @param array<string, mixed>  $context The context placeholders draw on.
-	 * @param array<string, mixed>  $report  The report so far; names keys, never values.
-	 * @param array<string, mixed>  $record  The record; updated after every write.
+	 * @param ExampleSetInstallRun $run The install: the fragment and the context placeholders draw on; its report
+	 *                                  (keys, never values) and record grow.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return void
 	 */
-	private function installAppConfig(ExampleSetFragmentRun $run, array $context, array $report, array &$record): array {
-		$plan     = $run->plan;
-		$fragment = $run->fragment;
-		foreach (($fragment['appConfig'] ?? []) as $entry) {
-			$name = $fragment['app'].'/'.$entry['key'];
-			$report['appConfig'][$name] = 'kept';
-			$gaps  = [];
-			$value = (string) $this->values->fill(value: (string) $entry['value'], context: $context, gaps: $gaps);
-			if (isset($record['appConfig'][$name]) === true) {
-				if (($entry['atLeast'] ?? false) === true) {
-					$report['appConfig'][$name] = $this->raiseRecordedFloor(set: (string) $plan['set'], name: $name, value: $value, record: $record);
-				}
-
-				continue;
-			}
-
-			$type = (string) ($entry['type'] ?? 'string');
-			$made  = $this->appConfig->apply(
-				target: new ExampleSetConfigValue(
-					at: new ExampleSetConfigKey(app: $fragment['app'], key: $entry['key']),
-					value: $value,
-					type: $type,
-					kind: ExampleSetConfigValue::kindOf(entry: $entry)
-				)
-			);
-			if ($made['error'] !== '') {
-				$report['dropped'][]        = $fragment['file'].': app config "'.$entry['key'].'": '.$made['error'];
-				$report['appConfig'][$name] = 'failed';
-				continue;
-			}
-
-			if ($made['entry'] !== null) {
-				$record['appConfig'][$name] = $made['entry'];
-				$report['appConfig'][$name] = 'created';
-				$this->record->write(set: (string) $plan['set'], record: $record);
-			}
-		}//end foreach
-
-		return $report;
+	private function installAppConfig(ExampleSetInstallRun $run): void {
+		foreach (($run->fragment['appConfig'] ?? []) as $entry) {
+			$this->installConfigEntry(run: $run, entry: $entry);
+		}
 	}//end installAppConfig()
+
+	/**
+	 * Write one app config entry the record does not hold, or raise a recorded floor.
+	 *
+	 * @param ExampleSetInstallRun $run   The install; its report and record grow.
+	 * @param array<string, mixed> $entry The declared entry.
+	 *
+	 * @return void
+	 */
+	private function installConfigEntry(ExampleSetInstallRun $run, array $entry): void {
+		$fragment = $run->fragment;
+		$name     = $fragment['app'].'/'.$entry['key'];
+		$run->report['appConfig'][$name] = 'kept';
+		$gaps   = [];
+		$target = new ExampleSetConfigValue(
+			at: new ExampleSetConfigKey(app: $fragment['app'], key: $entry['key']),
+			value: (string) $this->objects->values->fill(value: (string) $entry['value'], scope: new ExampleSetFillScope(context: $run->context, gaps: $gaps)),
+			type: (string) ($entry['type'] ?? 'string'),
+			kind: ExampleSetConfigValue::kindOf(entry: $entry)
+		);
+		if (isset($run->record['appConfig'][$name]) === true) {
+			if (($entry['atLeast'] ?? false) === true) {
+				$run->report['appConfig'][$name] = $this->raiseRecordedFloor(run: $run, floor: $target);
+			}
+
+			return;
+		}
+
+		$made = $this->setup->appConfig->apply(target: $target);
+		if ($this->recordMade(run: $run, made: new ExampleSetMadeEntry(part: 'appConfig', name: $name, made: $made)) === false) {
+			$run->report['dropped'][] = $fragment['file'].': app config "'.$entry['key'].'": '.$made['error'];
+		}
+	}//end installConfigEntry()
 
 	/**
 	 * Bring a recorded app config entry up to the floor its declaration now names: an entry recorded before it was a
 	 * floor, or with a lower one. The key is raised when it holds less; the record learns the floor, so the read-back
 	 * uses it, and keeps what was there before the set for remove.
 	 *
-	 * @param string               $set    The set id.
-	 * @param string               $name   The entry's record name (`app/key`).
-	 * @param string               $value  The declared floor, filled.
-	 * @param array<string, mixed> $record The record; updated when the entry changes.
+	 * @param ExampleSetInstallRun  $run   The install; its record is updated when the entry changes.
+	 * @param ExampleSetConfigValue $floor The key and the declared floor, filled.
 	 *
 	 * @return string `raised` when the key was written, `kept` otherwise.
 	 *
 	 * @spec openspec/changes/example-set-recorded-floor/specs/example-sets/spec.md#requirement-a-recorded-app-config-entry-follows-a-floor-declared-later
 	 */
-	private function raiseRecordedFloor(string $set, string $name, string $value, array &$record): string {
-		$raised = $this->appConfig->raise(entry: $record['appConfig'][$name], value: $value);
+	private function raiseRecordedFloor(ExampleSetInstallRun $run, ExampleSetConfigValue $floor): string {
+		$name   = $floor->app.'/'.$floor->key;
+		$raised = $this->setup->appConfig->raise(entry: $run->record['appConfig'][$name], value: $floor->value);
 		if ($raised['entry'] === null) {
 			return 'kept';
 		}
 
-		$record['appConfig'][$name] = $raised['entry'];
-		$this->record->write(set: $set, record: $record);
+		$run->record['appConfig'][$name] = $raised['entry'];
+		$this->written(run: $run);
 		if ($raised['written'] === true) {
 			return 'raised';
 		}
@@ -1140,21 +1257,21 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	/**
 	 * Check the user preferences of one fragment: each account fills and is the set's own, and each key may be written.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<int, string>   $users    The account ids the set creates or adopts.
+	 * @param ExampleSetCheckRun   $run     The check: the fragment and the account ids the set creates or adopts.
+	 * @param array<string, mixed> $context The context placeholders draw on.
 	 *
 	 * @return array<int, string> Refusals.
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
-	private function checkUserPreferences(array $fragment, array $context, array $users): array {
+	private function checkUserPreferences(ExampleSetCheckRun $run, array $context): array {
+		$fragment = $run->fragment;
 		$refusals = [];
 		foreach (($fragment['userPreferences'] ?? []) as $entry) {
 			$where = $fragment['file'].': user preference "'.$entry['key'].'"';
 			$gaps  = [];
-			$uid   = $this->values->fill(value: $entry['user'], context: $context, gaps: $gaps);
-			$this->values->fill(value: $entry['value'], context: $context, gaps: $gaps);
+			$uid   = $this->objects->values->fill(value: $entry['user'], scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
+			$this->objects->values->fill(value: $entry['value'], scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
 			if (is_string($uid) === false) {
 				$gaps[] = (string) $entry['user'];
 			}
@@ -1164,7 +1281,10 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 				continue;
 			}
 
-			$refusal = $this->userPreferences->refusal(app: $fragment['app'], uid: $uid, key: $entry['key'], users: $users);
+			$refusal = $this->setup->userPreferences->refusal(
+				preference: new UserPreferenceKey(entry: ['user' => $uid, 'app' => $fragment['app'], 'key' => $entry['key']]),
+				users: $run->users
+			);
 			if ($refusal !== '') {
 				$refusals[] = $where.': '.$refusal;
 			}
@@ -1176,91 +1296,91 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	/**
 	 * Write the user preferences of one fragment that the record does not hold, for the set's own accounts only.
 	 *
-	 * @param ExampleSetFragmentRun $run     The plan and the fragment.
-	 * @param array<string, mixed>  $context The context placeholders draw on.
-	 * @param array<string, mixed>  $report  The report so far.
-	 * @param array<string, mixed>  $record  The record; updated after every write.
+	 * @param ExampleSetInstallRun $run The install: the fragment and the context placeholders draw on; its report and
+	 *                                  record grow.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return void
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
-	private function installUserPreferences(ExampleSetFragmentRun $run, array $context, array $report, array &$record): array {
-		$plan     = $run->plan;
-		$fragment = $run->fragment;
-		$refresh = (($plan['refresh'] ?? false) === true);
-		foreach (($fragment['userPreferences'] ?? []) as $entry) {
-			$gaps  = [];
-			$uid   = (string) $this->values->fill(value: $entry['user'], context: $context, gaps: $gaps);
-			$value = (string) $this->values->fill(value: $entry['value'], context: $context, gaps: $gaps);
-			$name  = $fragment['app'].'/'.$uid.'/'.$entry['key'];
-			$report['userPreferences'][$name] = 'kept';
-			if (isset($record['userPreferences'][$name]) === true) {
-				$made   = $this->userPreferences->follow(entry: $record['userPreferences'][$name], value: $value, refresh: $refresh && $gaps === []);
-				$followed = new ExampleSetFollowedEntry(part: 'userPreferences', name: $name, made: $made);
-				$report   = $this->record->hold(set: (string) $plan['set'], followed: $followed, report: $report, record: $record);
-				continue;
-			}
-
-			// Checked again against the record: only an account this set created or adopted.
-			$why = $this->userPreferences->refusal(app: $fragment['app'], uid: $uid, key: $entry['key'], users: array_keys($record['users']));
-			if ($why === '' && $gaps !== []) {
-				$why = 'cannot resolve '.implode(', ', $gaps);
-			}
-
-			$made = ['error' => $why, 'entry' => null];
-			if ($why === '') {
-				$made = $this->userPreferences->apply(uid: $uid, app: $fragment['app'], key: $entry['key'], value: $value);
-			}
-
-			if ($made['error'] !== '') {
-				$report['dropped'][] = $fragment['file'].': user preference "'.$entry['key'].'" for '.$uid.': '.$made['error'];
-				$report['userPreferences'][$name] = 'failed';
-				continue;
-			}
-
-			if ($made['entry'] !== null) {
-				$record['userPreferences'][$name] = $made['entry'];
-				$report['userPreferences'][$name] = 'created';
-				$this->record->write(set: (string) $plan['set'], record: $record);
-			}
-		}//end foreach
-
-		return $report;
+	private function installUserPreferences(ExampleSetInstallRun $run): void {
+		foreach (($run->fragment['userPreferences'] ?? []) as $entry) {
+			$this->installPreference(run: $run, entry: $entry);
+		}
 	}//end installUserPreferences()
+
+	/**
+	 * Write one user preference the record does not hold, or follow the one it holds.
+	 *
+	 * @param ExampleSetInstallRun $run   The install; its report and record grow.
+	 * @param array<string, mixed> $entry The declared preference.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 */
+	private function installPreference(ExampleSetInstallRun $run, array $entry): void {
+		$app   = $run->fragment['app'];
+		$gaps  = [];
+		$uid   = (string) $this->objects->values->fill(value: $entry['user'], scope: new ExampleSetFillScope(context: $run->context, gaps: $gaps));
+		$value = (string) $this->objects->values->fill(value: $entry['value'], scope: new ExampleSetFillScope(context: $run->context, gaps: $gaps));
+		$name  = $app.'/'.$uid.'/'.$entry['key'];
+		$run->report['userPreferences'][$name] = 'kept';
+		if (isset($run->record['userPreferences'][$name]) === true) {
+			$held = $run->record['userPreferences'][$name];
+			$made = $this->setup->userPreferences->kept(entry: $held);
+			if ($run->refresh() === true && $gaps === []) {
+				$made = $this->setup->userPreferences->follow(entry: $held, value: $value);
+			}
+
+			$this->hold(run: $run, followed: new ExampleSetFollowedEntry(part: 'userPreferences', name: $name, made: $made));
+			return;
+		}
+
+		// Checked again against the record: only an account this set created or adopted.
+		$preference = new UserPreferenceKey(entry: ['user' => $uid, 'app' => $app, 'key' => $entry['key']]);
+		$why        = $this->setup->userPreferences->refusal(preference: $preference, users: array_keys($run->record['users']));
+		if ($why === '' && $gaps !== []) {
+			$why = 'cannot resolve '.implode(', ', $gaps);
+		}
+
+		$made = ['error' => $why, 'entry' => null];
+		if ($why === '') {
+			$made = $this->setup->userPreferences->apply(preference: $preference, value: $value);
+		}
+
+		if ($this->recordMade(run: $run, made: new ExampleSetMadeEntry(part: 'userPreferences', name: $name, made: $made)) === false) {
+			$run->report['dropped'][] = $run->fragment['file'].': user preference "'.$entry['key'].'" for '.$uid.': '.$made['error'];
+		}
+	}//end installPreference()
 
 	/**
 	 * Attach the files of a just-written object and record them. A kept object gets the files declared after it was
 	 * written, once. The object's id is the one the record holds for it.
 	 *
-	 * @param ExampleSetFragmentRun $run    The plan and the fragment.
-	 * @param array<string, mixed>  $object The declared object.
-	 * @param array<string, mixed>  $report The report so far.
-	 * @param array<string, mixed>  $record The record; holds the object's id and gains the files.
+	 * @param ExampleSetInstallRun $run    The install; the record holds the object's id and gains the files.
+	 * @param array<string, mixed> $object The declared object.
 	 *
-	 * @return array<string, mixed> The report.
+	 * @return void
 	 */
-	private function attachFiles(ExampleSetFragmentRun $run, array $object, array $report, array &$record): array {
+	private function attachFiles(ExampleSetInstallRun $run, array $object): void {
 		if (($object['files'] ?? []) === []) {
-			return $report;
+			return;
 		}
 
-		$plan     = $run->plan;
 		$fragment = $run->fragment;
 		$name     = $fragment['app'].'/'.$object['key'];
-		$objectId = (string) $record['objects'][$name]['id'];
-		$attached = $this->files->attach(dir: (string) $fragment['dir'], object: $object, objectId: $objectId);
+		$objectId = (string) $run->record['objects'][$name]['id'];
+		$attached = $this->writers->files->attach(dir: (string) $fragment['dir'], object: $object, objectId: $objectId);
 		if ($attached['files'] !== []) {
-			$record['files'][$name] = $attached['files'];
-			$this->record->write(set: (string) $plan['set'], record: $record);
+			$run->record['files'][$name] = $attached['files'];
+			$this->written(run: $run);
 		}
 
-		$report['files'] += count($attached['files']);
+		$run->report['files'] += count($attached['files']);
 		foreach ($attached['errors'] as $error) {
-			$report['dropped'][] = $fragment['file'].': object "'.$object['key'].'": '.$error;
+			$run->report['dropped'][] = $fragment['file'].': object "'.$object['key'].'": '.$error;
 		}
-
-		return $report;
 	}//end attachFiles()
 
 	/**
@@ -1277,7 +1397,6 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 			return new DateTimeImmutable('now');
 		}
 	}//end today()
-
 	/**
 	 * The record part of the changes a set makes to objects it did not create.
 	 *
@@ -1286,4 +1405,5 @@ class ExampleSetInstaller implements ExampleSetInstallerInterface {
 	private static function changesPart(): ExampleSetRecordPart {
 		return new ExampleSetRecordPart(part: 'changes', noun: 'change');
 	}//end changesPart()
+
 }//end class

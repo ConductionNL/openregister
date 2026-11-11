@@ -33,8 +33,6 @@ use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
-use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Sabre\VObject\Component;
 use Sabre\VObject\Reader;
 use Throwable;
@@ -55,27 +53,14 @@ use Throwable;
  *   no injectable alternative in the Sabre VObject library.
  */
 class CalendarLinkService implements CalendarLinkServiceInterface {
-	/**
-	 * User session.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param CalendarLinkMapperInterface $linkMapper Link-table mapper.
-	 * @param CalendarEventService $calendarEventService Legacy CalDAV-property service.
-	 * @param CalDavBackend $calDavBackend CalDAV backend for direct picker queries.
-	 * @param LinkSessionRuntime $runtime User session and logger.
+	 * @param CalendarLinkMapperInterface $linkMapper           Link-table mapper.
+	 * @param CalendarEventService        $calendarEventService Legacy CalDAV-property service.
+	 * @param CalDavBackend               $calDavBackend        CalDAV backend for direct picker queries.
+	 * @param LinkSessionRuntime          $runtime              User session and logger.
 	 *
 	 * @return void
 	 */
@@ -83,10 +68,8 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		private readonly CalendarLinkMapperInterface $linkMapper,
 		private readonly CalendarEventService $calendarEventService,
 		private readonly CalDavBackend $calDavBackend,
-		LinkSessionRuntime $runtime,
+		private readonly LinkSessionRuntime $runtime,
 	) {
-		$this->userSession = $runtime->userSession;
-		$this->logger = $runtime->logger;
 	}//end __construct()
 
 	/**
@@ -95,26 +78,6 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * Writes ONLY a link-table row (not the X-OR-* properties — we do
 	 * not own the VEVENT). Re-fetches event details from CalDAV to
 	 * populate cached fields (summary/dtstart/dtend/location).
-	 *
-	 * @param string $objectUuid Object UUID.
-	 * @param int $registerId Register id.
-	 * @param int $schemaId Schema id.
-	 * @param string $calendarUri Calendar URI (per-user CalDAV path component).
-	 * @param string $eventUid VEVENT UID.
-	 *
-	 * @return CalendarLink The persisted link row.
-	 *
-	 * @throws Exception When no user is logged in or the event cannot be located.
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function linkEvent(string $objectUuid, int $registerId, int $schemaId, string $calendarUri, string $eventUid): CalendarLink {
-		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->linkLocatedEvent(target: $target, key: new CalendarEventKey(calendarUri: $calendarUri, eventUid: $eventUid));
-	}//end linkEvent()
-
-	/**
-	 * Insert a link-table row for an existing VEVENT, with its cacheable fields.
 	 *
 	 * @param LinkTarget       $target The object, register and schema to link to.
 	 * @param CalendarEventKey $key    The calendar URI and event UID.
@@ -158,7 +121,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * @throws Exception When no user is logged in.
 	 */
 	private function requireUser(): IUser {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
@@ -193,29 +156,6 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		$link->setLinkedBy($uid);
 		$link->setLinkedAt(new DateTime());
 	}//end stampLinkedBy()
-
-	/**
-	 * Create a new VEVENT through CalendarEventService and record a link-table row.
-	 *
-	 * Delegates the VEVENT write (which adds X-OPENREGISTER-* properties)
-	 * to {@see CalendarEventService::createEvent()} then mirrors the
-	 * linkage in the link table with `taggedWithXor=true`.
-	 *
-	 * @param string $objectUuid Object UUID.
-	 * @param int $registerId Register id.
-	 * @param int $schemaId Schema id.
-	 * @param array<string,mixed> $eventData Event data (summary, dtstart, dtend, location, ...).
-	 *
-	 * @return CalendarLink The persisted link row.
-	 *
-	 * @throws Exception On creation failure.
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function createAndLinkEvent(string $objectUuid, int $registerId, int $schemaId, array $eventData): CalendarLink {
-		$target = (new LinkTarget(objectUuid: $objectUuid, registerId: $registerId))->inSchema(schemaId: $schemaId);
-		return $this->createLinkedEvent(target: $target, eventData: $eventData);
-	}//end createAndLinkEvent()
 
 	/**
 	 * Create a VEVENT through CalendarEventService and insert its link-table mirror row.
@@ -402,7 +342,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 				eventUri: $xorTarget['eventUri']
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				'Failed to strip X-OPENREGISTER properties for event ' . $eventUid . ': ' . $e->getMessage()
 			);
 		}
@@ -429,7 +369,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 				}
 			}
 		} catch (Throwable $e) {
-			$this->logger->info(
+			$this->runtime->logger->info(
 				'Legacy X-OR unlink fallback failed for event ' . $eventUid . ': ' . $e->getMessage()
 			);
 		}
@@ -469,7 +409,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		// 2. Legacy X-OR-* scan (best-effort; degrade to empty list)
 		$xorEvents = $this->scanXorEvents(objectUuid: $objectUuid);
 
-		$userId = $this->userSession->getUser()?->getUID();
+		$userId = $this->runtime->userSession->getUser()?->getUID();
 		$calendarMap = [];
 		if ($userId !== null) {
 			$calendarMap = $this->buildCalendarMapForUser(userId: $userId);
@@ -493,7 +433,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		try {
 			return $this->calendarEventService->getEventsForObject(objectUuid: $objectUuid);
 		} catch (Throwable $e) {
-			$this->logger->info(
+			$this->runtime->logger->info(
 				'X-OR-* scan failed during getLinkedEvents: ' . $e->getMessage()
 			);
 			return [];
@@ -560,7 +500,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
 	public function getAvailableCalendars(): array {
-		$user = $this->userSession->getUser();
+		$user = $this->runtime->userSession->getUser();
 		if ($user === null) {
 			throw new Exception('No user logged in');
 		}
@@ -593,9 +533,8 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	/**
 	 * List recent events on a named calendar — picker step 2.
 	 *
-	 * @param string $calendarUri Calendar URI.
-	 * @param int|null $limit Max rows (default 100).
-	 * @param DateTimeInterface|null $after Only include events with dtstart >= $after.
+	 * @param string               $calendarUri Calendar URI.
+	 * @param CalendarPickerWindow $window      The earliest start and the row cap.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
@@ -603,10 +542,10 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function getEventsForCalendar(string $calendarUri, ?int $limit = 100, ?DateTimeInterface $after = null): array {
-		$results = $this->pickerRows(scan: $this->pickerScan(calendarUri: $calendarUri, after: $after));
+	public function getEventsForCalendar(string $calendarUri, CalendarPickerWindow $window): array {
+		$results = $this->pickerRows(scan: $this->pickerScan(calendarUri: $calendarUri, after: $window->after));
 
-		return $this->limitRows(rows: $this->sortedByStart(rows: $results), limit: $limit ?? 0);
+		return $this->limitRows(rows: $this->sortedByStart(rows: $results), limit: $window->limit ?? 0);
 	}//end getEventsForCalendar()
 
 	/**
@@ -744,7 +683,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 		try {
 			return $scan->pickerRow(vevent: Reader::read($calendarData)->VEVENT, objectUri: (string)$object['uri']);
 		} catch (Throwable $e) {
-			$this->logger->warning(
+			$this->runtime->logger->warning(
 				'Failed to parse calendar event for picker: ' . $e->getMessage(),
 				['uri' => $object['uri']]
 			);
@@ -843,7 +782,7 @@ class CalendarLinkService implements CalendarLinkServiceInterface {
 				'location' => $this->veventText(vevent: $vevent, name: 'LOCATION'),
 			];
 		} catch (Throwable $e) {
-			$this->logger->warning('Failed to parse VEVENT while locating event ' . $expectedUid . ': ' . $e->getMessage());
+			$this->runtime->logger->warning('Failed to parse VEVENT while locating event ' . $expectedUid . ': ' . $e->getMessage());
 		}
 
 		return null;

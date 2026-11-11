@@ -32,8 +32,13 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
@@ -167,7 +172,8 @@ class MagicFacetHandlerAccessGoldenTest extends TestCase {
 		$rule = ($world['rule'] ?? []);
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('canReadProperty')->willReturnCallback(
-			function (Schema $schema, string $property, array $object) use ($rule): bool {
+			function (SchemaProperty $read, PropertyAccessRequest $request) use ($rule): bool {
+				[$schema, $property, $object] = [$read->schema, $read->name, $request->object];
 				$this->events[] = ['ask', $property, $object];
 				if (($rule[$property] ?? true) === 'throw') {
 					throw new RuntimeException('rule unavailable');
@@ -224,7 +230,7 @@ class MagicFacetHandlerAccessGoldenTest extends TestCase {
 			$search = $this->searchHandler(world: $world);
 		}
 
-		return new MagicFacetHandler($db, new NullLogger(), null, null, $search, $container, null);
+		return new MagicFacetHandler($db, new NullLogger(), $search, $container);
 	}//end handler()
 
 	/**
@@ -245,15 +251,15 @@ class MagicFacetHandlerAccessGoldenTest extends TestCase {
 			}
 		);
 		$search->method('buildFilteredQuery')->willReturnCallback(
-			function (array $query, Schema $schema, string $tableName, ?int $registerId = null) use ($world): IQueryBuilder {
-				$this->events[] = ['buildFilteredQuery', $tableName, $registerId, $query];
+			function (array $query, MagicReadTable $table) use ($world): IQueryBuilder {
+				$this->events[] = ['buildFilteredQuery', $table->tableName, $table->registerId, $query];
 				return $this->queryBuilder('scoped', ($world['qbRows'] ?? []));
 			}
 		);
-		$search->method('buildWhereConditionsSql')->willReturnCallback(
-			function (array $query, Schema $schema, ?array $existingColumns = null, ?int $registerId = null, ?string $tableName = null) use ($world): array {
-				$this->events[] = ['buildWhereConditionsSql', $tableName, $registerId, $query];
-				return ($world['conditions'][$tableName] ?? []);
+		$search->method('buildWhereClause')->willReturnCallback(
+			function (WhereClauseRequest $request) use ($world): array {
+				$this->events[] = ['buildWhereConditionsSql', $request->table->tableName, $request->table->registerId, $request->query];
+				return ($world['conditions'][$request->table->tableName] ?? []);
 			}
 		);
 
@@ -296,10 +302,8 @@ class MagicFacetHandlerAccessGoldenTest extends TestCase {
 	private function single(array $world, array $query, Schema $schema): array {
 		$this->events = [];
 		$facets       = $this->handler(world: $world)->getSimpleFacets(
-			tableName: 'openregister_table_7_1',
-			query: $query,
-			register: $this->register(),
-			schema: $schema
+			target: self::facetTarget('openregister_table_7_1', $this->register(), $schema),
+			query: $query
 		);
 
 		return ['facets' => $this->withoutMetrics(facets: $facets), 'events' => $this->events];
@@ -469,4 +473,15 @@ class MagicFacetHandlerAccessGoldenTest extends TestCase {
 		$related = $this->outcomes()['union, related filter refused first']['events'];
 		$this->assertSame([['refuseRelatedRowFilters', ['_related', '_facets']]], $related);
 	}//end testTheRuleIsAskedBeforeTheQueryAndScopesIt()
+
+	/**
+	 * The facet target of one magic table.
+	 *
+	 * @return MagicTableTarget
+	 */
+	private static function facetTarget(string $tableName, Register $register, Schema $schema): MagicTableTarget {
+		$target            = new MagicTableTarget(register: $register, schema: $schema);
+		$target->tableName = $tableName;
+		return $target;
+	}//end facetTarget()
 }//end class

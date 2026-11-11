@@ -169,24 +169,44 @@ class DescriptorParts {
 
 		if ($this->isList(value: $value) === false) {
 			ksort($value);
-			return array_map(fn (mixed $item): mixed => $this->normalise(value: $item), $value);
+			return $this->normaliseEach(values: $value);
 		}
 
-		$allScalar = true;
-		foreach ($value as $item) {
-			if (is_scalar($item) === false && $item !== null) {
-				$allScalar = false;
-				break;
-			}
-		}
-
-		if ($allScalar === true) {
+		if (self::allScalar(values: $value) === true) {
 			sort($value);
 			return $value;
 		}
 
-		return array_map(fn (mixed $item): mixed => $this->normalise(value: $item), $value);
+		return $this->normaliseEach(values: $value);
 	}//end normalise()
+
+	/**
+	 * Every item normalised, keys kept.
+	 *
+	 * @param array<mixed> $values The items.
+	 *
+	 * @return array<mixed> The normalised items.
+	 */
+	private function normaliseEach(array $values): array {
+		return array_map(fn (mixed $item): mixed => $this->normalise(value: $item), $values);
+	}//end normaliseEach()
+
+	/**
+	 * Whether every item is a scalar or null.
+	 *
+	 * @param array<mixed> $values The items.
+	 *
+	 * @return bool True when no item is an array or an object.
+	 */
+	private static function allScalar(array $values): bool {
+		foreach ($values as $item) {
+			if (is_scalar($item) === false && $item !== null) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end allScalar()
 
 	/**
 	 * Whether two parts hold the same thing.

@@ -71,16 +71,15 @@ class ExportProfileWriter implements ExportProfileWriterInterface {
 	/**
 	 * Write the objects the profile declares, in the order it declares them.
 	 *
-	 * @param ExportProfile  $profile The profile.
-	 * @param ObjectEntity[] $objects The objects to write.
-	 * @param Schema|null    $schema  The schema, when it resolves, for enum labels and relation hints.
+	 * @param ProfileProjection $projection The profile and the schema, when it resolves, for enum labels and relation hints.
+	 * @param ObjectEntity[]    $objects    The objects to write.
 	 *
 	 * @return array{bytes: string, rowCount: int, metadata: array<string, mixed>} The file and what it is.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function write(ExportProfile $profile, array $objects, ?Schema $schema = null): array {
-		return $this->writeProjection(run: new ProjectionRun(profile: $profile, schema: $schema), objects: $objects);
+	public function write(ProfileProjection $projection, array $objects): array {
+		return $this->writeProjection(run: new ProjectionRun(profile: $projection->profile, schema: $projection->schema), objects: $objects);
 	}//end write()
 
 	/**
@@ -92,33 +91,53 @@ class ExportProfileWriter implements ExportProfileWriterInterface {
 	 * @return array{bytes: string, rowCount: int, metadata: array<string, mixed>} The file and what it is.
 	 */
 	private function writeProjection(ProjectionRun $run, array $objects): array {
-		$profile = $run->profile;
 		$rows = $this->rows(run: $run, objects: $objects);
+		$metadata = $this->metadataFor(run: $run, rowCount: count($rows));
 
-		$metadata = [
+		return [
+			'bytes' => $this->encoded(metadata: $metadata, rows: $rows),
+			'rowCount' => count($rows),
+			'metadata' => $metadata,
+		];
+	}//end writeProjection()
+
+	/**
+	 * What the file says about itself: the profile, its value mode and format, the fields and the row count.
+	 *
+	 * @param ProjectionRun $run      The profile and its fields.
+	 * @param int           $rowCount The rows written.
+	 *
+	 * @return array<string, mixed> The metadata.
+	 */
+	private function metadataFor(ProjectionRun $run, int $rowCount): array {
+		$profile = $run->profile;
+
+		return [
 			'profile' => ($profile->getName() ?? ''),
 			'profileUuid' => ($profile->getUuid() ?? ''),
 			'valueMode' => ($profile->getValueMode() ?? ExportProfile::MODE_STORED),
 			'format' => ($profile->getFormat() ?? 'csv'),
 			'fields' => $run->fields,
-			'rowCount' => count($rows),
+			'rowCount' => $rowCount,
 			'generatedAt' => (new DateTimeImmutable())->format(DATE_ATOM),
 		];
+	}//end metadataFor()
 
-		if (($profile->getFormat() ?? 'csv') === 'json') {
-			return [
-				'bytes' => $this->toJson(metadata: $metadata, rows: $rows),
-				'rowCount' => count($rows),
-				'metadata' => $metadata,
-			];
+	/**
+	 * The file's bytes in the profile's format: a JSON envelope, or else CSV.
+	 *
+	 * @param array<string, mixed>           $metadata The metadata, carrying the format.
+	 * @param array<int, array<string, mixed>> $rows     The projected rows.
+	 *
+	 * @return string The bytes.
+	 */
+	private function encoded(array $metadata, array $rows): string {
+		if ($metadata['format'] === 'json') {
+			return $this->toJson(metadata: $metadata, rows: $rows);
 		}
 
-		return [
-			'bytes' => $this->toCsv(metadata: $metadata, rows: $rows),
-			'rowCount' => count($rows),
-			'metadata' => $metadata,
-		];
-	}//end writeProjection()
+		return $this->toCsv(metadata: $metadata, rows: $rows);
+	}//end encoded()
 
 	/**
 	 * One CSV data line for a single object, with no header and no metadata.
@@ -127,16 +146,15 @@ class ExportProfileWriter implements ExportProfileWriterInterface {
 	 * already open, so it needs the row without the envelope the request path
 	 * builds around it.
 	 *
-	 * @param ExportProfile $profile The profile.
-	 * @param ObjectEntity  $object  The object.
-	 * @param Schema|null   $schema  The schema, when it resolves.
+	 * @param ProfileProjection $projection The profile and the schema, when it resolves.
+	 * @param ObjectEntity      $object     The object.
 	 *
 	 * @return string The CSV line, newline terminated.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function csvLineFor(ExportProfile $profile, ObjectEntity $object, ?Schema $schema = null): string {
-		$run = new ProjectionRun(profile: $profile, schema: $schema);
+	public function csvLineFor(ProfileProjection $projection, ObjectEntity $object): string {
+		$run = new ProjectionRun(profile: $projection->profile, schema: $projection->schema);
 		$rows = $this->rows(run: $run, objects: [$object]);
 		if ($rows === []) {
 			return '';
@@ -273,27 +291,9 @@ class ExportProfileWriter implements ExportProfileWriterInterface {
 	 * @return array<string, string> Uuid to name.
 	 */
 	private function nameMap(array $objects, array $fields): array {
-		$map = [];
-		$uuids = [];
+		$map = $this->namesOf(objects: $objects);
 
-		foreach ($objects as $object) {
-			if ($object instanceof ObjectEntity === false) {
-				continue;
-			}
-
-			$uuid = $object->getUuid();
-			$name = $object->getName();
-			if ($uuid !== null && $name !== null) {
-				$map[$uuid] = $name;
-			}
-
-			$data = $object->getObject();
-			foreach ($fields as $field) {
-				$this->collectUuids(value: ($data[$field] ?? null), uuids: $uuids);
-			}
-		}
-
-		$missing = array_values(array_diff(array_unique($uuids), array_keys($map)));
+		$missing = array_values(array_diff(array_unique($this->referencedUuids(objects: $objects, fields: $fields)), array_keys($map)));
 		if ($missing === []) {
 			return $map;
 		}
@@ -307,6 +307,54 @@ class ExportProfileWriter implements ExportProfileWriterInterface {
 			return $map;
 		}
 	}//end nameMap()
+
+	/**
+	 * The names the exported objects carry themselves, by uuid.
+	 *
+	 * @param array<int, mixed> $objects The objects being exported.
+	 *
+	 * @return array<string, string> Uuid to name.
+	 */
+	private function namesOf(array $objects): array {
+		$map = [];
+		foreach ($objects as $object) {
+			if ($object instanceof ObjectEntity === false) {
+				continue;
+			}
+
+			$uuid = $object->getUuid();
+			$name = $object->getName();
+			if ($uuid !== null && $name !== null) {
+				$map[$uuid] = $name;
+			}
+		}
+
+		return $map;
+	}//end namesOf()
+
+	/**
+	 * The uuids the exported fields refer to, in the order they are met.
+	 *
+	 * @param array<int, mixed>  $objects The objects being exported.
+	 * @param array<int, string> $fields  The exported fields.
+	 *
+	 * @return array<int, string> The referenced uuids, possibly repeated.
+	 */
+	private function referencedUuids(array $objects, array $fields): array {
+		$uuids = [];
+		foreach ($objects as $object) {
+			if ($object instanceof ObjectEntity === false) {
+				continue;
+			}
+
+			$data = $object->getObject();
+			foreach ($fields as $field) {
+				$this->collectUuids(value: ($data[$field] ?? null), uuids: $uuids);
+			}
+		}
+
+		return $uuids;
+	}//end referencedUuids()
 
 	/**
 	 * Collect the uuid-shaped strings out of a value.

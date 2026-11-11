@@ -101,22 +101,18 @@ class ConceptLifecycle {
 	 *
 	 * A deprecated concept and an out-of-window concept are both unofferable,
 	 * for different reasons, and a caller that wants the reason asks
-	 * {@see self::describeWindow()}.
+	 * {@see self::describeWindow()}. A caller whose declaration still offers
+	 * deprecated concepts asks {@see self::isWithinWindow()} alone.
 	 *
 	 * @param array<string,mixed> $concept The concept's decoded object data.
-	 * @param DateTimeInterface $at The instant to judge the window at.
-	 * @param boolean $allowDeprecated Whether a deprecated concept still counts as offerable.
+	 * @param DateTimeInterface   $at      The instant to judge the window at.
 	 *
 	 * @return boolean True when the value may be put in front of someone.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function isOfferable(array $concept, DateTimeInterface $at, bool $allowDeprecated = false): bool {
-		if ($allowDeprecated === false && ($concept['deprecated'] ?? false) === true) {
-			return false;
-		}
-
-		return $this->isWithinWindow(concept: $concept, at: $at);
+	public function isOfferable(array $concept, DateTimeInterface $at): bool {
+		return ($concept['deprecated'] ?? false) !== true && $this->isWithinWindow(concept: $concept, at: $at);
 	}//end isOfferable()
 
 	/**
@@ -162,23 +158,20 @@ class ConceptLifecycle {
 		$from = $this->parseBound(value: ($concept[self::FIELD_VALID_FROM] ?? null));
 		$until = $this->parseBound(value: ($concept[self::FIELD_VALID_UNTIL] ?? null));
 
-		if ($from === null && $until === null) {
-			return 'no validity window';
-		}
-
-		if ($from !== null && $until !== null) {
-			return 'valid from ' . $from->format('Y-m-d') . ' until ' . $until->format('Y-m-d');
-		}
-
+		$bounds = [];
 		if ($from !== null) {
-			return 'valid from ' . $from->format('Y-m-d');
+			$bounds[] = 'from ' . $from->format('Y-m-d');
 		}
 
 		if ($until !== null) {
-			return 'valid until ' . $until->format('Y-m-d');
+			$bounds[] = 'until ' . $until->format('Y-m-d');
 		}
 
-		return 'no validity window';
+		if ($bounds === []) {
+			return 'no validity window';
+		}
+
+		return 'valid ' . implode(' ', $bounds);
 	}//end describeWindow()
 
 	/**
@@ -294,17 +287,13 @@ class ConceptLifecycle {
 		$required = $this->asArray(value: ($shape['required'] ?? []));
 		$fields = $this->asArray(value: ($concept[self::FIELD_FIELDS] ?? []));
 
-		$failed = [];
-		foreach ($properties as $name => $definition) {
-			$name = (string)$name;
-			$value = ($fields[$name] ?? null);
-			$missing = ($value === null && in_array($name, $required, true) === true);
-			if ($missing === true || $this->isIllTyped(value: $value, definition: $definition) === true) {
-				$failed[] = $name;
-			}
-		}//end foreach
+		$failed = array_filter(
+			array_keys($properties),
+			fn ($name): bool => (($fields[(string)$name] ?? null) === null && in_array((string)$name, $required, true) === true)
+				|| $this->isIllTyped(value: ($fields[(string)$name] ?? null), definition: $properties[$name]) === true
+		);
 
-		return $failed;
+		return array_values(array_map('strval', $failed));
 	}//end validateAgainstShape()
 
 	/**
@@ -355,15 +344,38 @@ class ConceptLifecycle {
 	 * @return boolean True when the value satisfies the declared type.
 	 */
 	private function matchesDeclaredType(mixed $value, mixed $definition): bool {
-		if (is_array($definition) === false) {
+		$type = self::declaredType(definition: $definition);
+		if ($type === null) {
 			return true;
 		}
 
-		$type = ($definition['type'] ?? null);
-		if (is_string($type) === false) {
-			return true;
+		return self::isOfType(value: $value, type: $type);
+	}//end matchesDeclaredType()
+
+	/**
+	 * The `type` a shape property declares, or null when it declares none.
+	 *
+	 * @param mixed $definition The shape property's definition.
+	 *
+	 * @return string|null The type.
+	 */
+	private static function declaredType(mixed $definition): ?string {
+		if (is_array($definition) === false || is_string(($definition['type'] ?? null)) === false) {
+			return null;
 		}
 
+		return $definition['type'];
+	}//end declaredType()
+
+	/**
+	 * Whether a value is of a JSON-Schema primitive type; an unknown type accepts anything.
+	 *
+	 * @param mixed  $value The submitted value.
+	 * @param string $type  The declared type.
+	 *
+	 * @return boolean True when the value satisfies the type.
+	 */
+	private static function isOfType(mixed $value, string $type): bool {
 		return match ($type) {
 			'string' => is_string($value),
 			'integer' => is_int($value) || (is_string($value) === true && ctype_digit($value) === true),
@@ -373,7 +385,7 @@ class ConceptLifecycle {
 			'object' => is_array($value),
 			default => true,
 		};
-	}//end matchesDeclaredType()
+	}//end isOfType()
 
 	/**
 	 * Parse a window bound, treating an unparseable value as absent.

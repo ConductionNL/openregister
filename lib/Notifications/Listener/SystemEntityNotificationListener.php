@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Listener;
 
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
 use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
@@ -63,16 +64,40 @@ class SystemEntityNotificationListener implements IEventListener {
 	 *
 	 * @param AnnotationNotificationDispatcher $dispatcher Dispatcher used to fire notifications.
 	 * @param SystemSchemaRules $rules Registry of declared system-schema rules.
-	 * @param SystemEntityChange $change Whether an update changed more than bookkeeping.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly AnnotationNotificationDispatcher $dispatcher,
 		private readonly SystemSchemaRules $rules,
-		private readonly SystemEntityChange $change = new SystemEntityChange(),
 	) {
 	}//end __construct()
+
+	/**
+	 * The created events, each with the getter for its entity and its system slug.
+	 *
+	 * @var array<class-string<Event>, array{0: string, 1: string}>
+	 */
+	private const CREATED_EVENTS = [
+		RegisterCreatedEvent::class => ['getRegister', SystemSchemaRules::SLUG_REGISTER],
+		SchemaCreatedEvent::class => ['getSchema', SystemSchemaRules::SLUG_SCHEMA],
+		ConfigurationCreatedEvent::class => ['getConfiguration', SystemSchemaRules::SLUG_CONFIGURATION],
+		SourceCreatedEvent::class => ['getSource', SystemSchemaRules::SLUG_SOURCE],
+		AgentCreatedEvent::class => ['getAgent', SystemSchemaRules::SLUG_AGENT],
+	];
+
+	/**
+	 * The updated events, each with the getters for its new and old entity and its system slug.
+	 *
+	 * @var array<class-string<Event>, array{0: string, 1: string, 2: string}>
+	 */
+	private const UPDATED_EVENTS = [
+		RegisterUpdatedEvent::class => ['getNewRegister', 'getOldRegister', SystemSchemaRules::SLUG_REGISTER],
+		SchemaUpdatedEvent::class => ['getNewSchema', 'getOldSchema', SystemSchemaRules::SLUG_SCHEMA],
+		ConfigurationUpdatedEvent::class => ['getNewConfiguration', 'getOldConfiguration', SystemSchemaRules::SLUG_CONFIGURATION],
+		SourceUpdatedEvent::class => ['getNewSource', 'getOldSource', SystemSchemaRules::SLUG_SOURCE],
+		AgentUpdatedEvent::class => ['getNewAgent', 'getOldAgent', SystemSchemaRules::SLUG_AGENT],
+	];
 
 	/**
 	 * Bridge the inbound system-entity event to the notification dispatcher.
@@ -86,17 +111,12 @@ class SystemEntityNotificationListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) handle() dispatches ten distinct event types
-	 * in one method to keep the bridge compact; each instanceof branch is a different system entity
-	 * and cannot be merged.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Ten event types × two trigger types (created/updated)
-	 * produce many paths; all are required for full system-entity coverage.
-	 *
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function handle(Event $event): void {
-		[$entity, $slug, $trigger, $oldData] = $this->extractEventData(event: $event);
+		$eventData = $this->extractEventData(event: $event);
+		[$entity, $slug] = $eventData;
 
 		if ($entity === null || $slug === null) {
 			return;
@@ -107,27 +127,25 @@ class SystemEntityNotificationListener implements IEventListener {
 			return;
 		}
 
+		$this->dispatchChange(eventData: $eventData, schema: $schema);
+
+	}//end handle()
+
+	/**
+	 * Dispatch one recognised system-entity change against its synthetic schema.
+	 *
+	 * @param array{0: Entity, 1: string, 2: string, 3: array<string,mixed>|null} $eventData The entity, slug, trigger and old data.
+	 * @param Schema                                                              $schema    The synthetic system schema.
+	 *
+	 * @return void
+	 */
+	private function dispatchChange(array $eventData, Schema $schema): void {
+		[$entity, $slug, $trigger] = $eventData;
+
 		$adapter = new SystemEntityObjectAdapter(entity: $entity, systemSlug: $slug);
-		$context = [];
-
-		if ($trigger === 'updated' && $oldData !== null) {
-			$newData = [];
-			if ($entity instanceof \JsonSerializable) {
-				$newData = $entity->jsonSerialize();
-			}
-
-			if (is_array($newData) === true) {
-				// An administrator is told about an update only when the content
-				// moved. An app re-import saves every entity it ships; one that
-				// differs only in its stamps, its version or the order of its
-				// keys is not news (Ruben, 7 October 2026).
-				if ($this->change->isReal(old: $oldData, new: $newData) === false) {
-					return;
-				}
-
-				$context['_newData'] = $newData;
-				$context['_oldData'] = $oldData;
-			}
+		$context = $this->changeContext(eventData: $eventData);
+		if ($context === null) {
+			return;
 		}
 
 		$this->dispatcher->dispatchWithSchema(
@@ -136,8 +154,52 @@ class SystemEntityNotificationListener implements IEventListener {
 			context: $context,
 			schema: $schema
 		);
+	}//end dispatchChange()
 
-	}//end handle()
+	/**
+	 * The dispatch context of a change: old and new data for a real update, empty otherwise.
+	 *
+	 * @param array{0: Entity, 1: string, 2: string, 3: array<string,mixed>|null} $eventData The entity, slug, trigger and old data.
+	 *
+	 * @return array<string, mixed>|null The context, or null when an update moved nothing worth telling.
+	 */
+	private function changeContext(array $eventData): ?array {
+		[$entity, , $trigger, $oldData] = $eventData;
+		if ($trigger !== 'updated' || $oldData === null) {
+			return [];
+		}
+
+		$newData = $this->entityData(entity: $entity);
+		if (is_array($newData) === false) {
+			return [];
+		}
+
+		// An administrator is told about an update only when the content
+		// moved. An app re-import saves every entity it ships; one that
+		// differs only in its stamps, its version or the order of its
+		// keys is not news (Ruben, 7 October 2026).
+		if ((new SystemEntityChange())->isReal(old: $oldData, new: $newData) === false) {
+			return null;
+		}
+
+		return ['_newData' => $newData, '_oldData' => $oldData];
+	}//end changeContext()
+
+	/**
+	 * The entity's serialised data, or an empty array when it does not serialise.
+	 *
+	 * @param Entity $entity The new entity.
+	 *
+	 * @return mixed
+	 */
+	private function entityData(Entity $entity): mixed {
+		$newData = [];
+		if ($entity instanceof \JsonSerializable) {
+			$newData = $entity->jsonSerialize();
+		}
+
+		return $newData;
+	}//end entityData()
 
 	/**
 	 * Extract entity, system slug, trigger and old-data from the concrete event.
@@ -149,82 +211,39 @@ class SystemEntityNotificationListener implements IEventListener {
 	 *
 	 * @return array{0: Entity|null, 1: string|null, 2: string, 3: array<string,mixed>|null}
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) extractEventData() maps ten event classes to
-	 * (entity, slug, trigger, oldData) tuples; each branch is a distinct system-entity type.
-	 *
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
 	 */
 	private function extractEventData(Event $event): array {
-		if ($event instanceof RegisterCreatedEvent) {
-			return [$event->getRegister(), SystemSchemaRules::SLUG_REGISTER, 'created', null];
+		foreach (self::CREATED_EVENTS as $eventClass => [$getter, $slug]) {
+			if ($event instanceof $eventClass) {
+				return [$event->{$getter}(), $slug, 'created', null];
+			}
 		}
 
-		if ($event instanceof RegisterUpdatedEvent) {
-			$old = $event->getOldRegister();
-			// Every Db entity extends OCP Entity, which implements
-			// JsonSerializable, so the instanceof guard that used to wrap this
-			// was always true and the null default unreachable.
-			$oldData = $old->jsonSerialize();
+		return $this->updatedEventData(event: $event);
+	}//end extractEventData()
 
-			return [$event->getNewRegister(), SystemSchemaRules::SLUG_REGISTER, 'updated', $oldData];
-		}
+	/**
+	 * Extract entity, system slug, trigger and old-data from an updated event.
+	 *
+	 * @param Event $event The inbound event.
+	 *
+	 * @return array{0: Entity|null, 1: string|null, 2: string, 3: array<string,mixed>|null}
+	 *
+	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
+	 */
+	private function updatedEventData(Event $event): array {
+		foreach (self::UPDATED_EVENTS as $eventClass => [$newGetter, $oldGetter, $slug]) {
+			if ($event instanceof $eventClass) {
+				// Every Db entity extends OCP Entity, which implements
+				// JsonSerializable, so the instanceof guard that used to wrap this
+				// was always true and the null default unreachable.
+				$oldData = $event->{$oldGetter}()->jsonSerialize();
 
-		if ($event instanceof SchemaCreatedEvent) {
-			return [$event->getSchema(), SystemSchemaRules::SLUG_SCHEMA, 'created', null];
-		}
-
-		if ($event instanceof SchemaUpdatedEvent) {
-			$old = $event->getOldSchema();
-			// Every Db entity extends OCP Entity, which implements
-			// JsonSerializable, so the instanceof guard that used to wrap this
-			// was always true and the null default unreachable.
-			$oldData = $old->jsonSerialize();
-
-			return [$event->getNewSchema(), SystemSchemaRules::SLUG_SCHEMA, 'updated', $oldData];
-		}
-
-		if ($event instanceof ConfigurationCreatedEvent) {
-			return [$event->getConfiguration(), SystemSchemaRules::SLUG_CONFIGURATION, 'created', null];
-		}
-
-		if ($event instanceof ConfigurationUpdatedEvent) {
-			$old = $event->getOldConfiguration();
-			// Every Db entity extends OCP Entity, which implements
-			// JsonSerializable, so the instanceof guard that used to wrap this
-			// was always true and the null default unreachable.
-			$oldData = $old->jsonSerialize();
-
-			return [$event->getNewConfiguration(), SystemSchemaRules::SLUG_CONFIGURATION, 'updated', $oldData];
-		}
-
-		if ($event instanceof SourceCreatedEvent) {
-			return [$event->getSource(), SystemSchemaRules::SLUG_SOURCE, 'created', null];
-		}
-
-		if ($event instanceof SourceUpdatedEvent) {
-			$old = $event->getOldSource();
-			// Every Db entity extends OCP Entity, which implements
-			// JsonSerializable, so the instanceof guard that used to wrap this
-			// was always true and the null default unreachable.
-			$oldData = $old->jsonSerialize();
-
-			return [$event->getNewSource(), SystemSchemaRules::SLUG_SOURCE, 'updated', $oldData];
-		}
-
-		if ($event instanceof AgentCreatedEvent) {
-			return [$event->getAgent(), SystemSchemaRules::SLUG_AGENT, 'created', null];
-		}
-
-		if ($event instanceof AgentUpdatedEvent) {
-			$old = $event->getOldAgent();
-			// Every Db entity extends OCP Entity, which implements
-			// JsonSerializable, so the instanceof guard that used to wrap this
-			// was always true and the null default unreachable.
-			$oldData = $old->jsonSerialize();
-
-			return [$event->getNewAgent(), SystemSchemaRules::SLUG_AGENT, 'updated', $oldData];
+				return [$event->{$newGetter}(), $slug, 'updated', $oldData];
+			}
 		}
 
 		return [null, null, '', null];
-	}//end extractEventData()
+	}//end updatedEventData()
 }//end class

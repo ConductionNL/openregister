@@ -13,6 +13,8 @@ use OCA\OpenRegister\Service\SchemaService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 
 /**
  * Records the suggestions generateSuggestions() makes, per scenario, against
@@ -69,8 +71,7 @@ class SchemaServiceGenerateSuggestionsGoldenTest extends TestCase {
 	 */
 	public function testGenerateSuggestionsGolden(array $discovered, array $existing): void {
 		$service = new SchemaService(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(MagicMapper::class),
+			new SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
 			$this->createMock(LoggerInterface::class)
 		);
 		$actual = (new ReflectionMethod(SchemaService::class, 'generateSuggestions'))->invoke($service, $discovered, $existing);

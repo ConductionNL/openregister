@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Files\Db\NoteVersion;
 use OCA\OpenRegister\Files\Db\NoteVersionMapper;
@@ -83,19 +84,31 @@ class NoteVersionService {
 	 * that silently failed to write would leave an edit with no history and
 	 * a note claiming, through its own `versionCount`, that there is none.
 	 *
-	 * @param integer  $noteId   The note being rewritten.
-	 * @param IComment $previous The note as it stands, before its text is replaced: its text, actor and actor type.
+	 * @param IComment $previous The note as it stands, before its text is replaced: its id, text, actor and actor type.
 	 * @param string   $editedBy The user replacing the text.
 	 *
 	 * @return void
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
-	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
-	public function record(int $noteId, IComment $previous, string $editedBy): void {
+	public function record(IComment $previous, string $editedBy): void {
+		$version = $this->versionOf(previous: $previous, editedBy: $editedBy);
+		$version->setCommentId((int)$previous->getId());
+		$this->mapper->insert($version);
+	}//end record()
+
+	/**
+	 * A new version row holding a note's text as it stands, not yet tied to the note.
+	 *
+	 * @param IComment $previous The note before its text is replaced: its text, actor and actor type.
+	 * @param string   $editedBy The user replacing the text.
+	 *
+	 * @return NoteVersion The unsaved version.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
+	 */
+	private function versionOf(IComment $previous, string $editedBy): NoteVersion {
 		$version = new NoteVersion();
-		$version->setCommentId($noteId);
 		$version->setMessage($previous->getMessage());
 		$version->setAuthor($previous->getActorId());
 		$version->setAuthorType($previous->getActorType());
@@ -108,8 +121,8 @@ class NoteVersionService {
 		$version->setCreated(new DateTime());
 		$version->setUuid(Uuid::v4()->toRfc4122());
 
-		$this->mapper->insert($version);
-	}//end record()
+		return $version;
+	}//end versionOf()
 
 	/**
 	 * List a note's versions, newest first.
@@ -233,17 +246,31 @@ class NoteVersionService {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function auditEdit(ObjectEntity $object, int $noteId, int $versions): bool {
+		return $this->writeEditEntry(object: $object, context: ['noteId' => $noteId, 'versionCount' => $versions]);
+	}//end auditEdit()
+
+	/**
+	 * Write the note-edited entry on the object; a failure is logged, never thrown.
+	 *
+	 * @param ObjectEntity                             $object  The object the note hangs on.
+	 * @param array{noteId: int, versionCount: int} $context The note and its version count.
+	 *
+	 * @return boolean True when an audit entry was written.
+	 */
+	private function writeEditEntry(ObjectEntity $object, array $context): bool {
 		try {
-			$this->auditTrail->createAuditTrailEntry(
-				object: $object,
-				action: self::AUDIT_ACTION,
-				context: ['noteId' => $noteId, 'versionCount' => $versions]
+			$this->auditTrail->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: self::AUDIT_ACTION,
+					context: $context
+				)
 			);
 		} catch (Throwable $e) {
 			// The text has already been replaced and the version already
 			// written; losing the trail entry must not lose the edit.
 			$this->logger->error(
-				'[NoteVersionService] Note ' . $noteId . ' was edited but the audit entry could not be written',
+				'[NoteVersionService] Note ' . $context['noteId'] . ' was edited but the audit entry could not be written',
 				['exception' => $e]
 			);
 
@@ -251,7 +278,7 @@ class NoteVersionService {
 		}
 
 		return true;
-	}//end auditEdit()
+	}//end writeEditEntry()
 
 	/**
 	 * Resolve a user id to a display name, falling back to the id.

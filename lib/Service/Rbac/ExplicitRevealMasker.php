@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
@@ -71,83 +73,100 @@ class ExplicitRevealMasker {
 	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
 	 */
 	public function maskObject(?Schema $schema, array $object, array $objectIds = []): array {
-		$names = ExplicitReveal::explicitProperties(schema: $schema);
+		return $this->mask(run: new RevealMaskRun(schema: $schema, object: $object, objectIds: $objectIds));
+	}//end maskObject()
+
+	/**
+	 * Mask the run's explicit-reveal properties, keeping the granted ones.
+	 *
+	 * @param RevealMaskRun $run The schema, the object and the ids it was given.
+	 *
+	 * @return array{0: array<string, mixed>, 1: array<int, string>} The object and the masked property names.
+	 */
+	private function mask(RevealMaskRun $run): array {
+		$names = ExplicitReveal::explicitProperties(schema: $run->schema);
 		if ($names === [] || $this->reveal->isTrusted() === true) {
-			return [$object, []];
+			return [$run->object, []];
 		}
 
-		$given = array_filter($objectIds, static fn (string $id): bool => self::isUuid(value: $id));
-		$objectIds = array_values(array_merge($given, $this->idsOf(object: $object)));
+		$given = array_filter($run->objectIds, static fn (string $id): bool => self::isUuid(value: $id));
+		$run->objectIds = array_values(array_merge($given, $this->idsOf(object: $run->object)));
 		$masked = [];
 		foreach ($names as $name) {
-			if ($this->hasValue(object: $object, property: $name) === false) {
-				continue;
+			if ($this->maskProperty(run: $run, property: $name) === true) {
+				$masked[] = $name;
 			}
-
-			if ($this->mayReveal(schema: $schema, object: $object, objectIds: $objectIds, property: $name) === true) {
-				$this->record(schema: $schema, objectIds: $objectIds, property: $name);
-				continue;
-			}
-
-			$object[$name] = ExplicitReveal::mask(value: $object[$name]);
-			$masked[] = $name;
 		}
 
-		return [$object, $masked];
-	}//end maskObject()
+		return [$run->object, $masked];
+	}//end mask()
+
+	/**
+	 * Mask one property of the run's object, unless it is empty or this read may reveal it (which is recorded).
+	 *
+	 * @param RevealMaskRun $run      The run, whose object is masked in place.
+	 * @param string        $property The property.
+	 *
+	 * @return bool True when the property was masked.
+	 */
+	private function maskProperty(RevealMaskRun $run, string $property): bool {
+		if ($this->hasValue(run: $run, property: $property) === false) {
+			return false;
+		}
+
+		if ($this->mayReveal(run: $run, property: $property) === true) {
+			$this->record(run: $run, property: $property);
+			return false;
+		}
+
+		$run->object[$property] = ExplicitReveal::mask(value: $run->object[$property]);
+		return true;
+	}//end maskProperty()
 
 	/**
 	 * Whether the property holds a value to mask.
 	 *
-	 * @param array<string, mixed> $object   The object.
-	 * @param string               $property The property.
+	 * @param RevealMaskRun $run      The run, carrying the object.
+	 * @param string        $property The property.
 	 *
 	 * @return bool
 	 */
-	private function hasValue(array $object, string $property): bool {
+	private function hasValue(RevealMaskRun $run, string $property): bool {
+		$object = $run->object;
 		return array_key_exists($property, $object) === true && $object[$property] !== null && $object[$property] !== '';
 	}//end hasValue()
 
 	/**
 	 * Whether this read was granted the property and the reader may read it.
 	 *
-	 * @param Schema|null          $schema    The schema.
-	 * @param array<string, mixed> $object    The object.
-	 * @param array<int, string>   $objectIds Its ids.
-	 * @param string               $property  The property.
+	 * @param RevealMaskRun $run      The run: schema, object as masked so far, ids.
+	 * @param string        $property The property.
 	 *
 	 * @return bool
 	 */
-	private function mayReveal(?Schema $schema, array $object, array $objectIds, string $property): bool {
-		if ($schema === null || $this->reveal->isGranted(objectIds: $objectIds, property: $property) === false) {
+	private function mayReveal(RevealMaskRun $run, string $property): bool {
+		if ($run->schema === null || $this->reveal->isGranted(objectIds: $run->objectIds, property: $property) === false) {
 			return false;
 		}
 
-		return $this->properties->canReadProperty(schema: $schema, property: $property, object: $object);
+		return $this->properties->canReadProperty(property: new SchemaProperty(schema: $run->schema, name: $property), request: new PropertyAccessRequest(object: $run->object));
 	}//end mayReveal()
 
 	/**
 	 * Record a granted reveal of an audited property. Never blocks the read.
 	 *
-	 * @param Schema|null        $schema    The schema.
-	 * @param array<int, string> $objectIds The object's ids, the first being its uuid.
-	 * @param string             $property  The property.
+	 * @param RevealMaskRun $run      The run: the schema and the ids, the first being the uuid.
+	 * @param string        $property The property.
 	 *
 	 * @return void
 	 */
-	private function record(?Schema $schema, array $objectIds, string $property): void {
-		$rules = ($schema?->getProperties()[$property]['authorization'] ?? null);
-		if ($this->recording->reveals === null || is_array($rules) === false || $this->recording->reveals->isAudited(propertyRules: $rules) === false) {
+	private function record(RevealMaskRun $run, string $property): void {
+		if ($this->isAudited(run: $run, property: $property) === false) {
 			return;
 		}
 
 		try {
-			$this->recording->reveals->record(
-				userId: (string)$this->userSession->getUser()?->getUID(),
-				objectUuid: (string)($objectIds[0] ?? ''),
-				property: $property,
-				schemaId: $schema?->getId()
-			);
+			$this->recording->reveals->recordReveal(reveal: $this->revealOf(run: $run, property: $property));
 		} catch (Throwable $e) {
 			$this->recording->logger->warning(
 				message: '[ExplicitRevealMasker] Could not record a reveal; the read is unaffected',
@@ -155,6 +174,37 @@ class ExplicitRevealMasker {
 			);
 		}
 	}//end record()
+
+	/**
+	 * Whether reveals are collected this request and the property's rules ask for its reveals to be audited.
+	 *
+	 * @param RevealMaskRun $run      The run: the schema.
+	 * @param string        $property The property.
+	 *
+	 * @return bool True when the reveal must be recorded.
+	 */
+	private function isAudited(RevealMaskRun $run, string $property): bool {
+		$rules = ($run->schema?->getProperties()[$property]['authorization'] ?? null);
+
+		return ($this->recording->reveals !== null && is_array($rules) === true && $this->recording->reveals->isAudited(propertyRules: $rules) === true);
+	}//end isAudited()
+
+	/**
+	 * The reveal to record: who read which property of which object.
+	 *
+	 * @param RevealMaskRun $run      The run: the schema and the ids, the first being the uuid.
+	 * @param string        $property The property.
+	 *
+	 * @return PropertyReveal The reveal.
+	 */
+	private function revealOf(RevealMaskRun $run, string $property): PropertyReveal {
+		return new PropertyReveal(
+			userId: (string)$this->userSession->getUser()?->getUID(),
+			objectUuid: (string)($run->objectIds[0] ?? ''),
+			property: $property,
+			schemaId: $run->schema?->getId()
+		);
+	}//end revealOf()
 
 	/**
 	 * The uuids an object carries (`uuid`, `id`, `@self.id`): a grant matches a

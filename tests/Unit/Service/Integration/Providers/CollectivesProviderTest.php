@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use OCA\OpenRegister\Db\CollectiveLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\CollectiveLinkMapper;
 use OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider;
 use OCP\App\IAppManager;
@@ -43,7 +44,7 @@ use OCP\IDBConnection;
 use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
+use OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning;
 
 /**
  * CollectivesProviderTest.
@@ -88,13 +89,13 @@ class CollectivesProviderTest extends TestCase {
 		$mapper = $mapper ?? $this->createMock(CollectiveLinkMapper::class);
 		$db = $db ?? $this->buildEmptyResultDb();
 		return new CollectivesProvider(
-			new LeafProviderPlatform(
+			new LeafMarkerScanning(
 				$db,
 				$this->buildAppManager($installed),
 				$this->buildL10n(),
+				$this->createMock(LoggerInterface::class),
 			),
 			$mapper,
-			$this->createMock(LoggerInterface::class),
 		);
 	}//end buildProvider()
 
@@ -122,7 +123,7 @@ class CollectivesProviderTest extends TestCase {
 
 		$provider = $this->buildProvider(installed: false, mapper: $mapper);
 
-		$this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid')));
 	}//end testListReturnsEmptyWhenCollectivesUninstalled()
 
 	public function testListReturnsEmptyWhenNoLinks(): void {
@@ -131,7 +132,7 @@ class CollectivesProviderTest extends TestCase {
 
 		$provider = $this->buildProvider(installed: true, mapper: $mapper);
 
-		$rows = $provider->list('reg', 'sch', 'obj-uuid');
+		$rows = $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'));
 
 		$this->assertSame([], $rows);
 	}//end testListReturnsEmptyWhenNoLinks()
@@ -150,7 +151,7 @@ class CollectivesProviderTest extends TestCase {
 
 		$provider = $this->buildProvider(installed: true, mapper: $mapper);
 
-		$rows = $provider->list('reg', 'sch', 'obj-uuid');
+		$rows = $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'));
 
 		$this->assertCount(1, $rows);
 		$this->assertSame('42', $rows[0]['id']);

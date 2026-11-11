@@ -24,6 +24,7 @@ namespace Unit\Service\Flow;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowEngineServices;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\FlowRunStart;
@@ -83,7 +84,7 @@ class AttributionSamplingDispatcher implements FlowStepDispatcher {
 
 		$out = [];
 		foreach ($items as $index => $item) {
-			$out[] = FlowItems::item(json: (array)($item['json'] ?? []), binary: [], fromItemIndex: $index);
+			$out[] = FlowItems::item(json: (array)($item['json'] ?? []), options: new FlowItemOptions(binary: [], fromItemIndex: $index));
 		}
 
 		return $out;

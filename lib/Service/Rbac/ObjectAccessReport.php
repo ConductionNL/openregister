@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -70,37 +71,48 @@ class ObjectAccessReport implements ObjectAccessReportInterface {
 	/**
 	 * Who holds which right on one object, and which rule put them there.
 	 *
-	 * @param ObjectEntity $object      The object.
-	 * @param mixed        $registerRef The register it belongs to, as the request named it.
-	 * @param mixed        $schemaRef   The schema it belongs to, as the request named it.
+	 * @param ObjectEntity      $object The object.
+	 * @param RegisterSchemaRef $table  The register and schema it belongs to, as the request named them.
 	 *
 	 * @return array<string, mixed> The access set.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function setFor(ObjectEntity $object, mixed $registerRef, mixed $schemaRef): array {
-		$register = $this->register(reference: $registerRef);
-		$schema = $this->schema(reference: $schemaRef);
+	public function setFor(ObjectEntity $object, RegisterSchemaRef $table): array {
+		return $this->setIn(
+			object: $object,
+			place: new ReportedPlace(register: $this->register(reference: $table->register), schema: $this->schema(reference: $table->schema))
+		);
+	}//end setFor()
 
+	/**
+	 * Who holds which right on one object in its resolved register and schema.
+	 *
+	 * @param ObjectEntity  $object The object.
+	 * @param ReportedPlace $place  Its register and schema, either possibly unresolved.
+	 *
+	 * @return array<string, mixed> The access set.
+	 */
+	private function setIn(ObjectEntity $object, ReportedPlace $place): array {
 		$set = $this->holders->holders(
 			blocks: [
 				'object' => $object->getAuthorization(),
-				'schema' => $schema?->getAuthorization(),
-				'register' => $register?->getAuthorization(),
+				'schema' => $place->schema?->getAuthorization(),
+				'register' => $place->register?->getAuthorization(),
 			],
-			roleDefinitions: $this->roleDefinitionsOf(register: $register)
+			roleDefinitions: $this->roleDefinitionsOf(register: $place->register)
 		);
 
 		return [
 			'object' => $object->getUuid(),
-			'register' => $register?->getSlug(),
-			'schema' => $schema?->getSlug(),
+			'register' => $place->register?->getSlug(),
+			'schema' => $place->schema?->getSlug(),
 			'owner' => $object->getOwner(),
 			'holders' => $set['holders'],
 			'denied' => $set['denied'],
 			'denyEnforcement' => $this->enforcement->current(),
 		];
-	}//end setFor()
+	}//end setIn()
 
 	/**
 	 * How that set changed, and what it was at a named moment.
@@ -144,7 +156,7 @@ class ObjectAccessReport implements ObjectAccessReportInterface {
 	 */
 	public function schema(mixed $reference): ?Schema {
 		try {
-			return $this->sources->schemaMapper->find($reference);
+			return $this->sources->catalog->schemas()->find($reference);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -159,7 +171,7 @@ class ObjectAccessReport implements ObjectAccessReportInterface {
 	 */
 	private function register(mixed $reference): ?Register {
 		try {
-			return $this->sources->registerMapper->find($reference);
+			return $this->sources->catalog->registers()->find($reference);
 		} catch (\Throwable $e) {
 			return null;
 		}

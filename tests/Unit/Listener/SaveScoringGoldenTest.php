@@ -36,10 +36,15 @@ use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
+use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceServiceInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Golden payloads of the scoring and numbering save listeners.
@@ -112,9 +117,8 @@ class SaveScoringGoldenTest extends TestCase {
 		);
 
 		return new QualityScoreOnSaveListener(
-			$this->schemas(['x-openregister-quality' => $quality], $properties),
 			$scorer,
-			$this->logger()
+			$this->eventSchemaLookup($this->schemas(['x-openregister-quality' => $quality], $properties), $this->logger())
 		);
 	}//end quality()
 
@@ -249,13 +253,15 @@ class SaveScoringGoldenTest extends TestCase {
 		$sequences = $this->createMock(SequenceServiceInterface::class);
 		$calls = [];
 		$sequences->method('reserveNext')->willReturnCallback(
-			function (int $registerId, int $schemaId, string $scopeKey) use (&$calls): int {
+			function (SequenceScope $sequence) use (&$calls): int {
+				[$registerId, $schemaId, $scopeKey] = [$sequence->registerId, $sequence->schemaId, $sequence->scopeKey];
 				$calls[] = 'reserve:'.$registerId.':'.$schemaId.':'.$scopeKey;
 				return count($calls);
 			}
 		);
 		$sequences->method('advanceTo')->willReturnCallback(
-			function (int $registerId, int $schemaId, string $scopeKey, int $reserved) use (&$calls): void {
+			function (SequenceScope $sequence, int $reserved) use (&$calls): void {
+				[$registerId, $schemaId, $scopeKey] = [$sequence->registerId, $sequence->schemaId, $sequence->scopeKey];
 				$calls[] = 'advance:'.$registerId.':'.$schemaId.':'.$scopeKey.':'.$reserved;
 			}
 		);
@@ -292,4 +298,14 @@ class SaveScoringGoldenTest extends TestCase {
 			$event->getErrors()
 		);
 	}//end testFreezeRefusalBody()
+
+	/**
+	 * The schema lookup a listener under test resolves through.
+	 */
+	private function eventSchemaLookup(SchemaMapperInterface $schemas, LoggerInterface $logger): EventSchemaLookup {
+		return new EventSchemaLookup(
+			new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $schemas, $this->createMock(MagicMapperInterface::class)),
+			$logger
+		);
+	}
 }//end class

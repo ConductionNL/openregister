@@ -128,14 +128,12 @@ class AuthorizationServiceOutcomeGoldenTest extends TestCase {
 		}
 
 		return new AuthorizationService(
-			$users,
-			$session,
+			new \OCA\OpenRegister\Service\UserDirectory(session: $session, users: $users, groups: $groups),
 			$mapper,
 			$grants,
 			$tokenContext,
 			null,
-			$groups,
-			$theRequest,
+			$theRequest
 		);
 	}//end service()
 
@@ -246,10 +244,9 @@ class AuthorizationServiceOutcomeGoldenTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('getUserGroups')->willReturn([]);
 		try {
-			(new \OCA\OpenRegister\Service\Consumer\EndpointAllowList(groupManager: $groups))->assertAllowed(
+			(new \OCA\OpenRegister\Service\Consumer\EndpointAllowList(groupManager: $groups))->assertAdmits(
 				user: $this->user('klaas'),
-				users: [],
-				groups: ['staff']
+				audience: new \OCA\OpenRegister\Service\Consumer\EndpointAudience(users: [], groups: ['staff'])
 			);
 		} catch (AuthenticationException $e) {
 			return [$e->getMessage(), $e->getDetails()];

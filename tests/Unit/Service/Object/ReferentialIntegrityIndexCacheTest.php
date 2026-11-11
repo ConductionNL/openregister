@@ -45,6 +45,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
@@ -233,7 +235,7 @@ class ReferentialIntegrityIndexCacheTest extends TestCase {
 		}
 
 		return new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $schemaMapper, registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $this->cacheFactory),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->cacheFactory),
 			storage: new IntegrityStorage(objectEntityMapper: $this->createMock(MagicMapper::class), db: $this->dbReturning($versionRows)),
 			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->makeArchivalGuard()),
 			logger: $this->createMock(LoggerInterface::class)
@@ -581,7 +583,7 @@ class ReferentialIntegrityIndexCacheTest extends TestCase {
 			}
 		);
 
-		return new ArchivalRetentionGuard($schemaMapper, $this->createMock(LoggerInterface::class));
+		return new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($schemaMapper, $this->createMock(LoggerInterface::class)));
 	}//end makeArchivalGuard()
 
 	/**
@@ -625,7 +627,7 @@ class ReferentialIntegrityIndexCacheTest extends TestCase {
 		});
 
 		$service = new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $registers, cacheFactory: $this->cacheFactory),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $registers, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->cacheFactory),
 			storage: new IntegrityStorage(objectEntityMapper: $this->createMock(MagicMapper::class), db: $db),
 			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: $this->makeArchivalGuard()),
 			logger: $this->createMock(LoggerInterface::class)

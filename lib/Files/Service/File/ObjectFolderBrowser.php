@@ -25,12 +25,15 @@ namespace OCA\OpenRegister\Files\Service\File;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Exception\ObjectFolderConflictException;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
+use OCA\OpenRegister\Service\File\FileRename;
 
 /**
  * The object folder as a small tree the files browser can walk.
@@ -148,10 +151,7 @@ class ObjectFolderBrowser {
 	/**
 	 * Store an uploaded file in a folder of the object, through the upload pipeline.
 	 *
-	 * @param ObjectEntity  $object  The object, already known to be changeable.
-	 * @param string        $path    The target folder, relative to the object folder.
-	 * @param string        $name    The file's name: one segment.
-	 * @param resource|string $content The file's bytes, or a readable stream.
+	 * @param FolderUpload $upload The target folder of the object, the file's name and its bytes.
 	 *
 	 * @return array<string, mixed> The stored file, described like a listing entry.
 	 *
@@ -162,10 +162,11 @@ class ObjectFolderBrowser {
 	 *
 	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
-	public function upload(ObjectEntity $object, string $path, string $name, mixed $content): array {
+	public function upload(FolderUpload $upload): array {
+		$object = $upload->folder->object;
 		$root = $this->objectFolder(object: $object);
-		$target = $this->folderAt(root: $root, path: $path);
-		$name = $this->validName(name: $name);
+		$target = $this->folderAt(root: $root, path: $upload->folder->path);
+		$name = $this->validName(name: $upload->name);
 		$this->assertFree(folder: $target, name: $name);
 
 		// The pipeline writes relative to the object folder, so a file in a
@@ -176,7 +177,10 @@ class ObjectFolderBrowser {
 			$fileName = $relative . '/' . $name;
 		}
 
-		$file = $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: $content);
+		$file = $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $fileName, content: $upload->content, share: false)
+		);
 
 		return $this->describe(root: $root, node: $file);
 	}//end upload()
@@ -199,26 +203,38 @@ class ObjectFolderBrowser {
 	 */
 	public function rename(ObjectEntity $object, int $nodeId, string $name): array {
 		$root = $this->objectFolder(object: $object);
-		$node = $this->nodeIn(root: $root, nodeId: $nodeId);
-		$name = $this->validName(name: $name);
-		if ($name === $node->getName()) {
-			return $this->describe(root: $root, node: $node);
+		$rename = new NodeRename(object: $object, node: $this->nodeIn(root: $root, nodeId: $nodeId), name: $this->validName(name: $name));
+
+		return $this->describe(root: $root, node: $this->renamed(rename: $rename));
+	}//end rename()
+
+	/**
+	 * The node under its new name: unchanged when the name is its own, else renamed in place.
+	 *
+	 * @param NodeRename $rename The object, the node and the validated new name.
+	 *
+	 * @return Node The node as it is now.
+	 *
+	 * @throws ObjectFolderConflictException When the name is taken or a file below a folder is locked by someone else.
+	 * @throws Exception                     When the rename fails.
+	 */
+	private function renamed(NodeRename $rename): Node {
+		$node = $rename->node;
+		if ($rename->name === $node->getName()) {
+			return $node;
 		}
 
-		$this->assertFree(folder: $node->getParent(), name: $name);
-
+		$this->assertFree(folder: $node->getParent(), name: $rename->name);
 		if ($node instanceof File === true) {
 			// A file keeps FileService's rename: its lock check and name rules.
-			$renamed = $this->fileService->renameFile(object: $object, fileId: (int)$node->getId(), newName: $name);
-
-			return $this->describe(root: $root, node: $renamed);
+			return $this->fileService->renameAttachedFile(
+				rename: new FileRename(object: $rename->object, fileId: (int)$node->getId(), newName: $rename->name)
+			);
 		}
 
 		$this->assertNothingLockedBelow(node: $node);
-		$moved = $node->move($node->getParent()->getPath() . '/' . $name);
-
-		return $this->describe(root: $root, node: $moved);
-	}//end rename()
+		return $node->move($node->getParent()->getPath() . '/' . $rename->name);
+	}//end renamed()
 
 	/**
 	 * Delete a file or folder inside the object folder.

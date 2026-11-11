@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -321,43 +322,30 @@ interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveOb
 	 * re-validation is sequenced after this primitive lands and is
 	 * tracked separately.
 	 *
-	 * @param Register|null $register Register context for the batch.
-	 * @param Schema|int|string|null $schema Schema context for the batch.
-	 * @param iterable $rows Input rows (each is the same
-	 *                       shape `saveObject` accepts).
-	 * @param BatchOperationStatus|null $status Optional pre-existing status
-	 *                                          (for callers that want to
-	 *                                          accumulate across multiple
-	 *                                          calls).
+	 * @param StreamingSave $save The register and schema context of the batch, its rows (each the shape
+	 *                            `saveObject` accepts) and an optional pre-existing status for callers
+	 *                            that accumulate across multiple calls.
 	 *
 	 * @return BatchOperationStatus
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	public function saveObjectsStreaming(
-		Register|int|string|null $register, Schema|int|string|null $schema, iterable $rows, ?BatchOperationStatus $status = null
-	): BatchOperationStatus;
+	public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus;
 
 	/**
 	 * Updates an existing object.
 	 *
-	 * @param Register|int|string $register The register containing the object.
-	 * @param Schema|int|string $schema The schema to validate against.
-	 * @param array $data The updated object data.
-	 * @param ObjectEntity $existingObject The existing object to update.
-	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
-	 * @param ObjectEntity|null $oldObject The original object before changes (optional).
+	 * @param StoredObjectUpdate  $update  The register, schema, new data and the stored object to update.
+	 * @param ObjectUpdateOptions $options Silent mode and the original object before changes.
 	 *
 	 * @return ObjectEntity The updated object entity.
 	 *
 	 * @throws Exception If there is an error during update.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Silent flag needed for audit trail control
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function updateObject(
-		Register|int|string $register, Schema|int|string $schema, array $data, ObjectEntity $existingObject,
-		bool $silent = false, ?ObjectEntity $oldObject = null
+		StoredObjectUpdate $update,
+		ObjectUpdateOptions $options = new ObjectUpdateOptions(),
 	): ObjectEntity;
 }//end interface

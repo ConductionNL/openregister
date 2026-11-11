@@ -22,9 +22,8 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicTableLocatorInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 
 /**
  * Reads across tenants on purpose: these are operator commands over every table.
@@ -36,15 +35,9 @@ class MagicTableSelection {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register lookup mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema lookup mapper.
-	 * @param MagicTableLocatorInterface $magicMapper Magic table resolver.
+	 * @param SchemaCatalogInterface $catalog The register, schema and magic-table mappers.
 	 */
-	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly MagicTableLocatorInterface $magicMapper,
-	) {
+	public function __construct(private readonly SchemaCatalogInterface $catalog) {
 	}//end __construct()
 
 	/**
@@ -58,10 +51,10 @@ class MagicTableSelection {
 	 */
 	public function registers(?string $registerRef): array {
 		if ($registerRef !== null && $registerRef !== '') {
-			return [$this->registerMapper->find($registerRef, _multitenancy: false)];
+			return [$this->catalog->registers()->find($registerRef, _multitenancy: false)];
 		}
 
-		return $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
+		return $this->catalog->registers()->findAll(_rbac: false, _multitenancy: false);
 	}//end registers()
 
 	/**
@@ -75,10 +68,10 @@ class MagicTableSelection {
 	 */
 	public function schemas(?string $schemaRef): array {
 		if ($schemaRef !== null && $schemaRef !== '') {
-			return [$this->schemaMapper->find($schemaRef, _multitenancy: false)];
+			return [$this->catalog->schemas()->find($schemaRef, _multitenancy: false)];
 		}
 
-		return $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
+		return $this->catalog->schemas()->findAll(_rbac: false, _multitenancy: false);
 	}//end schemas()
 
 	/**
@@ -119,14 +112,23 @@ class MagicTableSelection {
 		$tables = [];
 		foreach ($register->getSchemas() as $schemaId) {
 			$schema = ($schemasById[(int)$schemaId] ?? null);
-			if ($schema === null || $this->magicMapper->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
+			if ($schema === null || $this->locator()->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
 				continue;
 			}
 
-			$tableName = $this->magicMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
+			$tableName = $this->locator()->getTableNameForRegisterSchema(register: $register, schema: $schema);
 			$tables[] = new MagicTableTarget(register: $register, schema: $schema, tableName: $tableName);
 		}
 
 		return $tables;
 	}//end tablesOf()
+
+	/**
+	 * The magic-table role this selection uses.
+	 *
+	 * @return MagicTableLocatorInterface The magic table resolver.
+	 */
+	private function locator(): MagicTableLocatorInterface {
+		return $this->catalog->tables();
+	}//end locator()
 }//end class

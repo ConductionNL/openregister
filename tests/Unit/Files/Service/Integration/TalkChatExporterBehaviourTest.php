@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Files\Service\Integration;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
+use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
 use PHPUnit\Framework\TestCase;
 
@@ -44,27 +45,27 @@ class TalkChatExporterBehaviourTest extends TestCase {
 	public function testMoreThanTheCapIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('A saved chat holds at most 5000 messages.');
-		(new TalkChatExporter())->export('Big', $this->rows(TalkChatExporter::MAX_MESSAGES + 1), 'Anna', $this->savedAt());
+		(new TalkChatExporter())->exportTranscript(new ChatTranscriptRequest('Big', $this->rows(TalkChatExporter::MAX_MESSAGES + 1), 'Anna', $this->savedAt()));
 	}//end testMoreThanTheCapIsRefused()
 
 	public function testExactlyTheCapIsAccepted(): void {
-		$file = (new TalkChatExporter())->export('Big', $this->rows(TalkChatExporter::MAX_MESSAGES), 'Anna', $this->savedAt());
+		$file = (new TalkChatExporter())->exportTranscript(new ChatTranscriptRequest('Big', $this->rows(TalkChatExporter::MAX_MESSAGES), 'Anna', $this->savedAt()));
 		$this->assertSame(TalkChatExporter::MAX_MESSAGES + 3, substr_count($file['content'], "\n"));
 	}//end testExactlyTheCapIsAccepted()
 
 	public function testNonArrayRowsAloneCountAsEmpty(): void {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('The conversation has no messages to save.');
-		(new TalkChatExporter())->export('X', ['text', 3, null], 'Anna', $this->savedAt());
+		(new TalkChatExporter())->exportTranscript(new ChatTranscriptRequest('X', ['text', 3, null], 'Anna', $this->savedAt()));
 	}//end testNonArrayRowsAloneCountAsEmpty()
 
 	public function testBlankTitleAuthorAndMultilineMessageFallBack(): void {
-		$file = (new TalkChatExporter())->export(
+		$file = (new TalkChatExporter())->exportTranscript(new ChatTranscriptRequest(
 			'   ',
 			[['timestamp' => 60, 'actorDisplayName' => '  ', 'message' => "one\ntwo\nthree"]],
 			'Anna',
 			$this->savedAt()
-		);
+		));
 
 		$this->assertSame('Chat-2026-03-04-050607.txt', $file['filename']);
 		$this->assertSame(
@@ -74,7 +75,7 @@ class TalkChatExporterBehaviourTest extends TestCase {
 	}//end testBlankTitleAuthorAndMultilineMessageFallBack()
 
 	public function testTitleOfOnlySymbolsFallsBackToChatSlug(): void {
-		$file = (new TalkChatExporter())->export('%%%', [['timestamp' => 0, 'actorDisplayName' => 'Bo', 'message' => 'hi']], 'Anna', $this->savedAt());
+		$file = (new TalkChatExporter())->exportTranscript(new ChatTranscriptRequest('%%%', [['timestamp' => 0, 'actorDisplayName' => 'Bo', 'message' => 'hi']], 'Anna', $this->savedAt()));
 
 		$this->assertSame('chat-2026-03-04-050607.txt', $file['filename']);
 		$this->assertStringStartsWith("%%%\n", $file['content']);
@@ -82,7 +83,7 @@ class TalkChatExporterBehaviourTest extends TestCase {
 	}//end testTitleOfOnlySymbolsFallsBackToChatSlug()
 
 	public function testTitleIsSluggedAndRowsMissingFieldsDefault(): void {
-		$file = (new TalkChatExporter())->export(' Team / Zaak 12 ', [[]], 'Anna', $this->savedAt());
+		$file = (new TalkChatExporter())->exportTranscript(new ChatTranscriptRequest(' Team / Zaak 12 ', [[]], 'Anna', $this->savedAt()));
 
 		$this->assertSame('Team-Zaak-12-2026-03-04-050607.txt', $file['filename']);
 		$this->assertStringEndsWith("[1970-01-01 00:00 UTC] Unknown: \n", $file['content']);

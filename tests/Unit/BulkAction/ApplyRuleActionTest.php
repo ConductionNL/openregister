@@ -17,9 +17,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BulkAction;
 
+use OCA\OpenRegister\BulkAction\BulkObjectAccess;
 use InvalidArgumentException;
 use OCA\OpenRegister\BulkAction\ApplyRuleAction;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
@@ -79,10 +81,8 @@ class ApplyRuleActionTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$schemas->method('find')->willReturn(new Schema());
 		$this->action = new ApplyRuleAction(
-			$this->objects,
-			$schemas,
 			new ApplyRuleServices($this->inventory, $this->evaluator),
-			$this->createMock(LoggerInterface::class)
+			new BulkObjectAccess($this->objects, $schemas, $this->createMock(LoggerInterface::class))
 		);
 	}//end setUp()
 
@@ -141,7 +141,7 @@ class ApplyRuleActionTest extends TestCase {
 	public function testANonCalculationRuleIsSkipped(): void {
 		$this->inventory->method('find')->willReturn($this->rule(RuleVocabulary::KIND_STATE_FIELD_RULE));
 		$this->objects->expects($this->never())->method('patchObject');
-		$result = $this->action->apply($this->object([]), ['schema' => 'orders', 'ruleId' => 'r-1'], true);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object([]), parameters: ['schema' => 'orders', 'ruleId' => 'r-1'], commit: true, actor: null));
 		$this->assertSame(BulkActionResult::skipped('x')->getOutcome(), $result->getOutcome());
 	}//end testANonCalculationRuleIsSkipped()
 
@@ -154,7 +154,7 @@ class ApplyRuleActionTest extends TestCase {
 		$this->inventory->method('find')->willReturn($this->rule(RuleVocabulary::KIND_CALCULATION));
 		$this->evaluator->method('evaluate')->willReturn(3);
 		$this->objects->expects($this->never())->method('patchObject');
-		$result = $this->action->apply($this->object(['total' => 3]), ['schema' => 'orders', 'ruleId' => 'r-1'], true);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(['total' => 3]), parameters: ['schema' => 'orders', 'ruleId' => 'r-1'], commit: true, actor: null));
 		$this->assertFalse($result->isApplied());
 	}//end testAnAgreeingObjectIsSkipped()
 
@@ -167,7 +167,7 @@ class ApplyRuleActionTest extends TestCase {
 		$this->inventory->method('find')->willReturn($this->rule(RuleVocabulary::KIND_CALCULATION));
 		$this->evaluator->method('evaluate')->willReturn(3);
 		$this->objects->expects($this->never())->method('patchObject');
-		$result = $this->action->apply($this->object(['total' => 1]), ['schema' => 'orders', 'ruleId' => 'r-1'], false);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(['total' => 1]), parameters: ['schema' => 'orders', 'ruleId' => 'r-1'], commit: false, actor: null));
 		$this->assertTrue($result->isApplied());
 	}//end testADryRunWritesNothing()
 
@@ -181,7 +181,7 @@ class ApplyRuleActionTest extends TestCase {
 		$this->evaluator->method('evaluate')->willReturn(3);
 		$this->objects->expects($this->once())->method('patchObject')
 			->with('o-1', ['total' => 3]);
-		$result = $this->action->apply($this->object(['total' => 1]), ['schema' => 'orders', 'ruleId' => 'r-1'], true);
+		$result = $this->action->apply(step: new BulkStep(object: $this->object(['total' => 1]), parameters: ['schema' => 'orders', 'ruleId' => 'r-1'], commit: true, actor: null));
 		$this->assertTrue($result->isApplied());
 	}//end testACommitWritesTheDerivedValue()
 }//end class

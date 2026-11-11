@@ -252,22 +252,17 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	 * publication date it belongs to, which reads as "published" to a careless
 	 * comparison and as nothing at all to a careful one.
 	 *
-	 * @param int            $fileId      The Nextcloud filecache fileid.
-	 * @param \DateTime|null $published   When the file becomes public, or null for never.
-	 * @param \DateTime|null $depublished When it stops, or null for no end date.
+	 * @param int               $fileId The Nextcloud filecache fileid.
+	 * @param PublicationWindow $window When the file becomes public and when it stops.
 	 *
 	 * @return File The updated entity.
 	 *
 	 * @spec openspec/changes/file-publication-window/specs/file-publication-window/spec.md#requirement-a-file-carries-its-own-publication-window-req-fpw-101
 	 */
-	public function setPublicationWindowForFile(
-		int $fileId,
-		?\DateTime $published,
-		?\DateTime $depublished
-	): File {
+	public function setPublicationWindowForFile(int $fileId, PublicationWindow $window): File {
 		$file = $this->findOrCreateByFileId(fileId: $fileId);
-		$file->setPublished($published);
-		$file->setDepublished($depublished);
+		$file->setPublished($window->published);
+		$file->setDepublished($window->depublished);
 		$file->setUpdated(new DateTime());
 		return $this->update(entity: $file);
 	}//end setPublicationWindowForFile()
@@ -335,16 +330,43 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	public function getFiles(?int $node = null, ?array $ids = null): array {
 		$qb = $this->db->getQueryBuilder();
 		$this->selectFilecacheWithShares(qb: $qb);
-		if ($node !== null) {
-			$qb->andWhere($qb->expr()->eq('fc.parent', $qb->createNamedParameter($node, IQueryBuilder::PARAM_INT)));
-		}
-
-		if ($ids !== null && count($ids) > 0) {
-			$qb->andWhere($qb->expr()->in('fc.fileid', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)));
-		}
+		$this->whereParentNode(qb: $qb, node: $node);
+		$this->whereFileIdIn(qb: $qb, ids: $ids);
 
 		return array_map(fn (array $row): array => $this->withLinksAndOwner(row: $row), $this->fetchRows(qb: $qb));
 	}//end getFiles()
+
+	/**
+	 * Narrow a filecache select to the children of one node, when a node is given.
+	 *
+	 * @param IQueryBuilder $qb   The select.
+	 * @param int|null      $node The parent node ID, or null for no narrowing.
+	 *
+	 * @return void
+	 */
+	private function whereParentNode(IQueryBuilder $qb, ?int $node): void {
+		if ($node === null) {
+			return;
+		}
+
+		$qb->andWhere($qb->expr()->eq('fc.parent', $qb->createNamedParameter($node, IQueryBuilder::PARAM_INT)));
+	}//end whereParentNode()
+
+	/**
+	 * Narrow a filecache select to the given file IDs, when any are given.
+	 *
+	 * @param IQueryBuilder   $qb  The select.
+	 * @param array<int>|null $ids The file IDs, or null or empty for no narrowing.
+	 *
+	 * @return void
+	 */
+	private function whereFileIdIn(IQueryBuilder $qb, ?array $ids): void {
+		if ($ids === null || count($ids) === 0) {
+			return;
+		}
+
+		$qb->andWhere($qb->expr()->in('fc.fileid', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)));
+	}//end whereFileIdIn()
 
 	/**
 	 * Get a single file by its fileid with share information and owner data.
@@ -509,53 +531,39 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 		// If folder is not set, search oc_filecache for a node with name equal to the object's uuid.
 		$uuid = $object->getUuid();
 		if ($uuid === null) {
-			// If uuid is not set, return empty array.
 			return [];
 		}
 
-		// Create a new query builder instance.
+		// Several folders may share the uuid name: the oldest one (lowest fileid) wins.
+		// TODO: Add nightly cron job to cleanup orphaned folders and logs.
+		$nodeId = $this->oldestFolderNamed(uuid: $uuid);
+		if ($nodeId === null) {
+			return [];
+		}
+
+		return $this->getFiles(node: $nodeId);
+	}//end getFilesForObject()
+
+	/**
+	 * The fileid of the oldest filecache node named after an object uuid.
+	 *
+	 * @param string $uuid The object uuid.
+	 *
+	 * @return int|null The lowest matching fileid, or null when no node has that name.
+	 */
+	private function oldestFolderNamed(string $uuid): ?int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('fileid')
 			->from('filecache')
 			->where($qb->expr()->eq('name', $qb->createNamedParameter($uuid)));
 
-		// Execute the query and fetch all matching rows using proper Nextcloud method.
-		$result = $qb->executeQuery();
-		$rows = [];
-
-		// Fetch all rows manually.
-		$row = $result->fetch();
-		while ($row !== false) {
-			$rows[] = $row;
-			$row = $result->fetch();
+		$fileIds = array_map(fn (array $row): int => (int)$row['fileid'], $this->fetchRows(qb: $qb));
+		if ($fileIds === []) {
+			return null;
 		}
 
-		$result->closeCursor();
-
-		// Handle the number of results.
-		$count = count($rows);
-		if ($count === 1) {
-			// Use the fileid as the node id.
-			$nodeId = (int)$rows[0]['fileid'];
-			return $this->getFiles(node: $nodeId);
-		}
-
-		if ($count > 1) {
-			// Multiple folders found with same UUID - pick the oldest one (lowest fileid).
-			// TODO: Add nightly cron job to cleanup orphaned folders and logs.
-			usort(
-				$rows,
-				function ($a, $b) {
-					return (int)$a['fileid'] - (int)$b['fileid'];
-				}
-			);
-			$oldestNodeId = (int)$rows[0]['fileid'];
-			return $this->getFiles(node: $oldestNodeId);
-		}
-
-		// No results found, return empty array.
-		return [];
-	}//end getFilesForObject()
+		return min($fileIds);
+	}//end oldestFolderNamed()
 
 	/**
 	 * Batched lookup: file IDs for a list of object UUIDs.
@@ -571,76 +579,21 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 	 * @param string[] $uuids Object UUIDs to look up.
 	 *
 	 * @return array<string, int[]> Map of UUID -> list of file IDs (empty array if none).
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two-step batched lookup with input
-	 *                                               validation; complexity is intrinsic.
 	 */
 	public function getFileIdsForObjects(array $uuids): array {
-		$result = [];
-		foreach ($uuids as $uuid) {
-			if (is_string($uuid) === true && $uuid !== '') {
-				$result[$uuid] = [];
-			}
-		}
-
+		$result = $this->emptyFileIdsPerUuid(uuids: $uuids);
 		if (empty($result) === true) {
 			return [];
 		}
 
 		// Step 1: resolve UUIDs to folder node IDs via filecache.name.
-		// Multiple folders may share a UUID name; the oldest (lowest fileid) wins,
-		// matching the resolution rule in getFilesForObject.
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('fileid', 'name')
-			->from('filecache')
-			->where(
-				$qb->expr()->in(
-					'name',
-					$qb->createNamedParameter(array_keys($result), IQueryBuilder::PARAM_STR_ARRAY)
-				)
-			)
-			->orderBy('fileid', 'ASC');
-
-		$stmt = $qb->executeQuery();
-		$uuidToNodeId = [];
-		$row = $stmt->fetch();
-		while ($row !== false) {
-			$name = (string)$row['name'];
-			// First (oldest) folder wins for duplicates.
-			if (isset($uuidToNodeId[$name]) === false) {
-				$uuidToNodeId[$name] = (int)$row['fileid'];
-			}
-
-			$row = $stmt->fetch();
-		}
-
-		$stmt->closeCursor();
-
+		$uuidToNodeId = $this->oldestFolderPerName(names: array_keys($result));
 		if (empty($uuidToNodeId) === true) {
 			return $result;
 		}
 
 		// Step 2: fetch child file IDs for each folder node in one query.
-		$qb2 = $this->db->getQueryBuilder();
-		$qb2->select('fileid', 'parent')
-			->from('filecache')
-			->where(
-				$qb2->expr()->in(
-					'parent',
-					$qb2->createNamedParameter(array_values($uuidToNodeId), IQueryBuilder::PARAM_INT_ARRAY)
-				)
-			);
-
-		$stmt2 = $qb2->executeQuery();
-		$nodeIdToFileIds = [];
-		$childRow = $stmt2->fetch();
-		while ($childRow !== false) {
-			$parent = (int)$childRow['parent'];
-			$nodeIdToFileIds[$parent][] = (int)$childRow['fileid'];
-			$childRow = $stmt2->fetch();
-		}
-
-		$stmt2->closeCursor();
+		$nodeIdToFileIds = $this->childFileIdsPerParent(nodeIds: array_values($uuidToNodeId));
 
 		// Step 3: project node IDs back to UUIDs.
 		foreach ($uuidToNodeId as $uuid => $nodeId) {
@@ -649,6 +602,103 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 
 		return $result;
 	}//end getFileIdsForObjects()
+
+	/**
+	 * An empty file-ID list for every usable uuid; non-strings and empty strings are dropped.
+	 *
+	 * @param array<mixed> $uuids The requested uuids.
+	 *
+	 * @return array<string, int[]> Map of UUID -> empty list.
+	 */
+	private function emptyFileIdsPerUuid(array $uuids): array {
+		$result = [];
+		foreach ($uuids as $uuid) {
+			if (is_string($uuid) === true && $uuid !== '') {
+				$result[$uuid] = [];
+			}
+		}
+
+		return $result;
+	}//end emptyFileIdsPerUuid()
+
+	/**
+	 * The folder node ID per name; when several folders share a name the oldest
+	 * (lowest fileid) wins, matching the resolution rule in getFilesForObject.
+	 *
+	 * @param array<string> $names The folder names (object uuids).
+	 *
+	 * @return array<string, int> Map of name -> folder fileid, for names that have a folder.
+	 */
+	private function oldestFolderPerName(array $names): array {
+		$uuidToNodeId = [];
+		foreach ($this->fetchRows(qb: $this->foldersNamedOldestFirst(names: $names)) as $row) {
+			$name = (string)$row['name'];
+			if (isset($uuidToNodeId[$name]) === false) {
+				$uuidToNodeId[$name] = (int)$row['fileid'];
+			}
+		}
+
+		return $uuidToNodeId;
+	}//end oldestFolderPerName()
+
+	/**
+	 * The select of the filecache nodes with one of the given names, oldest first.
+	 *
+	 * @param array<string> $names The folder names (object uuids).
+	 *
+	 * @return IQueryBuilder The select.
+	 */
+	private function foldersNamedOldestFirst(array $names): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('fileid', 'name')
+			->from('filecache')
+			->where(
+				$qb->expr()->in(
+					'name',
+					$qb->createNamedParameter($names, IQueryBuilder::PARAM_STR_ARRAY)
+				)
+			)
+			->orderBy('fileid', 'ASC');
+
+		return $qb;
+	}//end foldersNamedOldestFirst()
+
+	/**
+	 * The child file IDs of the given folder nodes, in one query.
+	 *
+	 * @param array<int> $nodeIds The folder node IDs.
+	 *
+	 * @return array<int, int[]> Map of folder node ID -> child file IDs.
+	 */
+	private function childFileIdsPerParent(array $nodeIds): array {
+		$nodeIdToFileIds = [];
+		foreach ($this->fetchRows(qb: $this->childrenOfFolders(nodeIds: $nodeIds)) as $childRow) {
+			$nodeIdToFileIds[(int)$childRow['parent']][] = (int)$childRow['fileid'];
+		}
+
+		return $nodeIdToFileIds;
+	}//end childFileIdsPerParent()
+
+	/**
+	 * The select of the filecache children of the given folder nodes.
+	 *
+	 * @param array<int> $nodeIds The folder node IDs.
+	 *
+	 * @return IQueryBuilder The select.
+	 */
+	private function childrenOfFolders(array $nodeIds): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('fileid', 'parent')
+			->from('filecache')
+			->where(
+				$qb->expr()->in(
+					'parent',
+					$qb->createNamedParameter($nodeIds, IQueryBuilder::PARAM_INT_ARRAY)
+				)
+			);
+
+		return $qb;
+	}//end childrenOfFolders()
 
 	/**
 	 * Resolve the owning object's UUID for a Nextcloud `filecache.fileid`.
@@ -797,71 +847,134 @@ class FileMapper extends QBMapper implements FileMapperInterface {
 		// Check if a public share already exists for this file.
 		$existingShare = $this->getPublicShare(fileId: $fileId);
 		if ($existingShare !== null) {
-			// Return existing share information.
-			return [
-				'id' => $existingShare['id'],
-				'token' => $existingShare['token'],
-				'accessUrl' => $this->generateShareUrl(token: $existingShare['token']),
-				'downloadUrl' => $this->generateShareUrl(token: $existingShare['token']) . '/download',
-				'published' => (new DateTime())->setTimestamp($existingShare['stime'])->format('c'),
-			];
+			return $this->shareInfo(share: $existingShare);
 		}
 
-		// Generate a unique token for the share.
-		$token = $this->generateShareToken();
-		$currentTime = time();
+		return $this->createPublicShare(
+			request: new PublicShareRequest(fileId: $fileId, sharedBy: $sharedBy, shareOwner: $shareOwner, depublished: $depublished)
+		);
+	}//end publishFile()
 
-		// Insert the new share into the database.
+	/**
+	 * Create the public link share and answer what was created.
+	 *
+	 * @param PublicShareRequest $request The file, the sharer, the owner and the end of the window.
+	 *
+	 * @return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
+	 *
+	 * @throws \Exception If the share creation fails
+	 */
+	private function createPublicShare(PublicShareRequest $request): array {
+		// Generate a unique token for the share, then insert it.
+		$row     = self::shareRow(request: $request, token: $this->generateShareToken());
+		$shareId = $this->insertShare(row: $row);
+
+		return $this->shareInfo(share: ['id' => $shareId, 'token' => $row['token'][0], 'stime' => $row['stime'][0]]);
+	}//end createPublicShare()
+
+	/**
+	 * The share row, column by column, as `[value, parameter type]`, in insert order.
+	 *
+	 * @param PublicShareRequest $request The file, the sharer, the owner and the end of the window.
+	 * @param string             $token   The new share's token.
+	 *
+	 * @return array<string, array{0: mixed, 1: int|string}> The row.
+	 */
+	private static function shareRow(PublicShareRequest $request, string $token): array {
+		return [
+			// 3 = public link.
+			'share_type' => [3, IQueryBuilder::PARAM_INT],
+			'share_with' => [null, IQueryBuilder::PARAM_STR],
+			'password' => [null, IQueryBuilder::PARAM_STR],
+		] + self::shareSourceColumns(request: $request) + self::sharePublicationColumns(request: $request, token: $token);
+	}//end shareRow()
+
+	/**
+	 * Who shares what: the owner, the initiator and the file.
+	 *
+	 * @param PublicShareRequest $request The file, the sharer and the owner.
+	 *
+	 * @return array<string, array{0: mixed, 1: int|string}> The columns.
+	 */
+	private static function shareSourceColumns(PublicShareRequest $request): array {
+		return [
+			'uid_owner' => [$request->shareOwner, IQueryBuilder::PARAM_STR],
+			'uid_initiator' => [$request->sharedBy, IQueryBuilder::PARAM_STR],
+			'parent' => [null, IQueryBuilder::PARAM_STR],
+			'item_type' => ['file', IQueryBuilder::PARAM_STR],
+			'item_source' => [$request->fileId, IQueryBuilder::PARAM_INT],
+			'item_target' => ['/' . $request->fileId, IQueryBuilder::PARAM_STR],
+			'file_source' => [$request->fileId, IQueryBuilder::PARAM_INT],
+			'file_target' => ['/' . $request->fileId, IQueryBuilder::PARAM_STR],
+		];
+	}//end shareSourceColumns()
+
+	/**
+	 * How the link is published: read only, from now, until the end of the window.
+	 *
+	 * @param PublicShareRequest $request The end of the window.
+	 * @param string             $token   The new share's token.
+	 *
+	 * @return array<string, array{0: mixed, 1: int|string}> The columns.
+	 */
+	private static function sharePublicationColumns(PublicShareRequest $request, string $token): array {
+		return [
+			'permissions' => [self::PUBLIC_SHARE_PERMISSIONS, IQueryBuilder::PARAM_INT],
+			'stime' => [time(), IQueryBuilder::PARAM_INT],
+			'accepted' => [0, IQueryBuilder::PARAM_INT],
+			// The share carries the end of the window, so Nextcloud stops
+			// serving the link on the date with nothing having to run.
+			// An OR-side flag alone would leave a public URL that still
+			// works, which is not a depublication.
+			'expiration' => [$request->depublished?->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR],
+			'token' => [$token, IQueryBuilder::PARAM_STR],
+			'mail_send' => [0, IQueryBuilder::PARAM_INT],
+			'hide_download' => [0, IQueryBuilder::PARAM_INT],
+		];
+	}//end sharePublicationColumns()
+
+	/**
+	 * Insert one share row.
+	 *
+	 * @param array<string, array{0: mixed, 1: int|string}> $row The row, column by column.
+	 *
+	 * @return int The new share's id.
+	 *
+	 * @throws \Exception If the share creation fails
+	 */
+	private function insertShare(array $row): int {
 		$qb = $this->db->getQueryBuilder();
-		$qb->insert('share')
-			->values(
-				values: [
-					'share_type' => $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT),
-					// 3 = public link.
-					'share_with' => $qb->createNamedParameter(null),
-					'password' => $qb->createNamedParameter(null),
-					'uid_owner' => $qb->createNamedParameter($shareOwner),
-					'uid_initiator' => $qb->createNamedParameter($sharedBy),
-					'parent' => $qb->createNamedParameter(null),
-					'item_type' => $qb->createNamedParameter('file'),
-					'item_source' => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
-					'item_target' => $qb->createNamedParameter('/' . $fileId),
-					'file_source' => $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT),
-					'file_target' => $qb->createNamedParameter('/' . $fileId),
-					'permissions' => $qb->createNamedParameter(self::PUBLIC_SHARE_PERMISSIONS, IQueryBuilder::PARAM_INT),
-					'stime' => $qb->createNamedParameter($currentTime, IQueryBuilder::PARAM_INT),
-					'accepted' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-					// The share carries the end of the window, so Nextcloud stops
-					// serving the link on the date with nothing having to run.
-					// An OR-side flag alone would leave a public URL that still
-					// works, which is not a depublication.
-					'expiration' => $qb->createNamedParameter(
-						$depublished?->format('Y-m-d H:i:s'),
-						IQueryBuilder::PARAM_STR
-					),
-					'token' => $qb->createNamedParameter($token),
-					'mail_send' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-					'hide_download' => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-				]
-			);
+		$qb->insert('share');
+		$values = [];
+		foreach ($row as $column => $cell) {
+			$values[$column] = $qb->createNamedParameter($cell[0], $cell[1]);
+		}
 
-		$result = $qb->executeStatement();
-
-		if ($result !== 1) {
+		$qb->values(values: $values);
+		if ($qb->executeStatement() !== 1) {
 			throw new Exception('Failed to create public share in database');
 		}
 
 		// Get the ID of the newly created share.
-		$shareId = $qb->getLastInsertId();
+		return $qb->getLastInsertId();
+	}//end insertShare()
 
+	/**
+	 * What a publication answers: the share id and token, its links and when it was published.
+	 *
+	 * @param array{id: int, token: string, stime: int|string} $share The share row.
+	 *
+	 * @return array{id: int, token: string, accessUrl: string, downloadUrl: string, published: string}
+	 */
+	private function shareInfo(array $share): array {
 		return [
-			'id' => $shareId,
-			'token' => $token,
-			'accessUrl' => $this->generateShareUrl(token: $token),
-			'downloadUrl' => $this->generateShareUrl(token: $token) . '/download',
-			'published' => (new DateTime())->setTimestamp($currentTime)->format('c'),
+			'id' => $share['id'],
+			'token' => $share['token'],
+			'accessUrl' => $this->generateShareUrl(token: $share['token']),
+			'downloadUrl' => $this->generateShareUrl(token: $share['token']) . '/download',
+			'published' => (new DateTime())->setTimestamp($share['stime'])->format('c'),
 		];
-	}//end publishFile()
+	}//end shareInfo()
 
 	/**
 	 * Depublish a file by removing all public shares directly from the database.

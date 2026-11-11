@@ -141,34 +141,29 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	/**
 	 * Move a moment off a non-working day, and say what moved it.
 	 *
-	 * @param DateTimeInterface    $moment   The computed moment.
-	 * @param string               $roll     One of ROLLS.
-	 * @param WorkingCalendar|null $calendar The resolved calendar.
+	 * @param DateTimeInterface $moment The computed moment.
+	 * @param RollRule          $rule   Which way to roll, and the resolved calendar.
 	 *
 	 * @return array{at: DateTimeImmutable, unrolledAt: ?DateTimeImmutable, rolledBy: ?string} Where it ended up.
 	 *
 	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
-	public function roll(DateTimeInterface $moment, string $roll, ?WorkingCalendar $calendar): array {
-		return $this->workingDayRoll->apply(moment: $moment, roll: $roll, calendar: $calendar);
+	public function roll(DateTimeInterface $moment, RollRule $rule): array {
+		return $this->workingDayRoll->apply(moment: $moment, rule: $rule);
 	}//end roll()
 
 	/**
 	 * Add an amount of business time to an instant.
 	 *
-	 * @param DateTimeInterface $from The start instant.
-	 * @param float $value The amount; negative subtracts.
-	 * @param string $unit The unit.
-	 * @param WorkingCalendar|null $calendar The resolved calendar; required for business units and
-	 *        refused when absent, ignored for hours and calendar days.
+	 * @param SlaAddition $addition The start instant, the amount (negative subtracts), the unit, and the
+	 *                              resolved calendar: required for business units and refused when absent,
+	 *                              ignored for hours and calendar days.
 	 *
 	 * @return DateTimeImmutable The resulting instant.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
-	public function add(DateTimeInterface $from, float $value, string $unit, ?WorkingCalendar $calendar): DateTimeImmutable {
-		$addition = new SlaAddition(start: DateTimeImmutable::createFromInterface($from), value: $value, unit: $unit, calendar: $calendar);
-
+	public function add(SlaAddition $addition): DateTimeImmutable {
 		return $this->addWatched(addition: $addition, collector: null);
 	}//end add()
 
@@ -209,23 +204,28 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-escalation-rule-is-validated-against-its-sla-in-commensurable-units
 	 */
 	public function sub(DateTimeInterface $from, float $value, string $unit, ?WorkingCalendar $calendar): DateTimeImmutable {
-		return $this->add(from: $from, value: -$value, unit: $unit, calendar: $calendar);
+		return $this->add(
+			addition: new SlaAddition(
+				start: DateTimeImmutable::createFromInterface($from),
+				value: -$value,
+				unit: $unit,
+				calendar: $calendar
+			)
+		);
 	}//end sub()
 
 	/**
 	 * How much business time lies between two instants, signed.
 	 *
-	 * @param DateTimeInterface $from The start.
-	 * @param DateTimeInterface $to The end; before the start yields a negative amount.
-	 * @param string $unit The unit.
-	 * @param WorkingCalendar $calendar The resolved calendar.
+	 * @param CalendarSpan $span The start, the end (before the start yields a negative amount) and the resolved calendar.
+	 * @param string       $unit The unit.
 	 *
 	 * @return float The amount in the unit.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-suspended-deadline-holds-elapsed-time-not-a-moment
 	 */
-	public function measure(DateTimeInterface $from, DateTimeInterface $to, string $unit, WorkingCalendar $calendar): float {
-		return $this->measureSpan(span: new CalendarSpan(from: $from, to: $to, calendar: $calendar), unit: $unit);
+	public function measure(CalendarSpan $span, string $unit): float {
+		return $this->measureSpan(span: $span, unit: $unit);
 	}//end measure()
 
 	/**
@@ -276,28 +276,7 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 * dawn as work. Both are defensible for a deadline and neither is
 	 * elapsed working time.
 	 *
-	 * Negative when `to` precedes `from`, like `measure()`.
-	 *
-	 * @param DateTimeInterface $from The start.
-	 * @param DateTimeInterface $to The end.
-	 * @param WorkingCalendar $calendar The resolved calendar, which supplies the
-	 *                                  working weekdays, the non-working dates
-	 *                                  and the hours of the day.
-	 *
-	 * @return float The working hours between the two instants.
-	 *
-	 * @throws FlowTimerValidationException When the interval is longer than the walk allows.
-	 *
-	 * @spec openspec/specs/flow-business-timers/spec.md
-	 */
-	public function elapsedBusinessHours(DateTimeInterface $from, DateTimeInterface $to, WorkingCalendar $calendar): float {
-		return $this->businessHours(span: new CalendarSpan(from: $from, to: $to, calendar: $calendar));
-	}//end elapsedBusinessHours()
-
-	/**
-	 * The working hours across a span; a span that runs backwards yields a negative amount.
-	 *
-	 * Declared service hours are measured by the service-hours clock; otherwise
+	 * Negative when `to` precedes `from`, like `measure()`. Declared service hours are measured by the service-hours clock; otherwise
 	 * each working day contributes the overlap with its working window.
 	 *
 	 * @param CalendarSpan $span The instants and the resolved calendar.
@@ -308,39 +287,36 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
-	private function businessHours(CalendarSpan $span): float {
+	public function elapsedBusinessHours(CalendarSpan $span): float {
 		if ($span->to->getTimestamp() < $span->from->getTimestamp()) {
-			return -$this->businessHours(span: new CalendarSpan(from: $span->to, to: $span->from, calendar: $span->calendar));
+			return -$this->elapsedBusinessHours(span: new CalendarSpan(from: $span->to, to: $span->from, calendar: $span->calendar));
 		}
 
 		$windows = $span->calendar->getServiceHours();
 		if ($windows->areDeclared() === true) {
-			return $this->hoursClock->elapsed(from: $span->from, to: $span->to, calendar: $span->calendar, windows: $windows);
+			return $this->hoursClock->frame(calendar: $span->calendar, windows: $windows)->elapsed(from: $span->from, to: $span->to);
 		}
 
 		return $this->sumPerDay(span: $span, perDay: fn (DateTimeImmutable $cursor): float => $this->workingHours(span: $span, cursor: $cursor))
 			?? throw $this->walkLimit(subject: $span->describe(what: 'working hours'));
-	}//end businessHours()
+	}//end elapsedBusinessHours()
 
 	/**
 	 * Convert an amount between units, through hours as the pivot: one business
 	 * day is the calendar's working hours, one calendar day is 24 hours.
 	 *
-	 * @param float $value The amount.
-	 * @param string $fromUnit The unit it is in.
-	 * @param string $toUnit The unit wanted.
-	 * @param WorkingCalendar $calendar Supplies hoursPerWorkingDay.
+	 * @param UnitConversion $conversion The amount, the unit it is in, the unit wanted, and the calendar that supplies hoursPerWorkingDay.
 	 *
 	 * @return float The converted amount.
 	 *
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-an-extension-is-bounded-and-may-only-be-granted-before-expiry
 	 */
-	public function convert(float $value, string $fromUnit, string $toUnit, WorkingCalendar $calendar): float {
-		$fromHours = $this->hoursPer(unit: $fromUnit, calendar: $calendar);
-		$toHours = $this->hoursPer(unit: $toUnit, calendar: $calendar);
+	public function convert(UnitConversion $conversion): float {
+		$fromHours = $this->hoursPer(unit: $conversion->fromUnit, calendar: $conversion->calendar);
+		$toHours = $this->hoursPer(unit: $conversion->toUnit, calendar: $conversion->calendar);
 		// An identical unit returns the amount untouched rather than through
 		// the pivot, so no rounding is introduced where nothing changed.
-		return match ($fromUnit) { $toUnit => $value, default => (($value * $fromHours) / $toHours) };
+		return match ($conversion->fromUnit) { $conversion->toUnit => $conversion->value, default => (($conversion->value * $fromHours) / $toHours) };
 	}//end convert()
 
 	/**
@@ -384,12 +360,9 @@ final class SlaCalculator implements SlaCalculatorInterface {
 	private function addHours(SlaAddition $addition): DateTimeImmutable {
 		$calendar = $addition->serviceHoursCalendar();
 		if ($calendar !== null) {
-			return $this->hoursClock->due(
-				from: $addition->start,
-				hours: $addition->value,
-				calendar: $calendar,
-				windows: $calendar->getServiceHours()
-			);
+			$frame = $this->hoursClock->frame(calendar: $calendar, windows: $calendar->getServiceHours());
+
+			return $frame->due(from: $addition->start, hours: $addition->value);
 		}
 
 		return $this->shift(moment: $addition->start, modifier: sprintf('%+d seconds', (int)round($addition->value * 3600)));

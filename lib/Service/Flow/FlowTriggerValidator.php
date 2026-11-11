@@ -58,6 +58,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Delegation\DelegationRequest;
+use OCA\OpenRegister\Service\Delegation\DelegationVerdict;
 use OCA\OpenRegister\Service\Delegation\DelegationService;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -129,11 +130,11 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 		// property of the request, not of a node, and reading it per node would
 		// invite the impression that different nodes could be saved by different
 		// people.
-		$savedBy = $this->savingUid();
+		$run = new FlowTriggerValidationRun(registry: $registry, savedBy: $this->savingUid());
 
 		$stamped = false;
 		foreach ($nodes as $index => $node) {
-			$result = $this->validateNode(registry: $registry, node: $node, savedBy: $savedBy);
+			$result = $this->validateNode(run: $run, node: $node);
 			if ($result !== null) {
 				$nodes[$index] = $result;
 				$stamped = true;
@@ -187,25 +188,26 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 	 * it did not. Returning the node rather than mutating in place keeps the
 	 * caller in charge of whether the flow gets written back at all.
 	 *
-	 * @param object      $registry The node registry.
-	 * @param mixed       $node     One entry from the flow's node list.
-	 * @param string|null $savedBy  The uid performing the save, or null when code-initiated.
+	 * @param FlowTriggerValidationRun $run  The registry and the saving uid.
+	 * @param mixed                    $node One entry from the flow's node list.
 	 *
 	 * @return array|null The rewritten node, or null when unchanged.
 	 *
 	 * @throws \InvalidArgumentException When the node rejects its config.
 	 */
-	private function validateNode(object $registry, mixed $node, ?string $savedBy = null): ?array {
+	private function validateNode(FlowTriggerValidationRun $run, mixed $node): ?array {
 		if (is_array($node) === false) {
 			return null;
 		}
 
-		$resolved = $this->triggerNodeFor(registry: $registry, node: $node);
+		$resolved = $this->triggerNodeFor(registry: $run->registry, node: $node);
 		if ($resolved === null) {
 			return null;
 		}
 
-		return $this->stampedNode(node: $node, resolved: $resolved, savedBy: $savedBy);
+		$config = $this->checkedConfig(node: $node, resolved: $resolved);
+
+		return $this->stampedNode(node: $node, stamped: $this->validateDelegation(config: $config, savedBy: $run->savedBy));
 	}//end validateNode()
 
 	/**
@@ -259,29 +261,56 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 	}//end asTriggerNode()
 
 	/**
-	 * Let the trigger refuse its config, then check its delegation; the node when its config changed.
+	 * A stored node's config, as an array.
+	 *
+	 * @param array<string, mixed> $node The stored node.
+	 *
+	 * @return array<string, mixed> The config, empty when absent or not an array.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function configOf(array $node): array {
+		$config = ($node['config'] ?? []);
+		if (is_array($config) === false) {
+			return [];
+		}
+
+		return $config;
+	}//end configOf()
+
+	/**
+	 * Let the trigger refuse its config; the config when it passes.
 	 *
 	 * @param array<string, mixed> $node     The stored node.
 	 * @param IFlowNode            $resolved The trigger node.
-	 * @param string|null          $savedBy  The saving user, null for a code-initiated save.
 	 *
-	 * @return array<string, mixed>|null The node with its stamped config, or null when unchanged.
+	 * @return array<string, mixed> The config the node accepted.
 	 *
-	 * @spec openspec/specs/delegation-grants/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	private function stampedNode(array $node, IFlowNode $resolved, ?string $savedBy): ?array {
-		$config = ($node['config'] ?? []);
-		if (is_array($config) === false) {
-			$config = [];
-		}
+	private function checkedConfig(array $node, IFlowNode $resolved): array {
+		$config = $this->configOf(node: $node);
 
 		// The node's own message goes through unchanged: it names the key and
 		// says why, which is the point of asking the node rather than
 		// re-implementing its rules out here.
 		$resolved->validateConfig($config);
 
-		$stamped = $this->validateDelegation(config: $config, savedBy: $savedBy);
-		if ($stamped === $config) {
+		return $config;
+	}//end checkedConfig()
+
+	/**
+	 * The node carrying its delegation-stamped config, or null when the stamp changed nothing.
+	 *
+	 * @param array<string, mixed> $node    The stored node.
+	 * @param array<string, mixed> $stamped The config after the delegation check.
+	 *
+	 * @return array<string, mixed>|null The node with its stamped config, or null when unchanged.
+	 *
+	 * @spec openspec/specs/delegation-grants/spec.md
+	 */
+	private function stampedNode(array $node, array $stamped): ?array {
+		if ($stamped === $this->configOf(node: $node)) {
 			return null;
 		}
 
@@ -339,35 +368,57 @@ class FlowTriggerValidator implements FlowTriggerValidatorInterface {
 			return $config;
 		}
 
-		// Only NOW does the delegation service become load-bearing, and only now
-		// does a resolution failure have to fail closed. Refusing every flow save
-		// because a container could not build a service most saves never touch
-		// would turn an infrastructure fault into an editing outage — the same
-		// reasoning that makes registry() return null rather than throw.
-		$delegation = $this->delegationService(savedBy: $savedBy, runAs: $runAs);
-
-		$verdict = $delegation->verdictFor(
-			request: new DelegationRequest(principal: $savedBy, actingAs: $runAs, scope: [], now: new DateTime())
-		);
+		$request = new DelegationRequest(principal: $savedBy, actingAs: $runAs, scope: [], now: new DateTime());
+		$verdict = $this->delegationVerdict(request: $request);
 		if ($verdict->permitted === true) {
 			$config[self::CONFIG_DECLARED_BY] = $savedBy;
 
 			return $config;
 		}
 
+		throw $this->delegationRefusal(request: $request, verdict: $verdict);
+	}//end validateDelegation()
+
+	/**
+	 * Whether the saver may act as the trigger's identity.
+	 *
+	 * @param DelegationRequest $request The saver acting as the trigger's identity, now.
+	 *
+	 * @return DelegationVerdict The verdict.
+	 */
+	private function delegationVerdict(DelegationRequest $request): DelegationVerdict {
+		// Only NOW does the delegation service become load-bearing, and only now
+		// does a resolution failure have to fail closed. Refusing every flow save
+		// because a container could not build a service most saves never touch
+		// would turn an infrastructure fault into an editing outage — the same
+		// reasoning that makes registry() return null rather than throw.
+		$delegation = $this->delegationService(savedBy: $request->principal, runAs: $request->actingAs);
+
+		return $delegation->verdictFor(request: $request);
+	}//end delegationVerdict()
+
+	/**
+	 * The refusal of a schedule trigger whose saver may not act as its identity.
+	 *
+	 * @param DelegationRequest $request The refused delegation.
+	 * @param DelegationVerdict $verdict Why it was refused.
+	 *
+	 * @return InvalidArgumentException The refusal.
+	 */
+	private function delegationRefusal(DelegationRequest $request, DelegationVerdict $verdict): InvalidArgumentException {
 		// The reason is in the message because the four refusals send the author
 		// to four different places — ask, wait, give up, or find an
 		// administrator. "Not allowed" sends them to all four.
-		throw new InvalidArgumentException(
+		return new InvalidArgumentException(
 			sprintf(
 				'The schedule trigger names "%s", but "%s" may not act as them (%s). %s',
-				$runAs,
-				$savedBy,
+				$request->actingAs,
+				$request->principal,
 				$verdict->reason,
 				$verdict->detail
 			)
 		);
-	}//end validateDelegation()
+	}//end delegationRefusal()
 
 	/**
 	 * Whether a trigger asserts a delegation: it names someone other than the saving user.

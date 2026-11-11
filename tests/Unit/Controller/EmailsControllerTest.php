@@ -22,6 +22,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Unit tests for EmailsController.
@@ -85,7 +86,7 @@ class EmailsControllerTest extends TestCase {
 
 		$expected = ['results' => [['linkId' => 1]], 'total' => 1];
 		$this->emailService->method('getEmailsForObject')
-			->with('abc-123', null, null)
+			->with('abc-123', new ListQuery(limit: ListQuery::UNBOUNDED))
 			->willReturn($expected);
 
 		$response = $this->controller->index('reg', 'sch', 'abc-123');

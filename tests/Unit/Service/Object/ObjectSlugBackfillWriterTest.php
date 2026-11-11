@@ -15,8 +15,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -43,7 +45,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 	/** @var IDBConnection&MockObject */
 	private IDBConnection $db;
 
-	/** @var list<array> Audit entries as the arguments of createSlugBackfillEntry. */
+	/** @var list<array> Audit entries as the changes and summary passed to recordSlugBackfill. */
 	private array $audits = [];
 
 	private Register $register;
@@ -72,9 +74,9 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->cacheHandler = $this->createMock(CacheHandler::class);
 		$this->db = $this->createMock(IDBConnection::class);
 		$auditTrail = $this->createMock(AuditTrailMapper::class);
-		$auditTrail->method('createSlugBackfillEntry')->willReturnCallback(
-			function (array $changes, array $summary, ?int $register=null, ?int $schema=null): AuditTrail {
-				$this->audits[] = ['changes' => $changes, 'summary' => $summary];
+		$auditTrail->method('recordSlugBackfill')->willReturnCallback(
+			function (SlugBackfill $backfill): AuditTrail {
+				$this->audits[] = ['changes' => $backfill->changes, 'summary' => $backfill->summary];
 				return new AuditTrail();
 			}
 		);
@@ -94,7 +96,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->writer = new ObjectSlugBackfillWriter(
 			magicMapper: $this->magicMapper,
 			db: $this->db,
-			ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, auditTrail: $auditTrail, logger: $this->logger),
+			ledger: new ObjectSlugBackfillLedger(cacheHandler: $this->cacheHandler, audit: new \OCA\OpenRegister\Service\Object\AuditRecording(trail: $auditTrail, logger: $this->logger)),
 			logger: $this->logger
 		);
 	}//end setUp()
@@ -154,7 +156,8 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		);
 		$written = [];
 		$this->magicMapper->method('updateSlugColumn')->willReturnCallback(
-			function (...$args) use (&$written): int {
+			function (RegisterSchema $table, mixed ...$rest) use (&$written): int {
+				$args = [$table->register, $table->schema, ...$rest];
 				$written[] = $args['slug'] ?? $args[3];
 				return 1;
 			}

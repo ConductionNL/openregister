@@ -195,27 +195,18 @@ class ValidateObject implements ValidateObjectInterface {
 	 * MUST throw `ValidationException` (or return an equivalent 422 response) when
 	 * this method returns a non-empty list.
 	 *
-	 * @param array $incomingObject The candidate object data (top-level keys
-	 *                              are property names).
-	 * @param array $existingObject The previously-stored object data (same
-	 *                              shape). Pass the empty array `[]` to
-	 *                              opt out (CREATE / no existing record).
-	 * @param Schema $schema The schema whose `readOnly` declarations
-	 *                       drive enforcement.
+	 * @param WriteConstraintCheck $check  The candidate and the previously-stored object data. An empty
+	 *                                     stored side opts out (CREATE / no existing record).
+	 * @param Schema               $schema The schema whose `readOnly` declarations drive enforcement.
 	 *
 	 * @return array<int, array{property: string, attempted: mixed, stored: mixed, message: string}>
 	 */
-	public function validateReadOnlyConstraints(
-		array $incomingObject,
-		array $existingObject,
-		Schema $schema,
-	): array {
-		if ($existingObject === []) {
+	public function validateReadOnlyConstraints(WriteConstraintCheck $check, Schema $schema): array {
+		if ($check->hasStored() === false) {
 			return [];
 		}
 
-		return (new WriteConstraintCheck(incoming: $incomingObject, stored: $existingObject))
-			->readOnlyViolations(names: self::flaggedProperties(schema: $schema, keyword: 'readOnly'));
+		return $check->readOnlyViolations(names: self::flaggedProperties(schema: $schema, keyword: 'readOnly'));
 	}//end validateReadOnlyConstraints()
 
 	/**
@@ -236,26 +227,20 @@ class ValidateObject implements ValidateObjectInterface {
 	 * Returns the list of violations, empty when the update is compliant.
 	 * Callers MUST refuse the write when this returns a non-empty list.
 	 *
-	 * @param array $incomingObject The candidate object data.
-	 * @param array $existingObject The previously-stored object data. Pass `[]`
-	 *                              to opt out (CREATE / no existing record).
-	 * @param Schema $schema The schema whose declarations drive enforcement.
+	 * @param WriteConstraintCheck $check  The candidate and the previously-stored object data. An empty
+	 *                                     stored side opts out (CREATE / no existing record).
+	 * @param Schema               $schema The schema whose declarations drive enforcement.
 	 *
 	 * @return array<int, array{property: string, attempted: mixed, stored: mixed, message: string}>
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function validateImmutableConstraints(
-		array $incomingObject,
-		array $existingObject,
-		Schema $schema,
-	): array {
-		if ($existingObject === []) {
+	public function validateImmutableConstraints(WriteConstraintCheck $check, Schema $schema): array {
+		if ($check->hasStored() === false) {
 			return [];
 		}
 
-		return (new WriteConstraintCheck(incoming: $incomingObject, stored: $existingObject))
-			->immutableViolations(names: self::flaggedProperties(schema: $schema, keyword: Schema::IMMUTABLE_PROPERTY_KEYWORD));
+		return $check->immutableViolations(names: self::flaggedProperties(schema: $schema, keyword: Schema::IMMUTABLE_PROPERTY_KEYWORD));
 	}//end validateImmutableConstraints()
 
 	/**
@@ -298,12 +283,18 @@ class ValidateObject implements ValidateObjectInterface {
 	}//end validateImmutableConstraints()
 
 	/**
+	 * Reads and applies the recorded-incompleteness record; constructed on first use.
+	 *
+	 * @var NotSuppliedHandler|null
+	 */
+	private ?NotSuppliedHandler $notSuppliedHandler = null;
+
+	/**
 	 * Constructor for ValidateObject
 	 *
-	 * @param ValidationSchemaSource  $schemas            Loads the schemas and resolves their references.
-	 * @param ValidationLookups       $lookups            Looks existing objects and users up.
-	 * @param LoggerInterface         $logger             Logger for logging operations.
-	 * @param NotSuppliedHandler|null $notSuppliedHandler Reads and applies the recorded-incompleteness record.
+	 * @param ValidationSchemaSource $schemas Loads the schemas and resolves their references.
+	 * @param ValidationLookups      $lookups Looks existing objects and users up.
+	 * @param LoggerInterface        $logger  Logger for logging operations.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
@@ -311,7 +302,6 @@ class ValidateObject implements ValidateObjectInterface {
 		private readonly ValidationSchemaSource $schemas,
 		private readonly ValidationLookups $lookups,
 		private readonly LoggerInterface $logger,
-		private ?NotSuppliedHandler $notSuppliedHandler = null,
 	) {
 	}//end __construct()
 
@@ -1167,7 +1157,7 @@ class ValidateObject implements ValidateObjectInterface {
 		// they must be left untouched - replacing their properties with a bare {id} stub while
 		// an authored `additionalProperties: false` survives the clean would reject every one
 		// of the schema's own sub-properties. See or#290.
-		if (self::isInlineValueObject(handling: $handling, hasRef: $hasRef, itemsSchema: $itemsSchema) === true) {
+		if (self::isInlineValueObject(itemsSchema: $itemsSchema) === true) {
 			return $itemsSchema;
 		}
 
@@ -1202,16 +1192,19 @@ class ValidateObject implements ValidateObjectInterface {
 	/**
 	 * Whether object items are an inline value object: own properties and no relation marker.
 	 *
-	 * @param mixed  $handling    The objectConfiguration handling, or null.
-	 * @param bool   $hasRef      Whether the items carry a $ref.
+	 * The markers are the ones transformArrayItemsForValidation() reads: objectConfiguration
+	 * handling and a $ref.
+	 *
 	 * @param object $itemsSchema The items schema.
 	 *
 	 * @return bool True for an inline value object
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
-	private static function isInlineValueObject(mixed $handling, bool $hasRef, object $itemsSchema): bool {
-		return $handling === null && $hasRef === false && isset($itemsSchema->properties) === true;
+	private static function isInlineValueObject(object $itemsSchema): bool {
+		return self::objectConfigurationHandling(itemsSchema: $itemsSchema) === null
+			&& ($itemsSchema->{'$ref'} ?? null) === null
+			&& isset($itemsSchema->properties) === true;
 	}//end isInlineValueObject()
 
 	/**
@@ -1372,13 +1365,28 @@ class ValidateObject implements ValidateObjectInterface {
 		object $schemaObject = new stdClass(),
 		array $plannedUsers = [],
 	): ValidationResult {
-		$this->plannedUsers = array_values(array_filter($plannedUsers, 'is_string'));
+		$check = new PlannedAccountsCheck(schema: $schema, schemaObject: $schemaObject, plannedUsers: $plannedUsers);
+		return $this->validateWithPlannedAccounts(object: $object, check: $check);
+	}//end validateObjectWithPlannedUsers()
+
+	/**
+	 * Validates an object against a schema, letting a `user` format accept the accounts a check plans to create.
+	 *
+	 * @param array                $object The object to validate.
+	 * @param PlannedAccountsCheck $check  The schema to validate against and the account ids to accept.
+	 *
+	 * @return ValidationResult The result of the validation.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 */
+	public function validateWithPlannedAccounts(array $object, PlannedAccountsCheck $check): ValidationResult {
+		$this->plannedUsers = array_values(array_filter($check->plannedUsers, 'is_string'));
 		try {
-			return $this->validateObject(object: $object, schema: $schema, schemaObject: $schemaObject);
+			return $this->validateObject(object: $object, schema: $check->schema, schemaObject: $check->schemaObject);
 		} finally {
 			$this->plannedUsers = [];
 		}
-	}//end validateObjectWithPlannedUsers()
+	}//end validateWithPlannedAccounts()
 
 	/**
 	 * Validates an object against a schema.
@@ -1386,7 +1394,6 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @param array $object The object to validate.
 	 * @param Schema|int|null $schema The schema or schema ID to validate against.
 	 * @param object $schemaObject A custom schema object for validation.
-	 * @param int $_depth The depth level for validation (unused).
 	 * @param array<string, string> $notSupplied Properties recorded as not supplied, mapped to their reason codes.
 	 *
 	 * @return ValidationResult The result of the validation.
@@ -1398,7 +1405,6 @@ class ValidateObject implements ValidateObjectInterface {
 		array $object,
 		Schema|int|string|null $schema = null,
 		object $schemaObject = new stdClass(),
-		int $_depth = 0,
 		array $notSupplied = [],
 	): ValidationResult {
 		$schema = $this->schemaEntity(schema: $schema);

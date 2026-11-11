@@ -352,6 +352,26 @@ class ShareLinkServiceTest extends TestCase {
 		$service->createShare('uuid-1', (new ShareDraft(10, IShare::TYPE_USER))->withRecipient('bob', 1));
 	}//end testCreateShareNeedsTheObjectUpdateRight()
 
+	public function testCreateShareIsRefusedWhenTheSchemaMapperIsUnreachable(): void {
+		$node = $this->buildNode(10, 'doc.txt');
+		$manager = $this->createMock(IManager::class);
+		$manager->expects($this->never())->method('createShare');
+
+		$services = $this->managedShareServices(folder: $this->buildFolder([$node]), mayUpdate: true);
+		unset($services['OCA\\OpenRegister\\Db\\SchemaMapper']);
+		$container = $this->buildContainer(
+			[
+				'OCP\\Share\\IManager' => $manager,
+				'OCP\\IUserSession' => $this->buildUserSession('alice'),
+			] + $services
+		);
+
+		$service = new ShareLinkService($this->buildLogger(), $container);
+
+		$this->expectExceptionCode(403);
+		$service->createShare('uuid-1', (new ShareDraft(10, IShare::TYPE_USER))->withRecipient('bob', 1));
+	}//end testCreateShareIsRefusedWhenTheSchemaMapperIsUnreachable()
+
 	public function testCreateShareIsOnTheAuditTrail(): void {
 		$node = $this->buildNode(10, 'doc.txt');
 		$newShare = $this->createMock(IShare::class);

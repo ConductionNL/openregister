@@ -26,6 +26,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
+use OCA\OpenRegister\Db\OutcomeFilter;
 
 /**
  * Create, run and steer bulk jobs over a selection of objects.
@@ -88,12 +89,9 @@ interface BulkJobServiceInterface {
 	public function selection(array $criteria, ?int $registerId, ?int $schemaId): BulkJobSelection;
 
 	/**
-	 * Create a job, rehearse it, and write nothing.
+	 * Create a job from what the operator asked for, rehearse it, and write nothing.
 	 *
-	 * @param BulkJobActionCall $call          The action to run and its parameters.
-	 * @param BulkJobSelection  $selection     The objects to run it on, and the register and schema they live in.
-	 * @param string            $actorUid      The actor's uid.
-	 * @param string|null       $justification The reason the operator typed.
+	 * @param BulkJobRequest $request The action, the selection, the actor and the reason.
 	 *
 	 * @return BulkJob The previewed job.
 	 *
@@ -103,7 +101,7 @@ interface BulkJobServiceInterface {
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function create(BulkJobActionCall $call, BulkJobSelection $selection, string $actorUid, ?string $justification): BulkJob;
+	public function createFromRequest(BulkJobRequest $request): BulkJob;
 
 	/**
 	 * Commit a previewed job: re-resolve, report the delta, queue the work.
@@ -198,13 +196,11 @@ interface BulkJobServiceInterface {
 	 * A page of a job's per-object outcomes.
 	 *
 	 * @param BulkJob $job The job.
-	 * @param string|null $outcome Optional outcome filter.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param OutcomeFilter|null $filter The outcome to keep (any when null) and the page; the first 100 when null.
 	 *
 	 * @return BulkJobMember[] The members.
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function members(BulkJob $job, ?string $outcome = null, int $limit = 100, int $offset = 0): array;
+	public function members(BulkJob $job, ?OutcomeFilter $filter=null): array;
 }//end interface

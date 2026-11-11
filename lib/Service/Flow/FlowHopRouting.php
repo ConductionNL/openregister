@@ -61,11 +61,13 @@ final class FlowHopRouting {
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
 	public function seed(FlowRunStart $start, Workflow $workflow): array {
-		return $this->placement->seedPlaceItems(
-			workflow: $workflow,
-			subject: $start->subject,
-			items: $start->items,
-			stored: $start->streams?->run()->getPlaceItems()
+		return $this->placement->seed(
+			seed: new ItemSeed(
+				workflow: $workflow,
+				subject: $start->subject,
+				items: $start->items,
+				stored: $start->streams?->run()->getPlaceItems()
+			)
 		);
 	}//end seed()
 
@@ -99,9 +101,11 @@ final class FlowHopRouting {
 	public function advance(FlowWalkHop|FlowStreamHop $hop): FlowHopAdvance {
 		$pass = $hop->pass;
 		$transition = $hop->transition;
-		$items = $this->router->resolveOutputTags(flow: $pass->flow, transition: $transition, items: $pass->items);
-		$taken = $this->router->takenExits(flow: $pass->flow, transition: $transition, items: $items, context: $pass->context);
-		$placeItems = $this->placement->advanceItems(transition: $transition, placeItems: $pass->placeItems, items: $items, taken: $taken);
+		$exits = $this->router->exitsOf(flow: $pass->flow, transition: $transition);
+		$items = $this->router->resolveOutputTags(exits: $exits, items: $pass->items);
+		$taken = $this->router->takenExits(exits: $exits, output: new FlowStepOutput(items: $items, context: $pass->context));
+		$firing = new ItemFiring(transition: $transition, items: $items, taken: $taken);
+		$placeItems = $this->placement->advance(firing: $firing, placeItems: $pass->placeItems);
 		$pass->workflow->apply(subject: $pass->subject, transitionName: $hop->name());
 		$this->pruneUntakenExits(hop: $hop, taken: $taken);
 
@@ -131,12 +135,12 @@ final class FlowHopRouting {
 		$tos = array_map(static fn ($t): string => (string)$t, $transition->getTos());
 		$pruned = array_values(array_diff($tos, $taken));
 
-		$this->router->keepOnlyTakenExits(workflow: $pass->workflow, subject: $pass->subject, transition: $transition, taken: $taken);
+		$this->router->keepOnlyTakenExits(hop: $hop, taken: $taken);
 
 		if ($pruned === []) {
 			return;
 		}
 
-		$this->mootness?->placesPruned(context: $pass->context, places: $pruned, byTransition: $transition->getName());
+		$this->mootness?->placesPruned(context: $pass->context, pruning: new PlacesPruning(places: $pruned, byTransition: $transition->getName()));
 	}//end pruneUntakenExits()
 }//end class

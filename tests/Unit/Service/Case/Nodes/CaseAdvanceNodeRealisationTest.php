@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
 use OCA\OpenRegister\Service\Case\Nodes\CaseStepRunner;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCP\IL10N;
@@ -33,6 +34,7 @@ use OCP\IURLGenerator;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Case\CaseItemTransition;
 
 /**
  * The plan service is a double: only the choice of row is under test here.
@@ -65,22 +67,21 @@ class CaseAdvanceNodeRealisationTest extends TestCase
         $moved->setState(CaseItem::STATE_COMPLETED);
         $plans->expects($this->once())
             ->method('transition')
-            ->with($expectedUuid, CaseItem::STATE_COMPLETED, 'alice', null)
+            ->with(new CaseItemTransition(itemUuid: $expectedUuid, to: CaseItem::STATE_COMPLETED, actor: 'alice'))
             ->willReturn($moved);
         $scope = $this->createMock(FlowRunAsScope::class);
         $scope->method('call')->willReturnCallback(static fn(array $context, callable $operation): mixed => $operation());
         $session = $this->createMock(IUserSession::class);
         $node    = new CaseAdvanceNode(
             new CaseStepRunner(plans: $plans, scope: $scope, session: $session),
-            $this->createMock(IL10N::class),
-            $this->createMock(IURLGenerator::class)
+            new \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation($this->createMock(IL10N::class), $this->createMock(IURLGenerator::class))
         );
 
-        $out = $node->execute(
-            [[FlowItems::JSON => ['uuid' => 'obj-1']]],
-            ['item' => 'review', 'to' => CaseItem::STATE_COMPLETED],
-            [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice']
-        );
+        $out = $node->execute(new FlowNodeCall(
+            items: [[FlowItems::JSON => ['uuid' => 'obj-1']]],
+            config: ['item' => 'review', 'to' => CaseItem::STATE_COMPLETED],
+            context: [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice']
+        ));
 
         $this->assertSame(['item' => 'review', 'state' => CaseItem::STATE_COMPLETED], $out[0][FlowItems::JSON]['case']);
     }//end testTheLiveRealisationOfTheKeyIsAdvanced()

@@ -17,15 +17,21 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\PersonLinkedEvent;
 use OCA\OpenRegister\Event\PersonLinkUpdatedEvent;
 use OCA\OpenRegister\Event\PersonUnlinkedEvent;
+use OCA\OpenRegister\Service\PersonLinkChange;
+use OCA\OpenRegister\Service\PersonLinkRef;
+use OCA\OpenRegister\Service\PersonLinkTarget;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
 use OCA\OpenRegister\Service\PersonLinkService;
 use OCA\OpenRegister\Service\PersonLinkTargets;
+use OCA\OpenRegister\Service\UserLinkRequest;
 use OCA\OpenRegister\Service\UserLinkWriter;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ContactCardRef;
+use OCA\OpenRegister\Service\ContactPlacement;
 
 /**
  * People on objects: the service that links a user or a contact in a role.
@@ -150,18 +156,13 @@ class PersonLinkServiceTest extends TestCase {
 	 */
 	public function testAUserPayloadWritesAUserLinkAndAnnouncesIt(): void {
 		$this->schemaDeclaresRoles();
-		$this->contacts->expects($this->never())->method('linkContact');
+		$this->contacts->expects($this->never())->method('linkCard');
 		$this->userLinks->expects($this->once())
 			->method('write')
-			->with('case-1', 5, 7, 'jan', 'handler')
+			->with(new UserLinkRequest('case-1', 5, 7, 'jan'), 'handler')
 			->willReturn($this->storedLink());
 
-		$link = $this->service->link(
-			objectUuid: 'case-1',
-			registerId: 5,
-			schemaId: 7,
-			payload: ['userId' => 'jan', 'role' => 'handler']
-		);
+		$link = $this->service->linkPerson(target: new PersonLinkTarget(objectUuid: 'case-1', registerId: 5, schemaId: 7), payload: ['userId' => 'jan', 'role' => 'handler']);
 
 		$this->assertSame('user:jan', $link->getContactUid());
 		$this->assertCount(1, $this->dispatched);
@@ -180,16 +181,11 @@ class PersonLinkServiceTest extends TestCase {
 		$this->schemaDeclaresRoles();
 		$this->userLinks->expects($this->never())->method('write');
 		$this->contacts->expects($this->once())
-			->method('linkContact')
-			->with('case-1', 5, 1, 'jan.vcf', 'initiator', 7)
+			->method('linkCard')
+			->with(new ContactCardRef(addressbookId: 1, contactUri: 'jan.vcf'), new ContactPlacement(objectUuid: 'case-1', registerId: 5, schemaId: 7, role: 'initiator'))
 			->willReturn($this->storedLink(contactUid: 'jan-uid', role: 'initiator'));
 
-		$link = $this->service->link(
-			objectUuid: 'case-1',
-			registerId: 5,
-			schemaId: 7,
-			payload: ['addressbookId' => 1, 'contactUri' => 'jan.vcf', 'role' => 'initiator']
-		);
+		$link = $this->service->linkPerson(target: new PersonLinkTarget(objectUuid: 'case-1', registerId: 5, schemaId: 7), payload: ['addressbookId' => 1, 'contactUri' => 'jan.vcf', 'role' => 'initiator']);
 
 		$this->assertSame('jan-uid', $link->getContactUid());
 		$this->assertFalse($link->isUserLink());
@@ -204,7 +200,7 @@ class PersonLinkServiceTest extends TestCase {
 		$this->schemaDeclaresRoles();
 
 		try {
-			$this->service->link(objectUuid: 'case-1', registerId: 5, schemaId: 7, payload: ['role' => 'handler']);
+			$this->service->linkPerson(target: new PersonLinkTarget(objectUuid: 'case-1', registerId: 5, schemaId: 7), payload: ['role' => 'handler']);
 			$this->fail('a payload naming no person must be refused');
 		} catch (Exception $e) {
 			$this->assertSame(400, $e->getCode());
@@ -225,12 +221,7 @@ class PersonLinkServiceTest extends TestCase {
 		$this->userLinks->expects($this->never())->method('write');
 
 		try {
-			$this->service->link(
-				objectUuid: 'case-1',
-				registerId: 5,
-				schemaId: 7,
-				payload: ['userId' => 'jan', 'role' => 'observer']
-			);
+			$this->service->linkPerson(target: new PersonLinkTarget(objectUuid: 'case-1', registerId: 5, schemaId: 7), payload: ['userId' => 'jan', 'role' => 'observer']);
 			$this->fail('a role outside the vocabulary must be refused');
 		} catch (Exception $e) {
 			$this->assertSame(400, $e->getCode());
@@ -250,15 +241,10 @@ class PersonLinkServiceTest extends TestCase {
 		$this->schemas->method('find')->willReturn(new Schema());
 		$this->userLinks->expects($this->once())
 			->method('write')
-			->with('case-1', 5, 7, 'jan', 'whatever')
+			->with(new UserLinkRequest('case-1', 5, 7, 'jan'), 'whatever')
 			->willReturn($this->storedLink(role: 'whatever'));
 
-		$this->service->link(
-			objectUuid: 'case-1',
-			registerId: 5,
-			schemaId: 7,
-			payload: ['userId' => 'jan', 'role' => 'whatever']
-		);
+		$this->service->linkPerson(target: new PersonLinkTarget(objectUuid: 'case-1', registerId: 5, schemaId: 7), payload: ['userId' => 'jan', 'role' => 'whatever']);
 
 		$this->assertCount(1, $this->dispatched);
 	}//end testASchemaWithoutAVocabularyTakesAnyRole()
@@ -282,18 +268,13 @@ class PersonLinkServiceTest extends TestCase {
 				}
 			);
 
-		$link = $this->service->link(
-			objectUuid: 'case-1',
-			registerId: 5,
-			schemaId: 7,
-			payload: [
+		$link = $this->service->linkPerson(target: new PersonLinkTarget(objectUuid: 'case-1', registerId: 5, schemaId: 7), payload: [
 				'userId' => 'jan',
 				'role' => 'handler',
 				'validFrom' => '2026-03-01',
 				'validUntil' => '2026-03-31',
 				'note' => 'Stands in for Piet',
-			]
-		);
+			]);
 
 		$this->assertSame('2026-03-01', $link->getValidFrom()->format('Y-m-d'));
 		$this->assertSame('2026-03-31', $link->getValidUntil()->format('Y-m-d'));
@@ -318,19 +299,36 @@ class PersonLinkServiceTest extends TestCase {
 			}
 		);
 
-		$link = $this->service->update(
-			objectUuid: 'case-1',
-			contactUid: 'user:jan',
-			schemaId: 7,
-			changes: ['validUntil' => '2026-12-31'],
-			currentRole: 'handler'
-		);
+		$link = $this->service->changeLink(change: new PersonLinkChange(ref: new PersonLinkRef(objectUuid: 'case-1', contactUid: 'user:jan', role: 'handler'), schemaId: 7, changes: ['validUntil' => '2026-12-31']));
 
 		$this->assertSame('handler', $link->getRole());
 		$this->assertSame('2026-12-31', $link->getValidUntil()->format('Y-m-d'));
 		$this->assertCount(1, $this->dispatched);
 		$this->assertInstanceOf(PersonLinkUpdatedEvent::class, $this->dispatched[0]);
 	}//end testAnUpdateSetsTheEndDateAndKeepsTheRole()
+
+	/**
+	 * An update to a role outside the schema's vocabulary is refused before anything is stored or announced.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 */
+	public function testAnUpdateToARoleOutsideTheVocabularyIsRefused(): void {
+		$this->schemaDeclaresRoles();
+		$this->links->method('findByObjectContactAndRole')->willReturn($this->storedLink());
+		$this->links->expects($this->never())->method('update');
+		$this->contacts->expects($this->never())->method('updateRole');
+
+		try {
+			$this->service->changeLink(change: new PersonLinkChange(ref: new PersonLinkRef(objectUuid: 'case-1', contactUid: 'user:jan', role: 'handler'), schemaId: 7, changes: ['role' => 'observer']));
+			$this->fail('a role outside the vocabulary must be refused');
+		} catch (Exception $e) {
+			$this->assertSame(400, $e->getCode());
+		}
+
+		$this->assertSame([], $this->dispatched);
+	}//end testAnUpdateToARoleOutsideTheVocabularyIsRefused()
 
 	/**
 	 * A role change on a contact link goes through the CardDAV side, so the vCard follows.
@@ -347,12 +345,7 @@ class PersonLinkServiceTest extends TestCase {
 			->method('updateRole')
 			->willReturn($this->storedLink(contactUid: 'jan-uid', role: 'handler'));
 
-		$link = $this->service->update(
-			objectUuid: 'case-1',
-			contactUid: 'jan-uid',
-			schemaId: 7,
-			changes: ['role' => 'handler']
-		);
+		$link = $this->service->changeLink(change: new PersonLinkChange(ref: new PersonLinkRef(objectUuid: 'case-1', contactUid: 'jan-uid', role: null), schemaId: 7, changes: ['role' => 'handler']));
 
 		$this->assertSame('handler', $link->getRole());
 	}//end testARoleChangeOnAContactLinkUpdatesTheVcard()
@@ -380,7 +373,7 @@ class PersonLinkServiceTest extends TestCase {
 			}
 		);
 
-		$count = $this->service->unlink(objectUuid: 'case-1', contactUid: 'user:jan');
+		$count = $this->service->removeLinks(ref: new PersonLinkRef(objectUuid: 'case-1', contactUid: 'user:jan', role: null));
 
 		$this->assertSame(2, $count);
 		$this->assertSame([11, 12], $removed);
@@ -402,7 +395,7 @@ class PersonLinkServiceTest extends TestCase {
 		$this->links->expects($this->never())->method('findByObjectUuid');
 		$this->contacts->expects($this->once())->method('unlinkContact')->with(12);
 
-		$this->assertSame(1, $this->service->unlink(objectUuid: 'case-1', contactUid: 'user:jan', role: 'initiator'));
+		$this->assertSame(1, $this->service->removeLinks(ref: new PersonLinkRef(objectUuid: 'case-1', contactUid: 'user:jan', role: 'initiator')));
 	}//end testUnlinkWithARoleRemovesOnlyThatLink()
 
 	/**
@@ -416,7 +409,7 @@ class PersonLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(404);
 
-		$this->service->unlink(objectUuid: 'case-1', contactUid: 'user:ghost');
+		$this->service->removeLinks(ref: new PersonLinkRef(objectUuid: 'case-1', contactUid: 'user:ghost', role: null));
 	}//end testUnlinkingSomeoneWhoIsNotLinkedIs404()
 
 	/**

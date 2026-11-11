@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Command\Support;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
@@ -38,20 +39,40 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
  */
 final class RematerialiseStorage {
 	/**
+	 * Register lookup mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup mapper.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Magic table mapper for objects.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	public readonly MagicMapperInterface $magicMapper;
+
+	/**
 	 * Bundle the services.
 	 *
-	 * @param RegisterMapperInterface   $registerMapper Register lookup mapper.
-	 * @param SchemaMapperInterface     $schemaMapper   Schema lookup mapper.
-	 * @param MagicMapperInterface      $magicMapper    Magic table mapper for objects.
-	 * @param ObjectOperationsInterface $objectService  Object persistence service.
+	 * @param SchemaCatalogInterface    $catalog       Register, schema and magic table mappers.
+	 * @param ObjectOperationsInterface $objectService Object persistence service.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function __construct(
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly MagicMapperInterface $magicMapper,
+		SchemaCatalogInterface $catalog,
 		public readonly ObjectOperationsInterface $objectService,
 	) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper   = $catalog->schemas();
+		$this->magicMapper    = $catalog->tables();
 	}//end __construct()
 }//end class

@@ -34,7 +34,6 @@ final class DeckLinksControllerFactory {
 		\OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface $settingsService,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\DeckLinksControllerServices(
 				deckLinkService: $deckLinkService,

@@ -33,21 +33,14 @@ use OCA\OpenRegister\Db\Register;
 interface RegisterSerializerInterface {
 
 	/**
-	 * Serialize a collection of Register entities.
+	 * Serialize a collection of Register entities with one extension for the page.
 	 *
-	 * @param Register[] $registers Registers to serialize.
-	 * @param array $extend Extension keys to apply.
-	 * @param array<int,array<int,array{total:int}>>|null $schemaStatsByRegisterId Pre-computed per-register stats
-	 *                                                                             (registerId → schemaId →
-	 *                                                                             ['total' => int]).
+	 * @param Register[]            $registers Registers to serialize.
+	 * @param RegisterListExtension $extension The extension keys and the per-register schema counts.
 	 *
 	 * @return array<int,array> Serialized payload for each register.
 	 *
 	 * @spec openspec/specs/register-service-extensions/spec.md
 	 */
-	public function serializeMany(
-		array $registers,
-		array $extend = [],
-		?array $schemaStatsByRegisterId = null,
-	): array;
+	public function serializePage(array $registers, RegisterListExtension $extension=new RegisterListExtension()): array;
 }//end interface

@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
+use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
@@ -271,8 +272,8 @@ class FederatedStoreCatalogTest extends TestCase {
 			['repo' => 'ConductionNL/works-council', 'name' => 'works-council', 'description' => 'Staff advice.'],
 		]);
 
-		$hit = $this->catalog->search(descriptor: $this->descriptor(), query: 'gemeente');
-		$miss = $this->catalog->search(descriptor: $this->descriptor(), query: 'nothing here');
+		$hit = $this->catalog->search(descriptor: $this->descriptor(), search: new StoreSearch(query: 'gemeente'));
+		$miss = $this->catalog->search(descriptor: $this->descriptor(), search: new StoreSearch(query: 'nothing here'));
 
 		$this->assertCount(1, $hit['cards']);
 		$this->assertSame('default-gemeente', $hit['cards'][0]['title']);
@@ -290,7 +291,7 @@ class FederatedStoreCatalogTest extends TestCase {
 		);
 		$this->federated->expects($this->never())->method('discover');
 
-		$result = $this->catalog->search(descriptor: $this->descriptor(), query: null, kind: 'openregister.flows');
+		$result = $this->catalog->search(descriptor: $this->descriptor(), search: new StoreSearch(query: null, kind: 'openregister.flows'));
 
 		$this->assertSame([], $result['cards']);
 	}//end testSearchFiltersByType()

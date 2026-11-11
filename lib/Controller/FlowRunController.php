@@ -33,6 +33,7 @@ use DateTimeZone;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowRunControllerServices;
 use OCA\OpenRegister\Db\AuditFlowAttributionInterface;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\FlowActivityWindow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunFilter;
@@ -200,10 +201,10 @@ class FlowRunController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(): JSONResponse {
-		$flowId = $this->request->getParam('flowId');
-		$status = $this->request->getParam('status');
-		$limit = min(200, max(1, (int)$this->request->getParam('limit', 50)));
-		$offset = max(0, (int)$this->request->getParam('offset', 0));
+		$window = new FlowRunListing(
+			limit: min(200, max(1, (int)$this->request->getParam('limit', 50))),
+			offset: max(0, (int)$this->request->getParam('offset', 0))
+		);
 
 		// Scope the history. Until this landed the endpoint returned EVERY run on
 		// the instance to any authenticated caller — including each run's log,
@@ -212,13 +213,7 @@ class FlowRunController extends Controller {
 		// triggered by the owner or by other recipients stay invisible.
 		$scope = $this->historyScope();
 		if ($scope === null) {
-			return new JSONResponse(
-				[
-					'results' => [],
-					'limit' => $limit,
-					'offset' => $offset,
-				]
-			);
+			return $this->historyPage(runs: [], window: $window);
 		}
 
 		$since = $this->sinceParam();
@@ -226,25 +221,49 @@ class FlowRunController extends Controller {
 			return $this->badSince();
 		}
 
-		$filter = new FlowRunFilter(
-			flowId: $this->stringOrNull(value: $flowId),
-			status: $this->stringOrNull(value: $status),
-			since: $since,
-			flowIds: $this->flowIdsParam()
-		);
 		$runs = $this->mapper->findAllRuns(
-			listing: new FlowRunListing(filter: $filter, limit: $limit, offset: $offset),
+			listing: $this->historyListing(since: $since, window: $window),
 			viewer: $scope
 		);
 
+		return $this->historyPage(runs: $runs, window: $window);
+	}//end index()
+
+	/**
+	 * The history listing the request asks for, within the paging window.
+	 *
+	 * @param DateTime|null  $since  The lower bound on the run's start, already parsed
+	 * @param FlowRunListing $window The clamped limit and offset
+	 *
+	 * @return FlowRunListing The filters (flowId, status, since, flowIds) with the window
+	 */
+	private function historyListing(?DateTime $since, FlowRunListing $window): FlowRunListing {
+		$filter = new FlowRunFilter(
+			flowId: $this->stringOrNull(value: $this->request->getParam('flowId')),
+			status: $this->stringOrNull(value: $this->request->getParam('status')),
+			since: $since,
+			flowIds: $this->flowIdsParam()
+		);
+
+		return new FlowRunListing(filter: $filter, limit: $window->limit, offset: $window->offset);
+	}//end historyListing()
+
+	/**
+	 * One page of run history with its paging window.
+	 *
+	 * @param array<int, FlowRun> $runs   The runs on the page
+	 * @param FlowRunListing      $window The clamped limit and offset
+	 *
+	 * @return JSONResponse The runs plus the paging window
+	 */
+	private function historyPage(array $runs, FlowRunListing $window): JSONResponse {
 		return new JSONResponse(
 			[
 				'results' => array_map(static fn (FlowRun $r): array => $r->jsonSerialize(), $runs),
-				'limit' => $limit,
-				'offset' => $offset,
+				'limit' => $window->limit,
+				'offset' => $window->offset,
 			]
 		);
-
 	}//end index()
 
 	/**
@@ -507,7 +526,7 @@ class FlowRunController extends Controller {
 		);
 		$total = $this->mapper->countActive(organisation: $organisation, subject: $subject);
 
-		return $this->page(runs: $runs, total: $total, limit: $limit);
+		return $this->page(runs: $runs, total: $total);
 
 	}//end active()
 
@@ -562,7 +581,7 @@ class FlowRunController extends Controller {
 		);
 		$total = $this->mapper->countCompletedForSubject(organisation: $organisation, subject: $subject);
 
-		return $this->page(runs: $runs, total: $total, limit: $limit);
+		return $this->page(runs: $runs, total: $total);
 
 	}//end completedForSubject()
 
@@ -609,20 +628,21 @@ class FlowRunController extends Controller {
 	 * Shared by the live read and the completed read so the two cannot drift
 	 * apart on shape: the spec makes one row contract a requirement.
 	 *
-	 * @param array<int, FlowRun> $runs The page of runs.
-	 * @param integer $total How many runs matched in all.
-	 * @param integer $limit The page size that was applied.
+	 * The limit is the page size `pageLimit()` applied to the read.
+	 *
+	 * @param array<int, FlowRun> $runs  The page of runs.
+	 * @param integer             $total How many runs matched in all.
 	 *
 	 * @return JSONResponse `{results, total, limit}`.
 	 *
 	 * @spec openspec/changes/flow-runs-subject-scope/specs/flow-runs-subject-scope/spec.md
 	 */
-	private function page(array $runs, int $total, int $limit): JSONResponse {
+	private function page(array $runs, int $total): JSONResponse {
 		return new JSONResponse(
 			[
 				'results' => array_map(fn (FlowRun $run): array => $this->summarise(run: $run), $runs),
 				'total' => $total,
-				'limit' => $limit,
+				'limit' => $this->pageLimit(),
 			]
 		);
 	}//end page()
@@ -791,38 +811,6 @@ class FlowRunController extends Controller {
 			return new JSONResponse(['error' => 'Audit trail unavailable'], Http::STATUS_SERVICE_UNAVAILABLE);
 		}
 
-		$rows = $this->auditTrails->findByRun(runUuid: $uuid);
-
-		$byNode = [];
-		foreach ($rows as $row) {
-			$node = (string)$row->getFlowNode();
-
-			if (isset($byNode[$node]) === false) {
-				$byNode[$node] = [
-					'node' => $node,
-					'step' => $row->getFlowStep(),
-					'objects' => [],
-				];
-			}
-
-			$byNode[$node]['objects'][] = [
-				'objectUuid' => $row->getObjectUuid(),
-				'register' => $row->getRegister(),
-				'schema' => $row->getSchema(),
-				'action' => $row->getAction(),
-				'step' => $row->getFlowStep(),
-				'created' => $row->getCreated()?->format('c'),
-				'auditUuid' => $row->getUuid(),
-			];
-		}
-
-		// Step order, so a reader follows the run in the order it happened
-		// rather than in whatever order the rows came back.
-		usort(
-			$byNode,
-			static fn (array $a, array $b): int => (((int)$a['step']) <=> ((int)$b['step']))
-		);
-
 		return new JSONResponse(
 			[
 				'run' => $uuid,
@@ -831,12 +819,61 @@ class FlowRunController extends Controller {
 				// nothing, and for a suspended run that has not written
 				// anything YET. Neither is an error, and neither is withheld
 				// until the run finishes.
-				// usort() re-indexed $byNode into a list, so no array_values()
-				// here: it would be a no-op that reads as a safeguard.
-				'nodes' => $byNode,
+				'nodes' => $this->touchedObjectsByNode(audits: $this->auditTrails, runUuid: $uuid),
 			]
 		);
 	}//end objects()
+
+	/**
+	 * The objects a run wrote, grouped per flow node, in step order.
+	 *
+	 * Step order, so a reader follows the run in the order it happened rather
+	 * than in whatever order the rows came back. A node's step is the step of
+	 * its first row.
+	 *
+	 * @param AuditFlowAttributionInterface $audits  The audit trail
+	 * @param string                        $runUuid The run uuid
+	 *
+	 * @return array<int, array<string, mixed>> One group per node: node, step and objects
+	 */
+	private function touchedObjectsByNode(AuditFlowAttributionInterface $audits, string $runUuid): array {
+		$byNode = [];
+		foreach ($audits->findByRun(runUuid: $runUuid) as $row) {
+			$node = (string)$row->getFlowNode();
+			if (isset($byNode[$node]) === false) {
+				$byNode[$node] = ['node' => $node, 'step' => $row->getFlowStep(), 'objects' => []];
+			}
+
+			$byNode[$node]['objects'][] = $this->touchedObject(row: $row);
+		}
+
+		// Sorting with usort() re-indexes $byNode into a list, so no array_values() is needed.
+		usort(
+			$byNode,
+			static fn (array $a, array $b): int => (((int)$a['step']) <=> ((int)$b['step']))
+		);
+
+		return $byNode;
+	}//end touchedObjectsByNode()
+
+	/**
+	 * One object a run wrote, as the touched-objects answer lists it.
+	 *
+	 * @param AuditTrail $row The audit row
+	 *
+	 * @return array<string, mixed> The object, the act and when it happened
+	 */
+	private function touchedObject(AuditTrail $row): array {
+		return [
+			'objectUuid' => $row->getObjectUuid(),
+			'register' => $row->getRegister(),
+			'schema' => $row->getSchema(),
+			'action' => $row->getAction(),
+			'step' => $row->getFlowStep(),
+			'created' => $row->getCreated()?->format('c'),
+			'auditUuid' => $row->getUuid(),
+		];
+	}//end touchedObject()
 
 	/**
 	 * Resolve a run by uuid, or null when this caller may not see it.
@@ -958,7 +995,7 @@ class FlowRunController extends Controller {
 		try {
 			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
 		} catch (FlowSignalRefused $refused) {
-			return $this->refusalResponse(refused: $refused, run: $run, verb: 'resumed');
+			return $this->refusalResponse(refused: $refused, conflict: $this->notSuspended(run: $run, verb: 'resumed'));
 		}
 
 		return new JSONResponse($signalled->jsonSerialize());
@@ -1016,7 +1053,7 @@ class FlowRunController extends Controller {
 		try {
 			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
 		} catch (FlowSignalRefused $refused) {
-			return $this->refusalResponse(refused: $refused, run: $run, verb: 'signalled');
+			return $this->refusalResponse(refused: $refused, conflict: $this->notSuspended(run: $run, verb: 'signalled'));
 		}
 
 		return new JSONResponse($signalled->jsonSerialize());
@@ -1066,15 +1103,14 @@ class FlowRunController extends Controller {
 	 * because tightening that would break every existing webhook and child-run
 	 * signal, which are not human decisions at all.
 	 *
-	 * @param FlowSignalRefused $refused The seam's refusal.
-	 * @param FlowRun $run The run the signal addressed.
-	 * @param string $verb This endpoint's verb for the 409 wording ('resumed' or 'signalled').
+	 * @param FlowSignalRefused $refused  The seam's refusal.
+	 * @param string            $conflict The 409 wording when the run is not suspended.
 	 *
 	 * @return JSONResponse The 403 or 409 the refusal maps to.
 	 *
 	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
-	private function refusalResponse(FlowSignalRefused $refused, FlowRun $run, string $verb): JSONResponse {
+	private function refusalResponse(FlowSignalRefused $refused, string $conflict): JSONResponse {
 		if ($refused->getReason() === FlowSignalRefused::NOT_ASSIGNEE) {
 			if ($refused->getActorUid() === null) {
 				return new JSONResponse(
@@ -1089,11 +1125,22 @@ class FlowRunController extends Controller {
 			);
 		}
 
-		return new JSONResponse(
-			['error' => 'Only a suspended run can be ' . $verb . '; this one is ' . $run->getStatus() . '.'],
-			Http::STATUS_CONFLICT
-		);
+		return new JSONResponse(['error' => $conflict], Http::STATUS_CONFLICT);
 	}//end refusalResponse()
+
+	/**
+	 * The 409 wording for a signal that addressed a run which is not suspended.
+	 *
+	 * @param FlowRun $run  The run the signal addressed.
+	 * @param string  $verb This endpoint's verb ('resumed' or 'signalled').
+	 *
+	 * @return string The wording, naming the run's status.
+	 *
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
+	 */
+	private function notSuspended(FlowRun $run, string $verb): string {
+		return 'Only a suspended run can be ' . $verb . '; this one is ' . $run->getStatus() . '.';
+	}//end notSuspended()
 
 	/**
 	 * The guarded signal seam, made on demand when none was injected.

@@ -57,6 +57,7 @@ use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewUnknownException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner;
 use OCA\OpenRegister\Service\Gdpr\Erasure\SubjectPartyCounter;
+use OCA\OpenRegister\Service\Gdpr\GdprCallerMembership;
 use OCA\OpenRegister\Service\RetentionService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\IResult;
@@ -70,6 +71,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use OCA\OpenRegister\Service\Gdpr\SubjectMatch;
+use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
 
 final class ErasureGoldenTest extends TestCase {
 	private const SUBJECT = 'jan@example.org';
@@ -301,7 +303,7 @@ final class ErasureGoldenTest extends TestCase {
 	}//end previewService()
 
 	public function testWholeObjectPreviewClassifiesEveryGroundExactly(): void {
-		$preview = $this->previewService($this->world())->preview('  ' . self::SUBJECT . ' ', 'email', 'whole-object');
+		$preview = $this->previewService($this->world())->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery('  ' . self::SUBJECT . ' ', 'email'), 'whole-object');
 
 		self::assertSame(self::SUBJECT, $preview['subject']);
 		self::assertSame('email', $preview['type']);
@@ -409,7 +411,7 @@ final class ErasureGoldenTest extends TestCase {
 	public function testPseudonymiseAndUnknownModesNeverDestroy(): void {
 		foreach (['pseudonymise', 'garbage'] as $mode) {
 			$this->calls = [];
-			$preview = $this->previewService($this->world())->preview(self::SUBJECT, null, $mode);
+			$preview = $this->previewService($this->world())->preview(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery(self::SUBJECT), $mode);
 
 			self::assertSame('pseudonymise', $preview['eraseMode']);
 			self::assertSame(0, $preview['counts'][ErasureBucket::ERASABLE][ErasureBucket::OBJECTS]);
@@ -472,8 +474,8 @@ final class ErasureGoldenTest extends TestCase {
 	private function runner(array $items, string $digest, ?array &$consumed): ErasureRunner {
 		$previewService = $this->createMock(ErasurePreviewService::class);
 		$previewService->method('preview')->willReturnCallback(
-			function (string $subjectId, ?string $type, string $eraseMode) use ($items, $digest): array {
-				$this->calls[] = 'preview:' . $subjectId . ':' . $type . ':' . $eraseMode;
+			function (\OCA\OpenRegister\Service\Gdpr\SubjectQuery $subject, string $eraseMode) use ($items, $digest): array {
+				$this->calls[] = 'preview:' . $subject->subjectId . ':' . $subject->type . ':' . $eraseMode;
 
 				return ['items' => $items, 'digest' => $digest];
 			}
@@ -578,8 +580,9 @@ final class ErasureGoldenTest extends TestCase {
 		);
 
 		$recorder = $this->createMock(DestructionRecorder::class);
-		$recorder->method('record')->willReturnCallback(
-			function (ObjectEntity $object, array $scope, string $rule, array $context): array {
+		$recorder->method('recordDestruction')->willReturnCallback(
+			function (RecordDestructionCommand $command): array {
+				[$object, $scope, $rule, $context] = [$command->object, $command->scope, $command->rule, $command->context];
 				$this->calls[] = 'record:' . $object->getUuid() . ':' . $rule . ':' . json_encode($context);
 				if ($object->getUuid() === 'x3') {
 					throw new RuntimeException('record failed');
@@ -767,7 +770,7 @@ final class ErasureGoldenTest extends TestCase {
 			}
 		);
 
-		return new ErasurePreviewStore($mapper, $session, $groups, new NullLogger());
+		return new ErasurePreviewStore($mapper, new GdprCallerMembership($session, $groups, new NullLogger()));
 	}//end store()
 
 	private function row(string $status, string $owner = 'handler', ?DateTime $consumedAt = null): ErasurePreview {

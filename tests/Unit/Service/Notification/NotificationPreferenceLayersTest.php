@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
 use OCP\IConfig;
@@ -14,6 +15,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
 
 /**
  * Covers the three-layer merge and the scoped preference.
@@ -126,12 +128,7 @@ class NotificationPreferenceLayersTest extends TestCase {
 	public function testGroupDefaultOverridesSchemaDefaultAndIsNamed(): void {
 		$this->inGroups(['behandelaars']);
 
-		$this->service->setGroupDefault(
-			groupId: 'behandelaars',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			default: ['enabled' => true, 'channels' => ['nc-notification']]
-		);
+		$this->service->storeGroupDefault(write: new PreferenceWrite(party: 'behandelaars', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn'), value: ['enabled' => true, 'channels' => ['nc-notification']]));
 
 		$effective = $this->service->resolveEffective(
 			schemaDefault: ['enabled' => true, 'channels' => ['email', 'nc-notification']],
@@ -150,18 +147,8 @@ class NotificationPreferenceLayersTest extends TestCase {
 	public function testUserOverrideBeatsGroupDefault(): void {
 		$this->inGroups(['behandelaars']);
 
-		$this->service->setGroupDefault(
-			groupId: 'behandelaars',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			default: ['enabled' => true, 'channels' => ['nc-notification']]
-		);
-		$this->service->setOverride(
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			override: ['enabled' => true, 'channels' => ['email']]
-		);
+		$this->service->storeGroupDefault(write: new PreferenceWrite(party: 'behandelaars', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn'), value: ['enabled' => true, 'channels' => ['nc-notification']]));
+		$this->service->storeOverride(write: new PreferenceWrite(party: 'anna', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn'), value: ['enabled' => true, 'channels' => ['email']]));
 
 		$effective = $this->service->resolveEffective(
 			schemaDefault: ['enabled' => true, 'channels' => ['email', 'nc-notification']],
@@ -181,12 +168,7 @@ class NotificationPreferenceLayersTest extends TestCase {
 	public function testAGroupDefaultDoesNotReachAnotherGroup(): void {
 		$this->inGroups(['baliemedewerkers']);
 
-		$this->service->setGroupDefault(
-			groupId: 'behandelaars',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			default: ['enabled' => false]
-		);
+		$this->service->storeGroupDefault(write: new PreferenceWrite(party: 'behandelaars', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn'), value: ['enabled' => false]));
 
 		$effective = $this->service->resolveEffective(
 			schemaDefault: ['enabled' => true, 'channels' => ['email']],
@@ -207,20 +189,9 @@ class NotificationPreferenceLayersTest extends TestCase {
 		$this->inGroups([]);
 
 		// Globally off.
-		$this->service->setOverride(
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			override: ['enabled' => false]
-		);
+		$this->service->storeOverride(write: new PreferenceWrite(party: 'anna', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn'), value: ['enabled' => false]));
 		// On for vergunningen.
-		$this->service->setOverride(
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			override: ['enabled' => true, 'channels' => ['email']],
-			scope: 'schema:vergunning'
-		);
+		$this->service->storeOverride(write: new PreferenceWrite(party: 'anna', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn', scope: 'schema:vergunning'), value: ['enabled' => true, 'channels' => ['email']]));
 
 		$scoped = $this->service->resolveEffective(
 			schemaDefault: ['enabled' => true, 'channels' => ['email']],
@@ -250,12 +221,7 @@ class NotificationPreferenceLayersTest extends TestCase {
 	public function testAnUnsetScopeFallsThroughToTheGlobalValue(): void {
 		$this->inGroups([]);
 
-		$this->service->setOverride(
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			override: ['enabled' => false]
-		);
+		$this->service->storeOverride(write: new PreferenceWrite(party: 'anna', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn'), value: ['enabled' => false]));
 
 		$effective = $this->service->resolveEffective(
 			schemaDefault: ['enabled' => true],
@@ -277,20 +243,8 @@ class NotificationPreferenceLayersTest extends TestCase {
 	public function testTheNarrowestScopeWins(): void {
 		$this->inGroups([]);
 
-		$this->service->setOverride(
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			override: ['enabled' => false],
-			scope: 'register:7'
-		);
-		$this->service->setOverride(
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			override: ['enabled' => true],
-			scope: 'schema:zaak'
-		);
+		$this->service->storeOverride(write: new PreferenceWrite(party: 'anna', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn', scope: 'register:7'), value: ['enabled' => false]));
+		$this->service->storeOverride(write: new PreferenceWrite(party: 'anna', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn', scope: 'schema:zaak'), value: ['enabled' => true]));
 
 		$effective = $this->service->resolveEffective(
 			schemaDefault: ['enabled' => false],
@@ -310,18 +264,8 @@ class NotificationPreferenceLayersTest extends TestCase {
 	public function testTheLayersAreTraced(): void {
 		$this->inGroups(['behandelaars']);
 
-		$this->service->setGroupDefault(
-			groupId: 'behandelaars',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			default: ['enabled' => true, 'channels' => ['nc-notification']]
-		);
-		$this->service->setOverride(
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			override: ['enabled' => false]
-		);
+		$this->service->storeGroupDefault(write: new PreferenceWrite(party: 'behandelaars', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn'), value: ['enabled' => true, 'channels' => ['nc-notification']]));
+		$this->service->storeOverride(write: new PreferenceWrite(party: 'anna', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn'), value: ['enabled' => false]));
 
 		$effective = $this->service->resolveEffective(
 			schemaDefault: ['enabled' => true, 'channels' => ['email', 'nc-notification']],
@@ -341,12 +285,7 @@ class NotificationPreferenceLayersTest extends TestCase {
 	public function testAGroupCannotWidenBeyondTheSchemasChannels(): void {
 		$this->inGroups(['behandelaars']);
 
-		$this->service->setGroupDefault(
-			groupId: 'behandelaars',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			default: ['enabled' => true, 'channels' => ['email', 'talk']]
-		);
+		$this->service->storeGroupDefault(write: new PreferenceWrite(party: 'behandelaars', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn'), value: ['enabled' => true, 'channels' => ['email', 'talk']]));
 
 		$effective = $this->service->resolveEffective(
 			schemaDefault: ['enabled' => true, 'channels' => ['email']],
@@ -364,18 +303,8 @@ class NotificationPreferenceLayersTest extends TestCase {
 	public function testClearingAGroupDefaultRestoresTheSchemaDefault(): void {
 		$this->inGroups(['behandelaars']);
 
-		$this->service->setGroupDefault(
-			groupId: 'behandelaars',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			default: ['enabled' => false]
-		);
-		$this->service->setGroupDefault(
-			groupId: 'behandelaars',
-			schemaSlug: 'zaak',
-			notificationKey: 'termijn',
-			default: null
-		);
+		$this->service->storeGroupDefault(write: new PreferenceWrite(party: 'behandelaars', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn'), value: ['enabled' => false]));
+		$this->service->storeGroupDefault(write: new PreferenceWrite(party: 'behandelaars', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'termijn'), value: null));
 
 		$effective = $this->service->resolveEffective(
 			schemaDefault: ['enabled' => true],
@@ -395,9 +324,9 @@ class NotificationPreferenceLayersTest extends TestCase {
 	public function testAScopedKeyIsDistinctFromTheGlobalKey(): void {
 		$this->assertNotSame(
 			$this->service->configKey('zaak', 'termijn'),
-			$this->service->scopedConfigKey('schema:zaak', 'zaak', 'termijn')
+			$this->service->scopedKeyFor(new PreferenceAddress('zaak', 'termijn', 'schema:zaak'))
 		);
-		$this->assertLessThanOrEqual(64, strlen($this->service->scopedConfigKey('schema:zaak', 'zaak', 'termijn')));
+		$this->assertLessThanOrEqual(64, strlen($this->service->scopedKeyFor(new PreferenceAddress('zaak', 'termijn', 'schema:zaak'))));
 	}
 
 	/**
@@ -405,15 +334,11 @@ class NotificationPreferenceLayersTest extends TestCase {
 	 * and two different long triples do not collide on one row.
 	 */
 	public function testALongScopedKeyCompressesWithoutColliding(): void {
-		$one = $this->service->scopedConfigKey(
-			'domain:vergunningen-en-handhaving-afdeling-west',
-			'openregister_configuration',
-			'configuration-changed'
+		$one = $this->service->scopedKeyFor(
+			new PreferenceAddress('openregister_configuration', 'configuration-changed', 'domain:vergunningen-en-handhaving-afdeling-west')
 		);
-		$two = $this->service->scopedConfigKey(
-			'domain:vergunningen-en-handhaving-afdeling-oost',
-			'openregister_configuration',
-			'configuration-changed'
+		$two = $this->service->scopedKeyFor(
+			new PreferenceAddress('openregister_configuration', 'configuration-changed', 'domain:vergunningen-en-handhaving-afdeling-oost')
 		);
 
 		$this->assertLessThanOrEqual(64, strlen($one));

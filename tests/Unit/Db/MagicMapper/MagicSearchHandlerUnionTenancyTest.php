@@ -30,8 +30,10 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -118,7 +120,7 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 	private function sqlFor(MagicSearchHandler $handler, array $query = []): string {
 		return implode(
 			' AND ',
-			$handler->buildWhereConditionsSql(query: $query, schema: new Schema())
+			$handler->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: new Schema())))
 		);
 	}//end sqlFor()
 
@@ -357,7 +359,7 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 		$scope = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
 		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
 
-		$decided = $method->invoke($this->handler($scope), [], new Schema(), 1);
+		$decided = $method->invoke($this->handler($scope), [], new MagicReadTable(schema: new Schema(), registerId: 1));
 
 		$this->assertSame($scope, $decided);
 	}//end testARelatedRowSubqueryIsConfinedToTheCallersOrganisation()
@@ -371,10 +373,10 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 		$scope  = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
 		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
 
-		$waived = $method->invoke($this->handler($scope, conditionalBypass: true), [], new Schema(), 1);
+		$waived = $method->invoke($this->handler($scope, conditionalBypass: true), [], new MagicReadTable(schema: new Schema(), registerId: 1));
 		$this->assertSame(MagicOrganizationHandler::SCOPE_ALL, $waived['mode']);
 
-		$held = $method->invoke($this->handler($scope, conditionalBypass: true, holdsGrants: true), [], new Schema(), 1);
+		$held = $method->invoke($this->handler($scope, conditionalBypass: true, holdsGrants: true), [], new MagicReadTable(schema: new Schema(), registerId: 1));
 		$this->assertSame($scope, $held);
 	}//end testARelatedRowSubqueryWaivesTheBoundaryExactlyWhereTheListDoes()
 	/**
@@ -391,7 +393,7 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 
 		foreach (['_related', '_referenced'] as $key) {
 			try {
-				$handler->buildWhereConditionsSql(query: [$key => ['caseProperty' => ['case' => ['value' => 'x']]]], schema: new Schema());
+				$handler->buildWhereClause(request: new WhereClauseRequest(query: [$key => ['caseProperty' => ['case' => ['value' => 'x']]]], table: new MagicReadTable(schema: new Schema())));
 				$this->fail('Expected a refusal for ' . $key);
 			} catch (\OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException $e) {
 				$this->assertStringContainsString("'" . $key . "'", $e->getMessage());
@@ -399,7 +401,7 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 		}
 
 		// The control: without the keys the same builder answers.
-		$this->assertIsArray($handler->buildWhereConditionsSql(query: [], schema: new Schema()));
+		$this->assertIsArray($handler->buildWhereClause(request: new WhereClauseRequest(query: [], table: new MagicReadTable(schema: new Schema()))));
 	}//end testTheUnionBuilderRefusesRelatedRowFilters()
 
 	/**
@@ -411,13 +413,13 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 		$scope  = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
 		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
 
-		$off = $method->invoke($this->handler($scope), ['_multitenancy' => false], new Schema(), 1);
+		$off = $method->invoke($this->handler($scope), ['_multitenancy' => false], new MagicReadTable(schema: new Schema(), registerId: 1));
 		$this->assertSame(MagicOrganizationHandler::SCOPE_ALL, $off['mode']);
 
 		// A string 'false' from the query string is read as false too; an unreadable value keeps the boundary ON.
-		$string = $method->invoke($this->handler($scope), ['_multitenancy' => 'false'], new Schema(), 1);
+		$string = $method->invoke($this->handler($scope), ['_multitenancy' => 'false'], new MagicReadTable(schema: new Schema(), registerId: 1));
 		$this->assertSame(MagicOrganizationHandler::SCOPE_ALL, $string['mode']);
-		$garbage = $method->invoke($this->handler($scope), ['_multitenancy' => ['x']], new Schema(), 1);
+		$garbage = $method->invoke($this->handler($scope), ['_multitenancy' => ['x']], new MagicReadTable(schema: new Schema(), registerId: 1));
 		$this->assertSame($scope, $garbage);
 	}//end testARelatedRowSubqueryHonoursTheMultitenancyOptOut()
 
@@ -431,7 +433,7 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
 
 		// Even a handler that WOULD waive the boundary for an RBAC caller must not do so with RBAC off.
-		$decided = $method->invoke($this->handler($scope, conditionalBypass: true), ['_rbac' => false], new Schema(), 1);
+		$decided = $method->invoke($this->handler($scope, conditionalBypass: true), ['_rbac' => false], new MagicReadTable(schema: new Schema(), registerId: 1));
 
 		$this->assertSame($scope, $decided);
 	}//end testARelatedRowSubqueryKeepsTheBoundaryWhenRbacIsOff()
@@ -445,7 +447,7 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 		$none   = ['mode' => MagicOrganizationHandler::SCOPE_NONE, 'uuids' => []];
 		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
 
-		$decided = $method->invoke($this->handler($none), [], new Schema(), 1);
+		$decided = $method->invoke($this->handler($none), [], new MagicReadTable(schema: new Schema(), registerId: 1));
 
 		$this->assertSame($none, $decided);
 	}//end testARelatedRowSubqueryGivesAnAnonymousCallerNoRows()
@@ -461,10 +463,10 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 		$public = new Schema();
 		$public->setAuthorization(['read' => ['public']]);
 
-		$dropped = $method->invoke($this->handler($scope), [], $public, 1);
+		$dropped = $method->invoke($this->handler($scope), [], new MagicReadTable(schema: $public, registerId: 1));
 		$this->assertSame(MagicOrganizationHandler::SCOPE_ALL, $dropped['mode']);
 
-		$explicit = $method->invoke($this->handler($scope), ['_multitenancy_explicit' => true], $public, 1);
+		$explicit = $method->invoke($this->handler($scope), ['_multitenancy_explicit' => true], new MagicReadTable(schema: $public, registerId: 1));
 		$this->assertSame($scope, $explicit);
 	}//end testARelatedRowSubqueryOfAPublicSchemaDropsTheBoundaryUnlessExplicit()
 }//end class

@@ -30,9 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
 
@@ -46,14 +45,12 @@ class DraftDiscard {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface  $objects   Reads and deletes objects.
-	 * @param RegisterMapperInterface $registers Resolves the destination register.
-	 * @param SchemaMapperInterface   $schemas   Resolves the destination schema.
+	 * @param ObjectOperationsInterface $objects Reads and deletes objects.
+	 * @param SchemaCatalogInterface    $catalog Resolves the destination register and schema.
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		private readonly RegisterMapperInterface $registers,
-		private readonly SchemaMapperInterface $schemas,
+		private readonly SchemaCatalogInterface $catalog,
 	) {
 
 	}//end __construct()
@@ -82,7 +79,10 @@ class DraftDiscard {
 			return false;
 		}
 
-		$draft = (new DraftFinder(objects: $this->objects))->own(register: $register, schema: $schema, draftId: $draftId, owner: $request->owner);
+		$draft = (new DraftFinder(objects: $this->objects))->own(
+			address: new DraftAddress(register: $register, schema: $schema, draftId: $draftId),
+			owner: $request->owner
+		);
 		if ($draft === null) {
 			return false;
 		}
@@ -115,7 +115,7 @@ class DraftDiscard {
 			return $reference;
 		}
 
-		return $this->registers->find((string)$reference, _rbac: false, _multitenancy: false);
+		return $this->catalog->registers()->find((string)$reference, _rbac: false, _multitenancy: false);
 	}//end register()
 
 	/**
@@ -130,6 +130,6 @@ class DraftDiscard {
 			return $reference;
 		}
 
-		return $this->schemas->find((string)$reference, _multitenancy: false);
+		return $this->catalog->schemas()->find((string)$reference, _multitenancy: false);
 	}//end schema()
 }//end class

@@ -22,10 +22,13 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost\Scheduling;
 
 use OCA\OpenRegister\AppHost\Scheduling\ApplicationRegister;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
@@ -68,7 +71,7 @@ class ApplicationRegisterTest extends TestCase {
 		$slugs = $this->createMock(RegisterSlugResolverInterface::class);
 		$slugs->method('slugOrNull')->with('buildiq')->willReturn('buildiq-acme');
 
-		return new ApplicationRegister($registers, $schemas, $slugs);
+		return new ApplicationRegister(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), $slugs);
 	}
 
 	public function testAnObjectOfTheSchemaInTheApplicationsRegisterIsHeld(): void {
@@ -91,7 +94,7 @@ class ApplicationRegisterTest extends TestCase {
 		$slugs = $this->createMock(RegisterSlugResolverInterface::class);
 		$slugs->expects($this->never())->method('slugOrNull');
 
-		$subject = new ApplicationRegister($registers, $schemas, $slugs);
+		$subject = new ApplicationRegister(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), $slugs);
 
 		$this->assertFalse($subject->holds($this->object(), 'application'));
 	}
@@ -100,8 +103,7 @@ class ApplicationRegisterTest extends TestCase {
 		$slugs = $this->createMock(RegisterSlugResolverInterface::class);
 		$slugs->expects($this->once())->method('slugOrNull')->with('buildiq')->willReturn(null);
 		$subject = new ApplicationRegister(
-			$this->createMock(RegisterMapperInterface::class),
-			$this->createMock(SchemaMapperInterface::class),
+			$this->createMock(SchemaCatalogInterface::class),
 			$slugs
 		);
 

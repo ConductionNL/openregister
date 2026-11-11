@@ -76,6 +76,17 @@ export function off(event, handler) {
 		listeners.delete(event)
 		return
 	}
+	removeHandler(event, handler)
+}
+
+/**
+ * Remove one handler of an event, and the event once it has none left.
+ *
+ * @param {string} event The event name.
+ * @param {Function} handler The handler.
+ * @return {void}
+ */
+function removeHandler(event, handler) {
 	const existing = listeners.get(event)
 	if (existing === undefined) {
 		return

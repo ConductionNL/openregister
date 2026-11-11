@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter;
+use OCA\OpenRegister\Service\ExampleSet\RewrittenObject;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -39,12 +40,11 @@ class ExampleSetRewriterFollowTest extends TestCase {
 	 * @return int How often the record was saved.
 	 */
 	private static function follow(array &$record, array $written): int {
-		$saves = 0;
-		(new ExampleSetRewriter())->follow($record, 'app/zaak', $written, function (array $saved) use (&$saves): void {
-			$saves++;
-		});
+		if (isset($written['app/zaak']) === false) {
+			return 0;
+		}
 
-		return $saves;
+		return (int) (new ExampleSetRewriter())->follow($record, new RewrittenObject('app/zaak', $written['app/zaak']));
 	}//end follow()
 
 	public function testOnlyTheReferencesChangeMovesAndTheRecordIsSaved(): void {

@@ -30,7 +30,9 @@ namespace OCA\OpenRegister\Command;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
+use OCA\OpenRegister\Service\Object\ObjectSlugBackfillRequest;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -46,19 +48,33 @@ use Throwable;
  */
 class BackfillObjectSlugsCommand extends Command {
 	/**
+	 * Resolves the register argument.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Resolves the schema argument.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Wire the mappers and the backfill service.
 	 *
-	 * @param RegisterMapperInterface            $registerMapper Resolves the register argument.
-	 * @param SchemaMapperInterface              $schemaMapper   Resolves the schema argument.
-	 * @param ObjectSlugBackfillServiceInterface $backfill       Plans and writes the slugs.
+	 * @param SchemaCatalogInterface             $catalog  Resolves the register and the schema argument.
+	 * @param ObjectSlugBackfillServiceInterface $backfill Plans and writes the slugs.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
+		SchemaCatalogInterface $catalog,
 		private readonly ObjectSlugBackfillServiceInterface $backfill,
 	) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper = $catalog->schemas();
 		parent::__construct();
 	}//end __construct()
 
@@ -125,7 +141,7 @@ class BackfillObjectSlugsCommand extends Command {
 		}
 
 		try {
-			$result = $this->backfill->run(register: $register, schema: $schema, dryRun: $dryRun);
+			$result = $this->backfill->run(request: new ObjectSlugBackfillRequest(register: $register, schema: $schema, dryRun: $dryRun));
 		} catch (Throwable $e) {
 			self::reportFailure(error: $e, output: $output);
 			return Command::FAILURE;

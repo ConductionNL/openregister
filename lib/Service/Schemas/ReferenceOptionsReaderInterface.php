@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Schemas;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 
 /**
@@ -33,9 +34,8 @@ interface ReferenceOptionsReaderInterface {
 	/**
 	 * What the reader answers for one property.
 	 *
-	 * @param Schema               $schema   The schema of the record being edited.
-	 * @param string               $property The reference property.
-	 * @param array<string, mixed> $record   The record being edited, saved or draft.
+	 * @param Schema        $schema The schema of the record being edited.
+	 * @param ReferencePick $pick   The reference property and the record being edited.
 	 *
 	 * @return array{filtered: bool, needs: array<int, string>, filter: array<string, mixed>,
 	 *         target: array{schema: ?string, register: ?string}} The plan.
@@ -44,7 +44,7 @@ interface ReferenceOptionsReaderInterface {
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
-	public function plan(Schema $schema, string $property, array $record): array;
+	public function plan(Schema $schema, ReferencePick $pick): array;
 
 	/**
 	 * Whether the plan can be turned into a list at all.
@@ -79,13 +79,12 @@ interface ReferenceOptionsReaderInterface {
 	 * applies the caller's own row access to it. Nothing here bypasses RBAC,
 	 * and nothing here re-implements it.
 	 *
-	 * @param array<string, mixed> $plan   The plan.
-	 * @param int                  $limit  The page size.
-	 * @param int                  $offset Where the page starts.
+	 * @param array<string, mixed> $plan The plan.
+	 * @param ListQuery            $page The page size and where the page starts.
 	 *
 	 * @return array<string, mixed> The query.
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
-	public function queryFor(array $plan, int $limit, int $offset): array;
+	public function queryFor(array $plan, ListQuery $page): array;
 }//end interface

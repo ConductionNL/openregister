@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -32,6 +33,8 @@ use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 
 /**
  * Golden record of applyDeletionActions() over SET_NULL targets (scalar, array with and without
@@ -59,7 +62,10 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 		$actual = [];
 		foreach ($this->scenarios() as $name => [$data, $analysis, $failure]) {
 			$this->seen = ['updated' => [], 'audit' => [], 'warnings' => []];
-			$result = $this->service(data: $data, failure: $failure)->applyDeletionActions($analysis, 'alice', 'root-uuid', 'org-1', 'parent-schema');
+			$result = $this->service(data: $data, failure: $failure)->applyDeletionActions(
+				$analysis,
+				new CascadeDeleteOrigin(userId: 'alice', cascadeSource: 'root-uuid', triggerSchemaSlug: 'parent-schema', organisationId: 'org-1')
+			);
 			$actual[$name] = $this->seen + ['result' => $result];
 		}
 
@@ -157,9 +163,9 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($this->createMock(ICache::class));
 
 		return new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $this->createMock(RegisterMapper::class), cacheFactory: $cacheFactory),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $cacheFactory),
 			storage: new IntegrityStorage(objectEntityMapper: $objectMapper, db: $this->createMock(IDBConnection::class)),
-			controls: new IntegrityCascadeControls(auditTrailMapper: $auditMapper, archivalGuard: new ArchivalRetentionGuard($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class))),
+			controls: new IntegrityCascadeControls(auditTrailMapper: $auditMapper, archivalGuard: new ArchivalRetentionGuard(new \OCA\OpenRegister\Service\Archival\ArchivalSchemaLookup($this->createMock(SchemaMapper::class), $this->createMock(LoggerInterface::class)))),
 			logger: $logger
 		);
 	}//end service()

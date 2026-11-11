@@ -143,6 +143,16 @@ import {
 } from '@nextcloud/vue'
 import ClipboardListOutline from 'vue-material-design-icons/ClipboardListOutline.vue'
 
+/**
+ * A URL of the flow task API.
+ *
+ * @param {string} path The task's uuid, and the action after it if any
+ * @return {string} The URL
+ */
+function flowTaskUrl(path) {
+	return generateUrl(`/apps/openregister/api/flow-tasks/${path}`)
+}
+
 export default {
 	name: 'FlowTaskDetail',
 
@@ -210,24 +220,9 @@ export default {
 		dueLabel() {
 			const task = this.task || {}
 			if (task.overdue === true) {
-				const days = Number(task.daysOverdue)
-				if (Number.isFinite(days) && days > 0) {
-					return days === 1
-						? this.t('openregister', 'Overdue by 1 day')
-						: this.t('openregister', 'Overdue by {days} days', { days })
-				}
-				return this.t('openregister', 'Overdue')
+				return this.overdueLabel(task)
 			}
-			const until = Number(task.daysUntilDue)
-			if (Number.isFinite(until) === false) {
-				return this.formatDate(task.dueAt)
-			}
-			if (until <= 0) {
-				return this.t('openregister', 'Due today')
-			}
-			return until === 1
-				? this.t('openregister', 'Due tomorrow')
-				: this.t('openregister', 'Due in {days} days', { days: until })
+			return this.dueInLabel(task)
 		},
 
 		/**
@@ -342,6 +337,81 @@ export default {
 
 	methods: {
 		/**
+		 * The due label of an overdue task: by how many days, when known.
+		 *
+		 * @spec exclude UI plumbing — due label wording
+		 * @param {object} task The task
+		 * @return {string} The label
+		 */
+		overdueLabel(task) {
+			const days = Number(task.daysOverdue)
+			if (Number.isFinite(days) && days > 0) {
+				return days === 1
+					? this.t('openregister', 'Overdue by 1 day')
+					: this.t('openregister', 'Overdue by {days} days', { days })
+			}
+			return this.t('openregister', 'Overdue')
+		},
+
+		/**
+		 * The due label of a task that is not overdue: today, tomorrow, in
+		 * how many days, or its due date when the count is unknown.
+		 *
+		 * @spec exclude UI plumbing — due label wording
+		 * @param {object} task The task
+		 * @return {string} The label
+		 */
+		dueInLabel(task) {
+			const until = Number(task.daysUntilDue)
+			if (Number.isFinite(until) === false) {
+				return this.formatDate(task.dueAt)
+			}
+			if (until <= 0) {
+				return this.t('openregister', 'Due today')
+			}
+			return until === 1
+				? this.t('openregister', 'Due tomorrow')
+				: this.t('openregister', 'Due in {days} days', { days: until })
+		},
+
+		/**
+		 * Show why the task could not be read: a missing task is just not
+		 * found, any other failure is also logged and told.
+		 *
+		 * @spec exclude UI plumbing — task read failure handling
+		 * @param {object} error The failure
+		 * @return {void}
+		 */
+		showReadFailure(error) {
+			if (error?.response?.status === 404) {
+				this.notFound = true
+				return
+			}
+			// The toast carries the user wording; the console carries
+			// the actual failure for whoever debugs it.
+			// eslint-disable-next-line no-console
+			console.error('[FlowTaskDetail] task read failed', error)
+			showError(this.t('openregister', 'Could not load the task'))
+			this.notFound = true
+		},
+
+		/**
+		 * Show a refused action in the server's words, else the default.
+		 *
+		 * @spec exclude UI plumbing — task action refusal handling
+		 * @param {object} error The failure
+		 * @return {void}
+		 */
+		showRefusal(error) {
+			const message = error?.response?.data?.error
+			showError(
+				typeof message === 'string' && message !== ''
+					? message
+					: this.t('openregister', 'The task refused that action'),
+			)
+		},
+
+		/**
 		 * Read the task through the visibility-checked detail route. A 404
 		 * renders the not-found state: a caller with no relationship to the
 		 * task learns nothing, not even that the uuid exists, and this page
@@ -356,21 +426,10 @@ export default {
 			this.notFound = false
 			this.task = null
 			try {
-				const response = await axios.get(
-					generateUrl(`/apps/openregister/api/flow-tasks/${uuid}`),
-				)
+				const response = await axios.get(flowTaskUrl(uuid))
 				this.task = response.data
 			} catch (error) {
-				if (error?.response?.status === 404) {
-					this.notFound = true
-				} else {
-					// The toast carries the user wording; the console carries
-					// the actual failure for whoever debugs it.
-					// eslint-disable-next-line no-console
-					console.error('[FlowTaskDetail] task read failed', error)
-					showError(this.t('openregister', 'Could not load the task'))
-					this.notFound = true
-				}
+				this.showReadFailure(error)
 			} finally {
 				this.loading = false
 			}
@@ -415,17 +474,9 @@ export default {
 			}
 			this.acting = true
 			try {
-				await axios.post(
-					generateUrl(`/apps/openregister/api/flow-tasks/${uuid}/${verb}`),
-					body,
-				)
+				await axios.post(flowTaskUrl(`${uuid}/${verb}`), body)
 			} catch (error) {
-				const message = error?.response?.data?.error
-				showError(
-					typeof message === 'string' && message !== ''
-						? message
-						: this.t('openregister', 'The task refused that action'),
-				)
+				this.showRefusal(error)
 			} finally {
 				this.acting = false
 				await this.load()

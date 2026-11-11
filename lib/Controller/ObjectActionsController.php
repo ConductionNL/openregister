@@ -52,8 +52,12 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitionsInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistoryInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionListInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -173,20 +177,7 @@ class ObjectActionsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		$subject = $this->subjectOf(id: $id);
-		if ($subject === null) {
-			return $this->noSuchObject();
-		}
-
-		try {
-			return new JSONResponse(['actions' => $this->list->forObject(object: $subject['object'], schema: $subject['schema'])]);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		} catch (LifecycleProviderException $e) {
-			// The app answering a provider-mode lifecycle could not be read;
-			// an empty list would claim "nothing to do" when the truth is "could not ask".
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_GATEWAY);
-		}
+		return $this->actionsFor(id: $id);
 	}//end index()
 
 	/**
@@ -205,16 +196,7 @@ class ObjectActionsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function history(string $register, string $schema, string $id): JSONResponse {
-		$subject = $this->subjectOf(id: $id);
-		if ($subject === null) {
-			return $this->noSuchObject();
-		}
-
-		try {
-			return new JSONResponse(['results' => $this->history->forObject(object: $subject['object'], schema: $subject['schema'])]);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
-		}
+		return $this->historyFor(id: $id);
 	}//end history()
 
 	/**
@@ -263,20 +245,7 @@ class ObjectActionsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function invoke(string $register, string $schema, string $id, string $action): JSONResponse {
-		$inputs = $this->request->getParam('inputs', []);
-		if (is_array($inputs) === false) {
-			return new JSONResponse(['error' => 'Send the inputs as an object "inputs".'], Http::STATUS_BAD_REQUEST);
-		}
-
-		$subject = $this->subjectOf(id: $id);
-		if ($subject === null) {
-			return $this->noSuchObject();
-		}
-
-		$run = new ObjectActionsSelection(route: ['register' => $register, 'schema' => $schema], action: $action, ids: [$id], inputs: $inputs);
-		$result = $this->runOn(subject: $subject, run: $run);
-
-		return new JSONResponse($result['body'], $result['status']);
+		return $this->invokeOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id), action: $action);
 	}//end invoke()
 
 	/**
@@ -297,15 +266,100 @@ class ObjectActionsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function invokeOnSelection(string $register, string $schema, string $action): JSONResponse {
-		$ids = $this->request->getParam('ids', []);
-		$inputs = $this->request->getParam('inputs', []);
-		if (is_array($ids) === false || $ids === [] || is_array($inputs) === false) {
-			return $this->malformedSelection();
+		return $this->selectionInvoked(table: new RegisterSchemaRef(register: $register, schema: $schema), action: $action);
+	}//end invokeOnSelection()
+
+	/**
+	 * The actions the caller may run on one object.
+	 *
+	 * @param string $id The object id or uuid.
+	 *
+	 * @return JSONResponse The actions, or the refusal.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-the-actions-a-user-may-run-on-an-object-are-listed-in-one-place
+	 */
+	private function actionsFor(string $id): JSONResponse {
+		$subject = $this->subjectOf(id: $id);
+		if ($subject === null) {
+			return $this->noSuchObject();
 		}
 
-		$ids = array_values(array_unique(array_map('strval', $ids)));
-		$route = ['register' => $register, 'schema' => $schema];
-		$selection = new ObjectActionsSelection(route: $route, action: $action, ids: $ids, inputs: $inputs);
+		try {
+			return new JSONResponse(['actions' => $this->list->forObject(object: $subject['object'], schema: $subject['schema'])]);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		} catch (LifecycleProviderException $e) {
+			// The app answering a provider-mode lifecycle could not be read;
+			// an empty list would claim "nothing to do" when the truth is "could not ask".
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_GATEWAY);
+		}
+	}//end actionsFor()
+
+	/**
+	 * The action runs recorded on one object.
+	 *
+	 * @param string $id The object id or uuid.
+	 *
+	 * @return JSONResponse The runs, or the refusal.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-every-run-is-audited-once-and-the-objects-action-history-can-be-read
+	 */
+	private function historyFor(string $id): JSONResponse {
+		$subject = $this->subjectOf(id: $id);
+		if ($subject === null) {
+			return $this->noSuchObject();
+		}
+
+		try {
+			return new JSONResponse(['results' => $this->history->forObject(object: $subject['object'], schema: $subject['schema'])]);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		}
+	}//end historyFor()
+
+	/**
+	 * Run one action on the named object with the body's inputs.
+	 *
+	 * @param ObjectRef $ref    The object the route names.
+	 * @param string    $action The action name.
+	 *
+	 * @return JSONResponse The run's answer, or the refusal.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
+	 */
+	private function invokeOn(ObjectRef $ref, string $action): JSONResponse {
+		$inputs = $this->request->getParam('inputs', []);
+		if (is_array($inputs) === false) {
+			return new JSONResponse(['error' => 'Send the inputs as an object "inputs".'], Http::STATUS_BAD_REQUEST);
+		}
+
+		$subject = $this->subjectOf(id: $ref->id);
+		if ($subject === null) {
+			return $this->noSuchObject();
+		}
+
+		$route = ['register' => $ref->register, 'schema' => $ref->schema];
+		$run = new ObjectActionsSelection(route: $route, action: $action, ids: [$ref->id], inputs: $inputs);
+		$result = $this->runOn(subject: $subject, run: $run);
+
+		return new JSONResponse($result['body'], $result['status']);
+	}//end invokeOn()
+
+	/**
+	 * Run one action on the selection the body names, per object or as a bulk job.
+	 *
+	 * @param RegisterSchemaRef $table  The register and schema the route names.
+	 * @param string            $action The action name.
+	 *
+	 * @return JSONResponse The run's answer, the job, or the refusal.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
+	 */
+	private function selectionInvoked(RegisterSchemaRef $table, string $action): JSONResponse {
+		$selection = $this->requestedSelection(table: $table, action: $action);
+		if ($selection === null) {
+			return $this->malformedSelection();
+		}
 
 		$offered = $this->offeredOnSelection(selection: $selection);
 		if ($offered === null) {
@@ -313,7 +367,30 @@ class ObjectActionsController extends Controller {
 		}
 
 		return $this->runSelection(offered: $offered, selection: $selection);
-	}//end invokeOnSelection()
+	}//end selectionInvoked()
+
+	/**
+	 * The selection the body names: unique string ids and an inputs object, or null when either is malformed.
+	 *
+	 * @param RegisterSchemaRef $table  The register and schema the route names.
+	 * @param string            $action The action name.
+	 *
+	 * @return ObjectActionsSelection|null The selection, or null for a malformed body.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
+	 */
+	private function requestedSelection(RegisterSchemaRef $table, string $action): ?ObjectActionsSelection {
+		$ids = $this->request->getParam('ids', []);
+		$inputs = $this->request->getParam('inputs', []);
+		if (is_array($ids) === false || $ids === [] || is_array($inputs) === false) {
+			return null;
+		}
+
+		$ids = array_values(array_unique(array_map('strval', $ids)));
+		$route = ['register' => $table->register, 'schema' => $table->schema];
+
+		return new ObjectActionsSelection(route: $route, action: $action, ids: $ids, inputs: $inputs);
+	}//end requestedSelection()
 
 	/**
 	 * The 400 for a selection that is not a non-empty list of ids with an object of inputs.
@@ -474,14 +551,14 @@ class ObjectActionsController extends Controller {
 	 * @return array<string, mixed> The run's status and body.
 	 */
 	private function runOn(array $subject, ObjectActionsSelection $run): array {
-		$target = $this->runner->target(
+		$target = new ObjectActionTarget(
 			object: $subject['object'],
 			schema: $subject['schema'],
 			register: $run->route['register'],
 			schemaRef: $run->route['schema']
 		);
 
-		return $this->runner->run(target: $target, key: $run->action, given: $run->inputs);
+		return $this->runner->run(target: $target, request: new ObjectActionRequest(key: $run->action, given: $run->inputs));
 	}//end runOn()
 
 	/**
@@ -530,7 +607,7 @@ class ObjectActionsController extends Controller {
 	private function findDefinition(Schema $schema, ObjectActionsSelection $selection): ?ObjectActionDefinition {
 		$action = $selection->action;
 		try {
-			return $this->definitions->find(schema: $schema, key: $action, register: $selection->route['register']);
+			return ($this->definitions->forSchema(schema: $schema, register: $selection->route['register'])[$action] ?? null);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'Object action "{action}" of schema {schema} could not be read: {message}',

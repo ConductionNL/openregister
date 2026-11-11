@@ -92,19 +92,7 @@ final class NotificationContentValidator {
 			];
 		}
 
-		$errors = [];
-		if (count($actions) > self::MAX_ACTIONS) {
-			$errors[] = [
-				'code' => 'notification-too-many-actions',
-				'message' => sprintf(
-					'Notification "%s" declares %d actions; the Web Notification API renders at most %d.',
-					$name,
-					count($actions),
-					self::MAX_ACTIONS
-				),
-			];
-		}
-
+		$errors = $this->actionCountErrors(actions: $actions, name: $name);
 		foreach ($actions as $idx => $action) {
 			$where  = sprintf('Notification "%s" action[%s]', $name, (string)$idx);
 			$errors = array_merge($errors, $this->actionErrors(action: $action, where: $where));
@@ -112,6 +100,32 @@ final class NotificationContentValidator {
 
 		return $errors;
 	}//end validateActions()
+
+	/**
+	 * The error for a rule declaring more actions than the Web Notification API renders.
+	 *
+	 * @param array<int|string, mixed> $actions The declared actions.
+	 * @param string                   $name    Notification name (for diagnostics).
+	 *
+	 * @return array<int, array{code: string, message: string}> One error, or none when the count is within bounds.
+	 */
+	private function actionCountErrors(array $actions, string $name): array {
+		if (count($actions) <= self::MAX_ACTIONS) {
+			return [];
+		}
+
+		return [
+			[
+				'code' => 'notification-too-many-actions',
+				'message' => sprintf(
+					'Notification "%s" declares %d actions; the Web Notification API renders at most %d.',
+					$name,
+					count($actions),
+					self::MAX_ACTIONS
+				),
+			],
+		];
+	}//end actionCountErrors()
 
 	/**
 	 * Errors for one declared action: its shape, label, `primary` flag and target.
@@ -183,17 +197,7 @@ final class NotificationContentValidator {
 		}
 
 		if (in_array($targetKind, self::VALID_ACTION_TARGET_KINDS, true) === false) {
-			return [
-				[
-					'code' => 'notification-action-bad-target',
-					'message' => sprintf(
-						'%s target.kind "%s" is not in [%s].',
-						$where,
-						$targetKind,
-						implode(', ', self::VALID_ACTION_TARGET_KINDS)
-					),
-				],
-			];
+			return [$this->unknownTargetKindError(targetKind: $targetKind, where: $where)];
 		}
 
 		if ($targetKind === 'task-verb') {
@@ -206,6 +210,26 @@ final class NotificationContentValidator {
 
 		return [];
 	}//end actionTargetErrors()
+
+	/**
+	 * The error for an action target whose kind is not a recognised one.
+	 *
+	 * @param string $targetKind The declared kind ('' when the target is not an object).
+	 * @param string $where      Diagnostic prefix naming the rule and the action index.
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private function unknownTargetKindError(string $targetKind, string $where): array {
+		return [
+			'code' => 'notification-action-bad-target',
+			'message' => sprintf(
+				'%s target.kind "%s" is not in [%s].',
+				$where,
+				$targetKind,
+				implode(', ', self::VALID_ACTION_TARGET_KINDS)
+			),
+		];
+	}//end unknownTargetKindError()
 
 	/**
 	 * Errors for a `url` target: it MUST be a link the dispatcher will deliver.
@@ -313,6 +337,31 @@ final class NotificationContentValidator {
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function messageMapErrors(array $message, string $name): array {
+		$errors = $this->messageLocaleErrors(message: $message, name: $name);
+
+		$defaultLocale = $this->undeclaredDefaultLocale(map: $message);
+		if ($defaultLocale !== null) {
+			$errors[] = $this->badMessage(
+				message: sprintf(
+					'Notification "%s" message defaultLocale "%s" is not declared in the message map.',
+					$name,
+					$defaultLocale
+				)
+			);
+		}
+
+		return $errors;
+	}//end messageMapErrors()
+
+	/**
+	 * Errors for a message map's locales: at least one, each a non-empty string.
+	 *
+	 * @param array<int|string, mixed> $message The message map.
+	 * @param string                   $name    Notification name (for diagnostics).
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function messageLocaleErrors(array $message, string $name): array {
 		$errors     = [];
 		$localeKeys = array_filter(
 			array_keys($message),
@@ -332,19 +381,8 @@ final class NotificationContentValidator {
 			}
 		}
 
-		$defaultLocale = $this->undeclaredDefaultLocale(map: $message);
-		if ($defaultLocale !== null) {
-			$errors[] = $this->badMessage(
-				message: sprintf(
-					'Notification "%s" message defaultLocale "%s" is not declared in the message map.',
-					$name,
-					$defaultLocale
-				)
-			);
-		}
-
 		return $errors;
-	}//end messageMapErrors()
+	}//end messageLocaleErrors()
 
 	/**
 	 * The declared `defaultLocale` of a subject or message map when it does

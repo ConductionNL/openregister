@@ -90,7 +90,7 @@ final class DeploymentPreviewServiceTest extends TestCase {
 		$store = $this->createMock(ConfigurationValueStore::class);
 		$store->method('read')->willReturnCallback(
 			static function (string $layer, ?string $layerRef, string $configKey) use ($liveByKey): ConfigurationSnapshot {
-				return ($liveByKey[$configKey] ?? ConfigurationSnapshot::absent($layer, $layerRef, $configKey));
+				return ($liveByKey[$configKey] ?? ConfigurationSnapshot::absent(new ConfigurationAddress($layer, $layerRef, $configKey)));
 			}
 		);
 

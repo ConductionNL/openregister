@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowStream;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
@@ -50,6 +51,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use stdClass;
+use Symfony\Component\Workflow\Transition;
 
 /**
  * A dispatcher that suspends on a named step and records the rest.
@@ -186,7 +188,9 @@ class FlowEngineStreamWalkTest extends TestCase {
 			$this->seen['exhausted'][] = $id;
 			$exhausted[$id] = true;
 		});
-		$walk->method('claim')->willReturnCallback(function (string $id, string $transition, array $places) use (&$refused): ?array {
+		$walk->method('claim')->willReturnCallback(function (string $id, Transition $firing) use (&$refused): ?array {
+			$transition = $firing->getName();
+			$places     = array_map('strval', array_merge($firing->getFroms(), $firing->getTos()));
 			$this->seen['claims'][] = $transition;
 			if (in_array($transition, $this->refuse, true) === true) {
 				$refused[$id] = true;
@@ -290,7 +294,9 @@ class FlowEngineStreamWalkTest extends TestCase {
 	private function walk(array $flow, FlowStepDispatcher $dispatcher, FlowStreamWalk $walk, array $context = []): array {
 		return $this->engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->run), subject: new stdClass(), dispatcher: $dispatcher))->withContext(context: $context)->withStreams(streams: $walk),
-			items: [FlowItems::item(json: ['n' => 1])]
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 1])]
+			)
 		);
 	}//end walk()
 
@@ -418,7 +424,9 @@ class FlowEngineStreamWalkTest extends TestCase {
 		$legacyDispatcher = new StreamWalkDispatcher();
 		$legacy = $this->engine->run(
 			start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $legacyRun), subject: new stdClass(), dispatcher: $legacyDispatcher)),
-			items: [FlowItems::item(json: ['n' => 1])]
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 1])]
+			)
 		);
 
 		$streamDispatcher = new StreamWalkDispatcher();

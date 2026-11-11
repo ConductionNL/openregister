@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Service\File\FileListOptions;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
@@ -281,8 +282,8 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 		$this->fileService->method('getFilesForEntity')->willReturn($files);
 		$this->fileMapper->expects($this->never())->method('findByFileIds');
 
-		$this->assertSame($files, $this->handler()->getFiles(new ObjectEntity(), true));
-		$this->assertSame($files, $this->handler(false)->getFiles(new ObjectEntity(), false, 'cat'));
+		$this->assertSame($files, $this->handler()->getFiles(new ObjectEntity(), new FileListOptions(true)));
+		$this->assertSame($files, $this->handler(false)->getFiles(new ObjectEntity(), new FileListOptions(false, 'cat')));
 	}//end testFilesAreReturnedUnfilteredWithoutACategoryOrMapper()
 
 	public function testFilesAreFilteredByCategory(): void {
@@ -298,7 +299,7 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 			[1 => $this->row('cat'), 2 => $this->row('other')]
 		);
 
-		$this->assertSame([$one], $this->handler()->getFiles(new ObjectEntity(), false, 'cat'));
+		$this->assertSame([$one], $this->handler()->getFiles(new ObjectEntity(), new FileListOptions(false, 'cat')));
 	}//end testFilesAreFilteredByCategory()
 
 	public function testCategoryFilterOfNoUsableIdsIsEmpty(): void {
@@ -306,8 +307,8 @@ class ReadFileHandlerAccessGoldenTest extends TestCase {
 		$this->fileMapper->expects($this->never())->method('findByFileIds');
 
 		$handler = $this->handler();
-		$this->assertSame([], $handler->getFiles(new ObjectEntity(), false, 'cat'));
-		$this->assertSame([], $handler->getFiles(new ObjectEntity(), false, 'cat'));
+		$this->assertSame([], $handler->getFiles(new ObjectEntity(), new FileListOptions(false, 'cat')));
+		$this->assertSame([], $handler->getFiles(new ObjectEntity(), new FileListOptions(false, 'cat')));
 	}//end testCategoryFilterOfNoUsableIdsIsEmpty()
 
 	private function row(string $category): object {

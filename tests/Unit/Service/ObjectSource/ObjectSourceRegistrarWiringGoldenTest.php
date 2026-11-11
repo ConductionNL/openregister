@@ -122,9 +122,26 @@ class ObjectSourceRegistrarWiringGoldenTest extends TestCase {
 	private function doubleFor(string $id): object {
 		$class = new ReflectionClass(objectOrClass: $id);
 		if ($class->isFinal() === true) {
-			return $class->newInstanceWithoutConstructor();
+			return $this->finalWithDoubles(class: $class);
 		}
 
 		return $this->createMock(originalClassName: $id);
 	}//end doubleFor()
+
+	/**
+	 * A final class built over test doubles of its constructor parameters.
+	 *
+	 * @param ReflectionClass $class The final class.
+	 *
+	 * @return object
+	 */
+	private function finalWithDoubles(ReflectionClass $class): object {
+		$args = [];
+		foreach (($class->getConstructor()?->getParameters() ?? []) as $param) {
+			$type   = new ReflectionClass(objectOrClass: (string) $param->getType()?->getName());
+			$args[] = ($type->isFinal() === true) ? $this->finalWithDoubles(class: $type) : $this->createMock(originalClassName: $type->getName());
+		}
+
+		return $class->newInstanceArgs($args);
+	}//end finalWithDoubles()
 }//end class

@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- the provider stub's methods are its interface's.
 
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain;
@@ -78,7 +79,6 @@ final class ObjectIntegrationsControllerA24GoldenTest extends TestCase {
 		$registry->addProvider($this->provider());
 
 		return new ObjectIntegrationsController(
-			appName: 'openregister',
 			request: $request,
 			services: new ObjectIntegrationsControllerServices(
 				domain: new ObjectIntegrationsDomain(registry: $registry, objectService: $objects, schemaMapper: $this->createMock(SchemaMapper::class)),
@@ -130,28 +130,28 @@ final class ObjectIntegrationsControllerA24GoldenTest extends TestCase {
 				return true;
 			}
 
-			public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-				$this->test->calls[] = ['list', $objectId, $filters];
+			public function list(ObjectRef $ref, array $filters = []): array {
+				$this->test->calls[] = ['list', $ref->id, $filters];
 				return [['id' => 'a']];
 			}
 
-			public function get(string $register, string $schema, string $objectId, string $entityId): array {
-				$this->test->calls[] = ['get', $objectId, $entityId];
+			public function get(ObjectRef $ref, string $entityId): array {
+				$this->test->calls[] = ['get', $ref->id, $entityId];
 				return ['id' => $entityId];
 			}
 
-			public function create(string $register, string $schema, string $objectId, array $payload): array {
-				$this->test->calls[] = ['create', $objectId, $payload];
+			public function create(ObjectRef $ref, array $payload): array {
+				$this->test->calls[] = ['create', $ref->id, $payload];
 				return ['id' => 'new'];
 			}
 
-			public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
-				$this->test->calls[] = ['update', $objectId, $entityId, $payload];
+			public function update(ObjectRef $ref, string $entityId, array $payload): array {
+				$this->test->calls[] = ['update', $ref->id, $entityId, $payload];
 				return ['id' => $entityId];
 			}
 
-			public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-				$this->test->calls[] = ['delete', $objectId, $entityId];
+			public function delete(ObjectRef $ref, string $entityId): void {
+				$this->test->calls[] = ['delete', $ref->id, $entityId];
 			}
 		};
 	}//end provider()

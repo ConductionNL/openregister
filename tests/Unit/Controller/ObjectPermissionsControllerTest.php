@@ -38,6 +38,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGate;
@@ -174,7 +176,7 @@ class ObjectPermissionsControllerTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn(DenyEnforcementMode::MODE_STAGING);
 
 		$report = new ObjectAccessReport(
-			sources: new ObjectAccessReportSources(registerMapper: $registerMapper, schemaMapper: $schemaMapper, auditTrailMapper: $auditTrailMapper),
+			sources: new ObjectAccessReportSources(catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapperInterface::class)), auditTrailMapper: $auditTrailMapper),
 			holders: new ObjectPermissionsResolver(),
 			history: new ObjectAccessHistory(),
 			enforcement: new DenyEnforcementMode(appConfig: $appConfig, logger: new NullLogger())

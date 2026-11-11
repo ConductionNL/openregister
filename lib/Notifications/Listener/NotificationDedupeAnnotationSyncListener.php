@@ -75,26 +75,49 @@ final class NotificationDedupeAnnotationSyncListener implements IEventListener {
 		}
 
 		try {
-			$config = ((array)($schema->getConfiguration() ?? []));
-			$notifications = ($config['x-openregister-notifications'] ?? []);
-			$current = [];
-			if (is_array($notifications) === true) {
-				foreach (array_keys($notifications) as $key) {
-					$current[] = (string)$key;
-				}
-			}
-
-			$tracked = $this->mapper->listRuleKeysForSchema(schemaId: $schemaId);
-			$orphan = array_diff($tracked, $current);
-			foreach ($orphan as $key) {
-				$this->mapper->deleteByRule(schemaId: $schemaId, ruleKey: (string)$key);
-			}
+			$this->pruneOrphanRules(schemaId: $schemaId, current: $this->declaredRuleKeys(schema: $schema));
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[NotificationDedupeAnnotationSyncListener] sync skipped: %s', $e->getMessage())
 			);
 		}
 	}//end handle()
+
+	/**
+	 * The notification rule keys a schema declares.
+	 *
+	 * @param Schema $schema The created or updated schema.
+	 *
+	 * @return array<int, string> The keys of its `x-openregister-notifications` map.
+	 */
+	private function declaredRuleKeys(Schema $schema): array {
+		$config = ((array)($schema->getConfiguration() ?? []));
+		$notifications = ($config['x-openregister-notifications'] ?? []);
+		$current = [];
+		if (is_array($notifications) === true) {
+			foreach (array_keys($notifications) as $key) {
+				$current[] = (string)$key;
+			}
+		}
+
+		return $current;
+	}//end declaredRuleKeys()
+
+	/**
+	 * Delete the dedup state of every tracked rule the schema no longer declares.
+	 *
+	 * @param int                $schemaId The schema id.
+	 * @param array<int, string> $current  The rule keys the schema declares now.
+	 *
+	 * @return void
+	 */
+	private function pruneOrphanRules(int $schemaId, array $current): void {
+		$tracked = $this->mapper->listRuleKeysForSchema(schemaId: $schemaId);
+		$orphan = array_diff($tracked, $current);
+		foreach ($orphan as $key) {
+			$this->mapper->deleteByRule(schemaId: $schemaId, ruleKey: (string)$key);
+		}
+	}//end pruneOrphanRules()
 
 	/**
 	 * Extract the Schema entity from a create/update event.

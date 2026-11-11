@@ -42,13 +42,16 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
 use OCA\OpenRegister\Service\Calendar\DeadlineDateResolver;
+use OCA\OpenRegister\Service\Calendar\DeadlineLookup;
 use OCA\OpenRegister\Service\Calendar\CalendarYearSpan;
 use OCA\OpenRegister\Service\Calendar\IcalendarWriter;
+use OCA\OpenRegister\Service\Calendar\CalendarContents;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedRendering;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedSources;
 use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
 use OCA\OpenRegister\Service\Calendar\ObjectDateEventBuilder;
+use OCA\OpenRegister\Service\Calendar\ObjectDateOccurrence;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -219,7 +222,7 @@ class CalendarCharacterisationTest extends TestCase {
 			->with('[DeadlineDateResolver] Could not read timers for object object-uuid: db down');
 
 		$resolver = new DeadlineDateResolver(timers: $timers, calendars: $calendars, logger: $logger);
-		$resolved = $resolver->resolve(
+		$resolved = $resolver->resolve(new DeadlineLookup(
 			objectUuid: 'object-uuid',
 			declaration: ObjectDateDeclaration::fromArray(
 				property: 'termijn',
@@ -227,7 +230,7 @@ class CalendarCharacterisationTest extends TestCase {
 			),
 			rawDate: new DateTimeImmutable('2026-10-17T00:00:00+02:00'),
 			organisation: null
-		);
+		));
 
 		$this->assertNotNull($resolved);
 		$this->assertSame('2026-10-19', $resolved->format('Y-m-d'));
@@ -253,7 +256,7 @@ class CalendarCharacterisationTest extends TestCase {
 			calendars: $calendars,
 			logger: $this->createMock(LoggerInterface::class)
 		);
-		$resolved = $resolver->resolve(
+		$resolved = $resolver->resolve(new DeadlineLookup(
 			objectUuid: 'object-uuid',
 			declaration: ObjectDateDeclaration::fromArray(
 				property: 'termijn',
@@ -261,7 +264,7 @@ class CalendarCharacterisationTest extends TestCase {
 			),
 			rawDate: null,
 			organisation: null
-		);
+		));
 
 		$this->assertNotNull($resolved);
 		$this->assertSame('2026-11-02T09:00:00+01:00', $resolved->format('c'));
@@ -280,7 +283,7 @@ class CalendarCharacterisationTest extends TestCase {
 		);
 
 		$this->assertNull(
-			$resolver->resolve(
+			$resolver->resolve(new DeadlineLookup(
 				objectUuid: 'object-uuid',
 				declaration: ObjectDateDeclaration::fromArray(
 					property: 'termijn',
@@ -288,7 +291,7 @@ class CalendarCharacterisationTest extends TestCase {
 				),
 				rawDate: null,
 				organisation: null
-			)
+			))
 		);
 	}
 
@@ -310,7 +313,7 @@ class CalendarCharacterisationTest extends TestCase {
 		);
 
 		$this->assertNull(
-			$resolver->resolve(
+			$resolver->resolve(new DeadlineLookup(
 				objectUuid: 'object-uuid',
 				declaration: ObjectDateDeclaration::fromArray(
 					property: 'termijn',
@@ -318,7 +321,7 @@ class CalendarCharacterisationTest extends TestCase {
 				),
 				rawDate: new DateTimeImmutable('2026-10-17T00:00:00+02:00'),
 				organisation: 'org-uuid'
-			)
+			))
 		);
 	}
 
@@ -340,12 +343,12 @@ class CalendarCharacterisationTest extends TestCase {
 		);
 
 		$this->assertNull(
-			$resolver->resolve(
+			$resolver->resolve(new DeadlineLookup(
 				objectUuid: 'object-uuid',
 				declaration: ObjectDateDeclaration::fromArray(property: 'termijn', config: ['kind' => 'deadline']),
 				rawDate: new DateTimeImmutable('2026-10-17T00:00:00+02:00'),
 				organisation: null
-			)
+			))
 		);
 	}
 
@@ -452,7 +455,6 @@ class CalendarCharacterisationTest extends TestCase {
 		}
 
 		return new ObjectDateEventBuilder(
-			writer: new IcalendarWriter(),
 			deadlines: $this->createMock(DeadlineDateResolver::class),
 			attendees: $attendees
 		);
@@ -478,13 +480,13 @@ class CalendarCharacterisationTest extends TestCase {
 	public function testAnEndBeforeTheStartIsIgnored(): void {
 		$amsterdam = new DateTimeZone('Europe/Amsterdam');
 
-		$period = $this->builder()->build(
+		$period = $this->builder()->build(new ObjectDateOccurrence(
 			object: $this->dated(['van' => '2026-10-10', 'tot' => '2026-10-01']),
 			schemaId: 9,
 			declaration: ObjectDateDeclaration::fromArray(property: 'van', config: ['kind' => 'period', 'endProperty' => 'tot']),
 			timeZone: $amsterdam
-		);
-		$appointment = $this->builder()->build(
+		));
+		$appointment = $this->builder()->build(new ObjectDateOccurrence(
 			object: $this->dated(['op' => '2026-10-10T14:00:00+02:00', 'tot' => 'not a date']),
 			schemaId: 9,
 			declaration: ObjectDateDeclaration::fromArray(
@@ -492,8 +494,8 @@ class CalendarCharacterisationTest extends TestCase {
 				config: ['kind' => 'appointment', 'endProperty' => 'tot', 'durationMinutes' => 30]
 			),
 			timeZone: $amsterdam
-		);
-		$appointmentWithEnd = $this->builder()->build(
+		));
+		$appointmentWithEnd = $this->builder()->build(new ObjectDateOccurrence(
 			object: $this->dated(['op' => '2026-10-10T14:00:00+02:00', 'tot' => '2026-10-10T12:15:00Z']),
 			schemaId: 9,
 			declaration: ObjectDateDeclaration::fromArray(
@@ -501,7 +503,7 @@ class CalendarCharacterisationTest extends TestCase {
 				config: ['kind' => 'appointment', 'endProperty' => 'tot']
 			),
 			timeZone: $amsterdam
-		);
+		));
 
 		$this->assertSame(['DTSTART;VALUE=DATE:20261010', 'DTEND;VALUE=DATE:20261011'], $this->timing($period['lines']));
 		$this->assertSame(
@@ -516,12 +518,12 @@ class CalendarCharacterisationTest extends TestCase {
 	}
 
 	public function testAPeriodWithATimedEndIsNotAllDay(): void {
-		$event = $this->builder()->build(
+		$event = $this->builder()->build(new ObjectDateOccurrence(
 			object: $this->dated(['van' => '2026-10-01', 'tot' => '2026-10-02T12:00:00+02:00']),
 			schemaId: 9,
 			declaration: ObjectDateDeclaration::fromArray(property: 'van', config: ['kind' => 'period', 'endProperty' => 'tot']),
 			timeZone: new DateTimeZone('Europe/Amsterdam')
-		);
+		));
 
 		$this->assertSame(
 			['DTSTART;TZID=Europe/Amsterdam:20261001T000000', 'DTEND;TZID=Europe/Amsterdam:20261002T120000'],
@@ -533,7 +535,7 @@ class CalendarCharacterisationTest extends TestCase {
 		$attendees = $this->createMock(AppointmentAttendeeService::class);
 		$attendees->method('responsesByAttendee')->willReturn(['bram' => ['status' => 'TENTATIVE']]);
 
-		$event = $this->builder($attendees)->build(
+		$event = $this->builder($attendees)->build(new ObjectDateOccurrence(
 			object: $this->dated(
 				[
 					'op' => '2026-10-10T14:00:00+02:00',
@@ -554,7 +556,7 @@ class CalendarCharacterisationTest extends TestCase {
 				config: ['kind' => 'appointment', 'attendeesProperty' => 'wie']
 			),
 			timeZone: new DateTimeZone('Europe/Amsterdam')
-		);
+		));
 
 		$this->assertSame(
 			[
@@ -573,7 +575,7 @@ class CalendarCharacterisationTest extends TestCase {
 		$builder = $this->builder($attendees);
 		$zone = new DateTimeZone('Europe/Amsterdam');
 
-		$period = $builder->build(
+		$period = $builder->build(new ObjectDateOccurrence(
 			object: $this->dated(['van' => '2026-10-01', 'tot' => '2026-10-02', 'wie' => ['ana']]),
 			schemaId: 9,
 			declaration: ObjectDateDeclaration::fromArray(
@@ -581,8 +583,8 @@ class CalendarCharacterisationTest extends TestCase {
 				config: ['kind' => 'period', 'endProperty' => 'tot', 'attendeesProperty' => 'wie']
 			),
 			timeZone: $zone
-		);
-		$notAList = $builder->build(
+		));
+		$notAList = $builder->build(new ObjectDateOccurrence(
 			object: $this->dated(['op' => '2026-10-10T14:00:00+02:00', 'wie' => 'ana']),
 			schemaId: 9,
 			declaration: ObjectDateDeclaration::fromArray(
@@ -590,7 +592,7 @@ class CalendarCharacterisationTest extends TestCase {
 				config: ['kind' => 'appointment', 'attendeesProperty' => 'wie']
 			),
 			timeZone: $zone
-		);
+		));
 
 		$this->assertStringNotContainsString('ATTENDEE', implode("\n", $period['lines']));
 		$this->assertStringNotContainsString('ATTENDEE', implode("\n", $notAList['lines']));
@@ -635,7 +637,10 @@ class CalendarCharacterisationTest extends TestCase {
 		$builder->expects($this->exactly(4))
 			->method('build')
 			->willReturnCallback(
-				static function (ObjectEntity $object, int|string $schemaId, ObjectDateDeclaration $declaration): ?array {
+				static function (ObjectDateOccurrence $occurrence): ?array {
+					$object = $occurrence->object;
+					$schemaId = $occurrence->schemaId;
+					$declaration = $occurrence->declaration;
 					if ($declaration->property === 'a' && $object->getUuid() === 'object-uuid') {
 						return null;
 					}
@@ -668,12 +673,12 @@ class CalendarCharacterisationTest extends TestCase {
 	}
 
 	public function testACalendarWithoutAZoneCarriesNoTimeZoneParts(): void {
-		$body = (new IcalendarWriter())->calendar(
+		$body = (new IcalendarWriter())->calendar(new CalendarContents(
 			calendarName: 'Zaken; open',
 			timeZone: null,
 			componentLines: ['BEGIN:VEVENT', 'END:VEVENT'],
 			years: new CalendarYearSpan(fromYear: 2026, toYear: 2026)
-		);
+		));
 
 		$this->assertSame(
 			"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:" . IcalendarWriter::PRODID . "\r\nCALSCALE:GREGORIAN\r\n"
@@ -683,12 +688,12 @@ class CalendarCharacterisationTest extends TestCase {
 	}
 
 	public function testACalendarWithAZoneCoversTheRequestedYears(): void {
-		$body = (new IcalendarWriter())->calendar(
+		$body = (new IcalendarWriter())->calendar(new CalendarContents(
 			calendarName: 'Zaken',
 			timeZone: new DateTimeZone('Europe/Amsterdam'),
 			componentLines: [],
 			years: new CalendarYearSpan(fromYear: 2027, toYear: 2028)
-		);
+		));
 
 		$this->assertStringContainsString("X-WR-TIMEZONE:Europe/Amsterdam\r\nBEGIN:VTIMEZONE\r\n", $body);
 		$this->assertStringContainsString('DTSTART:2027', $body);

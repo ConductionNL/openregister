@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Party;
 
+use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -109,27 +110,26 @@ class PartySearchService implements PartySearchInterface {
 			return ['results' => [], 'total' => 0, 'cap' => $this->cap()];
 		}
 
-		$cap   = $this->cap();
-		$total = $this->countAll(schemaIds: $schemaIds, term: $term);
-		if ($total > $cap) {
-			$this->refuseOverCap(term: $term, cap: $cap, total: $total, schemaIds: $schemaIds);
+		$run   = new PartyQueryRun(term: $term, schemaIds: $schemaIds, cap: $this->cap());
+		$total = $this->countAll(run: $run);
+		if ($total > $run->cap) {
+			$this->refuseOverCap(run: $run, total: $total);
 		}
 
-		return ['results' => $this->findAll(schemaIds: $schemaIds, term: $term, limit: $cap), 'total' => $total, 'cap' => $cap];
+		return ['results' => $this->findAll(run: $run), 'total' => $total, 'cap' => $run->cap];
 	}//end search()
 
 	/**
 	 * How many parties the term matches over the schemas.
 	 *
-	 * @param array<int, int> $schemaIds The schemas.
-	 * @param string $term The search term.
+	 * @param PartyQueryRun $run The term and the schemas.
 	 *
 	 * @return int The total.
 	 */
-	private function countAll(array $schemaIds, string $term): int {
+	private function countAll(PartyQueryRun $run): int {
 		$total = 0;
-		foreach ($schemaIds as $id) {
-			$total += $this->countIn(schemaId: $id, term: $term);
+		foreach ($run->schemaIds as $id) {
+			$total += $this->countIn(run: $run, schemaId: $id);
 		}
 
 		return $total;
@@ -141,30 +141,25 @@ class PartySearchService implements PartySearchInterface {
 	 * Only name a schema when the query ran over exactly one, so the trail
 	 * never implies a scope the caller did not ask for.
 	 *
-	 * @param string $term The search term.
-	 * @param int $cap The cap.
-	 * @param int $total How many parties the term matches.
-	 * @param array<int, int> $schemaIds The schemas searched.
+	 * @param PartyQueryRun $run   The term, the schemas searched and the cap.
+	 * @param int           $total How many parties the term matches.
 	 *
 	 * @return never
 	 *
 	 * @throws Exception 403, always.
 	 */
-	private function refuseOverCap(string $term, int $cap, int $total, array $schemaIds): never {
+	private function refuseOverCap(PartyQueryRun $run, int $total): never {
 		$searched = null;
-		if (count($schemaIds) === 1) {
-			$searched = $schemaIds[0];
+		if (count($run->schemaIds) === 1) {
+			$searched = $run->schemaIds[0];
 		}
 
-		$this->audit->createPartyQueryRefusalEntry(
-			query: $term,
-			cap: $cap,
-			would: $total,
-			schema: $searched
+		$this->audit->recordPartyQueryRefusal(
+			refusal: new PartyQueryRefusal(query: $run->term, cap: $run->cap, would: $total, schema: $searched)
 		);
 
 		throw new Exception(
-			'The query matches ' . $total . ' parties, over the administered cap of ' . $cap
+			'The query matches ' . $total . ' parties, over the administered cap of ' . $run->cap
 			. '. Narrow the query: results are refused, never truncated.',
 			403
 		);
@@ -173,16 +168,14 @@ class PartySearchService implements PartySearchInterface {
 	/**
 	 * The matches of every schema, in schema order.
 	 *
-	 * @param array<int, int> $schemaIds The schemas.
-	 * @param string $term The search term.
-	 * @param int $limit The cap.
+	 * @param PartyQueryRun $run The term, the schemas and the cap.
 	 *
 	 * @return array<int, mixed> The matches.
 	 */
-	private function findAll(array $schemaIds, string $term, int $limit): array {
+	private function findAll(PartyQueryRun $run): array {
 		$results = [];
-		foreach ($schemaIds as $id) {
-			foreach ($this->findIn(schemaId: $id, term: $term, limit: $limit) as $party) {
+		foreach ($run->schemaIds as $id) {
+			foreach ($this->findIn(run: $run, schemaId: $id) as $party) {
 				$results[] = $party;
 			}
 		}
@@ -200,9 +193,8 @@ class PartySearchService implements PartySearchInterface {
 	private function schemaIds(int|string|null $schemaId): array {
 		$ids = [];
 		foreach ($this->parties->partySchemas() as $party) {
-			$id = (int)$party['schema']->getId();
-			if (self::selects(schemaId: $schemaId, id: $id, schema: $party['schema']) === true) {
-				$ids[] = $id;
+			if (self::selects(schemaId: $schemaId, schema: $party['schema']) === true) {
+				$ids[] = (int)$party['schema']->getId();
 			}
 		}
 
@@ -213,31 +205,30 @@ class PartySearchService implements PartySearchInterface {
 	 * Whether a filter selects a schema: no filter, or its id, slug or uuid.
 	 *
 	 * @param int|string|null $schemaId The filter.
-	 * @param int $id The schema's id.
-	 * @param Schema $schema The schema.
+	 * @param Schema          $schema   The schema.
 	 *
 	 * @return bool Whether the schema is searched.
 	 */
-	private static function selects(int|string|null $schemaId, int $id, Schema $schema): bool {
+	private static function selects(int|string|null $schemaId, Schema $schema): bool {
 		if ($schemaId === null) {
 			return true;
 		}
 
-		return in_array((string)$schemaId, [(string)$id, (string)$schema->getSlug(), (string)$schema->getUuid()], true);
+		return in_array((string)$schemaId, [(string)(int)$schema->getId(), (string)$schema->getSlug(), (string)$schema->getUuid()], true);
 	}//end selects()
 
 	/**
 	 * How many parties of one schema the term matches.
 	 *
-	 * @param int $schemaId The schema.
-	 * @param string $term The search term.
+	 * @param PartyQueryRun $run      The search term.
+	 * @param int           $schemaId The schema.
 	 *
 	 * @return int The count, 0 when the count cannot be taken.
 	 */
-	private function countIn(int $schemaId, string $term): int {
+	private function countIn(PartyQueryRun $run, int $schemaId): int {
 		try {
 			return $this->objects->count(
-				config: ['filters' => ['schema' => $schemaId], 'search' => $term]
+				config: ['filters' => ['schema' => $schemaId], 'search' => $run->term]
 			);
 		} catch (Throwable) {
 			return 0;
@@ -247,16 +238,15 @@ class PartySearchService implements PartySearchInterface {
 	/**
 	 * The parties of one schema the term matches.
 	 *
-	 * @param int $schemaId The schema.
-	 * @param string $term The search term.
-	 * @param int $limit The cap, which the result set is already known not to exceed.
+	 * @param PartyQueryRun $run      The search term and the cap, which the result set is already known not to exceed.
+	 * @param int           $schemaId The schema.
 	 *
 	 * @return array<int, mixed> The matches.
 	 */
-	private function findIn(int $schemaId, string $term, int $limit): array {
+	private function findIn(PartyQueryRun $run, int $schemaId): array {
 		try {
 			return $this->objects->findAll(
-				config: ['filters' => ['schema' => $schemaId], 'search' => $term, 'limit' => $limit]
+				config: ['filters' => ['schema' => $schemaId], 'search' => $run->term, 'limit' => $run->cap]
 			);
 		} catch (Throwable) {
 			return [];

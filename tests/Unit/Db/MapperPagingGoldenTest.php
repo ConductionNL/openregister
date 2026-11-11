@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\BulkJobMapper;
 use OCA\OpenRegister\Db\BulkJobMemberMapper;
@@ -70,24 +71,24 @@ class MapperPagingGoldenTest extends TestCase {
 
 	private static function sites(): array {
 		return [
-			'anonymisation log by file' => [AnonymisationLogMapper::class, 'findByFileId', ['fileId' => 4]],
-			'anonymisation log by object' => [AnonymisationLogMapper::class, 'findByObjectUuid', ['objectUuid' => 'o-1']],
-			'audit trail all' => [AuditTrailMapper::class, 'findAll', []],
+			'anonymisation log by file' => [AnonymisationLogMapper::class, 'findByFileId', ['fileId' => 4, 'query' => ListQuery::class]],
+			'anonymisation log by object' => [AnonymisationLogMapper::class, 'findByObjectUuid', ['objectUuid' => 'o-1', 'query' => ListQuery::class]],
+			'audit trail all' => [AuditTrailMapper::class, 'findTrail', ['query' => ListQuery::class]],
 			'bulk job by actor' => [BulkJobMapper::class, 'findByActor', ['startedBy' => 'alice', 'state' => 'running']],
-			'bulk job all' => [BulkJobMapper::class, 'findAllJobs', ['state' => null]],
+			'bulk job all' => [BulkJobMapper::class, 'findJobs', ['query' => ListQuery::class]],
 			'email link by object' => [EmailLinkMapper::class, 'findByObjectUuid', ['objectUuid' => 'o-2']],
 			'endpoint log all (newest first trait)' => [EndpointLogMapper::class, 'findAll', []],
-			'import preview by actor' => [ImportPreviewMapper::class, 'findByActor', ['createdBy' => 'bob', 'state' => null]],
-			'schema changelog by schema' => [SchemaChangelogMapper::class, 'findBySchema', ['schemaId' => 3]],
+			'import preview by actor' => [ImportPreviewMapper::class, 'findByActor', ['createdBy' => 'bob', 'query' => ListQuery::class]],
+			'schema changelog by schema' => [SchemaChangelogMapper::class, 'findBySchema', ['schemaId' => 3, 'query' => ListQuery::class]],
 			'schema run entry by run' => [SchemaRunEntryMapper::class, 'findByRun', ['runId' => 5, 'outcome' => 'failed']],
-			'schema run by schema' => [SchemaRunMapper::class, 'findBySchema', ['schemaId' => 6]],
-			'search trail all' => [SearchTrailMapper::class, 'findAll', []],
-			'webhook log by webhook' => [WebhookLogMapper::class, 'findByWebhook', ['webhookId' => 7]],
+			'schema run by schema' => [SchemaRunMapper::class, 'findBySchema', ['schemaId' => 6, 'query' => ListQuery::class]],
+			'search trail all' => [SearchTrailMapper::class, 'findAll', ['query' => ListQuery::class]],
+			'webhook log by webhook' => [WebhookLogMapper::class, 'findByWebhook', ['webhookId' => 7, 'page' => null]],
 			'chunk unvectorized' => [ChunkMapper::class, 'findUnvectorized', []],
 			'chunk file source summaries' => [ChunkMapper::class, 'getFileSourceSummaries', ['search' => 'abc']],
-			'webhook all' => [WebhookMapper::class, 'findAll', ['filters' => ['a' => 1]]],
+			'webhook all' => [WebhookMapper::class, 'findAll', ['query' => ListQuery::class, 'filters' => ['a' => 1]]],
 			'bulk job member by job' => [BulkJobMemberMapper::class, 'findByJob', ['jobId' => 8, 'outcome' => 'failed']],
-			'import preview row by preview' => [ImportPreviewRowMapper::class, 'findByPreview', ['previewId' => 9, 'decision' => 'skip']],
+			'import preview row by preview' => [ImportPreviewRowMapper::class, 'findByPreview', ['previewId' => 9, 'query' => ListQuery::class, 'filters' => ['decision' => 'skip']]],
 		];
 	}//end sites()
 
@@ -131,9 +132,20 @@ class MapperPagingGoldenTest extends TestCase {
 	}//end testEveryPagedReadSetsBothBounds()
 
 	/**
-	 * The call arguments for a page; outcome lists take the outcome and page as one filter.
+	 * The call arguments for a page; outcome lists take the outcome and page as one filter,
+	 * and ListQuery reads take the page and any column filters as one ListQuery.
 	 */
 	private static function withPage(array $args, array $page): array {
+		if (array_key_exists('page', $args) === true) {
+			return ['page' => new ListQuery(($page['limit'] ?? ListQuery::UNBOUNDED), ($page['offset'] ?? null))] + $args;
+		}
+
+		if (($args['query'] ?? null) === ListQuery::class) {
+			$filters = ($args['filters'] ?? []);
+			unset($args['filters']);
+			return ['query' => new ListQuery(limit: ($page['limit'] ?? ListQuery::UNBOUNDED), offset: ($page['offset'] ?? null), filters: $filters)] + $args;
+		}
+
 		if (array_key_exists('outcome', $args) === false) {
 			return $args + $page;
 		}

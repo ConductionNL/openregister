@@ -29,6 +29,9 @@ use DateTime;
 use OCA\OpenRegister\Command\RematerialiseCalculationsCommand;
 use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
 use OCA\OpenRegister\Command\Support\RematerialiseStorage;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -202,7 +205,8 @@ class RematerialiseCalculationsGoldenTest extends TestCase {
 
 		$magic = $this->createMock(MagicMapper::class);
 		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function ($register, $schema, $limit) use ($entities): array {
+			function (RegisterSchema $table, ListQuery $listing) use ($entities): array {
+				[$register, $schema, $limit] = [$table->register, $table->schema, $listing->limitOrNull()];
 				$this->calls[] = ['findAll', $limit];
 				return $entities;
 			}
@@ -274,7 +278,7 @@ class RematerialiseCalculationsGoldenTest extends TestCase {
 		);
 
 		return new RematerialiseCalculationsCommand(
-			new RematerialiseStorage($registers, $schemas, $magic, $objects),
+			new RematerialiseStorage(new SchemaCatalog($registers, $schemas, $magic), $objects),
 			new RematerialiseEvaluation($evaluator, $references, $aggregates),
 			new SchemaTypeConverter()
 		);

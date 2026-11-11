@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -86,15 +87,14 @@ class ImportPreviewMapper extends QBMapper implements ImportPreviewFinderInterfa
 	/**
 	 * List the previews of one actor, newest first.
 	 *
-	 * @param string $createdBy The actor's uid.
-	 * @param string|null $state Optional state filter.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
+	 * @param string    $createdBy The actor's uid.
+	 * @param ListQuery $query     The page (unbounded for every preview) and the optional `state` filter.
 	 *
 	 * @return ImportPreview[] The actor's previews.
 	 */
-	public function findByActor(string $createdBy, ?string $state = null, ?int $limit = null, ?int $offset = null): array {
-		$qb = $this->db->getQueryBuilder();
+	public function findByActor(string $createdBy, ListQuery $query=new ListQuery(limit: ListQuery::UNBOUNDED)): array {
+		$state = ($query->filters['state'] ?? null);
+		$qb    = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('created_by', $qb->createNamedParameter($createdBy)))
@@ -104,7 +104,7 @@ class ImportPreviewMapper extends QBMapper implements ImportPreviewFinderInterfa
 			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
 		}
 
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		(new QueryPage(limit: $query->limitOrNull(), offset: $query->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByActor()
@@ -117,6 +117,27 @@ class ImportPreviewMapper extends QBMapper implements ImportPreviewFinderInterfa
 	 * @return ImportPreview The persisted preview.
 	 */
 	public function createFromArray(array $data): ImportPreview {
+		$preview = $this->previewFrom(data: $data);
+
+		if ($preview->getUuid() === null) {
+			$preview->setUuid(Uuid::v4()->toRfc4122());
+		}
+
+		$now = new DateTime();
+		$preview->setCreated($now);
+		$preview->setUpdated($now);
+
+		return $this->insert(entity: $preview);
+	}//end createFromArray()
+
+	/**
+	 * A new preview with every known field of the data set through its setter.
+	 *
+	 * @param array<string, mixed> $data The fields.
+	 *
+	 * @return ImportPreview The preview, not yet stored.
+	 */
+	private function previewFrom(array $data): ImportPreview {
 		$preview = new ImportPreview();
 
 		foreach ($data as $key => $value) {
@@ -132,16 +153,8 @@ class ImportPreviewMapper extends QBMapper implements ImportPreviewFinderInterfa
 			}
 		}
 
-		if ($preview->getUuid() === null) {
-			$preview->setUuid(Uuid::v4()->toRfc4122());
-		}
-
-		$now = new DateTime();
-		$preview->setCreated($now);
-		$preview->setUpdated($now);
-
-		return $this->insert(entity: $preview);
-	}//end createFromArray()
+		return $preview;
+	}//end previewFrom()
 
 	/**
 	 * Persist a preview, moving its updated timestamp.

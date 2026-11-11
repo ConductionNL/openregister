@@ -33,6 +33,20 @@ namespace OCA\OpenRegister\Service\Security;
  */
 class OutboundAddressGuard {
 	/**
+	 * The first 12 bytes of the IPv6 forms whose last 4 bytes are an IPv4 address.
+	 *
+	 * @var array<string>
+	 */
+	private const EMBEDDED_IPV4_PREFIXES = [
+		// IPv4-mapped, ::ffff:0:0/96.
+		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff",
+		// IPv4-compatible, ::/96.
+		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
+		// NAT64, 64:ff9b::/96.
+		"\x00\x64\xff\x9b\x00\x00\x00\x00\x00\x00\x00\x00",
+	];
+
+	/**
 	 * Ranges that are not routable on the open internet.
 	 *
 	 * The IPv4 documentation ranges (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24)
@@ -127,10 +141,7 @@ class OutboundAddressGuard {
 
 		$packed = (string) inet_pton(ip: $ipAddress);
 		$prefix = substr(string: $packed, offset: 0, length: 12);
-		if ($prefix === str_repeat(string: "\x00", times: 10) . "\xff\xff"
-			|| $prefix === str_repeat(string: "\x00", times: 12)
-			|| $prefix === "\x00\x64\xff\x9b" . str_repeat(string: "\x00", times: 8)
-		) {
+		if (in_array(needle: $prefix, haystack: self::EMBEDDED_IPV4_PREFIXES, strict: true) === true) {
 			return (string) inet_ntop(ip: substr(string: $packed, offset: 12));
 		}
 

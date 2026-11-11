@@ -74,6 +74,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests that deleteObject()'s own lookups use the flags the caller passed.
@@ -147,7 +148,7 @@ class ObjectServiceDeleteHonoursScopeFlagsTest extends TestCase {
 			}
 		);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -186,7 +187,7 @@ class ObjectServiceDeleteHonoursScopeFlagsTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 	}//end setUp()
@@ -256,8 +257,8 @@ class ObjectServiceDeleteHonoursScopeFlagsTest extends TestCase {
 			->willReturnCallback(
 				function (mixed ...$args): bool {
 					// The handler still gets the caller's flags, as it always did.
-					$this->assertFalse($args[4] ?? true);
-					$this->assertFalse($args[5] ?? true);
+					$this->assertFalse($args[1] ?? true);
+					$this->assertFalse($args[2] ?? true);
 					return true;
 				}
 			);

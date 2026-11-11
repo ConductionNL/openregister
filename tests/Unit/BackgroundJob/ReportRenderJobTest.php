@@ -166,7 +166,7 @@ class ReportRenderJobTest extends TestCase {
 
 		$job = new ReportRenderJob(
 			$this->createMock(ITimeFactory::class),
-			new ReportRenderSources($registerMapper, $schemaMapper, $objectMapper),
+			new ReportRenderSources(new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $objectMapper)),
 			new ReportRenderDelivery($renderService, $this->createMock(IRootFolder::class)),
 			new ReportRenderPlatform($appConfig, $this->createMock(LoggerInterface::class))
 		);
@@ -194,7 +194,7 @@ class ReportRenderJobTest extends TestCase {
 
 		// Faithful to the real method: findAll() early-returns [] when it is
 		// not given both register: and schema:.
-		$objectMapper->method('findAll')->willReturn([]);
+		$objectMapper->method('findAllListed')->willReturn([]);
 
 		$this->assertSame(
 			1,
@@ -224,7 +224,7 @@ class ReportRenderJobTest extends TestCase {
 	 */
 	public function testFindAllWithoutRegisterAndSchemaYieldsNoDashboards(): void {
 		$objectMapper = $this->createMock(MagicMapper::class);
-		$objectMapper->method('findAll')->willReturn([]);
+		$objectMapper->method('findAllListed')->willReturn([]);
 		$objectMapper->method('findAllInRegisterSchemaTable')->willReturn([]);
 
 		$this->assertSame(
@@ -249,14 +249,14 @@ class ReportRenderJobTest extends TestCase {
 	 */
 	public function testMagicMapperFindAllHasNoRbacNamedParameters(): void {
 		$names = [];
-		foreach ((new ReflectionMethod(MagicMapper::class, 'findAll'))->getParameters() as $parameter) {
+		foreach ((new ReflectionMethod(MagicMapper::class, 'findAllListed'))->getParameters() as $parameter) {
 			$names[] = $parameter->getName();
 		}
 
 		$this->assertNotContains(
 			'_rbac',
 			$names,
-			'MagicMapper::findAll() does not accept $_rbac. If this ever changes, '
+			'MagicMapper::findAllListed() does not accept $_rbac. If this ever changes, '
 			. 'the RBAC contract of the central object mapper changed with it — '
 			. 'see openregister#2282 and revisit ReportRenderJob deliberately.'
 		);
@@ -275,7 +275,7 @@ class ReportRenderJobTest extends TestCase {
 			$names[] = $p->getName();
 		}
 
-		foreach (['register', 'schema', 'limit', 'offset', 'filters'] as $required) {
+		foreach (['table', 'listing'] as $required) {
 			$this->assertContains(
 				$required,
 				$names,

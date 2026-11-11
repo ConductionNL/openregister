@@ -42,11 +42,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Credential;
 
+use OCA\OpenRegister\Service\Configuration\AppSettingsAccess;
 use OCA\OpenRegister\Support\FleetAppId;
-use OCP\App\IAppManager;
-use OCP\IAppConfig;
 use OCP\Server;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -103,16 +101,13 @@ class DoriathApplicationRegistrar implements DoriathApplicationRegistrarInterfac
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig $appConfig Persists/probes the per-app Doriath application UUID (non-secret).
-	 * @param IAppManager $appManager Probes whether the doriath app is enabled.
-	 * @param LoggerInterface $logger Secret-free diagnostics.
+	 * @param AppSettingsAccess $settings Persists/probes the per-app Doriath application UUID (non-secret),
+	 *                                    probes whether the doriath app is enabled, and takes secret-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly IAppConfig $appConfig,
-		private readonly IAppManager $appManager,
-		private readonly LoggerInterface $logger,
+		private readonly AppSettingsAccess $settings,
 	) {
 	}//end __construct()
 
@@ -134,14 +129,14 @@ class DoriathApplicationRegistrar implements DoriathApplicationRegistrarInterfac
 		try {
 			$skipped = $this->skipReason(appId: $appId);
 			if ($skipped !== null) {
-				$this->logger->debug(sprintf($skipped, $appId));
+				$this->settings->logger->debug(sprintf($skipped, $appId));
 				return;
 			}
 
 			$this->register(appId: $appId, description: $description);
 		} catch (Throwable $e) {
 			$message = sprintf('[DoriathApplicationRegistrar:%s] per-app Doriath registration skipped', $appId);
-			$this->logger->warning($message, ['exception' => $e->getMessage()]);
+			$this->settings->logger->warning($message, ['exception' => $e->getMessage()]);
 		}
 	}//end registerApplication()
 
@@ -190,7 +185,7 @@ class DoriathApplicationRegistrar implements DoriathApplicationRegistrarInterfac
 		// The credential app answers to `keepiq` on development and `doriath`
 		// on beta/main, which FleetAppId resolves; probing `doriath` alone on a
 		// keepiq instance returns FALSE rather than erroring.
-		return FleetAppId::isEnabledForUser($this->appManager, self::CREDENTIAL_APP) === true
+		return FleetAppId::isEnabledForUser($this->settings->appManager, self::CREDENTIAL_APP) === true
 			&& $this->resolveApplicationService() !== null;
 	}//end isDoriathAvailable()
 
@@ -209,34 +204,33 @@ class DoriathApplicationRegistrar implements DoriathApplicationRegistrarInterfac
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	private function isRegistrationLive(string $appId): bool {
-		$applicationId = $this->appConfig->getValueString('openregister', self::appConfigKey(appId: $appId), '');
+		$applicationId = $this->settings->appConfig->getValueString('openregister', self::appConfigKey(appId: $appId), '');
 		if ($applicationId === '') {
 			return false;
 		}
 
-		$applicationService = $this->resolveApplicationService();
-
-		return $applicationService !== null
-			&& $this->rowExists(applicationService: $applicationService, applicationId: $applicationId, appId: $appId);
+		return $this->applicationExists(applicationId: $applicationId, appId: $appId);
 	}//end isRegistrationLive()
 
 	/**
-	 * Whether Doriath still holds the persisted application row.
+	 * Whether Doriath still holds the persisted application row; a stale UUID is logged.
 	 *
-	 * @param object $applicationService Doriath's ApplicationService.
 	 * @param string $applicationId The persisted application UUID.
-	 * @param string $appId The consuming app id, for the diagnostic.
+	 * @param string $appId         The app it was registered for, for log attribution.
 	 *
-	 * @return bool True when the row is still there.
-	 *
-	 * @spec openspec/specs/credential-broker/spec.md
+	 * @return bool True when the row still exists.
 	 */
-	private function rowExists(object $applicationService, string $applicationId, string $appId): bool {
+	private function applicationExists(string $applicationId, string $appId): bool {
+		$applicationService = $this->resolveApplicationService();
+		if ($applicationService === null) {
+			return false;
+		}
+
 		try {
 			// Admin-scoped in-process read; throws when the row no longer exists.
 			$applicationService->get($applicationId, '', true);
 		} catch (Throwable $e) {
-			$this->logger->info(
+			$this->settings->logger->info(
 				sprintf('[DoriathApplicationRegistrar:%s] persisted application UUID is stale — re-registering', $appId),
 				['error' => $e->getMessage()]
 			);
@@ -244,7 +238,7 @@ class DoriathApplicationRegistrar implements DoriathApplicationRegistrarInterfac
 		}
 
 		return true;
-	}//end rowExists()
+	}//end applicationExists()
 
 	/**
 	 * Register the per-app application (identity-only, no CSR, pending) and persist its UUID.
@@ -270,9 +264,9 @@ class DoriathApplicationRegistrar implements DoriathApplicationRegistrarInterfac
 
 		// Doriath generates the row UUID — persist the NON-secret UUID only.
 		$applicationId = (string)$application->getId();
-		$this->appConfig->setValueString('openregister', self::appConfigKey(appId: $appId), $applicationId);
+		$this->settings->appConfig->setValueString('openregister', self::appConfigKey(appId: $appId), $applicationId);
 		$message = sprintf('[DoriathApplicationRegistrar:%s] registered per-app Doriath application (pending)', $appId);
-		$this->logger->info($message, ['applicationId' => $applicationId]);
+		$this->settings->logger->info($message, ['applicationId' => $applicationId]);
 	}//end register()
 
 	/**
@@ -330,7 +324,7 @@ class DoriathApplicationRegistrar implements DoriathApplicationRegistrarInterfac
 			// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- Optional sibling app (keepiq): guarded by class_exists and try/catch, absent on most instances, so it cannot be a constructor dependency.
 			return Server::get($className);
 		} catch (Throwable $e) {
-			$this->logger->warning('[DoriathApplicationRegistrar] failed to resolve Doriath ApplicationService', ['error' => $e->getMessage()]);
+			$this->settings->logger->warning('[DoriathApplicationRegistrar] failed to resolve Doriath ApplicationService', ['error' => $e->getMessage()]);
 		}
 
 		return null;

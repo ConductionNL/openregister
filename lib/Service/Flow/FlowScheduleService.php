@@ -122,17 +122,13 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 	 * @spec openspec/changes/or-flow-scheduled-trigger/specs/flow-scheduled-trigger/spec.md
 	 */
 	private function fireIfDue(array $candidate, DateTimeInterface $now): bool {
-		$cron = $this->scheduleOf(candidate: $candidate);
-		if ($cron === null) {
+		if ($this->isDue(candidate: $candidate, now: $now) === false) {
 			return false;
 		}
 
 		// The registry guarantees a non-empty id — a candidate without one
 		// is dropped there, so every id here is one a resolver can load.
 		$uuid = $candidate['id'];
-		if ($this->isDue(candidate: $candidate, cron: $cron, now: $now) === false) {
-			return false;
-		}
 
 		// SINGLETON: never overlap a flow with itself.
 		//
@@ -152,15 +148,7 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 		// The last-fire marker is deliberately NOT advanced when we skip:
 		// the flow stays due, so it starts on the first tick after the
 		// previous run finishes rather than waiting a whole extra interval.
-		if ($this->runs->hasActiveRun(flowId: $uuid) === true) {
-			$this->logger->info(
-				message: '[FlowSchedule] Skipping due flow — previous run has not finished',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'flow' => $uuid,
-				]
-			);
+		if ($this->previousRunActive(uuid: $uuid) === true) {
 			return false;
 		}
 
@@ -178,6 +166,56 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 		// working" rather than as a fault in a specific flow.
 		return $this->tryFire(uuid: $uuid, now: $now);
 	}//end fireIfDue()
+
+	/**
+	 * Whether a candidate is a schedule whose next run after its baseline has come.
+	 *
+	 * @param array<string, mixed> $candidate The candidate flow.
+	 * @param DateTimeInterface    $now       The tick.
+	 *
+	 * @return bool True when the flow is due.
+	 */
+	private function isDue(array $candidate, DateTimeInterface $now): bool {
+		$cron = $this->scheduleOf(candidate: $candidate);
+		if ($cron === null) {
+			return false;
+		}
+
+		$baseline = $this->baselineOf(candidate: $candidate, now: $now);
+		if ($baseline === null) {
+			return false;
+		}
+
+		$next = $this->nextRunAfter(cron: $cron, baseline: $baseline);
+		if ($next === null || $next > $now) {
+			return false;
+		}
+
+		return true;
+	}//end isDue()
+
+	/**
+	 * Whether the flow's previous run is still going; a skip is logged.
+	 *
+	 * @param string $uuid The flow id.
+	 *
+	 * @return bool True when the due flow must be skipped.
+	 */
+	private function previousRunActive(string $uuid): bool {
+		if ($this->runs->hasActiveRun(flowId: $uuid) === false) {
+			return false;
+		}
+
+		$this->logger->info(
+			message: '[FlowSchedule] Skipping due flow — previous run has not finished',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'flow' => $uuid,
+			]
+		);
+		return true;
+	}//end previousRunActive()
 
 	/**
 	 * Fire one due flow; a flow that refuses is reported and skipped, never fatal to the tick.
@@ -325,28 +363,20 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 	}//end isScheduleCandidate()
 
 	/**
-	 * Whether a cron occurrence has passed since the flow's baseline.
+	 * The first cron occurrence after a flow's baseline, or null when the cron or the baseline cannot be read.
 	 *
-	 * @param array $candidate The candidate flow, shaped `{id, since, ...}`.
-	 * @param string $cron The cron expression.
-	 * @param DateTimeInterface $now The moment to evaluate against.
+	 * @param string $cron     The cron expression.
+	 * @param string $baseline The last fire, or the moment the flow was scheduled from.
 	 *
-	 * @return boolean Whether the flow is due.
+	 * @return DateTimeInterface|null The next run date.
 	 */
-	private function isDue(array $candidate, string $cron, DateTimeInterface $now): bool {
-		$baseline = $this->baselineOf(candidate: $candidate, now: $now);
-		if ($baseline === null) {
-			return false;
-		}
-
+	private function nextRunAfter(string $cron, string $baseline): ?DateTimeInterface {
 		try {
-			$next = (new CronExpression($cron))->getNextRunDate(new DateTimeImmutable($baseline));
+			return (new CronExpression($cron))->getNextRunDate(new DateTimeImmutable($baseline));
 		} catch (Throwable $e) {
-			return false;
+			return null;
 		}
-
-		return $next <= $now;
-	}//end isDue()
+	}//end nextRunAfter()
 
 	/**
 	 * The moment a flow's next occurrence is measured from.
@@ -410,11 +440,13 @@ class FlowScheduleService implements FlowScheduleServiceInterface {
 		// an author states it deliberately. When the node names nobody the queue
 		// refuses, and the refusal switches the schedule off with a reason
 		// attached instead of retrying every tick forever (ADR-099).
-		$this->runs->queue(
+		$this->runs->queueRun(
 			flowId: $uuid,
-			subject: [],
-			trigger: 'schedule',
-			context: ['payload' => ['flowId' => $uuid, 'scheduledAt' => $now->format(DATE_ATOM)]]
+			options: new FlowRunQueueOptions(
+				subject: [],
+				trigger: 'schedule',
+				context: ['payload' => ['flowId' => $uuid, 'scheduledAt' => $now->format(DATE_ATOM)]]
+			)
 		);
 
 		// Remember the fire time so the next occurrence is measured from here,

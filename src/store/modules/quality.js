@@ -165,6 +165,89 @@ function emptyListing(items, prefix) {
 	}
 }
 
+/**
+ * Load the webhooks, their delivery stats and the recent failed deliveries
+ * into the store; with no webhooks, nothing more is asked.
+ *
+ * @param {object} store The quality store
+ * @return {Promise<object>} The webhooks, stats by webhook id and failures
+ */
+async function loadWebhookHealth(store) {
+	const listResponse = await axios.get(`${API_BASE}/webhooks`)
+	const webhooks = listResponse.data?.results ?? []
+	store.webhooks = webhooks
+
+	if (webhooks.length === 0) {
+		return clearWebhookHealth(store)
+	}
+
+	store.webhookStats = Object.fromEntries(
+		await Promise.all(webhooks.map(webhookStatsEntry)),
+	)
+	store.webhookFailures = await fetchRecentWebhookFailures()
+	return webhookHealthOf(store)
+}
+
+/**
+ * The webhook health the store holds.
+ *
+ * @param {object} store The quality store
+ * @return {object} The webhooks, stats by webhook id and failures
+ */
+function webhookHealthOf(store) {
+	return {
+		webhooks: store.webhooks,
+		stats: store.webhookStats,
+		failures: store.webhookFailures,
+	}
+}
+
+/**
+ * Empty the webhook stats and failures when there are no webhooks.
+ *
+ * @param {object} store The quality store
+ * @return {object} The empty webhook health
+ */
+function clearWebhookHealth(store) {
+	store.webhookStats = {}
+	store.webhookFailures = []
+	return { webhooks: [], stats: {}, failures: [] }
+}
+
+/**
+ * One webhook's delivery stats as an `[id, stats]` entry; null stats when
+ * they cannot be read.
+ *
+ * @param {object} webhook The webhook
+ * @return {Promise<Array>} The entry
+ */
+async function webhookStatsEntry(webhook) {
+	try {
+		const statsResponse = await axios.get(
+			`${API_BASE}/webhooks/${encodeURIComponent(webhook.id)}/logs/stats`,
+		)
+		return [webhook.id, statsResponse.data ?? {}]
+	} catch (e) {
+		console.error('[quality.fetchWebhookHealth] per-webhook stats failed', {
+			webhook,
+			error: e,
+		})
+		return [webhook.id, null]
+	}
+}
+
+/**
+ * The recent failed webhook deliveries.
+ *
+ * @return {Promise<Array<object>>} The failed deliveries
+ */
+async function fetchRecentWebhookFailures() {
+	const failuresResponse = await axios.get(`${API_BASE}/webhooks/logs`, {
+		params: { success: 'false' },
+	})
+	return failuresResponse.data?.results ?? []
+}
+
 export const useQualityStore = defineStore('quality', {
 	state: () => ({
 		...qualityListingState(),
@@ -659,47 +742,7 @@ export const useQualityStore = defineStore('quality', {
 			this.loading = true
 			this.error = null
 			try {
-				const listResponse = await axios.get(`${API_BASE}/webhooks`)
-				const webhooks = listResponse.data?.results ?? []
-				this.webhooks = webhooks
-
-				if (webhooks.length === 0) {
-					this.webhookStats = {}
-					this.webhookFailures = []
-					return { webhooks: [], stats: {}, failures: [] }
-				}
-
-				const statsEntries = await Promise.all(
-					webhooks.map(async (webhook) => {
-						try {
-							const statsResponse = await axios.get(
-								`${API_BASE}/webhooks/${encodeURIComponent(webhook.id)}/logs/stats`,
-							)
-							return [webhook.id, statsResponse.data ?? {}]
-						} catch (e) {
-							console.error(
-								'[quality.fetchWebhookHealth] per-webhook stats failed',
-								{ webhook, error: e },
-							)
-							return [webhook.id, null]
-						}
-					}),
-				)
-				this.webhookStats = Object.fromEntries(statsEntries)
-
-				const failuresResponse = await axios.get(
-					`${API_BASE}/webhooks/logs`,
-					{
-						params: { success: 'false' },
-					},
-				)
-				this.webhookFailures = failuresResponse.data?.results ?? []
-
-				return {
-					webhooks: this.webhooks,
-					stats: this.webhookStats,
-					failures: this.webhookFailures,
-				}
+				return await loadWebhookHealth(this)
 			} catch (e) {
 				this.error = errorText(e, 'Failed to fetch webhook health')
 				console.error('[quality.fetchWebhookHealth]', e)

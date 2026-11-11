@@ -34,11 +34,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
@@ -134,7 +137,8 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 			fn (Register $register, Schema $schema): bool => isset($this->rows[(int)$schema->getId()])
 		);
 		$this->magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema, ?int $limit = null, ?int $offset = null): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
+				[$register, $schema, $limit, $offset] = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset];
 				return array_slice(($this->rows[(int)$schema->getId()] ?? []), (int)$offset, $limit);
 			}
 		);
@@ -142,9 +146,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		$this->service = new SchemaDeletionService(
 			$this->db,
 			new SchemaDeletionStores(
-				$this->magicMapper,
-				$this->createMock(RegisterMapper::class),
-				$this->schemaMapper,
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->magicMapper),
 				$this->auditTrailMapper
 			),
 			$this->createMock(LoggerInterface::class)
@@ -233,7 +235,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		$this->magicMapper->method('deleteObjectsBySchema')->willReturnCallback(
 			fn (Register $register, Schema $schema, bool $hardDelete): int => count($this->rows[(int)$schema->getId()])
 		);
-		$this->auditTrailMapper->expects($this->exactly(3))->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->exactly(3))->method('recordObjectEvent');
 		$this->db->expects($this->once())->method('beginTransaction');
 		$this->db->expects($this->once())->method('commit');
 		$this->db->expects($this->never())->method('rollBack');
@@ -260,7 +262,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		$this->givenSchema(id: 43, uuids: ['b-1'], archival: true);
 
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 		$this->db->expects($this->never())->method('beginTransaction');
 
 		try {
@@ -284,7 +286,7 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		$this->rows[43][1]->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00', 'reason' => 'kept']);
 
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 		$this->db->expects($this->never())->method('commit');
 
 		$this->expectException(ObjectStateWriteException::class);
@@ -371,11 +373,11 @@ class SchemaDeletionRegisterDeleteTest extends TestCase {
 		$this->rows[42][0]->setFrozen(['by' => 'alice', 'at' => '2026-01-01T00:00:00+00:00', 'reason' => 'kept']);
 
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->expectException(ObjectStateWriteException::class);
 
-		$this->service->deleteObjectsBySchema(registerId: self::REGISTER_ID, schemaId: 42);
+		$this->service->deleteObjectsBySchema(table: new RegisterSchemaRef(register: self::REGISTER_ID, schema: 42));
 	}//end testOneFrozenRowRefusesTheSchemaWideDelete()
 
 	/**

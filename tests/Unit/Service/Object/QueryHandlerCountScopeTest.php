@@ -9,10 +9,12 @@ namespace Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Service\Object\ObjectSelection;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use ReflectionParameter;
 
 /**
  * The organisation a count runs under.
@@ -30,7 +32,7 @@ class QueryHandlerCountScopeTest extends TestCase {
 			->with(['a' => 1], 'org-uuid-123', true, true, ['x'], 'u-1')
 			->willReturn(7);
 
-		$this->assertSame(7, $this->handler($mapper, 'org-uuid-123')->countSearchObjects(['a' => 1], true, true, ['x'], 'u-1'));
+		$this->assertSame(7, $this->handler($mapper, 'org-uuid-123')->countSearchObjects(['a' => 1], true, true, new ObjectSelection(ids: ['x'], uses: 'u-1')));
 	}//end testACountUnderMultitenancyPassesTheActiveOrganisation()
 
 	public function testACountWithoutMultitenancyPassesNoOrganisation(): void {
@@ -47,17 +49,18 @@ class QueryHandlerCountScopeTest extends TestCase {
 		$performance = $this->createStub(PerformanceOptimizationHandler::class);
 		$performance->method('getActiveOrganisationForContext')->willReturn($organisation);
 
-		$args = [];
-		foreach ((new ReflectionClass(QueryHandler::class))->getConstructor()->getParameters() as $param) {
-			$type   = $param->getType()->getName();
-			$args[] = match (true) {
+		// A final class is a constructor bundle: build it from its own parameters.
+		$argument = function (ReflectionParameter $param) use (&$argument, $mapper, $performance): mixed {
+			$type = $param->getType()->getName();
+			return match (true) {
 				$type === MagicMapperInterface::class => $mapper,
 				$type === PerformanceOptimizationHandler::class => $performance,
+				(new ReflectionClass($type))->isFinal() === true => new $type(...array_map($argument, (new ReflectionClass($type))->getConstructor()->getParameters())),
 				$param->isOptional() === true => $param->getDefaultValue(),
 				default => $this->createStub($type),
 			};
-		}
+		};
 
-		return new QueryHandler(...$args);
+		return new QueryHandler(...array_map($argument, (new ReflectionClass(QueryHandler::class))->getConstructor()->getParameters()));
 	}//end handler()
 }//end class

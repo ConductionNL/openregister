@@ -186,11 +186,7 @@ final class UserTaskPerformersTest extends TestCase {
 			);
 		}
 
-		return new UserTaskPerformers(
-			config: new UserTaskConfig(l10n: $l10n, forms: $this->formReader()),
-			principals: $registry,
-			events: $events
-		);
+		return new UserTaskPerformers(config: new UserTaskConfig(l10n: $l10n, forms: $this->formReader()), hooks: new \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks(principals: $registry, events: $events));
 	}//end performers()
 
 	/**

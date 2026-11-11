@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
 
 /**
  * Destroys one object for an approved erasure, recording it first.
@@ -93,17 +94,7 @@ class ErasureDestroyer {
 	 */
 	private function destroyAndRecord(ErasureDestruction $destruction): array {
 		try {
-			$scopeReport = $this->steps->scopeService->destroy(object: $destruction->object, schema: $destruction->schema);
-
-			// THE DESTRUCTION RECORD NAMES THE REQUEST (D-3). Without this the
-			// destruction log and the data subject request are two histories of
-			// the same act that nobody can join.
-			$this->steps->recorder->record(
-				object: $destruction->object,
-				scope: $scopeReport,
-				rule: ErasureRunner::RULE,
-				context: $this->recordContext(record: $destruction->record)
-			);
+			$scopeReport = $this->destroyScopeAndRecord(destruction: $destruction);
 		} catch (DestructionRefusedException $e) {
 			return ['refused', $this->refused(uuid: $destruction->uuid(), refusal: $e)];
 		} catch (Throwable $e) {
@@ -112,6 +103,33 @@ class ErasureDestroyer {
 
 		return $this->deleteRow(object: $destruction->object, scopeReport: $scopeReport);
 	}//end destroyAndRecord()
+
+	/**
+	 * Destroy the object's declared scope and record the destruction against the request.
+	 *
+	 * @param ErasureDestruction $destruction The object, its schema and the request record.
+	 *
+	 * @return array<string, mixed> The scope report.
+	 *
+	 * @throws DestructionRefusedException When the scope may not be destroyed.
+	 */
+	private function destroyScopeAndRecord(ErasureDestruction $destruction): array {
+		$scopeReport = $this->steps->scopeService->destroy(object: $destruction->object, schema: $destruction->schema);
+
+		// THE DESTRUCTION RECORD NAMES THE REQUEST (D-3). Without this the
+		// destruction log and the data subject request are two histories of
+		// the same act that nobody can join.
+		$this->steps->recorder->recordDestruction(
+			command: new RecordDestructionCommand(
+				object: $destruction->object,
+				scope: $scopeReport,
+				rule: ErasureRunner::RULE,
+				context: $this->recordContext(record: $destruction->record)
+			)
+		);
+
+		return $scopeReport;
+	}//end destroyScopeAndRecord()
 
 	/**
 	 * What the destruction record says about the erasure that caused it.

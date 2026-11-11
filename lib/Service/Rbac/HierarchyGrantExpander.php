@@ -354,24 +354,35 @@ class HierarchyGrantExpander {
 	private function childrenOrNull(HierarchyInheritanceRun $run): ?array {
 		try {
 			return $this->descender->childrenOf(
-				table: $run->hierarchy['table'],
-				parentColumn: $run->hierarchy['parentColumn'],
+				level: new HierarchyLevel(table: $run->hierarchy['table'], parentColumn: $run->hierarchy['parentColumn']),
 				parentUuids: array_keys($run->frontier)
 			);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[HierarchyGrantExpander] A level of the hierarchy could not be read; the descent stops here',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schemaId' => $run->hierarchy['schemaId'],
-					'depth' => $run->depth,
-					'exception' => $e->getMessage(),
-				]
-			);
+			$this->logUnreadableLevel(run: $run, error: $e);
 			return null;
 		}
 	}//end childrenOrNull()
+
+	/**
+	 * Say that a level of the hierarchy could not be read, so the descent stops.
+	 *
+	 * @param HierarchyInheritanceRun $run   The hierarchy and the depth reached.
+	 * @param Throwable               $error Why the read failed.
+	 *
+	 * @return void
+	 */
+	private function logUnreadableLevel(HierarchyInheritanceRun $run, Throwable $error): void {
+		$this->logger->error(
+			message: '[HierarchyGrantExpander] A level of the hierarchy could not be read; the descent stops here',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'schemaId' => $run->hierarchy['schemaId'],
+				'depth' => $run->depth,
+				'exception' => $error->getMessage(),
+			]
+		);
+	}//end logUnreadableLevel()
 
 	/**
 	 * Absorb one level of children, returning the next frontier.

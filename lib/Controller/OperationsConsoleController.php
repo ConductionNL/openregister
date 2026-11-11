@@ -40,19 +40,21 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use OCA\OpenRegister\Service\OperationsConsoleServiceInterface;
 use OCA\OpenRegister\Service\Operations\JobAlertServiceInterface;
 use OCA\OpenRegister\Service\Operations\JobRunFilter;
 use OCA\OpenRegister\Service\Operations\JobScheduleChange;
 use OCA\OpenRegister\Service\Operations\OperationsJobsServiceInterface;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\OperationsActingRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
 use OCA\OpenRegister\Controller\Support\OperationsConsoleControllerServices;
 
 /**
@@ -68,6 +70,13 @@ class OperationsConsoleController extends Controller {
 	 * @var OperationsActingRequest
 	 */
 	private readonly OperationsActingRequest $acting;
+
+	/**
+	 * The session naming the acting administrator.
+	 *
+	 * @var ControllerSession
+	 */
+	private readonly ControllerSession $session;
 
 	/**
 	 * The read model.
@@ -93,22 +102,19 @@ class OperationsConsoleController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                            $appName     Application name.
-	 * @param IRequest                          $request     HTTP request.
-	 * @param OperationsConsoleControllerServices $services The services, bundled.
-	 * @param IUserSession                      $userSession Names the administrator acting.
+	 * @param IRequest                            $request  HTTP request.
+	 * @param OperationsConsoleControllerServices $services The services and the session naming the acting administrator.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		OperationsConsoleControllerServices $services,
-		IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->console = $services->console;
 		$this->jobsService = $services->jobsService;
 		$this->alerts = $services->alerts;
-		$this->acting = new OperationsActingRequest(request: $request, userSession: $userSession);
+		$this->session = $services->session;
+		$this->acting = new OperationsActingRequest(request: $request, userSession: $this->session->userSession);
 	}//end __construct()
 
 	/**
@@ -190,8 +196,10 @@ class OperationsConsoleController extends Controller {
 					outcome: $this->acting->stringParam(name: 'outcome'),
 					windowHours: $windowHours
 				),
-				limit: $this->acting->intParam(name: 'limit', fallback: 50),
-				offset: $this->acting->intParam(name: 'offset', fallback: 0)
+				page: new ListQuery(
+					limit: $this->acting->intParam(name: 'limit', fallback: 50),
+					offset: $this->acting->intParam(name: 'offset', fallback: 0)
+				)
 			)
 		);
 	}//end runs()

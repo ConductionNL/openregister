@@ -155,22 +155,34 @@ class FlowNodeRegistry implements FlowNodeCatalogueInterface {
 		}
 
 		if (isset($this->nodes[$id]) === true) {
-			$this->logger->warning(
-				message: '[FlowNodeRegistry] Refusing a duplicate flow node type',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'type' => $id,
-					'existing' => get_class($this->nodes[$id]),
-					'rejected' => get_class($node),
-				]
-			);
+			$this->warnDuplicate(node: $node);
 			return;
 		}
 
 		$this->nodes[$id] = $node;
 
 	}//end register()
+
+	/**
+	 * Say that a node type was refused because its id is already registered.
+	 *
+	 * @param IFlowNode $node The rejected node, whose id is taken.
+	 *
+	 * @return void
+	 */
+	private function warnDuplicate(IFlowNode $node): void {
+		$id = $node->getId();
+		$this->logger->warning(
+			message: '[FlowNodeRegistry] Refusing a duplicate flow node type',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'type' => $id,
+				'existing' => get_class($this->nodes[$id]),
+				'rejected' => get_class($node),
+			]
+		);
+	}//end warnDuplicate()
 
 	/**
 	 * Every registered node type, optionally narrowed to one scope.

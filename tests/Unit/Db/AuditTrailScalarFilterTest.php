@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -46,9 +47,7 @@ class AuditTrailScalarFilterTest extends TestCase {
 		$this->database = new MigratedSqliteDatabase(test: $this, tables: ['openregister_audit_trails']);
 		$this->mapper   = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			userSession: $this->createMock(IUserSession::class),
-			request: $this->createMock(IRequest::class),
-			services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger())
+			services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger(), userSession: $this->createMock(IUserSession::class), request: $this->createMock(IRequest::class))
 		);
 
 		$rows = [
@@ -82,7 +81,7 @@ class AuditTrailScalarFilterTest extends TestCase {
 	 * @return array<int, int>
 	 */
 	private function ids(array $filters): array {
-		$rows = $this->mapper->findAll(filters: $filters, sort: ['id' => 'ASC']);
+		$rows = $this->mapper->findTrail(ListQuery::unbounded($filters, ['id' => 'ASC']));
 		return array_map(static fn (AuditTrail $row): int => (int)$row->getId(), $rows);
 	}
 

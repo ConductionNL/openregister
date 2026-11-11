@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -35,6 +36,8 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends QBMapper<BulkJob>
  */
 class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -55,12 +58,7 @@ class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	 * @throws DoesNotExistException When no such job exists.
 	 */
 	public function find(int $id): BulkJob {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
 
 	/**
@@ -73,12 +71,7 @@ class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	 * @throws DoesNotExistException When no such job exists.
 	 */
 	public function findByUuid(string $uuid): BulkJob {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'uuid', value: $uuid)));
 	}//end findByUuid()
 
 	/**
@@ -129,44 +122,67 @@ class BulkJobMapper extends QBMapper implements BulkJobMapperInterface {
 	 * @return BulkJob[] The actor's jobs.
 	 */
 	public function findByActor(string $startedBy, ?string $state = null, ?int $limit = null, ?int $offset = null): array {
+		return $this->findJobsOf(
+			startedBy: $startedBy,
+			query: new ListQuery(limit: $limit ?? ListQuery::UNBOUNDED, offset: $offset, filters: ['state' => $state])
+		);
+	}//end findByActor()
+
+	/**
+	 * List the jobs of one actor, newest first.
+	 *
+	 * @param string    $startedBy The actor's uid.
+	 * @param ListQuery $query     The page (unbounded for every job) and an optional `state` filter.
+	 *
+	 * @return BulkJob[] The actor's jobs.
+	 *
+	 * @spec exclude ADR-011 ListQuery variant of findByActor(), no capability of its own
+	 */
+	public function findJobsOf(string $startedBy, ListQuery $query): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->eq('started_by', $qb->createNamedParameter($startedBy)))
-			->orderBy('id', 'DESC');
+			->where($qb->expr()->eq('started_by', $qb->createNamedParameter($startedBy)));
 
-		if ($state !== null) {
-			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
-		}
-
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
-
-		return $this->findEntities(query: $qb);
-	}//end findByActor()
+		return $this->findListed(qb: $qb, query: $query);
+	}//end findJobsOf()
 
 	/**
 	 * List every job, newest first. For the administrator's console.
 	 *
-	 * @param string|null $state Optional state filter.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
+	 * @param ListQuery $query The page (unbounded for every job) and an optional `state` filter.
+	 *
+	 * @return BulkJob[] The jobs.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	public function findJobs(ListQuery $query): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')->from($this->getTableName());
+
+		return $this->findListed(qb: $qb, query: $query);
+	}//end findJobs()
+
+	/**
+	 * Order a job select newest first, narrow it to the listing's state and page it.
+	 *
+	 * @param IQueryBuilder $qb    The select.
+	 * @param ListQuery     $query The page and an optional `state` filter.
 	 *
 	 * @return BulkJob[] The jobs.
 	 */
-	public function findAllJobs(?string $state = null, ?int $limit = null, ?int $offset = null): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->orderBy('id', 'DESC');
+	private function findListed(IQueryBuilder $qb, ListQuery $query): array {
+		$qb->orderBy('id', 'DESC');
 
+		$state = $query->filters['state'] ?? null;
 		if ($state !== null) {
 			$qb->andWhere($qb->expr()->eq('state', $qb->createNamedParameter($state)));
 		}
 
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		(new QueryPage(limit: $query->limitOrNull(), offset: $query->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
-	}//end findAllJobs()
+	}//end findListed()
 
 	/**
 	 * Read just the state of a job.

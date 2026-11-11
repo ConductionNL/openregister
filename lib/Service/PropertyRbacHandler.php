@@ -46,7 +46,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\WriteOnlyValue;
+use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\PropertyReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Rbac\WriteOnlyPathWalker;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
@@ -74,34 +77,6 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	private readonly WriteOnlyPathWalker $paths;
 
 	/**
-	 * User session for current user context.
-	 *
-	 * @var IUserSession
-	 */
-	private readonly IUserSession $userSession;
-
-	/**
-	 * Group manager for user group operations.
-	 *
-	 * @var IGroupManager
-	 */
-	private readonly IGroupManager $groupManager;
-
-	/**
-	 * Condition matcher for match expressions.
-	 *
-	 * @var ConditionMatcher
-	 */
-	private readonly ConditionMatcher $conditionMatcher;
-
-	/**
-	 * Resolver for the lifecycle state's field rules.
-	 *
-	 * @var StateFieldRuleResolver
-	 */
-	private readonly StateFieldRuleResolver $stateFieldRules;
-
-	/**
 	 * Constructor for PropertyRbacHandler
 	 *
 	 * @param PropertyRbacCaller $caller The user session and the group manager.
@@ -112,34 +87,29 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 *                                      verdict is unchanged
 	 */
 	public function __construct(
-		PropertyRbacCaller $caller,
-		PropertyRbacRules $rules,
+		private readonly PropertyRbacCaller $caller,
+		private readonly PropertyRbacRules $rules,
 		private readonly LoggerInterface $logger,
 		private readonly ?RevealCollector $reveals = null,
 	) {
-		$this->userSession = $caller->userSession;
-		$this->groupManager = $caller->groupManager;
-		$this->conditionMatcher = $rules->conditionMatcher;
-		$this->stateFieldRules = $rules->stateFieldRules;
 		$this->paths = new WriteOnlyPathWalker(logger: $logger);
 	}//end __construct()
 
 	/**
 	 * Check if the current user can read a specific property
 	 *
-	 * @param Schema $schema Schema containing property definition
-	 * @param string $property Property name to check
-	 * @param array $object Object data (for conditional matching)
+	 * @param SchemaProperty        $property The schema and the property name to check
+	 * @param PropertyAccessRequest $request  The object data (for conditional matching)
 	 *
 	 * @return bool True if user can read the property
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (property-level read authorization:
 	 *       evaluates the property's read rules against the current user's groups + object conditions)
 	 */
-	public function canReadProperty(Schema $schema, string $property, array $object): bool {
+	public function canReadProperty(SchemaProperty $property, PropertyAccessRequest $request): bool {
 		return $this->checkPropertyAccess(
-			rules: $this->actionRules(schema: $schema, property: $property)['read'] ?? [],
-			request: new PropertyAccessRequest(object: $object)
+			rules: $this->actionRules(schema: $property->schema, property: $property->name)['read'] ?? [],
+			request: $request
 		);
 	}//end canReadProperty()
 
@@ -191,25 +161,18 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	/**
 	 * Check if the current user can update a specific property
 	 *
-	 * @param Schema $schema Schema containing property definition
-	 * @param string $property Property name to check
-	 * @param array $object Object data (for conditional matching)
-	 * @param bool $isCreate Whether this is a create operation
+	 * @param SchemaProperty        $property The schema and the property name to check
+	 * @param PropertyAccessRequest $request  The object data (for conditional matching) and whether this is a create
 	 *
 	 * @return bool True if user can update the property
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (property-level update authorization,
 	 *       with create-mode organisation-match skipping per the FLS-on-create requirement)
 	 */
-	public function canUpdateProperty(
-		Schema $schema,
-		string $property,
-		array $object,
-		bool $isCreate = false,
-	): bool {
+	public function canUpdateProperty(SchemaProperty $property, PropertyAccessRequest $request): bool {
 		return $this->checkPropertyAccess(
-			rules: $this->actionRules(schema: $schema, property: $property)['update'] ?? [],
-			request: new PropertyAccessRequest(object: $object, isCreate: $isCreate)
+			rules: $this->actionRules(schema: $property->schema, property: $property->name)['update'] ?? [],
+			request: $request
 		);
 	}//end canUpdateProperty()
 
@@ -255,7 +218,8 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 		foreach ($schema->getPropertiesWithAuthorization() as $propertyName => $authorization) {
 			// Only filter if the property exists in the object.
 			if (array_key_exists($propertyName, $object) === true) {
-				$object = $this->keepIfReadable(schema: $schema, property: $propertyName, authorization: $authorization, object: $object);
+				$read = new ProtectedPropertyRead(schema: $schema, property: $propertyName, authorization: $authorization, object: $object);
+				$object = $this->keepIfReadable(read: $read);
 			}
 		}
 
@@ -265,15 +229,14 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	/**
 	 * Drop one property the user cannot read; record the reveal of one they can.
 	 *
-	 * @param Schema               $schema        The schema being read.
-	 * @param string               $property      The property, present in the object.
-	 * @param mixed                $authorization The property's authorization block.
-	 * @param array<string, mixed> $object        The object being read.
+	 * @param ProtectedPropertyRead $read The schema, property, its authorization block and the object.
 	 *
 	 * @return array<string, mixed> The object, without the property when it is unreadable.
 	 */
-	private function keepIfReadable(Schema $schema, string $property, mixed $authorization, array $object): array {
-		if ($this->canReadProperty(schema: $schema, property: $property, object: $object) === false) {
+	private function keepIfReadable(ProtectedPropertyRead $read): array {
+		$object = $read->object;
+		$property = $read->property;
+		if ($this->canReadProperty(property: new SchemaProperty(schema: $read->schema, name: $property), request: new PropertyAccessRequest(object: $object)) === false) {
 			unset($object[$property]);
 			$this->logger->debug(
 				message: '[PropertyRbacHandler] Filtered unreadable property',
@@ -291,7 +254,7 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 		// A stripped property reaches the `continue` above and writes
 		// nothing, which is the spec's third scenario and the one an
 		// implementation that recorded before the check would get backwards.
-		$this->recordReveal(schema: $schema, property: $property, authorization: $authorization, object: $object);
+		$this->recordReveal(read: $read);
 
 		return $object;
 	}//end keepIfReadable()
@@ -305,28 +268,27 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 * it could plausibly have is running out of them, which must not cost the
 	 * reader their page.
 	 *
-	 * @param Schema $schema The schema being read.
-	 * @param string $property The property that survived the filter.
-	 * @param mixed $authorization The property's authorization block.
-	 * @param array<string, mixed> $object The object being read.
+	 * @param ProtectedPropertyRead $read The property that survived the read filter, with its block.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
-	private function recordReveal(Schema $schema, string $property, mixed $authorization, array $object): void {
-		if ($this->revealIsAudited(authorization: $authorization) === false) {
+	private function recordReveal(ProtectedPropertyRead $read): void {
+		if ($this->revealIsAudited(authorization: $read->authorization) === false) {
 			return;
 		}
 
 		try {
-			$userId = (string)$this->userSession->getUser()?->getUID();
-			$objectUuid = $this->objectUuid(object: $object);
-			$this->reveals?->record(userId: $userId, objectUuid: $objectUuid, property: $property, schemaId: $schema->getId());
+			$userId = (string)$this->caller->userSession->getUser()?->getUID();
+			$objectUuid = $this->objectUuid(object: $read->object);
+			$this->reveals?->recordReveal(
+				reveal: new PropertyReveal(userId: $userId, objectUuid: $objectUuid, property: $read->property, schemaId: $read->schema->getId())
+			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[PropertyRbacHandler] Could not record a reveal; the read is unaffected',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property, 'error' => $e->getMessage()]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $read->property, 'error' => $e->getMessage()]
 			);
 		}
 	}//end recordReveal()
@@ -504,23 +466,22 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 * Omitting one the caller may not update would be the write the rule refuses.
 	 * Decided on the STORED record's match envelope; call it on the RAW payload.
 	 *
-	 * @param Schema $schema   Schema whose property authorization applies.
-	 * @param array  $incoming The raw incoming update payload.
-	 * @param array  $stored   ObjectEntity::getMatchEnvelope() of the stored record (values come from the raw one).
+	 * @param ProtectedCarryForward $update The schema whose property authorization applies, the raw incoming update
+	 *                                      payload and ObjectEntity::getMatchEnvelope() of the stored record.
 	 *
 	 * @return array<int, string> Top-level property names to carry forward (possibly empty).
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-update-that-omits-a-property-the-caller-may-not-update-keeps-it
 	 */
-	public function collectOmittedProtectedProperties(Schema $schema, array $incoming, array $stored): array {
-		if ($schema->hasPropertyAuthorization() === false || $this->isAdmin() === true) {
+	public function collectOmittedProtectedProperties(ProtectedCarryForward $update): array {
+		if ($update->schema->hasPropertyAuthorization() === false || $this->isAdmin() === true) {
 			return [];
 		}
 
 		$omitted = [];
-		foreach (array_keys($schema->getPropertiesWithAuthorization()) as $propertyName) {
+		foreach (array_keys($update->schema->getPropertiesWithAuthorization()) as $propertyName) {
 			$propertyName = (string) $propertyName;
-			if ($this->carriesForward(schema: $schema, property: $propertyName, incoming: $incoming, stored: $stored) === true) {
+			if ($this->carriesForward(update: $update, property: $propertyName) === true) {
 				$omitted[] = $propertyName;
 			}
 		}
@@ -531,20 +492,22 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	/**
 	 * Whether a stored property the payload omits is one the writer may not read, or may not update.
 	 *
-	 * @param Schema $schema   Schema whose property authorization applies.
-	 * @param string $property The governed property.
-	 * @param array  $incoming The raw incoming update payload.
-	 * @param array  $stored   The stored record's match envelope.
+	 * @param ProtectedCarryForward $update   The schema, the incoming payload and the stored object.
+	 * @param string                $property The protected property.
 	 *
 	 * @return bool True when its omission must be carried forward.
 	 */
-	private function carriesForward(Schema $schema, string $property, array $incoming, array $stored): bool {
-		if (array_key_exists($property, $incoming) === true || array_key_exists($property, $stored) === false) {
+	private function carriesForward(ProtectedCarryForward $update, string $property): bool {
+		$stored = $update->stored;
+		if (array_key_exists($property, $update->incoming) === true || array_key_exists($property, $stored) === false) {
 			return false;
 		}
 
-		return $this->canReadProperty(schema: $schema, property: $property, object: $stored) === false
-			|| $this->canUpdateProperty(schema: $schema, property: $property, object: $stored) === false;
+		return $this->canReadProperty(property: new SchemaProperty(schema: $update->schema, name: $property), request: new PropertyAccessRequest(object: $stored)) === false
+			|| $this->canUpdateProperty(
+				property: new SchemaProperty(schema: $update->schema, name: $property),
+				request: new PropertyAccessRequest(object: $stored)
+			) === false;
 	}//end carriesForward()
 
 	/**
@@ -574,23 +537,24 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 * FieldEncryptionHandler::encryptProperties() — restoring ciphertext before encryption
 	 * would double-encrypt it and corrupt the secret beyond recovery.
 	 *
-	 * @param array $prepared The prepared update payload, mutated copy returned.
-	 * @param array $stored The RAW stored object (never a rendered one).
-	 * @param array<int, string> $omittedPaths Declared paths absent from the incoming payload.
+	 * @param array            $prepared The prepared update payload, mutated copy returned.
+	 * @param OmittedWriteOnly $omitted  The RAW stored object (never a rendered one) and the declared paths absent
+	 *                                   from the incoming payload.
 	 *
 	 * @return array The payload with omitted write-only values carried forward.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
 	 */
-	public function restoreWriteOnlyValues(array $prepared, array $stored, array $omittedPaths): array {
-		foreach ($omittedPaths as $path) {
-			// Nothing stored at this location: the value was never set. Restoring
-			// would invent a key that never existed, so leave the payload alone and
-			// let normal PUT semantics apply.
-			if ($this->paths->exists(path: $path, object: $stored) === true) {
-				$value = $this->paths->read(path: $path, object: $stored);
-				$prepared = $this->paths->restore(path: $path, prepared: $prepared, value: $value);
-			}
+	public function restoreWriteOnlyValues(array $prepared, OmittedWriteOnly $omitted): array {
+		$stored = $omitted->stored;
+		// Nothing stored at a location: the value was never set. Restoring would
+		// invent a key that never existed, so leave the payload alone there and
+		// let normal PUT semantics apply.
+		foreach (array_filter($omitted->paths, fn ($path): bool => $this->paths->exists(path: $path, object: $stored)) as $path) {
+			$prepared = $this->paths->restore(
+				prepared: $prepared,
+				stored: new WriteOnlyValue(path: $path, value: $this->paths->read(path: $path, object: $stored))
+			);
 		}
 
 		return $prepared;
@@ -602,17 +566,15 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 * Returns an array of property names that the user is not allowed to update.
 	 * The caller should handle these violations (typically throw a validation error).
 	 *
-	 * @param Schema $schema Schema containing property definitions
-	 * @param array $object Existing object data (empty array for creates)
-	 * @param array $incomingData Incoming data from client
-	 * @param bool $isCreate Whether this is a create operation
+	 * @param PropertyWriteCheck $write The schema with its property definitions, the existing object data (empty for
+	 *                                  creates) with the create flag, and the incoming data from the client.
 	 *
 	 * @return array Array of property names user cannot update
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security (validates incoming writes against
 	 *       property update rules; skips unchanged values so PATCH may resubmit protected fields)
 	 */
-	public function getUnauthorizedProperties(Schema $schema, array $object, array $incomingData, bool $isCreate = false): array {
+	public function getUnauthorizedProperties(PropertyWriteCheck $write): array {
 		// A field the object's state HIDES is refused here and survives both
 		// short-circuits below, so GraphQL and every other caller of this
 		// method inherit the refusal without a call-site change. It belongs on
@@ -625,15 +587,14 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 		// sentence for a field the user can see and normally edit.
 		// StateFieldRuleListener refuses that one with 422 naming the field and
 		// the state, which is what the requirement's scenario reads.
-		$unauthorizedProps = $this->stateHiddenWrites(schema: $schema, object: $object, incomingData: $incomingData);
+		$unauthorizedProps = $this->stateHiddenWrites(write: $write);
 
 		// An admin, or a schema without property-level authorization, has no further restrictions.
-		if ($this->isAdmin() === true || $schema->hasPropertyAuthorization() === false) {
+		if ($this->isAdmin() === true || $write->schema->hasPropertyAuthorization() === false) {
 			return $unauthorizedProps;
 		}
 
-		$request = new PropertyAccessRequest(object: $object, isCreate: $isCreate);
-		$refused = $this->refusedWrites(schema: $schema, request: $request, incomingData: $incomingData);
+		$refused = $this->refusedWrites(write: $write);
 
 		return array_values(array_unique([...$unauthorizedProps, ...$refused]));
 	}//end getUnauthorizedProperties()
@@ -641,18 +602,16 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	/**
 	 * The submitted governed properties the user may not write.
 	 *
-	 * @param Schema                $schema       Schema containing property definitions
-	 * @param PropertyAccessRequest $request      The existing object and create flag
-	 * @param array                 $incomingData Incoming data from client
+	 * @param PropertyWriteCheck $write The schema, the stored object with the create flag, and the incoming data.
 	 *
 	 * @return array<int, int|string> The refused property names, in schema order
 	 */
-	private function refusedWrites(Schema $schema, PropertyAccessRequest $request, array $incomingData): array {
+	private function refusedWrites(PropertyWriteCheck $write): array {
 		$refused = [];
 		// Check each incoming property that has authorization rules; only submitted ones.
-		foreach (array_keys($schema->getPropertiesWithAuthorization()) as $name) {
-			if (array_key_exists($name, $incomingData) === true
-				&& $this->refusesChange(schema: $schema, property: $name, request: $request, incoming: $incomingData[$name]) === true
+		foreach (array_keys($write->schema->getPropertiesWithAuthorization()) as $name) {
+			if (array_key_exists($name, $write->incoming) === true
+				&& $this->refusesChange(write: $write, property: $name) === true
 			) {
 				$refused[] = $name;
 			}
@@ -664,29 +623,27 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	/**
 	 * Whether the user may not write a submitted value to one property.
 	 *
-	 * @param Schema                $schema   Schema containing property definitions
-	 * @param int|string            $property The submitted property
-	 * @param PropertyAccessRequest $request  The existing object and create flag
-	 * @param mixed                 $incoming The submitted value
+	 * @param PropertyWriteCheck $write    The schema, the stored object with the create flag, and the incoming data.
+	 * @param int|string         $property The submitted property.
 	 *
 	 * @return bool True when the write is refused
 	 */
-	private function refusesChange(Schema $schema, int|string $property, PropertyAccessRequest $request, mixed $incoming): bool {
+	private function refusesChange(PropertyWriteCheck $write, int|string $property): bool {
+		$request = $write->request;
+
 		// Skip authorization check if the value hasn't actually changed.
 		// This allows PATCH operations to include unchanged protected fields
 		// without triggering authorization errors.
 		if ($request->isCreate === false
 			&& array_key_exists($property, $request->object) === true
-			&& $incoming === $request->object[$property]
+			&& $write->incoming[$property] === $request->object[$property]
 		) {
 			return false;
 		}
 
 		return $this->canUpdateProperty(
-			schema: $schema,
-			property: $property,
-			object: $request->object,
-			isCreate: $request->isCreate
+			property: new SchemaProperty(schema: $write->schema, name: $property),
+			request: new PropertyAccessRequest(object: $request->object, isCreate: $request->isCreate)
 		) === false;
 	}//end refusesChange()
 
@@ -706,7 +663,7 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function stateFieldRulesFor(Schema $schema, array $object): StateFieldRules {
-		return $this->stateFieldRules->resolve(schema: $schema, data: $object);
+		return $this->rules->stateFieldRules->resolve(schema: $schema, data: $object);
 	}//end stateFieldRulesFor()
 
 	/**
@@ -725,7 +682,7 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	private function stripStateHiddenProperties(Schema $schema, array $object): array {
-		$rules = $this->stateFieldRules->resolve(schema: $schema, data: $object);
+		$rules = $this->rules->stateFieldRules->resolve(schema: $schema, data: $object);
 		foreach ($rules->getHidden() as $property) {
 			if (array_key_exists($property, $object) === false) {
 				continue;
@@ -748,21 +705,21 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 * the write rather than about a property the caller may not touch, and both
 	 * name the state in their message, so both live in StateFieldRuleListener.
 	 *
-	 * @param Schema $schema Schema containing the lifecycle annotation
-	 * @param array $object Existing object data (empty array for creates)
-	 * @param array $incomingData Incoming data from client
+	 * @param PropertyWriteCheck $write The schema, the stored object and the incoming data.
 	 *
 	 * @return array Array of property names the state hides
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	private function stateHiddenWrites(Schema $schema, array $object, array $incomingData): array {
+	private function stateHiddenWrites(PropertyWriteCheck $write): array {
+		$object = $write->request->object;
+		$incomingData = $write->incoming;
 		$source = $object;
 		if ($source === []) {
 			$source = $incomingData;
 		}
 
-		$hidden = $this->stateFieldRules->resolve(schema: $schema, data: $source)->getHidden();
+		$hidden = $this->rules->stateFieldRules->resolve(schema: $write->schema, data: $source)->getHidden();
 
 		// Resubmitting the stored value is not a change, exactly as the
 		// property-authorization loop below allows, so a PATCH may carry
@@ -849,10 +806,10 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 * @return PropertyAccessRequest The request with the user and their groups
 	 */
 	private function forCurrentUser(PropertyAccessRequest $request): PropertyAccessRequest {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		$userGroups = [];
 		if ($user !== null) {
-			$userGroups = $this->groupManager->getUserGroupIds($user);
+			$userGroups = $this->caller->groupManager->getUserGroupIds($user);
 		}
 
 		return $request->withUser(userId: $user?->getUID(), userGroups: $userGroups);
@@ -922,14 +879,14 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 		// For creates, skip organisation matching since there's no existing object.
 		// Other match conditions still apply.
 		if ($request->isCreate === true) {
-			$match = $this->conditionMatcher->filterOrganisationMatchForCreate(match: $match);
+			$match = $this->rules->conditionMatcher->filterOrganisationMatchForCreate(match: $match);
 			if (empty($match) === true) {
 				return true;
 			}
 		}
 
 		// Check if object matches all conditions.
-		return $this->conditionMatcher->objectMatchesConditions(object: $request->object, match: $match);
+		return $this->rules->conditionMatcher->objectMatchesConditions(object: $request->object, match: $match);
 	}//end objectMatches()
 
 	/**
@@ -940,12 +897,12 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 * @spec exclude Trivial admin-group membership check helper; no business logic.
 	 */
 	public function isAdmin(): bool {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return false;
 		}
 
-		$userGroups = $this->groupManager->getUserGroupIds($user);
+		$userGroups = $this->caller->groupManager->getUserGroupIds($user);
 		return in_array('admin', $userGroups, true);
 	}//end isAdmin()
 }//end class

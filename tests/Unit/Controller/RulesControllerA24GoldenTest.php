@@ -37,8 +37,14 @@ use OCA\OpenRegister\Service\Rules\RuleCeilingException;
 use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleInventoryServiceInterface;
 use OCA\OpenRegister\Service\Rules\RuleReplayServiceInterface;
+use OCA\OpenRegister\Service\Rules\RuleSwitch;
+use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Service\Rules\RuleTrialServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Rules\RuleTrialRequest;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
+use OCA\OpenRegister\Service\Rules\RuleReplayRequest;
+use OCA\OpenRegister\Service\Rules\RuleReplaySelection;
 use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\IRequest;
@@ -167,7 +173,7 @@ class RulesControllerA24GoldenTest extends TestCase {
 	public function testIndexPassesWindowAndScope(): void {
 		$schema = $this->schema();
 		$this->params = ['idleDays' => '7', 'scope' => 'nope'];
-		$this->inventory->expects($this->once())->method('inventory')->with($schema, 7, null, [])->willReturn([['key' => 'a']]);
+		$this->inventory->expects($this->once())->method('inventory')->with($schema, new RuleInventoryOptions(7, null, []))->willReturn([['key' => 'a']]);
 
 		$this->assertSame([200, ['schema' => 'zaak', 'rules' => [['key' => 'a']]]], $this->pair($this->controller->index('zaak')));
 	}
@@ -182,7 +188,7 @@ class RulesControllerA24GoldenTest extends TestCase {
 
 		$this->params = ['enabled' => false];
 		$unknown = ['ok' => false, 'error' => ['code' => RuleEnablementServiceInterface::CODE_UNKNOWN_RULE]];
-		$this->enablement->method('setEnabled')->with($schema, 'r', false)->willReturnOnConsecutiveCalls(['ok' => true], $unknown, ['ok' => false]);
+		$this->enablement->method('setEnabled')->with(new RuleSwitch($schema, 'r', false))->willReturnOnConsecutiveCalls(['ok' => true], $unknown, ['ok' => false]);
 		$this->assertSame([200, ['ok' => true]], $this->pair($this->controller->setEnabled('zaak', 'r')));
 		$this->assertSame([404, $unknown], $this->pair($this->controller->setEnabled('zaak', 'r')));
 		$this->assertSame([422, ['ok' => false]], $this->pair($this->controller->setEnabled('zaak', 'r')));
@@ -192,7 +198,7 @@ class RulesControllerA24GoldenTest extends TestCase {
 		$schema = $this->schema();
 		$this->params = ['register' => 'zaken', 'objectId' => 'o1', 'rule' => ['x' => 1]];
 		$hidden = ['ok' => false, 'error' => ['code' => RuleTrialServiceInterface::CODE_OBJECT_NOT_FOUND]];
-		$this->trials->expects($this->once())->method('tryObject')->with($schema, 'r', 'zaken', 'o1', ['x' => 1])->willReturn($hidden);
+		$this->trials->expects($this->once())->method('tryObject')->with(new RuleTrialRequest($schema, 'r', ['x' => 1]), new ObjectRef('zaken', (string)$schema->getId(), 'o1'))->willReturn($hidden);
 		$this->trials->expects($this->never())->method('trySample');
 
 		$this->assertSame([404, $hidden], $this->pair($this->controller->evaluate('zaak', 'r')));
@@ -202,7 +208,7 @@ class RulesControllerA24GoldenTest extends TestCase {
 		$schema = $this->schema();
 		$this->params = ['register' => 'zaken', 'objectId' => '', 'rule' => 'x', 'object' => 'bad'];
 		$this->trials->expects($this->never())->method('tryObject');
-		$this->trials->expects($this->once())->method('trySample')->with($schema, 'r', [], null)->willReturn(['ok' => true]);
+		$this->trials->expects($this->once())->method('trySample')->with(new RuleTrialRequest($schema, 'r', null), [])->willReturn(['ok' => true]);
 
 		$this->assertSame([200, ['ok' => true]], $this->pair($this->controller->evaluate('zaak', 'r')));
 	}
@@ -210,7 +216,7 @@ class RulesControllerA24GoldenTest extends TestCase {
 	public function testAReplayNeedsAnActor(): void {
 		$this->schema();
 		$this->userSession->method('getUser')->willReturn(null);
-		$this->replays->expects($this->never())->method('preview');
+		$this->replays->expects($this->never())->method('previewReplay');
 
 		$this->assertSame(
 			[422, ['ok' => false, 'error' => ['code' => 'rule-replay-no-actor', 'message' => 'A replay is an act with an actor, and this request has none.']]],
@@ -225,7 +231,7 @@ class RulesControllerA24GoldenTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->params = ['selection' => ['a' => 1], 'justification' => 'why', 'registerId' => '4'];
 		$ceiling = new RuleCeilingException('too many', 'r', 10, 20);
-		$this->replays->method('preview')->with($schema, 'r', ['a' => 1], 'alice', 'why', 4)->willReturnOnConsecutiveCalls(
+		$this->replays->method('previewReplay')->with(new RuleReplayRequest('r', 'alice', 'why'), new RuleReplaySelection($schema, 4, ['a' => 1]))->willReturnOnConsecutiveCalls(
 			['ok' => true, 'job' => 1],
 			$this->throwException($ceiling),
 			$this->throwException(new BulkJobRefusedException('busy', 'job-running', ['jobId' => 3])),
@@ -250,7 +256,7 @@ class RulesControllerA24GoldenTest extends TestCase {
 		$user->method('getUID')->willReturn('alice');
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->params = ['selection' => 'x', 'justification' => 3, 'registerId' => 'abc'];
-		$this->replays->expects($this->once())->method('preview')->with($schema, 'r', [], 'alice', null, null)->willReturn(['ok' => false]);
+		$this->replays->expects($this->once())->method('previewReplay')->with(new RuleReplayRequest('r', 'alice', null), new RuleReplaySelection($schema, null, []))->willReturn(['ok' => false]);
 
 		$this->assertSame([422, ['ok' => false]], $this->pair($this->controller->replay('zaak', 'r')));
 	}

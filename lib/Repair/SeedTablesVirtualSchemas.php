@@ -90,18 +90,7 @@ class SeedTablesVirtualSchemas implements IRepairStep {
 				return;
 			}
 
-			$adminIds = $this->adminUserIds();
-			$tables = $this->reader->collectTableDescriptors(userIds: $adminIds);
-			$stats = $this->syncService->reconcile(tables: $tables);
-
-			$output->info(
-				sprintf(
-					'Tables virtual schemas reconciled: seeded=%d, retired=%d, skipped=%d',
-					$stats['seeded'],
-					$stats['retired'],
-					$stats['skipped']
-				)
-			);
+			$this->reconcile(output: $output);
 		} catch (Throwable $e) {
 			$this->logger->warning('[SeedTablesVirtualSchemas] seed failed: ' . $e->getMessage());
 			$output->warning('Tables virtual schema seed skipped: ' . $e->getMessage());
@@ -109,23 +98,26 @@ class SeedTablesVirtualSchemas implements IRepairStep {
 	}//end run()
 
 	/**
-	 * Resolve the instance's admin user ids for table enumeration.
+	 * Reconcile the admin users' tables and report the counts.
 	 *
-	 * @return array<int, string> The admin user ids (may be empty).
+	 * @param IOutput $output Output interface for status messages.
+	 *
+	 * @return void
 	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	private function adminUserIds(): array {
-		$admins = $this->groupManager->get('admin');
-		if ($admins === null) {
-			return [];
-		}
+	private function reconcile(IOutput $output): void {
+		$adminIds = AdminUserIds::of(groupManager: $this->groupManager);
+		$tables = $this->reader->collectTableDescriptors(userIds: $adminIds);
+		$stats = $this->syncService->reconcile(tables: $tables);
 
-		$ids = [];
-		foreach ($admins->getUsers() as $user) {
-			$ids[] = $user->getUID();
-		}
-
-		return $ids;
-	}//end adminUserIds()
+		$output->info(
+			sprintf(
+				'Tables virtual schemas reconciled: seeded=%d, retired=%d, skipped=%d',
+				$stats['seeded'],
+				$stats['retired'],
+				$stats['skipped']
+			)
+		);
+	}//end reconcile()
 }//end class

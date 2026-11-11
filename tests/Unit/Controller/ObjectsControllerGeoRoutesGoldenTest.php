@@ -11,9 +11,12 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Controller\Support\GeoServices;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Search\Service\Geo\FeatureShape;
 use OCA\OpenRegister\Search\Service\Geo\GeoFeatureCollectionBuilder;
+use OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier;
 use OCA\OpenRegister\Search\Service\Geo\GeoFilterParser;
+use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Geo\PdokGeocoder;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -228,12 +231,12 @@ class ObjectsControllerGeoRoutesGoldenTest extends TestCase {
 
 	private function builder(): GeoFeatureCollectionBuilder {
 		$builder = $this->createMock(GeoFeatureCollectionBuilder::class);
-		$builder->method('buildFeatureCollection')->willReturnCallback(function (...$args): array {
-			$this->calls[] = ['buildFeatureCollection' => $args];
+		$builder->method('buildFeatureCollection')->willReturnCallback(function (array $rows, FeatureShape $shape): array {
+			$this->calls[] = ['buildFeatureCollection' => [$rows, $shape->geoProperty, $shape->fields, $shape->includeArea]];
 			return ['type' => 'FeatureCollection'];
 		});
-		$builder->method('buildWfsResponse')->willReturnCallback(function (...$args): array {
-			$this->calls[] = ['buildWfsResponse' => $args];
+		$builder->method('buildWfsResponse')->willReturnCallback(function (array $rows, GetFeatureRequest $request): array {
+			$this->calls[] = ['buildWfsResponse' => [$rows, $request->geoProperty, $request->maxFeatures]];
 			return ['type' => 'wfs'];
 		});
 		return $builder;
@@ -245,8 +248,8 @@ class ObjectsControllerGeoRoutesGoldenTest extends TestCase {
 			$this->calls[] = 'isAvailable';
 			return $available;
 		});
-		$geocoder->method('geocodeFree')->willReturnCallback(function (string $query, int $maxItems, bool $bagOnly): array {
-			$this->calls[] = ['geocodeFree' => [$query, $maxItems, $bagOnly]];
+		$geocoder->method('geocodeFree')->willReturnCallback(function (string $query, GeocodeOptions $options): array {
+			$this->calls[] = ['geocodeFree' => [$query, $options->maxItems, $options->bagOnly]];
 			return [['label' => $query]];
 		});
 		$geocoder->method('reverseGeocode')->willReturnCallback(function (float $longitude, float $latitude): array {

@@ -24,6 +24,20 @@ use OCA\OpenRegister\Listener\FlowNodes\ActionFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\BoundaryFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\CaseFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\CoreFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\WaitFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\OutputFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ObjectLookupFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ObjectChangeFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ItemLoopFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ItemListFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ItemHandlingFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\HandOffFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\FieldFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\EvaluationFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\DestinationFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\DataMappingFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\CoordinationFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\BranchFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\DataShapingFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\HumanTaskFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\LockFlowNodes;
@@ -90,51 +104,37 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 		$mock = fn (string $class) => $this->createMock($class);
 		$listener = new FlowNodeRegistrationListener(
 			core: new CoreFlowNodes(
-				dataShaping: new DataShapingFlowNodes(
-					setFields: $mock(SetFieldsNode::class),
-					actionInputs: $mock(ActionInputsNode::class),
-					explode: $mock(ExplodeNode::class),
-					filter: $mock(FilterNode::class),
-				),
-				waitAndBranch: new WaitAndBranchFlowNodes(
-					wait: $mock(WaitNode::class),
-					awaitSignal: $mock(AwaitSignalNode::class),
-					switch: $mock(SwitchNode::class),
-					end: $mock(EndNode::class),
-				),
-				routing: new RoutingFlowNodes(
-					merge: $mock(MergeNode::class),
-					loop: $mock(LoopNode::class),
-					subFlow: $mock(SubFlowNode::class),
-					router: $mock(RouterNode::class),
-				),
-				objects: new ObjectFlowNodes(
-					objectWrite: $mock(ObjectWriteNode::class),
-					transition: $mock(TransitionNode::class),
-					linkObject: $mock(LinkObjectNode::class),
-					objectRead: $mock(ObjectReadNode::class),
-				),
+				itemHandling: new ItemHandlingFlowNodes(dataShaping: new DataShapingFlowNodes(
+					fields: new FieldFlowNodes(setFields: $mock(SetFieldsNode::class), actionInputs: $mock(ActionInputsNode::class)),
+					itemList: new ItemListFlowNodes(explode: $mock(ExplodeNode::class), filter: $mock(FilterNode::class)),
+				), waitAndBranch: new WaitAndBranchFlowNodes(
+					wait: new WaitFlowNodes(wait: $mock(WaitNode::class), awaitSignal: $mock(AwaitSignalNode::class)),
+					branch: new BranchFlowNodes(switch: $mock(SwitchNode::class), end: $mock(EndNode::class)),
+				)),
+				destination: new DestinationFlowNodes(routing: new RoutingFlowNodes(
+					itemLoop: new ItemLoopFlowNodes(merge: $mock(MergeNode::class), loop: $mock(LoopNode::class)),
+					handOff: new HandOffFlowNodes(subFlow: $mock(SubFlowNode::class), router: $mock(RouterNode::class)),
+				), objects: new ObjectFlowNodes(
+					objectChange: new ObjectChangeFlowNodes(objectWrite: $mock(ObjectWriteNode::class), transition: $mock(TransitionNode::class)),
+					objectLookup: new ObjectLookupFlowNodes(linkObject: $mock(LinkObjectNode::class), objectRead: $mock(ObjectReadNode::class)),
+				)),
 			),
 			actions: new ActionFlowNodes(
-				reshaping: new ReshapingFlowNodes(
-					flowState: $mock(FlowStateNode::class),
-					map: $mock(MapNode::class),
-					iterate: $mock(IterateNode::class),
-					decisionTable: $mock(DecisionTableNode::class),
-				),
-				messaging: new MessagingFlowNodes(
+				output: new OutputFlowNodes(reshaping: new ReshapingFlowNodes(
+					dataMapping: new DataMappingFlowNodes(flowState: $mock(FlowStateNode::class), map: $mock(MapNode::class)),
+					evaluation: new EvaluationFlowNodes(iterate: $mock(IterateNode::class), decisionTable: $mock(DecisionTableNode::class)),
+				), messaging: new MessagingFlowNodes(
 					sendNotification: $mock(SendNotificationNode::class),
 					sendEmail: $mock(SendEmailNode::class),
 					sendTalkMessage: $mock(SendTalkMessageNode::class),
-				),
-				humanTasks: new HumanTaskFlowNodes(
+				)),
+				coordination: new CoordinationFlowNodes(humanTasks: new HumanTaskFlowNodes(
 					userTask: $mock(UserTaskNode::class),
 					portalTask: $mock(PortalTaskNode::class),
-				),
-				locks: new LockFlowNodes(
+				), locks: new LockFlowNodes(
 					lockObject: $mock(LockObjectNode::class),
 					unlockObject: $mock(UnlockObjectNode::class),
-				),
+				)),
 			),
 			boundary: new BoundaryFlowNodes(
 				cases: new CaseFlowNodes(

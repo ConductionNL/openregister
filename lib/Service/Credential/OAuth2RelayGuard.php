@@ -106,6 +106,22 @@ class OAuth2RelayGuard implements OAuth2RelayGuardInterface {
 			return false;
 		}
 
+		if ($this->isCallbackShape(parts: $parts) === false) {
+			return false;
+		}
+
+		return in_array($this->callbackOrigin(parts: $parts), $this->allowedOrigins(), true);
+	}//end permits()
+
+	/**
+	 * Whether a parsed callback URL has the shape of this app's OAuth2 callback:
+	 * https, no credentials, and the app's callback path.
+	 *
+	 * @param array<string, int|string> $parts The parsed callback URL.
+	 *
+	 * @return bool True when the shape fits; the origin is checked separately.
+	 */
+	private function isCallbackShape(array $parts): bool {
 		if (strtolower((string)($parts['scheme'] ?? '')) !== 'https') {
 			return false;
 		}
@@ -115,17 +131,24 @@ class OAuth2RelayGuard implements OAuth2RelayGuardInterface {
 		}
 
 		$path = rtrim((string)($parts['path'] ?? ''), '/');
-		if (str_ends_with($path, self::CALLBACK_PATH_SUFFIX) === false || str_contains($path, self::APP_PATH_SEGMENT) === false) {
-			return false;
-		}
+		return str_ends_with($path, self::CALLBACK_PATH_SUFFIX) === true && str_contains($path, self::APP_PATH_SEGMENT) === true;
+	}//end isCallbackShape()
 
+	/**
+	 * The origin of a parsed callback URL, lower-cased, with its port when one is given.
+	 *
+	 * @param array<string, int|string> $parts The parsed callback URL.
+	 *
+	 * @return string The `https://host[:port]` origin.
+	 */
+	private function callbackOrigin(array $parts): string {
 		$origin = 'https://' . strtolower((string)($parts['host'] ?? ''));
 		if (isset($parts['port']) === true) {
 			$origin .= ':' . (int)$parts['port'];
 		}
 
-		return in_array($origin, $this->allowedOrigins(), true);
-	}//end permits()
+		return $origin;
+	}//end callbackOrigin()
 
 	/**
 	 * The origins an administrator has allow-listed.
@@ -135,7 +158,7 @@ class OAuth2RelayGuard implements OAuth2RelayGuardInterface {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
 	 */
 	public function allowedOrigins(): array {
-		$raw = $this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, '');
+		$raw     = $this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, '');
 		$entries = preg_split('/[\s,]+/', $raw, -1, PREG_SPLIT_NO_EMPTY);
 		if ($entries === false) {
 			return [];
@@ -143,24 +166,38 @@ class OAuth2RelayGuard implements OAuth2RelayGuardInterface {
 
 		$origins = [];
 		foreach ($entries as $entry) {
-			$parts = parse_url(rtrim(strtolower(trim($entry)), '/'));
-			if (is_array($parts) === false || strtolower((string)($parts['scheme'] ?? '')) !== 'https') {
-				continue;
+			$origin = $this->originOf(entry: $entry);
+			if ($origin !== null) {
+				$origins[] = $origin;
 			}
-
-			$host = (string)($parts['host'] ?? '');
-			if ($host === '') {
-				continue;
-			}
-
-			$origin = 'https://' . $host;
-			if (isset($parts['port']) === true) {
-				$origin .= ':' . (int)$parts['port'];
-			}
-
-			$origins[] = $origin;
 		}
 
 		return $origins;
 	}//end allowedOrigins()
+
+	/**
+	 * The https origin an allow-list entry names (host, and port when given), or null when it names none.
+	 *
+	 * @param string $entry One allow-list entry.
+	 *
+	 * @return string|null The origin.
+	 */
+	private function originOf(string $entry): ?string {
+		$parts = parse_url(rtrim(strtolower(trim($entry)), '/'));
+		if (is_array($parts) === false || strtolower((string)($parts['scheme'] ?? '')) !== 'https') {
+			return null;
+		}
+
+		$host = (string)($parts['host'] ?? '');
+		if ($host === '') {
+			return null;
+		}
+
+		$origin = 'https://' . $host;
+		if (isset($parts['port']) === true) {
+			$origin .= ':' . (int)$parts['port'];
+		}
+
+		return $origin;
+	}//end originOf()
 }//end class

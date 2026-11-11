@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
@@ -160,16 +161,40 @@ final class ObjectRelationsPurposeScope {
 	 * @return bool False when a purpose is needed and none is usable, or the schema does not resolve.
 	 */
 	private function admits(mixed $registerId, mixed $schemaId): bool {
-		$schema = null;
-		if (is_scalar($schemaId) === true) {
-			$schema = $this->access->schemaById(schemaId: $schemaId);
-		}
+		$schema = $this->schemaFor(schemaId: $schemaId);
 
 		$register = $this->registerFor(registerId: $registerId);
 		if ($schema === null || $register === null) {
 			return false;
 		}
 
+		return $this->purposeAllows(register: $register, schema: $schema);
+	}//end admits()
+
+	/**
+	 * The schema a node names, or null when it names none that resolves.
+	 *
+	 * @param mixed $schemaId The node's schema id.
+	 *
+	 * @return Schema|null The schema.
+	 */
+	private function schemaFor(mixed $schemaId): ?Schema {
+		if (is_scalar($schemaId) === false) {
+			return null;
+		}
+
+		return $this->access->schemaById(schemaId: $schemaId);
+	}//end schemaFor()
+
+	/**
+	 * Whether the purpose guard lets the caller read objects of a register and schema.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return bool False when the guard refuses.
+	 */
+	private function purposeAllows(Register $register, Schema $schema): bool {
 		try {
 			$this->purposeGuard->enforce(register: $register, schema: $schema);
 		} catch (PurposeRefusedException $refusal) {
@@ -177,7 +202,7 @@ final class ObjectRelationsPurposeScope {
 		}
 
 		return true;
-	}//end admits()
+	}//end purposeAllows()
 
 	/**
 	 * The register an id names, or null when it is none or does not resolve.

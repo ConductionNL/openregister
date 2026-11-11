@@ -97,6 +97,26 @@ class ForcedChannelPolicy {
 	public const REFUSED_EXTERNAL = 'internal-only-recipient-outside-organisation';
 
 	/**
+	 * The save refusal of a forced channel declared without its reason.
+	 *
+	 * @var array{code:string,message:string}
+	 */
+	private const FORCED_WITHOUT_REASON = [
+		'code' => 'notification-forced-channel-without-reason',
+		'message' => 'A forced channel needs the reason it is forced: a user who cannot switch a notification off is owed the sentence that says why.',
+	];
+
+	/**
+	 * The save refusal of an internal-only kind whose every channel can leave the organisation.
+	 *
+	 * @var array{code:string,message:string}
+	 */
+	private const NO_INTERNAL_CHANNEL = [
+		'code' => 'notification-internal-only-has-no-internal-channel',
+		'message' => 'An internal-only kind declares only channels that can leave the organisation, so it would never send at all.',
+	];
+
+	/**
 	 * The effective decision for one recipient and one kind.
 	 *
 	 * The audience is REQUIRED and is an enum rather than a boolean with a
@@ -104,73 +124,100 @@ class ForcedChannelPolicy {
 	 * that forgot the argument got the permissive half of the pair and the
 	 * `internalOnly` refusal below never fired. See {@see RecipientAudience}.
 	 *
-	 * @param array<string,mixed> $resolved    What `NotificationPreferenceService::resolveEffective()` returned.
-	 * @param array<string,mixed> $declaration The notification's own declaration from the schema.
-	 * @param RecipientAudience   $audience    Which side of the organisation this recipient is on.
+	 * @param KindPreference    $preference What `NotificationPreferenceService::resolveEffective()` returned,
+	 *                                      with the notification's own declaration from the schema.
+	 * @param RecipientAudience $audience   Which side of the organisation this recipient is on.
 	 *
 	 * @return array{enabled:bool,channels:array<int,string>,forced:bool,reason:string,layer:string,refusal:string}
 	 *         What will be sent, on what, who decided it, and why nothing is sent when nothing is.
 	 *
 	 * @spec openspec/changes/notification-kinds-an-administrator-forces/specs/notificatie-engine/spec.md
 	 */
-	public function decide(array $resolved, array $declaration, RecipientAudience $audience): array {
-		$channels = $this->channelsOf(value: ($resolved['channels'] ?? []));
-		$enabled = (($resolved['enabled'] ?? true) === true);
-		$layer = (string)($resolved['source'] ?? 'schema-default');
+	public function decide(KindPreference $preference, RecipientAudience $audience): array {
+		$decision = $this->forcedOver(preference: $preference);
+		if (($preference->declaration[self::INTERNAL_ONLY] ?? false) !== true) {
+			return $this->withEnabled(decision: $decision);
+		}
 
+		if ($audience->isInternal() === false) {
+			return $this->refusedOutside(decision: $decision);
+		}
+
+		// An internal kind never goes out on a channel that can leave the
+		// organisation, even to somebody inside it: the channel is the
+		// leak, not the recipient. A webhook fires at whatever URL an
+		// administrator configured.
+		$decision['channels'] = array_values(array_filter(
+			$decision['channels'],
+			static fn (string $channel): bool => in_array($channel, self::EXTERNAL_CAPABLE, true) === false
+		));
+		return $this->withEnabled(decision: $decision);
+	}//end decide()
+
+	/**
+	 * The resolved preference with the administrator's forced channels applied.
+	 *
+	 * The forced channels are ADDED to whatever the preference chose, not
+	 * substituted for it. A person who also asked for e-mail keeps e-mail; what
+	 * they cannot do is remove the channel the process requires.
+	 *
+	 * @param KindPreference $preference The resolved preference and the kind's declaration.
+	 *
+	 * @return array{enabled:bool,channels:array<int,string>,forced:bool,reason:string,layer:string,refusal:string}
+	 */
+	private function forcedOver(KindPreference $preference): array {
+		$declaration = $preference->declaration;
 		$forcedChannels = $this->channelsOf(value: ($declaration[self::FORCED]['channels'] ?? ($declaration[self::FORCED] ?? [])));
-		$reason = trim((string)($declaration[self::FORCED]['reason'] ?? ''));
-		$forced = ($forcedChannels !== []);
-
-		if ($forced === true) {
-			// The forced channels are ADDED to whatever the preference chose,
-			// not substituted for it. A person who also asked for e-mail keeps
-			// e-mail; what they cannot do is remove the channel the process
-			// requires.
-			$channels = array_values(array_unique(array_merge($channels, $forcedChannels)));
-			$enabled = true;
-			$layer = self::LAYER;
-		}
-
-		$internalOnly = (($declaration[self::INTERNAL_ONLY] ?? false) === true);
-		if ($internalOnly === true && $audience->isInternal() === false) {
-			// The refusal is always the internal-only layer's; $internalOnly is
-			// true on this branch by definition.
-			$refusedLayer = self::LAYER;
-
-			// Refused, and the refusal is the answer rather than an empty
-			// channel list: a caller that received no channels and no reason
-			// cannot tell this from a kind nobody configured.
-			return [
-				'enabled' => false,
-				'channels' => [],
-				'forced' => $forced,
-				'reason' => $reason,
-				'layer' => $refusedLayer,
-				'refusal' => self::REFUSED_EXTERNAL,
-			];
-		}
-
-		if ($internalOnly === true) {
-			// An internal kind never goes out on a channel that can leave the
-			// organisation, even to somebody inside it: the channel is the
-			// leak, not the recipient. A webhook fires at whatever URL an
-			// administrator configured.
-			$channels = array_values(array_filter(
-				$channels,
-				static fn (string $channel): bool => in_array($channel, self::EXTERNAL_CAPABLE, true) === false
-			));
-		}
-
-		return [
-			'enabled' => ($enabled === true && $channels !== []),
-			'channels' => $channels,
-			'forced' => $forced,
-			'reason' => $reason,
-			'layer' => $layer,
+		$decision = [
+			'enabled' => (($preference->resolved['enabled'] ?? true) === true),
+			'channels' => $this->channelsOf(value: ($preference->resolved['channels'] ?? [])),
+			'forced' => ($forcedChannels !== []),
+			'reason' => trim((string)($declaration[self::FORCED]['reason'] ?? '')),
+			'layer' => (string)($preference->resolved['source'] ?? 'schema-default'),
 			'refusal' => '',
 		];
-	}//end decide()
+		if ($decision['forced'] === true) {
+			$decision['channels'] = array_values(array_unique(array_merge($decision['channels'], $forcedChannels)));
+			$decision['enabled'] = true;
+			$decision['layer'] = self::LAYER;
+		}
+
+		return $decision;
+	}//end forcedOver()
+
+	/**
+	 * A decision is enabled only while it still has a channel to send on.
+	 *
+	 * @param array{enabled:bool,channels:array<int,string>,forced:bool,reason:string,layer:string,refusal:string} $decision The decision.
+	 *
+	 * @return array{enabled:bool,channels:array<int,string>,forced:bool,reason:string,layer:string,refusal:string}
+	 */
+	private function withEnabled(array $decision): array {
+		$decision['enabled'] = ($decision['enabled'] === true && $decision['channels'] !== []);
+		return $decision;
+	}//end withEnabled()
+
+	/**
+	 * The refusal of an internal kind for a recipient outside the organisation.
+	 *
+	 * Refused, and the refusal is the answer rather than an empty channel list:
+	 * a caller that received no channels and no reason cannot tell this from a
+	 * kind nobody configured. The refusal is always the internal-only layer's.
+	 *
+	 * @param array{enabled:bool,channels:array<int,string>,forced:bool,reason:string,layer:string,refusal:string} $decision The decision so far.
+	 *
+	 * @return array{enabled:bool,channels:array<int,string>,forced:bool,reason:string,layer:string,refusal:string}
+	 */
+	private function refusedOutside(array $decision): array {
+		return [
+			'enabled' => false,
+			'channels' => [],
+			'forced' => $decision['forced'],
+			'reason' => $decision['reason'],
+			'layer' => self::LAYER,
+			'refusal' => self::REFUSED_EXTERNAL,
+		];
+	}//end refusedOutside()
 
 	/**
 	 * What is wrong with a declaration, or an empty list when nothing is.
@@ -192,10 +239,7 @@ class ForcedChannelPolicy {
 		$reason = trim((string)($declaration[self::FORCED]['reason'] ?? ''));
 
 		if ($forcedChannels !== [] && $reason === '') {
-			$errors[] = [
-				'code' => 'notification-forced-channel-without-reason',
-				'message' => 'A forced channel needs the reason it is forced: a user who cannot switch a notification off is owed the sentence that says why.',
-			];
+			$errors[] = self::FORCED_WITHOUT_REASON;
 		}
 
 		$internalOnly = (($declaration[self::INTERNAL_ONLY] ?? false) === true);
@@ -203,36 +247,79 @@ class ForcedChannelPolicy {
 			return $errors;
 		}
 
-		$declared = $this->channelsOf(value: ($declaration['channels'] ?? []));
-		$usable = array_values(array_filter(
-			array_merge($declared, $forcedChannels),
-			static fn (string $channel): bool => in_array($channel, self::EXTERNAL_CAPABLE, true) === false
-		));
+		return array_merge($errors, $this->internalOnlyErrors(declaration: $declaration, forcedChannels: $forcedChannels));
+	}//end validate()
 
+	/**
+	 * What is wrong with an internal-only declaration's channels.
+	 *
+	 * @param array<string,mixed> $declaration    The notification's declaration.
+	 * @param array<int,string>   $forcedChannels Its forced channels.
+	 *
+	 * @return array<int,array{code:string,message:string}> The refusals.
+	 */
+	private function internalOnlyErrors(array $declaration, array $forcedChannels): array {
+		$errors = [];
+		$declared = $this->channelsOf(value: ($declaration['channels'] ?? []));
+		$usable = $this->internalChannels(channels: array_merge($declared, $forcedChannels));
 		if ($usable === []) {
-			$errors[] = [
-				'code' => 'notification-internal-only-has-no-internal-channel',
-				'message' => 'An internal-only kind declares only channels that can leave the organisation, so it would never send at all.',
-			];
+			$errors[] = self::NO_INTERNAL_CHANNEL;
 		}
 
-		$forcedExternal = array_values(array_filter(
-			$forcedChannels,
+		return array_merge($errors, $this->forcedExternalErrors(forcedChannels: $forcedChannels));
+	}//end internalOnlyErrors()
+
+	/**
+	 * The channels that cannot leave the organisation, in their order.
+	 *
+	 * @param array<int,string> $channels The channels.
+	 *
+	 * @return array<int,string> The channels not in EXTERNAL_CAPABLE.
+	 */
+	private function internalChannels(array $channels): array {
+		return array_values(array_filter(
+			$channels,
+			static fn (string $channel): bool => in_array($channel, self::EXTERNAL_CAPABLE, true) === false
+		));
+	}//end internalChannels()
+
+	/**
+	 * The channels that can leave the organisation, in their order.
+	 *
+	 * @param array<int,string> $channels The channels.
+	 *
+	 * @return array<int,string> The channels in EXTERNAL_CAPABLE.
+	 */
+	private function externalChannels(array $channels): array {
+		return array_values(array_filter(
+			$channels,
 			static fn (string $channel): bool => in_array($channel, self::EXTERNAL_CAPABLE, true) === true
 		));
+	}//end externalChannels()
 
-		if ($forcedExternal !== []) {
-			$errors[] = [
+	/**
+	 * The refusal of an internal-only kind that forces a channel able to leave the organisation.
+	 *
+	 * @param array<int,string> $forcedChannels The forced channels.
+	 *
+	 * @return array<int,array{code:string,message:string}> The refusal, or nothing.
+	 */
+	private function forcedExternalErrors(array $forcedChannels): array {
+		$forcedExternal = $this->externalChannels(channels: $forcedChannels);
+		if ($forcedExternal === []) {
+			return [];
+		}
+
+		return [
+			[
 				'code' => 'notification-internal-only-forces-external-channel',
 				'message' => sprintf(
 					'An internal-only kind forces %s, which can carry it outside the organisation. The two declarations contradict each other.',
 					implode(', ', $forcedExternal)
 				),
-			];
-		}
-
-		return $errors;
-	}//end validate()
+			],
+		];
+	}//end forcedExternalErrors()
 
 	/**
 	 * A channel list, however the declaration spells it.

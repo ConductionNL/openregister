@@ -56,6 +56,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
+use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 
 class ImportServiceRegisterAutoCreateTest extends TestCase {
 	use PassThroughL10nTrait;
@@ -253,10 +255,10 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 		$path = $this->writeTempJsonFile($this->productsBundle());
 
 		$result = $this->service->importFromJson(
-			filePath: $path,
-			register: null,
-			schema: null,
-			registerSlug: 'products'
+			request: new ImportRequest(
+				filePath: $path,
+				scope: new ImportScope(registerSlug: 'products'),
+			),
 		);
 
 		$this->assertSame(['uuid-widget-1'], $result['JSON']['created']);
@@ -333,12 +335,12 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 		$path = $this->writeTempJsonFile($this->productsBundle());
 
 		// First import: creates the register + schema.
-		$this->service->importFromJson(filePath: $path, register: null, schema: null, registerSlug: 'products');
+		$this->service->importFromJson(request: new ImportRequest(filePath: $path, scope: new ImportScope(registerSlug: 'products')));
 
 		// Second import of the SAME bundle: registerMapper::createFromArray
 		// and schemaMapper::createFromArray each remain asserted ->once()
 		// above — a second invocation would fail this test.
-		$result = $this->service->importFromJson(filePath: $path, register: null, schema: null, registerSlug: 'products');
+		$result = $this->service->importFromJson(request: new ImportRequest(filePath: $path, scope: new ImportScope(registerSlug: 'products')));
 
 		$this->assertSame([], $result['JSON']['errors']);
 	}//end testReimportOfExistingBundleDoesNotDuplicateRegister()
@@ -358,10 +360,10 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 
 		try {
 			$this->service->importFromJson(
-				filePath: $path,
-				register: null,
-				schema: null,
-				registerSlug: 'orders'
+				request: new ImportRequest(
+					filePath: $path,
+					scope: new ImportScope(registerSlug: 'orders'),
+				),
 			);
 			$this->fail('Expected RegisterNotFoundException to be thrown.');
 		} catch (RegisterNotFoundException $e) {

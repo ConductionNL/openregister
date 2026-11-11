@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
@@ -144,15 +145,15 @@ class SendNotificationNode extends MessagingNodeBase implements
 	 */
 	public function configForm(): array {
 		return [
-			$this->requiredField(key: 'recipients', label: $this->l10n->t('Who to tell'), type: 'text', help: $this->l10n->t(
+			$this->requiredField(field: new NodeFormField(key: 'recipients', label: $this->l10n->t('Who to tell'), type: 'text', help: $this->l10n->t(
 				'User or group ids, or a field on the item such as {{ assignee }}. Groups are expanded.'
-			)),
-			$this->formField(key: 'title', label: $this->l10n->t('Title'), type: 'text', help: $this->l10n->t(
+			))),
+			$this->formField(field: new NodeFormField(key: 'title', label: $this->l10n->t('Title'), type: 'text', help: $this->l10n->t(
 				'Placeholders such as {{ name }} read fields from the item, the same syntax a schema notification uses.'
-			)),
-			$this->requiredField(key: 'message', label: $this->l10n->t('Message'), type: 'textarea', help: $this->l10n->t(
+			))),
+			$this->requiredField(field: new NodeFormField(key: 'message', label: $this->l10n->t('Message'), type: 'textarea', help: $this->l10n->t(
 				'What the notification says. Placeholders read fields from the item.'
-			)),
+			))),
 		];
 	}//end configForm()
 
@@ -163,15 +164,13 @@ class SendNotificationNode extends MessagingNodeBase implements
 	 * routed through the step's `onError` policy; every non-delivery lands in
 	 * the run log with its reason.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param MessageSend $step The step configuration, the items, run-level metadata and this node's type.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
-	protected function send(array $items, array $config, array $context): void {
-		$this->messaging->sendNotification(config: $config, items: $items, context: $context, stepName: self::TYPE);
+	protected function send(MessageSend $step): void {
+		$this->messaging->notify(request: $step);
 	}//end send()
 }//end class

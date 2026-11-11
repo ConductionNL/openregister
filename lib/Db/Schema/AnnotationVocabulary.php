@@ -261,7 +261,7 @@ final class AnnotationVocabulary {
 		AccessDeclarationValidators::HIERARCHY_ANNOTATION,
 		// Whether this schema's objects may invite an external
 		// (non-Nextcloud-user) participant into a linked Talk room by email,
-		// via TalkLinkService::inviteExternalParticipant() — default OFF.
+		// via TalkLinkService::invite() — default OFF.
 		// Absent from this list setConfiguration() would silently DROP it,
 		// so an author enabling guardian participation would read a 200 and
 		// every subsequent invite would answer 403 "does not allow", the

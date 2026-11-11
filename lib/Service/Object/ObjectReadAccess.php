@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -78,7 +79,7 @@ class ObjectReadAccess implements ObjectReadAccessInterface {
 	 */
 	public function readable(string $register, string $schema, string $id): ?ObjectEntity {
 		try {
-			return $this->readableOrAmbiguous(register: $register, schema: $schema, id: $id);
+			return $this->readableAt(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 		} catch (MultipleObjectsReturnedException $e) {
 			return null;
 		}
@@ -101,6 +102,24 @@ class ObjectReadAccess implements ObjectReadAccessInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function readableOrAmbiguous(string $register, string $schema, string $id): ?ObjectEntity {
+		return $this->readableAt(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end readableOrAmbiguous()
+
+	/**
+	 * The object an address names, when the caller may read it; an identifier two
+	 * objects of the register and schema hold is refused as ambiguous (#4037).
+	 *
+	 * @param ObjectRef $ref The register and schema (slug or id) and the object's id, uuid or slug.
+	 *
+	 * @return ObjectEntity|null The object, or null when it is not readable.
+	 *
+	 * @throws MultipleObjectsReturnedException When the slug is held by more than one object.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	public function readableAt(ObjectRef $ref): ?ObjectEntity {
 		if ($this->userSession->getUser() === null) {
 			return null;
 		}
@@ -109,13 +128,13 @@ class ObjectReadAccess implements ObjectReadAccessInterface {
 			// REGISTER FIRST: setSchema() resolves its slug inside whatever
 			// register is currently set, and ObjectService is reused across
 			// calls in one process.
-			$this->objectService->setRegister(register: $register);
-			$this->objectService->setSchema(schema: $schema);
+			$this->objectService->setRegister(register: $ref->register);
+			$this->objectService->setSchema(schema: $ref->schema);
 
 			return WriteCause::asLookup(fn () => $this->objectService->find(
-				id: $id,
-				register: $register,
-				schema: $schema,
+				id: $ref->id,
+				register: $ref->register,
+				schema: $ref->schema,
 				_rbac: true,
 				_multitenancy: true
 			));
@@ -124,7 +143,7 @@ class ObjectReadAccess implements ObjectReadAccessInterface {
 		} catch (\Exception $e) {
 			return null;
 		}
-	}//end readableOrAmbiguous()
+	}//end readableAt()
 
 	/**
 	 * The schema an object belongs to, when it resolves.

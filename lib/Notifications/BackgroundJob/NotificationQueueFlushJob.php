@@ -48,14 +48,10 @@ namespace OCA\OpenRegister\Notifications\BackgroundJob;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
-use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
-use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
+use OCA\OpenRegister\Notifications\Service\Notification\QueueWait;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
-use Psr\Log\LoggerInterface;
 
 /**
  * Periodic queue flush for the delivery-window / digest-schedule gate.
@@ -63,48 +59,6 @@ use Psr\Log\LoggerInterface;
  * @psalm-suppress UnusedClass
  */
 final class NotificationQueueFlushJob extends TimedJob {
-	/**
-	 * Durable queue mapper.
-	 *
-	 * @var QueuedNotificationMapper
-	 */
-	private readonly QueuedNotificationMapper $queuedMapper;
-
-	/**
-	 * Schema lookup mapper (rule digest config).
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Notification dispatcher (flush entry point).
-	 *
-	 * @var AnnotationNotificationDispatcher
-	 */
-	private readonly AnnotationNotificationDispatcher $dispatcher;
-
-	/**
-	 * Delivery-window resolver + evaluator.
-	 *
-	 * @var NotificationDeliveryWindowService
-	 */
-	private readonly NotificationDeliveryWindowService $windowService;
-
-	/**
-	 * Live digest-schedule evaluator.
-	 *
-	 * @var DigestScheduleEvaluator
-	 */
-	private readonly DigestScheduleEvaluator $digestEvaluator;
-
-	/**
-	 * PSR logger.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
 	/**
 	 * Wire collaborators and configure the timed-job interval.
 	 *
@@ -114,18 +68,11 @@ final class NotificationQueueFlushJob extends TimedJob {
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		QueueFlushTiming $timing,
-		QueueFlushDelivery $delivery,
+		private readonly QueueFlushTiming $timing,
+		private readonly QueueFlushDelivery $delivery,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: 60);
-		$this->queuedMapper = $delivery->queuedMapper;
-		$this->schemaMapper = $timing->schemaMapper;
-		$this->dispatcher = $delivery->dispatcher;
-		$this->windowService = $timing->windowService;
-		$this->digestEvaluator = $timing->digestEvaluator;
-		$this->logger = $delivery->logger;
-
 	}//end __construct()
 
 	/**
@@ -146,9 +93,9 @@ final class NotificationQueueFlushJob extends TimedJob {
 		$now = DateTimeImmutable::createFromInterface($this->time->getDateTime());
 
 		try {
-			$rows = $this->queuedMapper->findAll();
+			$rows = $this->delivery->queuedMapper->findAll();
 		} catch (\Throwable $e) {
-			$this->logger->warning('[NotificationQueueFlushJob] queue scan failed: ' . $e->getMessage());
+			$this->delivery->logger->warning('[NotificationQueueFlushJob] queue scan failed: ' . $e->getMessage());
 			return;
 		}
 
@@ -162,7 +109,7 @@ final class NotificationQueueFlushJob extends TimedJob {
 		}
 
 		if ($flushed > 0) {
-			$this->logger->info(sprintf('[NotificationQueueFlushJob] flushed %d queued notification(s)', $flushed));
+			$this->delivery->logger->info(sprintf('[NotificationQueueFlushJob] flushed %d queued notification(s)', $flushed));
 		}
 
 	}//end run()
@@ -211,10 +158,9 @@ final class NotificationQueueFlushJob extends TimedJob {
 			$dueRows = array_values(
 				array_filter(
 					$rows,
-					fn (QueuedNotification $row): bool => $this->digestEvaluator->isDue(
+					fn (QueuedNotification $row): bool => $this->timing->digestEvaluator->isDue(
 						digest: $digest,
-						enqueuedAt: DateTimeImmutable::createFromInterface($row->getCreatedAt()),
-						now: $now
+						wait: new QueueWait(enqueuedAt: DateTimeImmutable::createFromInterface($row->getCreatedAt()), now: $now)
 					)
 				)
 			);
@@ -236,9 +182,9 @@ final class NotificationQueueFlushJob extends TimedJob {
 	 * @return bool True when inside an active window.
 	 */
 	private function insideWindow(string $recipient, DateTimeImmutable $now): bool {
-		$window = $this->windowService->getForUser(userId: $recipient);
+		$window = $this->timing->windowService->getForUser(userId: $recipient);
 
-		return $window !== null && $this->windowService->isInsideWindow(window: $window, now: $now) === true;
+		return $window !== null && $this->timing->windowService->isInsideWindow(window: $window, now: $now) === true;
 	}//end insideWindow()
 
 	/**
@@ -251,9 +197,9 @@ final class NotificationQueueFlushJob extends TimedJob {
 	 */
 	private function flushRows(QueuedNotification $first, array $dueRows): int {
 		try {
-			$this->dispatcher->dispatchQueued(queuedRows: $dueRows);
+			$this->delivery->dispatcher->dispatchQueued(queuedRows: $dueRows);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->delivery->logger->warning(
 				sprintf(
 					'[NotificationQueueFlushJob] dispatchQueued failed for rule="%s" recipient="%s": %s',
 					$first->getRuleKey(),
@@ -265,7 +211,7 @@ final class NotificationQueueFlushJob extends TimedJob {
 		}
 
 		foreach ($dueRows as $row) {
-			$this->queuedMapper->deleteById(id: (int)$row->getId());
+			$this->delivery->queuedMapper->deleteById(id: (int)$row->getId());
 		}
 
 		return count($dueRows);
@@ -282,7 +228,7 @@ final class NotificationQueueFlushJob extends TimedJob {
 	 */
 	private function resolveDigestSpec(int $schemaId, string $ruleKey): ?array {
 		try {
-			$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
+			$schema = $this->timing->schemaMapper->find($schemaId, _multitenancy: false);
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -305,7 +251,7 @@ final class NotificationQueueFlushJob extends TimedJob {
 		}
 
 		$digest = ($spec['digest'] ?? null);
-		if (is_array($digest) === false || $this->digestEvaluator->isValidDigestSpec($digest) === false) {
+		if (is_array($digest) === false || $this->timing->digestEvaluator->isValidDigestSpec($digest) === false) {
 			return null;
 		}
 

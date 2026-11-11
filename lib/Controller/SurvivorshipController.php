@@ -36,11 +36,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolverInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
@@ -89,23 +91,27 @@ class SurvivorshipController extends Controller {
 	private readonly SourceRecordResolverInterface $sourceRecordResolver;
 
 	/**
+	 * The user session.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                        $appName              The application name.
 	 * @param IRequest                      $request              The current request.
 	 * @param SurvivorshipControllerServices $services The services, bundled.
-	 * @param IUserSession                  $userSession          Current user session, for actor attribution.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		SurvivorshipControllerServices $services,
-		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->objectService = $services->objectService;
 		$this->schemaMapper = $services->schemaMapper;
 		$this->sourceRecordResolver = $services->sourceRecordResolver;
+		$this->userSession = $services->userSession;
 	}//end __construct()
 
 	/**
@@ -229,10 +235,8 @@ class SurvivorshipController extends Controller {
 	 */
 	private function resolveSourcesOf(ObjectEntity $object): array {
 		return $this->sourceRecordResolver->resolveSources(
-			masterData: ($object->getObject() ?? []),
-			masterUuid: (string)$object->getUuid(),
-			config: $this->survivorshipConfigFor(object: $object),
-			masterRegister: (string)$object->getRegister()
+			master: new MasterRecord(data: ($object->getObject() ?? []), uuid: (string)$object->getUuid(), register: (string)$object->getRegister()),
+			config: $this->survivorshipConfigFor(object: $object)
 		);
 	}//end resolveSourcesOf()
 

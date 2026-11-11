@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use JsonSerializable;
+use OCA\OpenRegister\Db\FlowRun\FlowRunFieldTypes;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -394,31 +395,9 @@ class FlowRun extends Entity implements JsonSerializable {
 	 * Constructor: declare field types so the mapper hydrates them correctly.
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'flowId', type: 'string');
-		$this->addType(fieldName: 'flowVersion', type: 'integer');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'marking', type: 'json');
-		$this->addType(fieldName: 'placeItems', type: 'json');
-		$this->addType(fieldName: 'firings', type: 'integer');
-		$this->addType(fieldName: 'items', type: 'json');
-		$this->addType(fieldName: 'context', type: 'json');
-		$this->addType(fieldName: 'log', type: 'json');
-		$this->addType(fieldName: 'subjectUuid', type: 'string');
-		$this->addType(fieldName: 'subjects', type: 'json');
-		$this->addType(fieldName: 'subjectRegister', type: 'string');
-		$this->addType(fieldName: 'subjectSchema', type: 'string');
-		$this->addType(fieldName: 'triggeredBy', type: 'string');
-		$this->addType(fieldName: 'runAs', type: 'string');
-		$this->addType(fieldName: 'trigger', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'error', type: 'string');
-		$this->addType(fieldName: 'resumeAt', type: 'datetime');
-		$this->addType(fieldName: 'parentRunUuid', type: 'string');
-		$this->addType(fieldName: 'correlationKey', type: 'string');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-
+		foreach (FlowRunFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -470,35 +449,27 @@ class FlowRun extends Entity implements JsonSerializable {
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 */
 	public function jsonSerialize(): array {
-		$resumeAt = null;
-		if ($this->resumeAt !== null) {
-			$resumeAt = $this->resumeAt->format('c');
-		}
+		$typed = new TypedFieldsJson();
+		$json = array_merge(
+			$typed->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this)),
+			$this->defaultedJson()
+		);
 
-		$created = null;
-		if ($this->created !== null) {
-			$created = $this->created->format('c');
-		}
+		return $typed->inserted(json: $json, entriesAfter: ['status' => ['outcome' => $this->getOutcome()]]);
+	}//end jsonSerialize()
 
-		$updated = null;
-		if ($this->updated !== null) {
-			$updated = $this->updated->format('c');
-		}
-
+	/**
+	 * The serialised fields that never go out as null, each in its fixed shape.
+	 *
+	 * @return array<string, mixed> The defaulted fields.
+	 */
+	private function defaultedJson(): array {
 		return [
-			'id' => $this->id,
-			'uuid' => $this->uuid,
-			'flowId' => $this->flowId,
-			'flowVersion' => $this->flowVersion,
-			'status' => $this->status,
-			'outcome' => $this->getOutcome(),
 			'marking' => ($this->marking ?? []),
-			'placeItems' => $this->placeItems,
 			'firings' => (int)($this->firings ?? 0),
 			'items' => ($this->items ?? []),
 			'context' => ($this->context ?? []),
 			'log' => ($this->log ?? []),
-			'subjectUuid' => $this->subjectUuid,
 			// 🔴 AN OBJECT, NEVER AN EMPTY ARRAY. `json_encode` turns an empty
 			// PHP array into `[]`, so a run that declared nothing served a JSON
 			// ARRAY where every populated run serves a MAP — and a typed client
@@ -507,19 +478,6 @@ class FlowRun extends Entity implements JsonSerializable {
 			// CI, where the Newman collection read `[]` and could not tell an
 			// empty set from a wrong type.
 			'subjects' => (object)($this->subjects ?? []),
-			'subjectRegister' => $this->subjectRegister,
-			'subjectSchema' => $this->subjectSchema,
-			'triggeredBy' => $this->triggeredBy,
-			'runAs' => $this->runAs,
-			'trigger' => $this->trigger,
-			'organisation' => $this->organisation,
-			'error' => $this->error,
-			'resumeAt' => $resumeAt,
-			'parentRunUuid' => $this->parentRunUuid,
-			'correlationKey' => $this->correlationKey,
-			'created' => $created,
-			'updated' => $updated,
 		];
-
-	}//end jsonSerialize()
+	}//end defaultedJson()
 }//end class

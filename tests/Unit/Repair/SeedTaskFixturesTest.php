@@ -28,10 +28,13 @@ use OCA\OpenRegister\Db\TaskAudit;
 use OCA\OpenRegister\Db\TaskAuditMapper;
 use OCA\OpenRegister\Db\TaskCandidateMapper;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Db\TaskSequenceMapperInterface;
 use OCA\OpenRegister\Repair\SeedTaskFixtures;
-use OCA\OpenRegister\Repair\TaskFixtureMappers;
+use OCA\OpenRegister\Repair\Support\ApprovalTaskStores;
+use OCA\OpenRegister\Repair\Support\RepairPlatform;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -102,9 +105,13 @@ class SeedTaskFixturesTest extends TestCase {
 		$config->method('getValueBool')->with('openregister', SeedTaskFixtures::FLAG, false)->willReturn($enabled);
 
 		return new SeedTaskFixtures(
-			appConfig: $config,
-			mappers: new TaskFixtureMappers(tasks: $this->tasks, candidates: $this->candidates, audits: $this->audits),
-			logger: new NullLogger()
+			platform: new RepairPlatform(db: $this->createMock(IDBConnection::class), config: $config, logger: new NullLogger()),
+			mappers: new ApprovalTaskStores(
+				tasks: $this->tasks,
+				candidates: $this->candidates,
+				audits: $this->audits,
+				sequences: $this->createMock(TaskSequenceMapperInterface::class)
+			)
 		);
 	}//end step()
 
@@ -232,4 +239,19 @@ class SeedTaskFixturesTest extends TestCase {
 		$this->step(enabled: true)->run(output: $output);
 		$this->assertSame('Seed the task fixtures (flow-task-entity)', $this->step(enabled: true)->getName());
 	}//end testAFailingFixtureIsReportedAndTheRestContinue()
+	/**
+	 * Characterisation: the exact five fixtures, task fields and audit rows,
+	 * pinned so a restructuring of the fixture builders cannot drift.
+	 *
+	 * @return void
+	 */
+	public function testTheFixturesArePinned(): void {
+		$fixtures = (new \ReflectionMethod(SeedTaskFixtures::class, 'fixtures'))->invoke($this->step(true));
+
+		$this->assertSame(
+			['00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000005'],
+			array_column($fixtures, 'uuid')
+		);
+		$this->assertSame('31086393d07157ddb696f60909e854699b09f9570e92d42bb0ec535a5a9a457f', hash('sha256', serialize($fixtures)));
+	}//end testTheFixturesArePinned()
 }//end class

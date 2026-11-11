@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Registry;
 
 use DateTime;
 use DateTimeZone;
+use OCA\OpenRegister\Service\Registry\RegistryIdentity;
+use OCA\OpenRegister\Service\Registry\InboundUpdate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapperInterface;
@@ -135,7 +137,7 @@ class RegistrySubscriptionStateTest extends TestCase {
 		$this->mapper->expects($this->once())->method('save')->with($working)->willReturnArgument(0);
 		$this->notifier->expects($this->once())->method('auditInboundUpdate');
 
-		$result = $this->service->applyInboundUpdate('brp', '999990019', ['address' => 'Straat 1', 'givenNames' => 'S'], 'evt-9');
+		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['address' => 'Straat 1', 'givenNames' => 'S'], 'evt-9'));
 
 		$this->assertSame(
 			['matched' => 2, 'applied' => ['o-ok'], 'rejected' => [['objectUuid' => 'o-fail', 'properties' => ['address', 'givenNames']]]],

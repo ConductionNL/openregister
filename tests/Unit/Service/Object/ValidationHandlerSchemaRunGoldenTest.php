@@ -9,16 +9,20 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
-use OCA\OpenRegister\Service\Object\ValidationMappers;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -110,12 +114,13 @@ class ValidationHandlerSchemaRunGoldenTest extends TestCase {
 		$this->calls = [];
 		$this->world = $scenario;
 
+		$query  = new ListQuery(limit: ($scenario['limit'] ?? ListQuery::UNBOUNDED), offset: ($scenario['offset'] ?? 0));
 		$result = $this->handler()->validateAndSaveObjectsBySchema(
-			registerId: 7,
-			schemaId: 9,
-			saveCallback: $this->saveCallback(kind: ($scenario['callback'] ?? 'bulk')),
-			limit: ($scenario['limit'] ?? null),
-			offset: ($scenario['offset'] ?? 0)
+			revalidation: new SchemaRevalidation(
+				table: new RegisterSchemaRef(register: 7, schema: 9),
+				query: $query,
+				saveCallback: $this->saveCallback(kind: ($scenario['callback'] ?? 'bulk'))
+			)
 		);
 
 		$calls = $this->typed(value: $this->calls);
@@ -237,7 +242,9 @@ class ValidationHandlerSchemaRunGoldenTest extends TestCase {
 
 		$magic = $this->createMock(MagicMapper::class);
 		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema, ...$rest): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
+				[$register, $schema] = [$table->register, $table->schema];
+				$rest = [$listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort];
 				$this->calls[] = ['findAllInRegisterSchemaTable', $register->getId(), $schema->getId(), $rest];
 				if (($this->world['tableFails'] ?? false) === true) {
 					throw new Exception('no table');
@@ -274,12 +281,7 @@ class ValidationHandlerSchemaRunGoldenTest extends TestCase {
 
 		return new ValidationHandler(
 			validateHandler: $this->createMock(ValidateObject::class),
-			mappers: new ValidationMappers(
-				objectEntityMapper: $this->createMock(MagicMapper::class),
-				registerMapper: $registerMapper,
-				schemaMapper: $schemaMapper,
-				magicMapper: $magic
-			),
+			catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magic),
 			logger: $logger
 		);
 	}//end handler()

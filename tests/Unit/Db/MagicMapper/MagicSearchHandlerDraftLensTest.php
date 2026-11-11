@@ -21,6 +21,9 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\DeletedLens;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -104,7 +107,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 	 * Spec scenario: a work list leaves drafts out, with RBAC off, which is how an app's service lists.
 	 */
 	public function testTheUnionPathHidesDraftsByDefault(): void {
-		$conditions = $this->handler(userId: null)->buildWhereConditionsSql(query: ['_rbac' => false], schema: new Schema());
+		$conditions = $this->handler(userId: null)->buildWhereClause(request: new WhereClauseRequest(query: ['_rbac' => false], table: new MagicReadTable(schema: new Schema())));
 
 		$this->assertContains("(_status IS NULL OR _status <> 'draft')", $conditions);
 	}//end testTheUnionPathHidesDraftsByDefault()
@@ -113,7 +116,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 	 * Spec scenario: the owner still sees their own drafts in the same list.
 	 */
 	public function testTheUnionPathKeepsTheCallersOwnDrafts(): void {
-		$conditions = $this->handler(userId: 'alice')->buildWhereConditionsSql(query: [], schema: new Schema());
+		$conditions = $this->handler(userId: 'alice')->buildWhereClause(request: new WhereClauseRequest(query: [], table: new MagicReadTable(schema: new Schema())));
 
 		$this->assertContains("((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')", $conditions);
 	}//end testTheUnionPathKeepsTheCallersOwnDrafts()
@@ -126,12 +129,12 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 		$quiet->setConfiguration(['draftsListed' => false]);
 
 		// The union path: no owner admit, although alice is signed in.
-		$conditions = $this->handler(userId: 'alice')->buildWhereConditionsSql(query: [], schema: $quiet);
+		$conditions = $this->handler(userId: 'alice')->buildWhereClause(request: new WhereClauseRequest(query: [], table: new MagicReadTable(schema: $quiet)));
 		$this->assertContains("(_status IS NULL OR _status <> 'draft')", $conditions);
 		$this->assertNotContains("((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')", $conditions);
 
 		// Asking still shows them.
-		$this->assertContains("_status = 'draft'", $this->handler(userId: 'alice')->buildWhereConditionsSql(query: ['_drafts' => 'true'], schema: $quiet));
+		$this->assertContains("_status = 'draft'", $this->handler(userId: 'alice')->buildWhereClause(request: new WhereClauseRequest(query: ['_drafts' => 'true'], table: new MagicReadTable(schema: $quiet))));
 
 		// The single-table path.
 		$apply = (new ReflectionClass(MagicSearchHandler::class))->getMethod('applyBasicFilters');
@@ -139,7 +142,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 		$this->functions = [];
 		$handler = $this->handler(userId: 'alice');
 		$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
-		$apply->invoke($handler, $queryBuilder, ['_deleted' => DeletedLens::ANY], $quiet);
+		$apply->invoke($handler, new TableFilterRun(qb: $queryBuilder, query: ['_deleted' => DeletedLens::ANY], table: new MagicReadTable(schema: $quiet)));
 		$this->assertSame(["(t._status IS NULL OR t._status <> 'draft')"], $this->functions);
 	}//end testASchemaKeepsOwnDraftsOutOnBothPaths()
 
@@ -147,12 +150,12 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 	 * Spec scenario: the filter shows them; `_drafts=true` alone, `_drafts=any` beside the rest.
 	 */
 	public function testTheUnionPathShowsDraftsWhenAsked(): void {
-		$only = $this->handler(userId: 'alice')->buildWhereConditionsSql(query: ['_drafts' => 'true'], schema: new Schema());
+		$only = $this->handler(userId: 'alice')->buildWhereClause(request: new WhereClauseRequest(query: ['_drafts' => 'true'], table: new MagicReadTable(schema: new Schema())));
 		$this->assertContains("_status = 'draft'", $only);
 
 		// The control: a path that always emitted a clause would pass the tests above.
 		foreach ([['_drafts' => 'any'], ['@self' => ['status' => 'draft']]] as $query) {
-			$any = $this->handler(userId: 'alice')->buildWhereConditionsSql(query: $query, schema: new Schema());
+			$any = $this->handler(userId: 'alice')->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: new Schema())));
 			$this->assertSame([], array_values(array_filter($any, static fn (mixed $condition): bool => is_string($condition) === true && str_contains($condition, "'draft')") === true)));
 			$this->assertNotContains("_status = 'draft'", $any);
 		}
@@ -177,7 +180,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 			$this->functions = [];
 			$handler = $this->handler(userId: $userId);
 			$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
-			$apply->invoke($handler, $queryBuilder, (['_deleted' => DeletedLens::ANY] + $query));
+			$apply->invoke($handler, new TableFilterRun(qb: $queryBuilder, query: (['_deleted' => DeletedLens::ANY] + $query), table: new MagicReadTable(schema: new Schema())));
 
 			$this->assertSame([$expected], $this->functions);
 		}
@@ -185,7 +188,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 		$this->functions = [];
 		$handler = $this->handler(userId: 'alice');
 		$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
-		$apply->invoke($handler, $queryBuilder, ['_deleted' => DeletedLens::ANY, '_drafts' => 'any']);
+		$apply->invoke($handler, new TableFilterRun(qb: $queryBuilder, query: ['_deleted' => DeletedLens::ANY, '_drafts' => 'any'], table: new MagicReadTable(schema: new Schema())));
 		$this->assertSame([], $this->functions);
 	}//end testTheSingleTablePathCarriesTheSameLens()
 

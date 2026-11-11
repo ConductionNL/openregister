@@ -35,7 +35,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -48,20 +47,6 @@ use Throwable;
 class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterface, RegistrySubscriptionServiceInterface {
 
 	/**
-	 * Applies inbound updates through the ordinary save path.
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * Resolves a row's schema and checks owned properties.
-	 *
-	 * @var RegistryUpdateTargetGuard
-	 */
-	private readonly RegistryUpdateTargetGuard $updateTargetGuard;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param RegistrySubscriptionMapperInterface $subscriptionMapper Reads/writes the state table.
@@ -72,11 +57,9 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 	public function __construct(
 		private readonly RegistrySubscriptionMapperInterface $subscriptionMapper,
 		private readonly RegistrySubscriptionNotifier $notifier,
-		RegistryInboundServices $inbound,
+		private readonly RegistryInboundServices $inbound,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->objectService     = $inbound->objectService;
-		$this->updateTargetGuard = $inbound->updateTargetGuard;
 	}//end __construct()
 
 	/**
@@ -132,6 +115,28 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 			);
 		}
 
+		$identity = new RegistryIdentity(
+			registry: $annotation['registry'],
+			identityValue: self::identityValueOf(object: $object, annotation: $annotation)
+		);
+		$row = $this->saveRequestedRow(object: $object, identity: $identity);
+
+		$this->notifier->requested(object: $object, identity: $identity);
+
+		return $row;
+	}//end requestSubscription()
+
+	/**
+	 * The object's value for the annotation's identity property.
+	 *
+	 * @param ObjectEntity                                                       $object     The object to subscribe.
+	 * @param array{registry: string, identity: string, owned: array<int, string>} $annotation The schema's annotation.
+	 *
+	 * @return string The identity value.
+	 *
+	 * @throws InvalidArgumentException When the object has no value for it.
+	 */
+	private static function identityValueOf(ObjectEntity $object, array $annotation): string {
 		$identityValue = (string)($object->getObject()[$annotation['identity']] ?? '');
 		if ($identityValue === '') {
 			throw new InvalidArgumentException(
@@ -139,32 +144,50 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 			);
 		}
 
-		$uuid = (string)$object->getUuid();
-		$row = $this->subscriptionMapper->findForObject(objectUuid: $uuid);
+		return $identityValue;
+	}//end identityValueOf()
+
+	/**
+	 * Save the object's subscription row in the requested state, reusing an existing row.
+	 *
+	 * @param ObjectEntity     $object   The object to subscribe.
+	 * @param RegistryIdentity $identity The registry and the object's identity value there.
+	 *
+	 * @return RegistrySubscription The saved row.
+	 */
+	private function saveRequestedRow(ObjectEntity $object, RegistryIdentity $identity): RegistrySubscription {
 		$now = new DateTime();
-		if ($row === null) {
-			$row = new RegistrySubscription();
-			$row->setObjectUuid($uuid);
-			$row->setCreatedAt($now);
-		}
+		$row = $this->rowFor(objectUuid: (string)$object->getUuid(), now: $now);
 
 		$row->setRegister((string)$object->getRegister());
 		$row->setSchema((string)$object->getSchema());
-		$row->setRegistry($annotation['registry']);
-		$row->setIdentityValue($identityValue);
+		$row->setRegistry($identity->registry);
+		$row->setIdentityValue($identity->identityValue);
 		$row->setState(RegistrySubscription::STATE_REQUESTED);
 		$row->setRefusalReason(null);
 		$row->setUpdatedAt($now);
-		$row = $this->subscriptionMapper->save(subscription: $row);
 
-		$this->notifier->requested(
-			object: $object,
-			registry: $annotation['registry'],
-			identityValue: $identityValue,
-		);
+		return $this->subscriptionMapper->save(subscription: $row);
+	}//end saveRequestedRow()
+
+	/**
+	 * The object's existing subscription row, or a new one created now.
+	 *
+	 * @param string   $objectUuid The object's uuid.
+	 * @param DateTime $now        The time of the request.
+	 *
+	 * @return RegistrySubscription The row.
+	 */
+	private function rowFor(string $objectUuid, DateTime $now): RegistrySubscription {
+		$row = $this->subscriptionMapper->findForObject(objectUuid: $objectUuid);
+		if ($row === null) {
+			$row = new RegistrySubscription();
+			$row->setObjectUuid($objectUuid);
+			$row->setCreatedAt($now);
+		}
 
 		return $row;
-	}//end requestSubscription()
+	}//end rowFor()
 
 	/**
 	 * End a subscription on an object. Caller MUST have already checked the
@@ -191,8 +214,7 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 
 		$this->notifier->ended(
 			object: $object,
-			registry: (string)$row->getRegistry(),
-			identityValue: (string)$row->getIdentityValue(),
+			identity: new RegistryIdentity(registry: (string)$row->getRegistry(), identityValue: (string)$row->getIdentityValue()),
 		);
 
 		return $row;
@@ -202,10 +224,8 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 	 * Apply an inbound registry update (`registry-subscriptions` REQ 3) to
 	 * every object actively subscribed to `$registry`/`$identityValue`.
 	 *
-	 * @param string $registry The registry id posting the update (`brp`, `kvk`, ...).
-	 * @param string $identityValue The identity value the update is for.
-	 * @param array<string, mixed> $properties The changed properties the registry is offering.
-	 * @param string $eventReference The registry's own event reference for this change.
+	 * @param InboundUpdate $update The registry and identity value the update is for, the changed properties the
+	 *                              registry is offering and its own event reference for this change.
 	 *
 	 * @return array{matched: int, applied: array<int, string>, rejected: array<int, array{objectUuid: string, properties: array<int, string>}>}
 	 *         `matched` is how many active subscriptions exist for this
@@ -222,80 +242,117 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 	 *
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-inbound-registry-update-writes-owned-properties-only
 	 */
-	public function applyInboundUpdate(
-		string $registry,
-		string $identityValue,
-		array $properties,
-		string $eventReference,
-	): array {
-		$rows = $this->subscriptionMapper->findActiveByIdentity(registry: $registry, identityValue: $identityValue);
-		$matched = count($rows);
+	public function applyInboundUpdate(InboundUpdate $update): array {
+		$rows = $this->subscriptionMapper->findActiveByIdentity(
+			registry: $update->identity->registry,
+			identityValue: $update->identity->identityValue
+		);
 
-		$applied = [];
-		$rejected = [];
-
+		$run = new InboundUpdateRun(update: $update);
 		foreach ($rows as $row) {
-			$guardResult = $this->updateTargetGuard->evaluate(row: $row, properties: $properties);
-			if ($guardResult['allowed'] === false) {
-				$rejected[] = ['objectUuid' => (string)$row->getObjectUuid(), 'properties' => $guardResult['rejected']];
-				continue;
-			}
+			$this->applyToRow(run: $run, row: $row);
+		}
 
-			if (count($properties) === 0) {
-				// An unchanged payload announces nothing (REQ 3): no write,
-				// no audit, and the row's freshness is left untouched.
-				continue;
-			}
-
-			try {
-				// A PATCH, never saveObject(): saveObject() is PUT-semantic and
-				// writes every property absent from the payload as null. An
-				// inbound update carries only what the registry changed, so a
-				// save would null the identity this row is matched on (the
-				// BSN, the KvK number) and every field the registry does not
-				// own, on every update. patchObject() merges onto the stored
-				// object and leaves the rest alone.
-				$updated = $this->objectService->patchObject(
-					objectId: (string)$row->getObjectUuid(),
-					data: $properties,
-					register: $row->getRegister(),
-					schema: $row->getSchema(),
-				);
-			} catch (Throwable $e) {
-				$this->logger->error(
-					'[OpenRegister.RegistrySubscriptionService] Inbound update failed to save for object '
-					. $row->getObjectUuid() . ': ' . $e->getMessage()
-				);
-				$rejected[] = ['objectUuid' => (string)$row->getObjectUuid(), 'properties' => array_keys($properties)];
-				continue;
-			}
-
-			$now = new DateTime();
-			$row->setLastUpdateAt($now);
-			$row->setLastUpdateSource($eventReference);
-			$row->setState(RegistrySubscription::STATE_ACTIVE);
-			$row->setUpdatedAt($now);
-			$this->subscriptionMapper->save(subscription: $row);
-
-			// A second, explicit audit row naming the REGISTRY as actor.
-			// saveObject()'s own audit trail already recorded this write
-			// with whichever Nextcloud account the connector's app password
-			// belongs to (the ordinary save path's session-derived actor);
-			// this row is the one `registry-subscriptions` REQ 3 asks for:
-			// "the audit entry names registry `brp` as actor", independent
-			// of which account backs the connector's credential.
-			$this->notifier->auditInboundUpdate(
-				object: $updated,
-				registry: $registry,
-				eventReference: $eventReference,
-				properties: array_keys($properties),
-			);
-
-			$applied[] = (string)$row->getObjectUuid();
-		}//end foreach
-
-		return ['matched' => $matched, 'applied' => $applied, 'rejected' => $rejected];
+		return ['matched' => count($rows), 'applied' => $run->applied, 'rejected' => $run->rejected];
 	}//end applyInboundUpdate()
+
+	/**
+	 * Apply the update to one subscribed object, or record why it was not.
+	 *
+	 * An object that owns a property it was not offered is refused whole: a
+	 * partial write of only the owned subset is never applied, so a caller
+	 * cannot misread a rejected update as a smaller accepted one.
+	 *
+	 * @param InboundUpdateRun     $run The run in progress.
+	 * @param RegistrySubscription $row The subscription the update matched.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-inbound-registry-update-writes-owned-properties-only
+	 */
+	private function applyToRow(InboundUpdateRun $run, RegistrySubscription $row): void {
+		$guardResult = $this->inbound->updateTargetGuard->evaluate(row: $row, properties: $run->update->properties);
+		if ($guardResult['allowed'] === false) {
+			$run->reject(objectUuid: (string)$row->getObjectUuid(), properties: $guardResult['rejected']);
+			return;
+		}
+
+		if (count($run->update->properties) === 0) {
+			// An unchanged payload announces nothing (REQ 3): no write,
+			// no audit, and the row's freshness is left untouched.
+			return;
+		}
+
+		$updated = $this->patchRow(run: $run, row: $row);
+		if ($updated === null) {
+			return;
+		}
+
+		$this->recordApplied(run: $run, row: $row);
+		// A second, explicit audit row naming the REGISTRY as actor.
+		// saveObject()'s own audit trail already recorded this write
+		// with whichever Nextcloud account the connector's app password
+		// belongs to (the ordinary save path's session-derived actor);
+		// this row is the one `registry-subscriptions` REQ 3 asks for:
+		// "the audit entry names registry `brp` as actor", independent
+		// of which account backs the connector's credential.
+		$this->notifier->auditInboundUpdate(object: $updated, update: $run->update);
+	}//end applyToRow()
+
+	/**
+	 * Patch the subscribed object with the offered properties.
+	 *
+	 * @param InboundUpdateRun     $run The run in progress.
+	 * @param RegistrySubscription $row The subscription whose object is patched.
+	 *
+	 * @return ObjectEntity|null The patched object, or null when the write failed (then recorded as refused).
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-inbound-registry-update-writes-owned-properties-only
+	 */
+	private function patchRow(InboundUpdateRun $run, RegistrySubscription $row): ?ObjectEntity {
+		try {
+			// A PATCH, never saveObject(): saveObject() is PUT-semantic and
+			// writes every property absent from the payload as null. An
+			// inbound update carries only what the registry changed, so a
+			// save would null the identity this row is matched on (the
+			// BSN, the KvK number) and every field the registry does not
+			// own, on every update. patchObject() merges onto the stored
+			// object and leaves the rest alone.
+			return $this->inbound->objectService->patchObject(
+				objectId: (string)$row->getObjectUuid(),
+				data: $run->update->properties,
+				register: $row->getRegister(),
+				schema: $row->getSchema(),
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'[OpenRegister.RegistrySubscriptionService] Inbound update failed to save for object '
+				. $row->getObjectUuid() . ': ' . $e->getMessage()
+			);
+			$run->reject(objectUuid: (string)$row->getObjectUuid(), properties: $run->update->propertyNames());
+			return null;
+		}
+	}//end patchRow()
+
+	/**
+	 * Stamp the subscription as freshly updated by this event and count it applied.
+	 *
+	 * @param InboundUpdateRun     $run The run in progress.
+	 * @param RegistrySubscription $row The subscription whose object was patched.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-inbound-registry-update-writes-owned-properties-only
+	 */
+	private function recordApplied(InboundUpdateRun $run, RegistrySubscription $row): void {
+		$now = new DateTime();
+		$row->setLastUpdateAt($now);
+		$row->setLastUpdateSource($run->update->eventReference);
+		$row->setState(RegistrySubscription::STATE_ACTIVE);
+		$row->setUpdatedAt($now);
+		$this->subscriptionMapper->save(subscription: $row);
+		$run->applied[] = (string)$row->getObjectUuid();
+	}//end recordApplied()
 
 	/**
 	 * The `@self.registry` render mirror for one object, or null when it has

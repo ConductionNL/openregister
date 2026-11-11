@@ -27,14 +27,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Calendar;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\Calendar\ICalendar;
 use OCP\Constants;
-use Psr\Log\LoggerInterface;
 
 /**
  * Virtual calendar backed by OpenRegister schema objects
@@ -45,6 +44,8 @@ use Psr\Log\LoggerInterface;
  * @package OCA\OpenRegister\Calendar
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ *
+ * @spec openspec/specs/calendar-integration/spec.md
  */
 class RegisterCalendar implements ICalendar {
 
@@ -56,83 +57,17 @@ class RegisterCalendar implements ICalendar {
 	private const DEFAULT_COLOR = '#0082C9';
 
 	/**
-	 * The schema entity backing this calendar
-	 *
-	 * @var Schema
-	 */
-	private Schema $schema;
-
-	/**
-	 * The calendar provider configuration
-	 *
-	 * @var array
-	 */
-	private array $calendarConfig;
-
-	/**
-	 * The schema and calendar configuration, as the transformer takes them
-	 *
-	 * @var CalendarDefinition
-	 */
-	private CalendarDefinition $definition;
-
-	/**
-	 * The MagicMapper for querying objects
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private MagicMapperInterface $magicMapper;
-
-	/**
-	 * The RegisterMapper for loading registers
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private RegisterMapperInterface $registerMapper;
-
-	/**
-	 * The event transformer
-	 *
-	 * @var CalendarEventTransformer
-	 */
-	private CalendarEventTransformer $transformer;
-
-	/**
-	 * The principal URI for RBAC filtering
-	 *
-	 * @var string
-	 */
-	private string $principalUri;
-
-	/**
-	 * Logger instance
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Constructor
 	 *
-	 * @param Schema                  $schema         The schema entity
-	 * @param array                   $calendarConfig The calendar configuration
-	 * @param string                  $principalUri   The principal URI
-	 * @param RegisterCalendarSources $sources        Object/register lookup, transformer and logger
+	 * @param CalendarDefinition      $definition   The schema and its calendar configuration
+	 * @param string                  $principalUri The principal URI for RBAC filtering
+	 * @param RegisterCalendarSources $sources      Register/object lookup, transformer and logger
 	 */
 	public function __construct(
-		Schema $schema,
-		array $calendarConfig,
-		string $principalUri,
-		RegisterCalendarSources $sources,
+		private readonly CalendarDefinition $definition,
+		private readonly string $principalUri,
+		private readonly RegisterCalendarSources $sources,
 	) {
-		$this->schema = $schema;
-		$this->calendarConfig = $calendarConfig;
-		$this->definition = new CalendarDefinition(schema: $schema, config: $calendarConfig);
-		$this->magicMapper = $sources->magicMapper;
-		$this->registerMapper = $sources->registerMapper;
-		$this->transformer = $sources->transformer;
-		$this->principalUri = $principalUri;
-		$this->logger = $sources->logger;
 	}//end __construct()
 
 	/**
@@ -143,7 +78,7 @@ class RegisterCalendar implements ICalendar {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function getKey(): string {
-		return 'openregister-schema-' . $this->schema->getId();
+		return 'openregister-schema-' . $this->definition->schema->getId();
 	}//end getKey()
 
 	/**
@@ -154,7 +89,7 @@ class RegisterCalendar implements ICalendar {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function getUri(): string {
-		return 'openregister-schema-' . $this->schema->getId();
+		return 'openregister-schema-' . $this->definition->schema->getId();
 	}//end getUri()
 
 	/**
@@ -165,7 +100,7 @@ class RegisterCalendar implements ICalendar {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function getDisplayName(): ?string {
-		return $this->calendarConfig['displayName'] ?? $this->schema->getTitle();
+		return $this->definition->config['displayName'] ?? $this->definition->schema->getTitle();
 	}//end getDisplayName()
 
 	/**
@@ -176,7 +111,7 @@ class RegisterCalendar implements ICalendar {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function getDisplayColor(): ?string {
-		return $this->calendarConfig['color'] ?? self::DEFAULT_COLOR;
+		return $this->definition->config['color'] ?? self::DEFAULT_COLOR;
 	}//end getDisplayColor()
 
 	/**
@@ -227,18 +162,29 @@ class RegisterCalendar implements ICalendar {
 		?int $limit = null,
 		?int $offset = null,
 	): array {
+		return $this->searchOrEmpty(
+			query: new CalendarSearchQuery(pattern: $pattern, options: $options, limit: $limit, offset: $offset)
+		);
+	}//end search()
+
+	/**
+	 * Run a search, logging a failure and answering it with no events.
+	 *
+	 * @param CalendarSearchQuery $query The search arguments.
+	 *
+	 * @return array Array of VEVENT-compatible arrays
+	 */
+	private function searchOrEmpty(CalendarSearchQuery $query): array {
 		try {
-			return $this->searchEvents(
-				query: new CalendarSearchQuery(pattern: $pattern, options: $options, limit: $limit, offset: $offset)
-			);
+			return $this->searchEvents(query: $query);
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->sources->logger->warning(
 				'[RegisterCalendar] Search failed: ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return [];
 		}//end try
-	}//end search()
+	}//end searchOrEmpty()
 
 	/**
 	 * Run a search: refuse a principal that is not a user, then collect the
@@ -256,7 +202,7 @@ class RegisterCalendar implements ICalendar {
 		}
 
 		// Get all registers that use this schema.
-		$registers = $this->findRegistersForSchema(schema: $this->schema);
+		$registers = $this->findRegistersForSchema(schema: $this->definition->schema);
 
 		if (empty($registers) === true) {
 			return [];
@@ -283,12 +229,9 @@ class RegisterCalendar implements ICalendar {
 		$events = [];
 		$filters = $this->buildTimerangeFilters(options: $query->options);
 		try {
-			$objects = $this->magicMapper->findAllInRegisterSchemaTable(
-				register: $register,
-				schema: $this->schema,
-				limit: $query->limit,
-				offset: $query->offset,
-				filters: $filters
+			$objects = $this->sources->catalog->tables()->findAllInRegisterSchemaTable(
+				table: new RegisterSchema(register: $register, schema: $this->definition->schema),
+				listing: new ListQuery(limit: ($query->limit ?? ListQuery::UNBOUNDED), offset: $query->offset, filters: ($filters ?? []))
 			);
 
 			foreach ($objects as $object) {
@@ -298,7 +241,7 @@ class RegisterCalendar implements ICalendar {
 				}
 			}
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->sources->logger->warning(
 				'[RegisterCalendar] Failed to query register ' . $register->getId() . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);
@@ -316,7 +259,7 @@ class RegisterCalendar implements ICalendar {
 	 * @return array|null
 	 */
 	private function matchingEvent(ObjectEntity $object, string $pattern): ?array {
-		$event = $this->transformer->transform($object, $this->definition);
+		$event = $this->sources->transformer->transform($object, $this->definition);
 
 		if ($event === null) {
 			return null;
@@ -362,7 +305,7 @@ class RegisterCalendar implements ICalendar {
 		}
 
 		$timerange = $options['timerange'];
-		$dtstartField = $this->calendarConfig['dtstart'] ?? null;
+		$dtstartField = $this->definition->config['dtstart'] ?? null;
 
 		if ($dtstartField === null) {
 			return null;
@@ -424,7 +367,7 @@ class RegisterCalendar implements ICalendar {
 	 */
 	private function findRegistersForSchema(Schema $schema): array {
 		try {
-			$allRegisters = $this->registerMapper->findAll();
+			$allRegisters = $this->sources->catalog->registers()->findAll();
 			$matchingRegisters = [];
 
 			foreach ($allRegisters as $register) {
@@ -438,7 +381,7 @@ class RegisterCalendar implements ICalendar {
 
 			return $matchingRegisters;
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->sources->logger->warning(
 				'[RegisterCalendar] Failed to find registers for schema ' . $schema->getId() . ': ' . $e->getMessage(),
 				['exception' => $e]
 			);

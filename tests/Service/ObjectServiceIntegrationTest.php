@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -1137,17 +1138,17 @@ class ObjectServiceIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test buildObjectSearchQuery produces valid query
+	 * Test buildSearchQuery produces valid query from search parameters
 	 *
 	 * @return void
 	 */
-	public function testBuildObjectSearchQuery(): void {
+	public function testBuildSearchQueryWithSearchTerm(): void {
 		$params = [
 			'_limit' => '5',
 			'_search' => 'test query',
 		];
 
-		$query = $this->service->buildObjectSearchQuery($params);
+		$query = $this->service->buildSearchQuery(requestParams: $params);
 
 		$this->assertIsArray($query);
 	}
@@ -1166,11 +1167,7 @@ class ObjectServiceIntegrationTest extends TestCase {
 
 		$rendered = $this->service->renderEntity(
 			$saved,
-			[],
-			0,
-			[],
-			[],
-			[],
+			null,
 			false,
 			false
 		);
@@ -1405,9 +1402,8 @@ class ObjectServiceIntegrationTest extends TestCase {
 	public function testDeleteObjectsBySchema(): void {
 		$this->createTestObject(['name' => 'Schema Delete Test']);
 
-		$result = $this->service->deleteObjectsBySchema(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
+		$result = $this->service->deleteObjectsOfTable(
+			new RegisterSchemaRef(register: $this->testRegister->getId(), schema: $this->testSchema->getId()),
 			false
 		);
 

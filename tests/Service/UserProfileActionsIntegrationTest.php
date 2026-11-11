@@ -26,6 +26,7 @@ use OCP\IConfig;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\User\PasswordChange;
 
 /**
  * @group DB
@@ -70,10 +71,9 @@ class UserProfileActionsIntegrationTest extends TestCase {
 		// verify old password fails".
 		$newPassword = 'NewIntegPass2@'; // 14 chars — clears policy.
 
-		$result = $this->userService->changePassword(
+		$result = $this->userService->applyPasswordChange(
 			$this->testUser,
-			$this->initialPassword,
-			$newPassword
+			new PasswordChange($this->initialPassword, $newPassword)
 		);
 
 		$this->assertTrue($result['success']);
@@ -92,10 +92,9 @@ class UserProfileActionsIntegrationTest extends TestCase {
 		$this->expectException(\RuntimeException::class);
 		$this->expectExceptionMessage('Current password is incorrect');
 
-		$this->userService->changePassword(
+		$this->userService->applyPasswordChange(
 			$this->testUser,
-			'WrongCurrentPwd99!',
-			'NewIntegPass2@'
+			new PasswordChange('WrongCurrentPwd99!', 'NewIntegPass2@')
 		);
 	}
 
