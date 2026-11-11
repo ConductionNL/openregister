@@ -46,6 +46,8 @@ use OCA\OpenRegister\Notifications\Service\Notification\NoticeRule;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic;
 use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
@@ -738,14 +740,15 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function preferenceAllows(string $uid, string $channel): bool {
-		$effective = $this->recipients->preferences->resolveEffective(
-			schemaDefault: [
-				'enabled' => true,
-				'channels' => [$channel],
-			],
-			userId: $uid,
-			schemaSlug: self::PREFERENCE_SLUG,
-			notificationKey: self::PREFERENCE_KEY
+		$effective = $this->recipients->preferences->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: [
+					'enabled' => true,
+					'channels' => [$channel],
+				],
+				userId: $uid,
+				topic: new PreferenceTopic(schemaSlug: self::PREFERENCE_SLUG, notificationKey: self::PREFERENCE_KEY)
+			)
 		);
 
 		if ($effective['enabled'] === false) {
