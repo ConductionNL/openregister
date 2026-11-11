@@ -3249,3 +3249,28 @@ humaniq	1071	88f25d6d8702bed20ccfe866d081707b23ce686b	GREEN	FV9-08:4	tree of 23 
 humaniq	1072	d3996bb06bad53cfd69b310cd0f7deb0b0094f81	GREEN	FV9-08:4	tree of 23 green: phpunit 3679 ok, node tests 178 ok (0 inherited failures), floor held
 stackiq	1689	a7345f490b18a54e11ea029855584540d7355903	CONFLICT	FV9-01:5	conflicts with the tree on 2109923da7
 stackiq	1694	73b2b73077ce2ba34268f995d1989d530f314b9a	RED	FV9-01:5	unit tests fail beyond development: OCA\Stackiq\Tests\Unit\Service\CmdbExportImportServiceTest::testANewOwnerContactCarriesItsEmailAndRole (added test errors: OpenRegister PackDefinitionValidator is not available)
+dossiq	5962	2472452477059a13acc859fe482d451333704226	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5988	9314c69c2e1d036bc801274dfe07360449d049af	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5989	a0d1fb2708bab6552c3d94be300933b55297caac	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5990	9292e599dcf135dca2e2a18e3adeffb5f20e822e	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5991	f396111c0c0d79bbf7eaa45c4a17ff3a61bd5648	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5992	5d989dccf91aec15538483c093aaeb57f10e68c4	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5993	743cb05a0e23a2a2fbca2c3b5f1c8503bf062f34	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5994	bc693339ca2dbb690d8cda9d63fcdc0fa912dd9b	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5996	bd3348162cc55021d338d2ac1a06bc721481fe3e	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5997	4f02372bc42e5064e0174d5b1826a23a219a0f35	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5998	43b89ea766c58a1064b23d6cfe8704adaf67fd6a	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5999	f4945a28a71b60f4edbd597d17001c895d4dcf7c	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	6000	b994bafe4365fb1bc962793a5fe250aa5c13b987	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	6001	f4c7b66fd3f6de36fbb866f57d7e645c83e71632	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	6002	dbed86e8b9206a9794d88f4eed55d3cc68fcb454	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	6003	302e049a5283693514800ee301206de1577a9620	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	6004	d10bbc1cbf8023b6921ef4798dc9fbb20101fc67	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	6005	37d8c7148b1ba2a96dd6e171c9dce5aba69a3f26	CONFLICT	FV9-05:4	conflicts with tree in lib/Service/ZgwService.php 
+dossiq	6006	a29f3d47484e82f4359362baaa190c810d8ae2a7	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	6007	2963da2c44e5d8bbd781e709742d70755226eb05	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	6008	a0c174e9ae1a90243e43e9ead7c94384a4ccdcca	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	6009	fb37b07eedeed13fbde302d68f3d03347cba4237	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	6010	025d4986e47bb3c18faefae5b0ff9f28e91e5b83	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5845	f978eca2992f851c4dfa18860b1db0a2a12d0a58	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5846	6f3729b32842bfce1411a7ec9299df70eb3479bc	GREEN	FV9-05:4	tree green on php+js unit suites (48 inherited php failures), floor held
