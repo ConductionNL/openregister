@@ -203,7 +203,7 @@ class DraftActivationTest extends TestCase {
 	 * @param int                    $_depth      Unused.
 	 * @param array<string, string>  $notSupplied Excused properties.
 	 */
-	private function opisValidate(array $object, Schema|int|string|null $schema = null, object $schemaObject = new \stdClass(), int $_depth = 0, array $notSupplied = []): ValidationResult {
+	private function opisValidate(array $object, Schema|int|string|null $schema = null, object $schemaObject = new \stdClass(), array $notSupplied = []): ValidationResult {
 		$this->assertInstanceOf(Schema::class, $schema);
 		$properties = [];
 		foreach ($schema->getProperties() as $name => $property) {

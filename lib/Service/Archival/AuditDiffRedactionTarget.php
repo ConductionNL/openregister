@@ -74,7 +74,7 @@ final class AuditDiffRedactionTarget {
 	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md
 	 */
 	public function redact(array $changed, array $changedProperties): array {
-		$targets = array_flip($changedProperties);
+		$targets  = array_flip($changedProperties);
 		$redacted = [];
 
 		foreach ($changed as $property => $entry) {
@@ -84,24 +84,34 @@ final class AuditDiffRedactionTarget {
 				continue;
 			}
 
-			if (is_array($entry) === false) {
-				$redacted[$name] = self::REDACTED;
-				continue;
-			}
-
-			// Both sides. Keeping `old` because only `new` matched the payload
-			// is how the name survives: the value a record used to hold is the
-			// value being removed.
-			$rewritten = $entry;
-			foreach (array_keys($entry) as $side) {
-				$rewritten[$side] = self::REDACTED;
-			}
-
-			$redacted[$name] = $rewritten;
-		}//end foreach
+			$redacted[$name] = $this->redactedEntry(entry: $entry);
+		}
 
 		return $redacted;
 	}//end redact()
+
+	/**
+	 * One diff entry with every side replaced by the redaction marker.
+	 *
+	 * @param mixed $entry The entry: an `{old, new}` pair, or a bare value.
+	 *
+	 * @return mixed The redacted entry.
+	 */
+	private function redactedEntry(mixed $entry): mixed {
+		if (is_array($entry) === false) {
+			return self::REDACTED;
+		}
+
+		// Both sides. Keeping `old` because only `new` matched the payload
+		// is how the name survives: the value a record used to hold is the
+		// value being removed.
+		$rewritten = $entry;
+		foreach (array_keys($entry) as $side) {
+			$rewritten[$side] = self::REDACTED;
+		}
+
+		return $rewritten;
+	}//end redactedEntry()
 
 	/**
 	 * The entry that records the act itself.
@@ -146,18 +156,33 @@ final class AuditDiffRedactionTarget {
 
 		$found = [];
 		foreach ($removed as $value) {
-			if (is_scalar($value) === false) {
-				continue;
+			$text = $this->survivingText(value: $value, serialised: $serialised);
+			if ($text !== null) {
+				$found[] = $text;
 			}
-
-			$text = trim((string)$value);
-			if ($text === '' || str_contains($serialised, $text) === false) {
-				continue;
-			}
-
-			$found[] = $text;
 		}
 
 		return $found;
 	}//end leftovers()
+
+	/**
+	 * A removed value, as text, when it still appears in the redacted diff.
+	 *
+	 * @param mixed  $value      A removed value.
+	 * @param string $serialised The redacted diff, serialised.
+	 *
+	 * @return string|null The surviving text, or null when the value is gone (or not text).
+	 */
+	private function survivingText(mixed $value, string $serialised): ?string {
+		if (is_scalar($value) === false) {
+			return null;
+		}
+
+		$text = trim((string)$value);
+		if ($text === '' || str_contains($serialised, $text) === false) {
+			return null;
+		}
+
+		return $text;
+	}//end survivingText()
 }//end class

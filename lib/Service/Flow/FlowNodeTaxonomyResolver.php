@@ -44,6 +44,13 @@ use Psr\Log\LoggerInterface;
 class FlowNodeTaxonomyResolver {
 
 	/**
+	 * The warning for a declaration outside the vocabulary: node, field, value, vocabulary, fallback.
+	 *
+	 * @var string
+	 */
+	private const UNKNOWN_VALUE = '[FlowNodeTaxonomyResolver] The node "%s" declared the %s "%s", which is not one of: %s. Serving "%s".';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Where a declaration outside the vocabulary is reported.
@@ -174,33 +181,21 @@ class FlowNodeTaxonomyResolver {
 	 * @spec openspec/changes/flow-node-taxonomy/specs/flow-node-taxonomy/spec.md#requirement-both-are-optional-and-a-node-that-declares-neither-still-works
 	 */
 	private function declared(IFlowNode $node, FlowTaxonomyVocabulary $vocabulary): string {
-		$declaration = $vocabulary->declaration;
-		$allowed     = $vocabulary->allowed;
-		$fallback    = $vocabulary->fallback;
-		$what        = $vocabulary->what;
-
 		if (($node instanceof IFlowNodeTaxonomy) === false) {
-			return $fallback;
+			return $vocabulary->fallback;
 		}
 
-		$value = (string)$declaration($node);
-		if (in_array($value, $allowed, true) === true) {
+		$value = (string)($vocabulary->declaration)($node);
+		if (in_array($value, $vocabulary->allowed, true) === true) {
 			return $value;
 		}
 
 		$this->logger->warning(
-			message: sprintf(
-				'[FlowNodeTaxonomyResolver] The node "%s" declared the %s "%s", which is not one of: %s. Serving "%s".',
-				$node->getId(),
-				$what,
-				$value,
-				implode(', ', $allowed),
-				$fallback
-			),
+			message: sprintf(self::UNKNOWN_VALUE, $node->getId(), $vocabulary->what, $value, implode(', ', $vocabulary->allowed), $vocabulary->fallback),
 			context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $node->getId()]
 		);
 
-		return $fallback;
+		return $vocabulary->fallback;
 
 	}//end declared()
 }//end class

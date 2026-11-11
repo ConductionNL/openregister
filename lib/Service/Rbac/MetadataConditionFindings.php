@@ -90,15 +90,14 @@ class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function assertRegisterSavable(Register $register, string $subject): void {
-		if ($this->findings(authorization: $register->getAuthorization(), context: $subject) === []) {
+		if ($this->findings(edit: new AuthorizationEdit(authorization: $register->getAuthorization()), context: $subject) === []) {
 			return;
 		}
 
 		$this->assertNone(
 			findings: $this->findings(
-				authorization: $register->getAuthorization(),
-				context: $subject,
-				stored: $this->stored->registerAuthorization(id: $register->getId())
+				edit: new AuthorizationEdit(authorization: $register->getAuthorization(), stored: $this->stored->registerAuthorization(id: $register->getId())),
+				context: $subject
 			)
 		);
 	}//end assertRegisterSavable()
@@ -112,18 +111,17 @@ class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 	 * a save can remove a bad rule or edit around one; only adding or changing one
 	 * is refused.
 	 *
-	 * @param array|null $authorization The block.
-	 * @param string     $context       What the block belongs to, for the message.
-	 * @param array|null $stored        The block as stored, when saving over one.
+	 * @param AuthorizationEdit $edit    The block and, when saving over one, the block as stored.
+	 * @param string            $context What the block belongs to, for the message.
 	 *
 	 * @return array<int, string> The findings; empty when every condition can match.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	public function findings(?array $authorization, string $context, ?array $stored = null): array {
+	public function findings(AuthorizationEdit $edit, string $context): array {
 		return array_map(
 			fn (array $condition): string => $this->findingFor(condition: $condition, context: $context),
-			$this->addedConditions(authorization: $authorization, stored: $stored)
+			$this->addedConditions(authorization: $edit->authorization, stored: $edit->stored)
 		);
 	}//end findings()
 
@@ -180,9 +178,9 @@ class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 	 */
 	public function schemaFindings(Schema $schema, ?Schema $stored = null): array {
 		$name = sprintf('schema "%s"', (string)($schema->getSlug() ?? $schema->getTitle() ?? $schema->getId()));
-		$findings = $this->findings(authorization: $schema->getAuthorization(), context: $name, stored: $stored?->getAuthorization());
+		$findings = $this->findings(edit: new AuthorizationEdit(authorization: $schema->getAuthorization(), stored: $stored?->getAuthorization()), context: $name);
 		foreach ($this->stored->propertyBlocks(save: new SchemaSave(schema: $schema, stored: $stored), name: $name) as $block) {
-			$findings = array_merge($findings, $this->findings(authorization: $block['authorization'], context: $block['context'], stored: $block['stored']));
+			$findings = array_merge($findings, $this->findings(edit: new AuthorizationEdit(authorization: $block['authorization'], stored: $block['stored']), context: $block['context']));
 		}
 
 		return $findings;
@@ -200,26 +198,44 @@ class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 	 */
 	private function unknownConditions(?array $authorization): array {
 		$conditions = [];
-		foreach ($this->ruleLists(authorization: $authorization) as $label => $rules) {
-			foreach ($rules as $rule) {
-				if (is_array($rule) === false || is_array(($rule['match'] ?? null)) === false) {
-					continue;
-				}
-
-				$principal = $this->principalOf(rule: $rule);
-				foreach ($this->conditions->unknownKeys(match: $rule['match']) as $key) {
-					$conditions[] = [
-						'label'       => $label,
-						'principal'   => $principal,
-						'key'         => $key,
-						'fingerprint' => $label.'|'.$principal.'|'.$key.'|'.json_encode($rule['match'][$key]),
-					];
-				}
+		foreach ($this->matchRules(authorization: $authorization) as $rule) {
+			foreach ($this->conditions->unknownKeys(match: $rule['match']) as $key) {
+				$conditions[] = [
+					'label'       => $rule['label'],
+					'principal'   => $rule['principal'],
+					'key'         => $key,
+					'fingerprint' => $rule['label'].'|'.$rule['principal'].'|'.$key.'|'.json_encode($rule['match'][$key]),
+				];
 			}
 		}
 
 		return $conditions;
 	}//end unknownConditions()
+
+	/**
+	 * Every rule of a block that carries a `match` object, with its rule list and principal.
+	 *
+	 * Shared with {@see UnknownRuleKeyFindings}, which fingerprints every key of
+	 * the same rules where this class fingerprints only the unknown metadata ones.
+	 *
+	 * @param array|null $authorization The block.
+	 *
+	 * @return array<int, array{label: int|string, principal: string, match: array<int|string, mixed>}> The rules, in block order.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function matchRules(?array $authorization): array {
+		$found = [];
+		foreach ($this->ruleLists(authorization: $authorization) as $label => $rules) {
+			foreach ($rules as $rule) {
+				if (is_array($rule) === true && is_array(($rule['match'] ?? null)) === true) {
+					$found[] = ['label' => $label, 'principal' => $this->principalOf(rule: $rule), 'match' => $rule['match']];
+				}
+			}
+		}
+
+		return $found;
+	}//end matchRules()
 
 	/**
 	 * Refuse a save that carries findings.

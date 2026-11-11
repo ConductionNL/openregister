@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Support;
 
 use Closure;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Builds findTrail() stubs from positional listing callbacks.

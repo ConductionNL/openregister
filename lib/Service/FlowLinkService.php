@@ -134,20 +134,46 @@ class FlowLinkService implements FlowLinkServiceInterface {
 		$user  = $this->requireLinkingAdmin();
 		$onRow = $this->requireUnlinkedOperation(objectUuid: $target->objectUuid, operationId: $operationId);
 
-		$link = new FlowLink();
-		$link->setObjectUuid($target->objectUuid);
-		$link->setRegisterId($target->registerId);
-		$link->setSchemaId($target->schemaId());
-		$link->setOperationId($operationId);
-		$link->setOperationClass((string)($onRow['class'] ?? ''));
-		$link->setOperationName((string)($onRow['name'] ?? ''));
-		$link->setEntityType((string)($onRow['entity'] ?? ''));
+		$link = self::newOperationLink(target: $target, operationId: $operationId);
+		self::describeOperation(link: $link, onRow: $onRow);
 		$link->setEnabled(true);
 		$link->setLinkedBy($user->getUID());
 		$link->setLinkedAt(new DateTime());
 
 		return $this->platform->flowLinkMapper->insert($link);
 	}//end linkOperation()
+
+	/**
+	 * A link row tying an operation to an object.
+	 *
+	 * @param LinkTarget $target      The object to link to.
+	 * @param int        $operationId The Flow operation id.
+	 *
+	 * @return FlowLink The unsaved link.
+	 */
+	private static function newOperationLink(LinkTarget $target, int $operationId): FlowLink {
+		$link = new FlowLink();
+		$link->setObjectUuid($target->objectUuid);
+		$link->setRegisterId($target->registerId);
+		$link->setSchemaId($target->schemaId());
+		$link->setOperationId($operationId);
+
+		return $link;
+	}//end newOperationLink()
+
+	/**
+	 * Copy an operation's class, name and entity onto its link row.
+	 *
+	 * @param FlowLink             $link  The link row.
+	 * @param array<string, mixed> $onRow The flow_operations row.
+	 *
+	 * @return void
+	 */
+	private static function describeOperation(FlowLink $link, array $onRow): void {
+		$link->setOperationClass((string)($onRow['class'] ?? ''));
+		$link->setOperationName((string)($onRow['name'] ?? ''));
+		$link->setEntityType((string)($onRow['entity'] ?? ''));
+	}//end describeOperation()
 
 	/**
 	 * The logged-in administrator, when Flow is available to link against.
@@ -262,8 +288,8 @@ class FlowLinkService implements FlowLinkServiceInterface {
 					// flag (operations are always "live" once configured);
 					// we just surface that the row still exists.
 					$row['enabled'] = true;
-					$row['events'] = $this->decodeJsonField(value: ($onRow['events'] ?? null));
-					$row['checks'] = $this->decodeJsonField(value: ($onRow['checks'] ?? null));
+					$row['events'] = FlowJsonColumn::decode(value: ($onRow['events'] ?? null));
+					$row['checks'] = FlowJsonColumn::decode(value: ($onRow['checks'] ?? null));
 					$row['operation'] = (string)($onRow['operation'] ?? '');
 				}
 			}//end if
@@ -325,23 +351,34 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 */
 	private function operationRows(string $search): array {
 		try {
-			$qb = $this->platform->db->getQueryBuilder();
-			$qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
-				->from('flow_operations')
-				->orderBy('id', 'DESC');
-
-			if ($search !== '') {
-				$qb->andWhere(
-					$qb->expr()->iLike('name', $qb->createNamedParameter('%' . $search . '%'))
-				);
-			}
-
-			return $qb->executeQuery()->fetchAll();
+			return $this->operationsQuery(search: $search)->executeQuery()->fetchAll();
 		} catch (Throwable $e) {
 			$this->logger->warning('FlowLinkService::getAvailableOperations failed: ' . $e->getMessage());
 			return [];
 		}
 	}//end operationRows()
+
+	/**
+	 * The query for the Flow operations, newest first, optionally by name.
+	 *
+	 * @param string $search A name substring, or '' for all.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function operationsQuery(string $search): IQueryBuilder {
+		$qb = $this->platform->db->getQueryBuilder();
+		$qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
+			->from('flow_operations')
+			->orderBy('id', 'DESC');
+
+		if ($search !== '') {
+			$qb->andWhere(
+				$qb->expr()->iLike('name', $qb->createNamedParameter('%' . $search . '%'))
+			);
+		}
+
+		return $qb;
+	}//end operationsQuery()
 
 	/**
 	 * One picker entry of a `flow_operations` row.
@@ -357,8 +394,8 @@ class FlowLinkService implements FlowLinkServiceInterface {
 			'class' => (string)($row['class'] ?? ''),
 			'entity' => (string)($row['entity'] ?? ''),
 			'operation' => (string)($row['operation'] ?? ''),
-			'events' => $this->decodeJsonField(value: ($row['events'] ?? null)),
-			'checks' => $this->decodeJsonField(value: ($row['checks'] ?? null)),
+			'events' => FlowJsonColumn::decode(value: ($row['events'] ?? null)),
+			'checks' => FlowJsonColumn::decode(value: ($row['checks'] ?? null)),
 			'enabled' => true,
 		];
 	}//end pickerRow()
@@ -388,42 +425,4 @@ class FlowLinkService implements FlowLinkServiceInterface {
 			return null;
 		}
 	}//end fetchOperationRow()
-
-	/**
-	 * Decode a JSON-serialised array column (`events`, `checks`).
-	 *
-	 * NC Flow stores these as JSON strings. We tolerate both null and
-	 * already-decoded arrays so callers can pass raw row values.
-	 *
-	 * @param mixed $value Raw column value.
-	 *
-	 * @return array<int,mixed>
-	 */
-	private function decodeJsonField(mixed $value): array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		if (is_string($value) === false || $value === '') {
-			return [];
-		}
-
-		return $this->decodeJsonText(text: $value);
-	}//end decodeJsonField()
-
-	/**
-	 * Decode JSON text to an array; [] when it is not a JSON array or object.
-	 *
-	 * @param string $text The JSON text.
-	 *
-	 * @return array<int|string,mixed>
-	 */
-	private function decodeJsonText(string $text): array {
-		$decoded = json_decode($text, true);
-		if (is_array($decoded) === true) {
-			return $decoded;
-		}
-
-		return [];
-	}//end decodeJsonText()
 }//end class

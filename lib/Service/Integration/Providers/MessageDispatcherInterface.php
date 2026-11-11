@@ -32,14 +32,13 @@ interface MessageDispatcherInterface {
 	/**
 	 * Dispatch one message.
 	 *
-	 * @param string               $source  The seeded source slug to send through (one of ALLOWED_SOURCES).
-	 * @param array<string,mixed>  $body    The provider-shaped request body.
-	 * @param string               $path    Path relative to the source base URL.
-	 * @param array<string,string> $headers Optional extra request headers.
+	 * @param string          $source  The seeded source slug to send through (one of ALLOWED_SOURCES).
+	 * @param OutboundMessage $message The path relative to the source base URL, the provider-shaped body
+	 *                                 and optional extra request headers.
 	 *
 	 * @return array<string,mixed> `{ status: 'sent', response }` on success, or `{ unavailable: true, cause }`.
 	 *
 	 * @spec openspec/specs/integration-message-dispatch/spec.md
 	 */
-	public function dispatch(string $source, array $body, string $path, array $headers = []): array;
+	public function dispatch(string $source, OutboundMessage $message): array;
 }//end interface

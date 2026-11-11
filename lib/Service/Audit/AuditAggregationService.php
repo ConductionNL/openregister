@@ -161,39 +161,60 @@ class AuditAggregationService implements AuditAggregationServiceInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function fold(array $previous, array $incoming): array {
-		$aggregation = ($previous['aggregation'] ?? null);
-		$edits = 1;
-		if (is_array($aggregation) === true && is_numeric($aggregation['edits'] ?? null) === true) {
-			$edits = (int)$aggregation['edits'];
-		}
+		$edits = $this->editCount(previous: $previous);
 
 		unset($previous['aggregation'], $incoming['aggregation']);
 
 		$merged = $previous;
 		foreach ($incoming as $property => $change) {
-			$existing = ($merged[$property] ?? null);
-
-			// A property this entry has not seen before joins as it arrived.
-			if (is_array($existing) === false || array_key_exists('old', $existing) === false) {
-				$merged[$property] = $change;
-				continue;
-			}
-
-			if (is_array($change) === false || array_key_exists('new', $change) === false) {
-				continue;
-			}
-
-			// The first `old` is what the value was when the span began, and
-			// the last `new` is what it is now. Keeping the later `old` would
-			// describe a change nobody made.
-			$merged[$property] = [
-				'old' => $existing['old'],
-				'new' => $change['new'],
-			];
-		}//end foreach
+			$merged[$property] = $this->foldedChange(existing: ($merged[$property] ?? null), change: $change);
+		}
 
 		$merged['aggregation'] = ['edits' => ($edits + 1)];
 
 		return $merged;
 	}//end fold()
+
+	/**
+	 * The edits an entry already covers: its aggregation count, else one.
+	 *
+	 * @param array<string, mixed> $previous The stored entry's changed map.
+	 *
+	 * @return int The edit count.
+	 */
+	private function editCount(array $previous): int {
+		$aggregation = ($previous['aggregation'] ?? null);
+		if (is_array($aggregation) === true && is_numeric($aggregation['edits'] ?? null) === true) {
+			return (int)$aggregation['edits'];
+		}
+
+		return 1;
+	}//end editCount()
+
+	/**
+	 * One property after a fold: the span from the first old value to the last new one.
+	 *
+	 * @param mixed $existing The property's change in the stored entry, if any.
+	 * @param mixed $change   The property's incoming change.
+	 *
+	 * @return mixed The folded change.
+	 */
+	private function foldedChange(mixed $existing, mixed $change): mixed {
+		// A property this entry has not seen before joins as it arrived.
+		if (is_array($existing) === false || array_key_exists('old', $existing) === false) {
+			return $change;
+		}
+
+		if (is_array($change) === false || array_key_exists('new', $change) === false) {
+			return $existing;
+		}
+
+		// The first `old` is what the value was when the span began, and
+		// the last `new` is what it is now. Keeping the later `old` would
+		// describe a change nobody made.
+		return [
+			'old' => $existing['old'],
+			'new' => $change['new'],
+		];
+	}//end foldedChange()
 }//end class

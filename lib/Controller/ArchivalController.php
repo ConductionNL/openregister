@@ -37,6 +37,7 @@ use OCA\OpenRegister\Controller\Support\ArchivalControllerServices;
 use OCA\OpenRegister\Controller\Support\ArchivalNominationSubject;
 use OCA\OpenRegister\Controller\Support\ArchivalReviewAnswer;
 use OCA\OpenRegister\Controller\Support\ArchivalReviewEntry;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -341,11 +342,7 @@ class ArchivalController extends Controller {
 				statusCode: Http::STATUS_OK
 			);
 		} catch (Throwable $e) {
-			$this->logger->error('[ArchivalController] Could not read destruction list ' . $id . ': ' . $e->getMessage());
-			return new JSONResponse(
-				data: ['error' => 'Destruction list could not be read'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->unreadableList(id: $id, e: $e);
 		}//end try
 	}//end getDestructionList()
 
@@ -411,19 +408,7 @@ class ArchivalController extends Controller {
 				statusCode: Http::STATUS_OK
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ArchivalController] Failed to approve destruction list',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return new JSONResponse(
-				data: ['error' => 'Failed to approve destruction list: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->failedWrite(action: 'approve destruction list', e: $e, context: ['id' => $id]);
 		}//end try
 	}//end approveDestructionList()
 
@@ -440,19 +425,11 @@ class ArchivalController extends Controller {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function rejectDestructionList(string $id): JSONResponse {
-		$authCheck = $this->checkArchivistRole();
-		if ($authCheck !== null) {
-			return $authCheck;
-		}
-
 		$params = $this->request->getParams();
 		$reason = $params['reason'] ?? null;
-
-		if ($reason === null || trim($reason) === '') {
-			return new JSONResponse(
-				data: ['error' => 'Een reden voor afwijzing is verplicht'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+		$refusal = $this->requireArchivistWithReason(reason: $reason, missing: 'Een reden voor afwijzing is verplicht');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
@@ -466,19 +443,7 @@ class ArchivalController extends Controller {
 				statusCode: Http::STATUS_OK
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ArchivalController] Failed to reject destruction list',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'id' => $id,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return new JSONResponse(
-				data: ['error' => 'Failed to reject destruction list: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->failedWrite(action: 'reject destruction list', e: $e, context: ['id' => $id]);
 		}//end try
 	}//end rejectDestructionList()
 
@@ -493,36 +458,17 @@ class ArchivalController extends Controller {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function createLegalHold(): JSONResponse {
-		$authCheck = $this->checkArchivistRole();
-		if ($authCheck !== null) {
-			return $authCheck;
-		}
-
 		$params = $this->request->getParams();
 		$reason = $params['reason'] ?? null;
-
-		if ($reason === null || trim($reason) === '') {
-			return new JSONResponse(
-				data: ['error' => 'Een reden voor de bewaarplicht is verplicht'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+		$refusal = $this->requireArchivistWithReason(reason: $reason, missing: 'Een reden voor de bewaarplicht is verplicht');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
 			return $this->placeLegalHold(params: $params, reason: $reason);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[ArchivalController] Failed to create legal hold',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'exception' => $e->getMessage(),
-				]
-			);
-			return new JSONResponse(
-				data: ['error' => 'Failed to create legal hold: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->failedWrite(action: 'create legal hold', e: $e);
 		}//end try
 	}//end createLegalHold()
 
@@ -603,19 +549,11 @@ class ArchivalController extends Controller {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function releaseLegalHold(string $id): JSONResponse {
-		$authCheck = $this->checkArchivistRole();
-		if ($authCheck !== null) {
-			return $authCheck;
-		}
-
 		$params = $this->request->getParams();
 		$reason = $params['reason'] ?? null;
-
-		if ($reason === null || trim($reason) === '') {
-			return new JSONResponse(
-				data: ['error' => 'Een reden voor het opheffen van de bewaarplicht is verplicht'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+		$refusal = $this->requireArchivistWithReason(reason: $reason, missing: 'Een reden voor het opheffen van de bewaarplicht is verplicht');
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
@@ -881,13 +819,15 @@ class ArchivalController extends Controller {
 
 		$this->lists->save(list: $target->list, listData: $listData);
 
-		$this->auditMapper->createAuditTrailEntry(
-			$target->list,
-			'archival.review_assigned',
-			[
-				'entry' => $entryId,
-				'reviewer' => $reviewer,
-			]
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $target->list,
+				action: 'archival.review_assigned',
+				context: [
+					'entry' => $entryId,
+					'reviewer' => $reviewer,
+				]
+			)
 		);
 
 		return new JSONResponse(
@@ -959,11 +899,7 @@ class ArchivalController extends Controller {
 			$listData = (($list?->getObject()) ?? []);
 			$entry = $this->reviews->entry(listData: $listData, entryUuid: $entryId);
 		} catch (Throwable $e) {
-			$this->logger->error('[ArchivalController] Could not read destruction list ' . $id . ': ' . $e->getMessage());
-			return new JSONResponse(
-				data: ['error' => 'Destruction list could not be read'],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->unreadableList(id: $id, e: $e);
 		}
 
 		if ($list === null) {
@@ -1041,14 +977,16 @@ class ArchivalController extends Controller {
 		$decisions = ($listData['decisions'] ?? []);
 		$decision = end($decisions);
 
-		$this->auditMapper->createAuditTrailEntry(
-			$target->list,
-			'archival.review_decided',
-			[
-				'entry' => $target->entryId,
-				'answer' => $answer->answer,
-				'reviewer' => $userId,
-			]
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $target->list,
+				action: 'archival.review_decided',
+				context: [
+					'entry' => $target->entryId,
+					'answer' => $answer->answer,
+					'reviewer' => $userId,
+				]
+			)
 		);
 
 		return new JSONResponse(
@@ -1275,14 +1213,16 @@ class ArchivalController extends Controller {
 			);
 		}//end try
 
-		$this->auditMapper->createAuditTrailEntry(
-			$object,
-			'archival.nomination_recomputed',
-			[
-				'status' => ($nomination['status'] ?? null),
-				'rule' => ($nomination['rule'] ?? null),
-				'reason' => $reason,
-			]
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $object,
+				action: 'archival.nomination_recomputed',
+				context: [
+					'status' => ($nomination['status'] ?? null),
+					'rule' => ($nomination['rule'] ?? null),
+					'reason' => $reason,
+				]
+			)
 		);
 
 		return new JSONResponse(
@@ -1334,4 +1274,63 @@ class ArchivalController extends Controller {
 
 		return null;
 	}//end checkArchivistRole()
+
+	/**
+	 * Refuse a caller who is not an archivist, then a missing or blank reason.
+	 *
+	 * @param mixed  $reason  The reason as sent.
+	 * @param string $missing The 400 message for a missing or blank reason.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the request may proceed.
+	 */
+	private function requireArchivistWithReason(mixed $reason, string $missing): ?JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
+
+		if ($reason === null || trim($reason) === '') {
+			return new JSONResponse(data: ['error' => $missing], statusCode: Http::STATUS_BAD_REQUEST);
+		}
+
+		return null;
+	}//end requireArchivistWithReason()
+
+	/**
+	 * Log a failed archival write and answer 500 naming it.
+	 *
+	 * @param string               $action  What failed, after "Failed to ".
+	 * @param \Exception           $e       The failure.
+	 * @param array<string, mixed> $context Log context between the line and the exception.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function failedWrite(string $action, \Exception $e, array $context = []): JSONResponse {
+		$this->logger->error(
+			message: '[ArchivalController] Failed to ' . $action,
+			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context, ['exception' => $e->getMessage()])
+		);
+
+		return new JSONResponse(
+			data: ['error' => 'Failed to ' . $action . ': ' . $e->getMessage()],
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end failedWrite()
+
+	/**
+	 * Log a destruction list that could not be read and answer 500.
+	 *
+	 * @param string    $id The destruction list uuid.
+	 * @param Throwable $e  The failure.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function unreadableList(string $id, Throwable $e): JSONResponse {
+		$this->logger->error('[ArchivalController] Could not read destruction list ' . $id . ': ' . $e->getMessage());
+
+		return new JSONResponse(
+			data: ['error' => 'Destruction list could not be read'],
+			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+		);
+	}//end unreadableList()
 }//end class

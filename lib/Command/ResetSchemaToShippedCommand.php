@@ -90,54 +90,115 @@ class ResetSchemaToShippedCommand extends Command {
 	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$schema = (string)$input->getArgument('schema');
-		$part = (string)$input->getArgument('part');
-		$apply = (bool)$input->getOption('apply');
+		$run = new ResetToShippedRun(input: $input, output: $output);
 
 		try {
-			if ($apply === false) {
-				$preview = $this->reset->preview(schema: $schema, path: $part);
-				$this->describe(output: $output, outcome: $preview);
-				if ($preview['applicable'] === false) {
-					$output->writeln('<comment>Nothing to reset: ' . $preview['reason'] . '</comment>');
-					return Command::FAILURE;
-				}
-
-				$output->writeln('<comment>Nothing written. Run again with --apply --actor=ADMIN_UID to reset.</comment>');
-				return Command::SUCCESS;
+			if ((bool)$input->getOption('apply') === false) {
+				return $this->showPreview(run: $run);
 			}
 
-			$actor = trim((string)($input->getOption('actor') ?? ''));
-			$user = null;
-			if ($actor !== '') {
-				$user = $this->users->get($actor);
-			}
-
-			if ($user === null || $this->groups->isAdmin($user->getUID()) === false) {
-				$output->writeln('<error>--apply needs --actor=UID of an administrator; the reset is recorded under that name.</error>');
-				return Command::FAILURE;
-			}
-
-			$this->actAs(user: $user);
-			try {
-				$outcome = $this->reset->reset(schema: $schema, path: $part);
-			} finally {
-				$this->actAs(user: null);
-			}
+			$outcome = $this->applyReset(run: $run);
 		} catch (Throwable $e) {
 			$output->writeln('<error>' . $e->getMessage() . '</error>');
 			return Command::FAILURE;
 		}
 
-		$this->describe(output: $output, outcome: $outcome);
-		if ($outcome['applied'] === false) {
-			$output->writeln('<error>Not reset: ' . $outcome['reason'] . '</error>');
+		return $this->reportReset(run: $run, outcome: $outcome);
+	}//end execute()
+
+	/**
+	 * Show what the reset would change, without writing anything.
+	 *
+	 * @param ResetToShippedRun $run The run.
+	 *
+	 * @return int FAILURE when the part has nothing to reset, SUCCESS otherwise.
+	 *
+	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 */
+	private function showPreview(ResetToShippedRun $run): int {
+		$preview = $this->reset->preview(schema: $run->schema(), path: $run->part());
+		$this->describe(output: $run->output, outcome: $preview);
+		if ($preview['applicable'] === false) {
+			$run->output->writeln('<comment>Nothing to reset: ' . $preview['reason'] . '</comment>');
 			return Command::FAILURE;
 		}
 
-		$output->writeln(sprintf('<info>Reset %s of %s to the shipped value, recorded under %s.</info>', $part, $outcome['schema'], $actor));
+		$run->output->writeln('<comment>Nothing written. Run again with --apply --actor=ADMIN_UID to reset.</comment>');
 		return Command::SUCCESS;
-	}//end execute()
+	}//end showPreview()
+
+	/**
+	 * Reset the part as the named administrator, or refuse when --actor names none.
+	 *
+	 * @param ResetToShippedRun $run The run.
+	 *
+	 * @return array<string, mixed>|null The outcome, or null after printing the refusal.
+	 *
+	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 */
+	private function applyReset(ResetToShippedRun $run): ?array {
+		$user = $this->administrator(actor: $run->actor());
+		if ($user === null) {
+			$run->output->writeln('<error>--apply needs --actor=UID of an administrator; the reset is recorded under that name.</error>');
+			return null;
+		}
+
+		$this->actAs(user: $user);
+		try {
+			return $this->reset->reset(schema: $run->schema(), path: $run->part());
+		} finally {
+			$this->actAs(user: null);
+		}
+	}//end applyReset()
+
+	/**
+	 * The administrator --actor names, or null when it names nobody or a non-administrator.
+	 *
+	 * @param string $actor The trimmed --actor uid.
+	 *
+	 * @return IUser|null The administrator.
+	 *
+	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 */
+	private function administrator(string $actor): ?IUser {
+		if ($actor === '') {
+			return null;
+		}
+
+		$user = $this->users->get($actor);
+		if ($user === null || $this->groups->isAdmin($user->getUID()) === false) {
+			return null;
+		}
+
+		return $user;
+	}//end administrator()
+
+	/**
+	 * Print the outcome of an applied reset and pick the exit code.
+	 *
+	 * @param ResetToShippedRun         $run     The run.
+	 * @param array<string, mixed>|null $outcome The reset's outcome, or null when it was refused.
+	 *
+	 * @return int FAILURE when the reset was refused or the part was not reset, SUCCESS otherwise.
+	 *
+	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 */
+	private function reportReset(ResetToShippedRun $run, ?array $outcome): int {
+		if ($outcome === null) {
+			return Command::FAILURE;
+		}
+
+		$this->describe(output: $run->output, outcome: $outcome);
+		if ($outcome['applied'] === false) {
+			$run->output->writeln('<error>Not reset: ' . $outcome['reason'] . '</error>');
+			return Command::FAILURE;
+		}
+
+		$run->output->writeln(
+			sprintf('<info>Reset %s of %s to the shipped value, recorded under %s.</info>', $run->part(), $outcome['schema'], $run->actor())
+		);
+		return Command::SUCCESS;
+	}//end reportReset()
 
 	/**
 	 * Act as the named administrator for the reset, and as nobody after it.

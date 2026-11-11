@@ -276,33 +276,56 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function refusedRecipients(ReachedView $reached, AlertRecipientChange $change): array {
-		$view     = $reached->view;
-		$reach    = $reached->reach;
 		$declared = ($change->alert['recipients'] ?? []);
 		if (is_array($declared) === false) {
 			return [];
 		}
 
-		$mayAdminister = $this->shares()->mayAdministerAs(view: $view, reach: $reach);
-
-		$refused = [];
-		foreach ($declared as $recipient) {
-			if (is_string($recipient) === false || in_array($recipient, $change->previous, true) === true) {
-				continue;
-			}
-
-			$allowed = ($recipient === ViewAlert::USER_PREFIX.$reach->userId);
-			if ($mayAdminister === true) {
-				$allowed = $this->recipientReads(view: $view, recipient: $recipient);
-			}
-
-			if ($allowed === false) {
-				$refused[] = $recipient;
-			}
-		}
+		$refused = $this->refusedAmong(recipients: self::newRecipients(declared: $declared, previous: $change->previous), reached: $reached);
 
 		return array_values(array_unique($refused));
 	}//end refusedRecipients()
+
+	/**
+	 * The declared recipients that are strings and not already on the stored alert, in order.
+	 *
+	 * @param array<int, mixed>  $declared The declared recipients.
+	 * @param array<int, string> $previous The recipients on the stored alert.
+	 *
+	 * @return array<int, string> The recipients to judge.
+	 */
+	private static function newRecipients(array $declared, array $previous): array {
+		$new = [];
+		foreach ($declared as $recipient) {
+			if (is_string($recipient) === true && in_array($recipient, $previous, true) === false) {
+				$new[] = $recipient;
+			}
+		}
+
+		return $new;
+	}//end newRecipients()
+
+	/**
+	 * The recipients this caller may not add: for the owner or an administrator those the view
+	 * does not reach, for anyone else everybody but themselves.
+	 *
+	 * @param array<int, string> $recipients The recipients to judge.
+	 * @param ReachedView        $reached    The view as it will be saved and the caller's reach.
+	 *
+	 * @return array<int, string> The refused recipients.
+	 */
+	private function refusedAmong(array $recipients, ReachedView $reached): array {
+		if ($this->shares()->mayAdministerAs(view: $reached->view, reach: $reached->reach) === true) {
+			return array_filter(
+				$recipients,
+				fn (string $recipient): bool => $this->recipientReads(view: $reached->view, recipient: $recipient) === false
+			);
+		}
+
+		$self = ViewAlert::USER_PREFIX.$reached->reach->userId;
+
+		return array_filter($recipients, static fn (string $recipient): bool => $recipient !== $self);
+	}//end refusedAmong()
 
 	/**
 	 * Whether a recipient, a `user:<uid>` or a group id, may read the view.
@@ -325,17 +348,26 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 			return false;
 		}
 
+		return $this->userReads(view: $view, uid: $uid);
+	}//end recipientReads()
+
+	/**
+	 * Whether one user may read the view: an administrator always, anyone else through the view's shares.
+	 *
+	 * A membership that cannot be read refuses the user.
+	 *
+	 * @param array<string, mixed> $view The view.
+	 * @param string               $uid  The user.
+	 *
+	 * @return bool True when the view reaches the user.
+	 */
+	private function userReads(array $view, string $uid): bool {
 		try {
 			if ($this->caller->groupManager->isAdmin($uid) === true) {
 				return true;
 			}
 
-			$groups = array_values(
-				array_filter(
-					$this->shares()->shareGroups(view: $view),
-					fn (string $gid): bool => $this->caller->groupManager->isInGroup($uid, $gid) === true
-				)
-			);
+			$groups = $this->shareGroupsOf(view: $view, uid: $uid);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[ViewerReachResolver] Could not read the groups of alert recipient {uid}; refusing it: {error}',
@@ -346,6 +378,25 @@ class ViewerReachResolver implements ViewerReachResolverInterface, ViewerReachCh
 		}
 
 		return $this->shares()->accessOf(view: $view, reach: new ViewerReach(userId: $uid, groups: $groups, isAdmin: false)) !== null;
-	}//end recipientReads()
+	}//end userReads()
+
+	/**
+	 * The view's share groups the user is a member of.
+	 *
+	 * @param array<string, mixed> $view The view.
+	 * @param string               $uid  The user.
+	 *
+	 * @return array<int, string> The group ids.
+	 *
+	 * @throws Throwable When a membership cannot be read.
+	 */
+	private function shareGroupsOf(array $view, string $uid): array {
+		return array_values(
+			array_filter(
+				$this->shares()->shareGroups(view: $view),
+				fn (string $gid): bool => $this->caller->groupManager->isInGroup($uid, $gid) === true
+			)
+		);
+	}//end shareGroupsOf()
 
 }//end class

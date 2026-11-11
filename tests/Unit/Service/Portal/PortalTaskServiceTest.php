@@ -24,8 +24,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Task\TaskAct;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
@@ -37,6 +39,7 @@ use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalTaskService;
 use OCA\OpenRegister\Service\Portal\PortalTaskSources;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -185,7 +188,10 @@ class PortalTaskServiceTest extends TestCase {
 		$this->openForRuns($task);
 		$this->files->expects($this->once())
 			->method('addFile')
-			->with('case-7', 'payslip.pdf', 'PDFBYTES', false, ['portal-task:t-1'], null, null, 3)
+			->with(
+				$this->callback(fn (FileTarget $target): bool => $target->object === 'case-7' && $target->registerId === 3),
+				$this->callback(fn (FileUpload $upload): bool => $upload->fileName === 'payslip.pdf' && $upload->content === 'PDFBYTES' && $upload->share === false && $upload->tags === ['portal-task:t-1'])
+			)
 			->willReturnCallback(
 				function (): File {
 					$this->trace[] = 'store';
@@ -194,9 +200,10 @@ class PortalTaskServiceTest extends TestCase {
 				}
 			);
 		$this->tasks->expects($this->once())
-			->method('complete')
+			->method('completeWithAnswer')
 			->willReturnCallback(
-				function (string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor, ?array $responses, ?array $evidence) use ($task): Task {
+				function (string $uuid, TaskAnswer $answer, ?string $actor) use ($task): Task {
+					[$outcome, $resultText, $comment, $responses, $evidence] = [$answer->outcome, $answer->resultText, $answer->comment, $answer->payload->responses, $answer->payload->evidence];
 					$this->trace[] = 'record';
 					$this->assertSame('t-1', $uuid);
 					$this->assertSame('submitted', $outcome);
@@ -230,7 +237,7 @@ class PortalTaskServiceTest extends TestCase {
 		$task = $this->task();
 		$this->openForRuns($task);
 		$this->files->expects($this->never())->method('addFile');
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		try {
 			$this->service->complete(
@@ -259,7 +266,7 @@ class PortalTaskServiceTest extends TestCase {
 		// No party resolver is consulted at completion at all: the service has
 		// none, and the mapper/object store is never asked for the case.
 		$this->mapper->expects($this->never())->method('findByUuid');
-		$this->tasks->method('complete')->willReturn($task);
+		$this->tasks->method('completeWithAnswer')->willReturn($task);
 
 		try {
 			$this->service->complete(subject: new PortalSubject(subjectRef: 'party-b'), uuid: 't-1');
@@ -305,7 +312,7 @@ class PortalTaskServiceTest extends TestCase {
 	 */
 	public function testUploadConstraintsRefuseNamingTheConstraintBeforeAnythingIsStored(): void {
 		$this->files->expects($this->never())->method('addFile');
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 		$subject = new PortalSubject(subjectRef: 'bsn-1');
 		$pdf = ['name' => 'a.pdf', 'type' => 'application/pdf', 'size' => 100, 'content' => 'x'];
 
@@ -459,7 +466,7 @@ class PortalTaskServiceTest extends TestCase {
 		$task->setMetadata(array_merge($task->getMetadata(), [PortalTaskService::COMPLETE_VIA => ['app' => 'dossiq', 'action' => 'completeChecklistTask']]));
 		$this->openForRuns($task);
 		$this->files->expects($this->never())->method('addFile');
-		$this->tasks->expects($this->once())->method('complete')->willReturn($task);
+		$this->tasks->expects($this->once())->method('completeWithAnswer')->willReturn($task);
 
 		try {
 			$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1', completion: new PortalCompletion(files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']]));
@@ -517,7 +524,7 @@ class PortalTaskServiceTest extends TestCase {
 		$blocker->setIsTerminal(false);
 		$this->mapper->method('findByUuid')->with('t-blocker')->willReturn($blocker);
 		$this->files->expects($this->never())->method('addFile');
-		$this->tasks->expects($this->never())->method('complete');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
 
 		$this->expectException(DoesNotExistException::class);
 		$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1');
@@ -536,7 +543,7 @@ class PortalTaskServiceTest extends TestCase {
 		$blocker->setUuid('t-blocker');
 		$blocker->setIsTerminal(true);
 		$this->mapper->method('findByUuid')->willReturn($blocker);
-		$this->tasks->expects($this->once())->method('complete')->willReturn($task);
+		$this->tasks->expects($this->once())->method('completeWithAnswer')->willReturn($task);
 
 		$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1');
 	}//end testATaskWhoseBlockerIsClosedIsCompletedAsBefore()

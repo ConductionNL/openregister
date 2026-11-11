@@ -59,9 +59,36 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 <script>
 import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
 import { confirmDialogState } from '../shared/confirmDialogState.js'
+import { deletionAnswer } from './deletionAnswer.js'
 /**
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
+
+/**
+ * Ask the server to delete an audit trail entry; a refusal is thrown as an
+ * error carrying the server's reason.
+ *
+ * @param {number|string} id The entry id
+ * @return {Promise<void>}
+ */
+async function requestDeletion(id) {
+	const response = await fetch(
+		`/index.php/apps/openregister/api/audit-trails/${id}`,
+		{
+			method: 'DELETE',
+		},
+	)
+	await deletionAnswer(response)
+}
+
+/**
+ * The message for a deletion that failed without saying why.
+ *
+ * @return {string} The message
+ */
+function deletionFailedText() {
+	return t('openregister', 'An error occurred while deleting the audit trail')
+}
 
 export default {
 	name: 'DeleteAuditTrail',
@@ -83,36 +110,39 @@ export default {
 			this.loading = true
 
 			try {
-				const response = await fetch(
-					`/index.php/apps/openregister/api/audit-trails/${auditTrailStore.auditTrailItem.id}`,
-					{
-						method: 'DELETE',
-					},
-				)
-
-				const result = await response.json()
-
-				if (result.success) {
-					this.success = true
-					this.error = false
-					// Refresh the audit trail list
-					await auditTrailStore.refreshAuditTrailList()
-					// Auto-close after 2 seconds
-					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
-				} else {
-					throw new Error(result.error || 'Deletion failed')
-				}
+				await requestDeletion(auditTrailStore.auditTrailItem.id)
+				await this.showDeleted()
 			} catch (error) {
-				this.success = false
-				this.error =
-					error.message
-					|| t(
-						'openregister',
-						'An error occurred while deleting the audit trail',
-					)
+				this.showDeleteFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Say why the deletion failed.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showDeleteFailure(error) {
+			this.success = false
+			this.error = error.message || deletionFailedText()
+		},
+
+		/**
+		 * Say the entry was deleted, refresh the audit trail list and close
+		 * after two seconds.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async showDeleted() {
+			this.success = true
+			this.error = false
+			// Refresh the audit trail list
+			await auditTrailStore.refreshAuditTrailList()
+			// Auto-close after 2 seconds
+			this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 		},
 
 		/**

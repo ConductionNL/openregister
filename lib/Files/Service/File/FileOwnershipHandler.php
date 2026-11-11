@@ -86,42 +86,66 @@ class FileOwnershipHandler implements FileOwnershipHandlerInterface {
 		$openRegisterUser = $this->userManager->get(self::APP_USER);
 
 		if ($openRegisterUser === null) {
-			// Create OpenRegister user if it doesn't exist.
-			$password = bin2hex(random_bytes(16));
-			$openRegisterUser = $this->userManager->createUser(self::APP_USER, $password);
-
-			if ($openRegisterUser === false) {
-				throw new Exception('Failed to create OpenRegister user account.');
-			}
-
-			// Every object's file counts against this account, so it starts
-			// unlimited. An admin can still set a limit afterwards.
-			$openRegisterUser->setQuota('none');
-
-			// Add user to OpenRegister group.
-			$group = $this->groupManager->get(self::APP_GROUP);
-			if ($group === null) {
-				$group = $this->groupManager->createGroup(self::APP_GROUP);
-			}
-
-			// Get the current user from the session.
-			$currentUser = $this->userSession->getUser();
-
-			if ($group !== null && $openRegisterUser !== null) {
-				$group->addUser($openRegisterUser);
-				if ($currentUser !== null) {
-					$group->addUser($currentUser);
-				}
-			}
-
-			$this->logger->info(
-				message: '[FileOwnershipHandler] OpenRegister user created successfully',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}//end if
+			$openRegisterUser = $this->createSystemAccount();
+		}
 
 		return $openRegisterUser;
 	}//end getUser()
+
+	/**
+	 * Create the OpenRegister system account, unlimited and in the app group.
+	 *
+	 * @return IUser The new account.
+	 *
+	 * @throws Exception If the account cannot be created.
+	 */
+	private function createSystemAccount(): IUser {
+		// Create OpenRegister user if it doesn't exist.
+		$password = bin2hex(random_bytes(16));
+		$openRegisterUser = $this->userManager->createUser(self::APP_USER, $password);
+
+		if ($openRegisterUser === false) {
+			throw new Exception('Failed to create OpenRegister user account.');
+		}
+
+		// Every object's file counts against this account, so it starts
+		// unlimited. An admin can still set a limit afterwards.
+		$openRegisterUser->setQuota('none');
+
+		$this->joinAppGroup(account: $openRegisterUser);
+
+		$this->logger->info(
+			message: '[FileOwnershipHandler] OpenRegister user created successfully',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+
+		return $openRegisterUser;
+	}//end createSystemAccount()
+
+	/**
+	 * Add the new system account, and the signed-in user if any, to the OpenRegister group.
+	 *
+	 * @param IUser $account The new system account.
+	 *
+	 * @return void
+	 */
+	private function joinAppGroup(IUser $account): void {
+		// Add user to OpenRegister group.
+		$group = $this->groupManager->get(self::APP_GROUP);
+		if ($group === null) {
+			$group = $this->groupManager->createGroup(self::APP_GROUP);
+		}
+
+		// Get the current user from the session.
+		$currentUser = $this->userSession->getUser();
+
+		if ($group !== null) {
+			$group->addUser($account);
+			if ($currentUser !== null) {
+				$group->addUser($currentUser);
+			}
+		}
+	}//end joinAppGroup()
 
 	/**
 	 * Get the currently active user from the session.
@@ -161,6 +185,8 @@ class FileOwnershipHandler implements FileOwnershipHandlerInterface {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function transferFileOwnershipIfNeeded(File $file, ?FileSharingHandlerInterface $fileSharingHandler = null): void {
+		$transfer = new OwnershipTransferRun(node: $file, noun: 'file');
+		$transfer->sharing = $fileSharingHandler;
 		try {
 			// If the current user already has write rights on the file, leave ownership
 			// as-is. Files uploaded into the OpenRegister folder are already owned by the
@@ -168,71 +194,14 @@ class FileOwnershipHandler implements FileOwnershipHandlerInterface {
 			// folders outside the OpenRegister folder must keep their original owner — in
 			// neither case do we re-own. Re-owning remains only as a fallback for when the
 			// session cannot otherwise write the file.
-			if ($file->isUpdateable() === true) {
-				return;
+			if ($file->isUpdateable() === false) {
+				$this->transferIfCallerOwns(transfer: $transfer);
 			}
-
-			// Get current user.
-			$currentUser = $this->getCurrentUser();
-			if ($currentUser === null) {
-				// No user logged in, nothing to do.
-				return;
-			}
-
-			$currentUserId = $currentUser->getUID();
-
-			// Get OpenRegister system user.
-			$openRegisterUser = $this->getUser();
-			$openRegisterUserId = $openRegisterUser->getUID();
-
-			// If current user is already the OpenRegister user, nothing to do.
-			if ($currentUserId === $openRegisterUserId) {
-				return;
-			}
-
-			// Get file owner.
-			$fileOwner = $file->getOwner();
-			if ($fileOwner === null) {
-				$this->logger->warning(
-					message: "[FileOwnershipHandler] File {$file->getName()} has no owner, skipping ownership transfer"
-				);
-				return;
-			}
-
-			$fileOwnerId = $fileOwner->getUID();
-
-			// Re-own only when the current user owns the node. They are already known
-			// not to be the OpenRegister user (the equality case returned above).
-			if ($fileOwnerId === $currentUserId) {
-				$fileName = $file->getName();
-				$msg = '[FileOwnershipHandler] Transferring file ' . $fileName . ' from ' . $currentUserId;
-				$this->logger->info(
-					message: $msg . ' to ' . $openRegisterUserId
-				);
-
-				// Change file ownership to OpenRegister user.
-				$storage = $file->getStorage();
-				if (method_exists($storage, 'chown') === true) {
-					$storage->chown($file->getInternalPath(), $openRegisterUserId);
-				}
-
-				// Create a share with the current user to maintain access.
-				if ($fileSharingHandler !== null) {
-					$fileSharingHandler->shareFileWithUser(grant: new UserShareGrant(node: $file, userId: $currentUserId));
-				}
-
-				$this->logger->info(
-					message: "[FileOwnershipHandler] Successfully transferred and shared file {$fileName}"
-				);
-			}//end if
 		} catch (Exception $e) {
-			$errMsg = '[FileOwnershipHandler] Failed to transfer file ownership for ' . $file->getName();
-			$this->logger->error(
-				message: $errMsg . ': ' . $e->getMessage()
-			);
 			// Don't throw the exception to avoid breaking file operations.
 			// The file operation should succeed even if ownership transfer fails.
-		}//end try
+			$this->logTransferFailure(transfer: $transfer, error: $e);
+		}
 	}//end transferFileOwnershipIfNeeded()
 
 	/**
@@ -258,66 +227,138 @@ class FileOwnershipHandler implements FileOwnershipHandlerInterface {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function transferFolderOwnershipIfNeeded(Node $folder, ?FileSharingHandlerInterface $fileSharingHandler = null): void {
+		$transfer = new OwnershipTransferRun(node: $folder, noun: 'folder');
+		$transfer->sharing = $fileSharingHandler;
 		try {
-			// Get current user.
-			$currentUser = $this->getCurrentUser();
-			if ($currentUser === null) {
-				// No user logged in, nothing to do.
-				return;
-			}
-
-			$currentUserId = $currentUser->getUID();
-
-			// Get OpenRegister system user.
-			$openRegisterUser = $this->getUser();
-			$openRegisterUserId = $openRegisterUser->getUID();
-
-			// If current user is already the OpenRegister user, nothing to do.
-			if ($currentUserId === $openRegisterUserId) {
-				return;
-			}
-
-			// Get folder owner.
-			$folderOwner = $folder->getOwner();
-			if ($folderOwner === null) {
-				$this->logger->warning(
-					message: '[FileOwnershipHandler] Folder ' . $folder->getName() . ' has no owner, skipping ownership transfer'
-				);
-				return;
-			}
-
-			$folderOwnerId = $folderOwner->getUID();
-
-			// Check if current user is the owner and is not OpenRegister.
-			if ($folderOwnerId === $currentUserId && $currentUserId !== $openRegisterUserId) {
-				$folderName = $folder->getName();
-				$msg = '[FileOwnershipHandler] Transferring folder ' . $folderName . ' from ' . $currentUserId;
-				$this->logger->info(
-					message: $msg . ' to ' . $openRegisterUserId
-				);
-
-				// Change folder ownership to OpenRegister user.
-				$storage = $folder->getStorage();
-				if (method_exists($storage, 'chown') === true) {
-					$storage->chown($folder->getInternalPath(), $openRegisterUserId);
-				}
-
-				// Create a share with the current user to maintain access.
-				if ($fileSharingHandler !== null) {
-					$fileSharingHandler->shareFolderWithUser(grant: new UserShareGrant(node: $folder, userId: $currentUserId));
-				}
-
-				$this->logger->info(
-					message: "[FileOwnershipHandler] Successfully transferred and shared folder {$folderName}"
-				);
-			}//end if
+			$this->transferIfCallerOwns(transfer: $transfer);
 		} catch (Exception $e) {
-			$errMsg = '[FileOwnershipHandler] Failed to transfer folder ownership for ' . $folder->getName();
-			$this->logger->error(
-				message: $errMsg . ': ' . $e->getMessage()
-			);
 			// Don't throw the exception to avoid breaking folder operations.
 			// The folder operation should succeed even if ownership transfer fails.
-		}//end try
+			$this->logTransferFailure(transfer: $transfer, error: $e);
+		}
 	}//end transferFolderOwnershipIfNeeded()
+
+	/**
+	 * Re-own the node to the OpenRegister user when the signed-in caller (not the
+	 * OpenRegister user itself) owns it.
+	 *
+	 * @param OwnershipTransferRun $transfer The transfer; receives the two accounts.
+	 *
+	 * @return void
+	 */
+	private function transferIfCallerOwns(OwnershipTransferRun $transfer): void {
+		if ($this->resolveAccounts(transfer: $transfer) === false) {
+			return;
+		}
+
+		// Re-own only when the current user owns the node. They are already known
+		// not to be the OpenRegister user (the equality case returned above).
+		if ($this->ownerId(transfer: $transfer) === $transfer->currentUserId) {
+			$this->transferToOpenRegister(transfer: $transfer);
+		}
+	}//end transferIfCallerOwns()
+
+	/**
+	 * Record the caller's and the OpenRegister user's uids.
+	 *
+	 * @param OwnershipTransferRun $transfer The transfer; receives the two accounts.
+	 *
+	 * @return bool False when nobody is signed in or the caller is the OpenRegister user.
+	 */
+	private function resolveAccounts(OwnershipTransferRun $transfer): bool {
+		$currentUser = $this->getCurrentUser();
+		if ($currentUser === null) {
+			// No user logged in, nothing to do.
+			return false;
+		}
+
+		$transfer->currentUserId = $currentUser->getUID();
+		$transfer->openRegisterUserId = $this->getUser()->getUID();
+
+		// If current user is already the OpenRegister user, nothing to do.
+		return $transfer->currentUserId !== $transfer->openRegisterUserId;
+	}//end resolveAccounts()
+
+	/**
+	 * The node owner's uid; null (with a warning) when the node has no owner.
+	 *
+	 * @param OwnershipTransferRun $transfer The transfer.
+	 *
+	 * @return string|null
+	 */
+	private function ownerId(OwnershipTransferRun $transfer): ?string {
+		$owner = $transfer->node->getOwner();
+		if ($owner === null) {
+			$this->logger->warning(
+				message: '[FileOwnershipHandler] ' . ucfirst($transfer->noun) . ' ' . $transfer->node->getName() . ' has no owner, skipping ownership transfer'
+			);
+			return null;
+		}
+
+		return $owner->getUID();
+	}//end ownerId()
+
+	/**
+	 * Chown the node to the OpenRegister user and share it back to the caller.
+	 *
+	 * @param OwnershipTransferRun $transfer The transfer with both accounts known.
+	 *
+	 * @return void
+	 */
+	private function transferToOpenRegister(OwnershipTransferRun $transfer): void {
+		$name = $transfer->node->getName();
+		$msg = '[FileOwnershipHandler] Transferring ' . $transfer->noun . ' ' . $name . ' from ' . $transfer->currentUserId;
+		$this->logger->info(
+			message: $msg . ' to ' . $transfer->openRegisterUserId
+		);
+
+		// Change ownership to OpenRegister user.
+		$storage = $transfer->node->getStorage();
+		if (method_exists($storage, 'chown') === true) {
+			$storage->chown($transfer->node->getInternalPath(), $transfer->openRegisterUserId);
+		}
+
+		// Create a share with the current user to maintain access.
+		$this->shareBack(transfer: $transfer);
+
+		$this->logger->info(
+			message: "[FileOwnershipHandler] Successfully transferred and shared {$transfer->noun} {$name}"
+		);
+	}//end transferToOpenRegister()
+
+	/**
+	 * Share the node back to the caller, when a sharing handler was given.
+	 *
+	 * @param OwnershipTransferRun $transfer The transfer.
+	 *
+	 * @return void
+	 */
+	private function shareBack(OwnershipTransferRun $transfer): void {
+		if ($transfer->sharing === null) {
+			return;
+		}
+
+		$grant = new UserShareGrant(node: $transfer->node, userId: $transfer->currentUserId);
+		if ($transfer->isFile() === true) {
+			$transfer->sharing->shareFileWithUser(grant: $grant);
+			return;
+		}
+
+		$transfer->sharing->shareFolderWithUser(grant: $grant);
+	}//end shareBack()
+
+	/**
+	 * Log a failed transfer as an error.
+	 *
+	 * @param OwnershipTransferRun $transfer The transfer.
+	 * @param Exception            $error    The failure.
+	 *
+	 * @return void
+	 */
+	private function logTransferFailure(OwnershipTransferRun $transfer, Exception $error): void {
+		$errMsg = '[FileOwnershipHandler] Failed to transfer ' . $transfer->noun . ' ownership for ' . $transfer->node->getName();
+		$this->logger->error(
+			message: $errMsg . ': ' . $error->getMessage()
+		);
+	}//end logTransferFailure()
 }//end class

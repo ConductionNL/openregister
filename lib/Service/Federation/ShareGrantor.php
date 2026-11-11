@@ -93,6 +93,19 @@ class ShareGrantor implements ShareGrantorInterface {
 			return 'Sharing needs a signed-in user';
 		}
 
+		return $this->scopeRefusal(share: $share);
+	}//end refusal()
+
+	/**
+	 * Why a signed-in caller may not grant this share, by the share's scope.
+	 *
+	 * @param FederatedShare $share The share to grant, or one already granted.
+	 *
+	 * @return string|null The refusal, naming the right that is missing.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 */
+	private function scopeRefusal(FederatedShare $share): ?string {
 		if ($share->getScope() === 'register') {
 			return $this->registerRefusal(share: $share);
 		}
@@ -101,13 +114,28 @@ class ShareGrantor implements ShareGrantorInterface {
 			return $this->objectReadRefusal(share: $share);
 		}
 
+		return $this->schemaRefusal(share: $share);
+	}//end scopeRefusal()
+
+	/**
+	 * Why the caller may not grant a share that needs the schema's manage right.
+	 *
+	 * A schema share and an object share that writes both need it.
+	 *
+	 * @param FederatedShare $share The share to grant, or one already granted.
+	 *
+	 * @return string|null The refusal, or null when the caller manages the schema.
+	 *
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
+	 */
+	private function schemaRefusal(FederatedShare $share): ?string {
 		$schema = $this->targets->schema(share: $share);
 		if ($schema === null || $this->manageGate->mayManage(schema: $schema) === false) {
 			return 'This share needs the right to manage its schema';
 		}
 
 		return null;
-	}//end refusal()
+	}//end schemaRefusal()
 
 	/**
 	 * Why the caller may not change an existing share, or null when they may.

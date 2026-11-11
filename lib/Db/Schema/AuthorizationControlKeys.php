@@ -118,12 +118,7 @@ final class AuthorizationControlKeys {
 	private function validatesKnownKey(AuthorizationEntry $entry): bool {
 		$action = (string)$entry->key;
 		if (in_array($action, self::RESERVED_FLAGS, true) === true) {
-			if (is_bool($entry->value) === false) {
-				throw new InvalidAuthorizationRuleException(
-					message: "Authorization flag '{$action}' in {$entry->context} must be a boolean"
-				);
-			}
-
+			$this->requireBooleanFlag(entry: $entry);
 			return true;
 		}
 
@@ -134,6 +129,24 @@ final class AuthorizationControlKeys {
 
 		return $this->validatesAssignmentKey(entry: $entry);
 	}//end validatesKnownKey()
+
+	/**
+	 * Refuse a reserved flag whose value is not a boolean.
+	 *
+	 * @param AuthorizationEntry $entry The reserved flag.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidAuthorizationRuleException When the value is not a boolean.
+	 */
+	private function requireBooleanFlag(AuthorizationEntry $entry): void {
+		$action = (string)$entry->key;
+		if (is_bool($entry->value) === false) {
+			throw new InvalidAuthorizationRuleException(
+				message: "Authorization flag '{$action}' in {$entry->context} must be a boolean"
+			);
+		}
+	}//end requireBooleanFlag()
 
 	/**
 	 * Validate the role assignment or the reveal marker, when the key is one of them.

@@ -12,6 +12,7 @@ use OCA\OpenRegister\Controller\Support\ObjectShow;
 use OCA\OpenRegister\Controller\Support\ShowServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -204,8 +205,8 @@ class ObjectsControllerShowGoldenTest extends TestCase {
 				'ambiguous' => throw new MultipleObjectsReturnedException('two'),
 			};
 		});
-		$service->method('renderEntity')->willReturnCallback(function (...$args) use ($setup): array {
-			unset($args['entity'], $args[0]);
+		$service->method('renderEntity')->willReturnCallback(function (ObjectEntity $entity, ?RenderSelection $selection, bool $_rbac, bool $_multitenancy) use ($setup): array {
+			$args = [1 => $selection?->extend, 2 => 0, 3 => $selection?->filter, 4 => $selection?->fields, 5 => $selection?->unset, 6 => $_rbac, 7 => $_multitenancy];
 			$this->calls[] = ['render' => $args];
 			if (($setup['render'] ?? '') === 'denied') {
 				throw new NotAuthorizedException('denied');

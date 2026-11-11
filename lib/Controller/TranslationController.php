@@ -36,6 +36,7 @@ use OCA\OpenRegister\Controller\Support\TranslationFilter;
 use OCA\OpenRegister\Controller\Support\TranslationSearchOptions;
 use OCA\OpenRegister\Controller\Support\TranslationSearchRequest;
 use OCA\OpenRegister\Controller\Support\TranslationSlot;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -170,19 +171,7 @@ class TranslationController extends Controller {
 	 * @return array The rows.
 	 */
 	private function plainRows(TranslationFilter $filter, TranslationSearchOptions $options): array {
-		return $this->statusService->search(
-			new TranslationSearch(
-				filter: new RowFilter(
-					language: $filter->language,
-					status: $filter->status,
-					objectUuid: $filter->objectUuid,
-					sourceLanguage: $filter->sourceLanguage
-				),
-				query: $options->listing->search,
-				limit: $options->listing->limit,
-				isOutOfDate: $options->outdatedOnly()
-			)
-		);
+		return $this->statusService->search($this->translationSearch(filter: $filter, options: $options));
 	}//end plainRows()
 
 	/**
@@ -194,20 +183,30 @@ class TranslationController extends Controller {
 	 * @return array The rows.
 	 */
 	private function rowsWithSource(TranslationFilter $filter, TranslationSearchOptions $options): array {
-		return $this->statusService->searchWithSourceValues(
-			new TranslationSearch(
-				filter: new RowFilter(
-					language: $filter->language,
-					status: $filter->status,
-					objectUuid: $filter->objectUuid,
-					sourceLanguage: $filter->sourceLanguage
-				),
-				query: $options->listing->search,
-				limit: $options->listing->limit,
-				isOutOfDate: $options->outdatedOnly()
-			)
-		);
+		return $this->statusService->searchWithSourceValues($this->translationSearch(filter: $filter, options: $options));
 	}//end rowsWithSource()
+
+	/**
+	 * The search the filters and the listing ask for.
+	 *
+	 * @param TranslationFilter        $filter  The row filters.
+	 * @param TranslationSearchOptions $options The listing and the switches.
+	 *
+	 * @return TranslationSearch The search.
+	 */
+	private function translationSearch(TranslationFilter $filter, TranslationSearchOptions $options): TranslationSearch {
+		return new TranslationSearch(
+			filter: new RowFilter(
+				language: $filter->language,
+				status: $filter->status,
+				objectUuid: $filter->objectUuid,
+				sourceLanguage: $filter->sourceLanguage
+			),
+			query: $options->listing->search,
+			limit: $options->listing->limit,
+			isOutOfDate: $options->outdatedOnly()
+		);
+	}//end translationSearch()
 
 
 	/**
