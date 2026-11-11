@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\PortalTaskDeliveryMapper;
@@ -56,10 +57,16 @@ use Throwable;
 class TaskInboxService implements TaskInboxServiceInterface {
 
 	/**
+	 * The ONE overdue derivation: a pure function of a task and a clock, so it is built here, not injected.
+	 *
+	 * @var TaskTemporalProjection
+	 */
+	private readonly TaskTemporalProjection $temporal;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param TaskMapper $tasks The datastore queries.
-	 * @param TaskTemporalProjection $temporal The ONE overdue derivation.
 	 * @param LoggerInterface $logger Failure reporting.
 	 * @param MagicMapperInterface|null $objects Resolves subject objects for
 	 *                                           row context. Nullable so the
@@ -90,14 +97,13 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
-		private readonly TaskTemporalProjection $temporal,
 		private readonly LoggerInterface $logger,
 		private readonly ?MagicMapperInterface $objects = null,
 		private readonly ?PortalTaskDeliveryMapper $deliveries = null,
 		private readonly ?TaskSubjectLocator $locator = null,
 		private readonly ?TaskBlockerMapperInterface $blockers = null,
 	) {
-
+		$this->temporal = new TaskTemporalProjection();
 	}//end __construct()
 
 	/**
@@ -124,7 +130,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 			return $page->envelope(results: [], total: 0);
 		}
 
-		$tasks = $this->tasks->findInbox(criteria: $criteria, limit: $page->limit, offset: $page->offset);
+		$tasks = $this->tasks->findInbox(criteria: $criteria, page: new ListQuery(limit: $page->limit, offset: $page->offset));
 		$total = $this->tasks->countInbox(criteria: $criteria);
 		$subjects = $this->subjectContexts(tasks: $tasks);
 		$openBlockers = $this->openBlockers(tasks: $tasks);
@@ -132,7 +138,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 		$listing = new InboxListing(subjects: $subjects, now: $this->temporal->now(), openBlockers: $openBlockers);
 		$results = [];
 		foreach ($tasks as $task) {
-			$results[] = $this->rowIn(task: $task, listing: $listing);
+			$results[] = $this->row(task: $task, listing: $listing);
 		}
 
 		return $page->envelope(results: $results, total: $total);
@@ -143,34 +149,16 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * subject context, and a display title that is synthesized when the
 	 * stored title is null — and never written back.
 	 *
-	 * @param TaskInterface $task The task.
-	 * @param array<string, array<string, mixed>> $subjects Subject context by object uuid.
-	 * @param \DateTimeInterface $now The clock instant for the projection.
-	 * @param array<int, string>|null $openBlockers The page's blocker uuids that
-	 *                                              are still open; null asks
-	 *                                              for this task's own.
+	 * @param TaskInterface $task    The task.
+	 * @param InboxListing  $listing The subjects (context by object uuid), the clock instant for the
+	 *                               projection and the open blocker uuids the listing shares.
 	 *
 	 * @return array<string, mixed> The row.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	public function row(TaskInterface $task, array $subjects, \DateTimeInterface $now, ?array $openBlockers = null): array {
-		$openBlockers ??= $this->openBlockers(tasks: [$task]);
-
-		return $this->rowIn(task: $task, listing: new InboxListing(subjects: $subjects, now: $now, openBlockers: $openBlockers));
-	}//end row()
-
-	/**
-	 * One task's row in a listing, with the derived fields.
-	 *
-	 * @param TaskInterface $task The task.
-	 * @param InboxListing $listing The subjects, moment and open blockers the
-	 *                              listing shares.
-	 *
-	 * @return array<string, mixed> The row.
-	 */
-	private function rowIn(TaskInterface $task, InboxListing $listing): array {
+	public function row(TaskInterface $task, InboxListing $listing): array {
 		$row = $task->jsonSerialize();
 
 		// Derived, never stored: blocked while the named blocker is open.
@@ -184,7 +172,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 		}
 
 		return $row;
-	}//end rowIn()
+	}//end row()
 
 	/**
 	 * The subject context of a task, when the listing read one.
@@ -238,29 +226,43 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-tasks/spec.md#requirement-the-external-performer-type-is-portal-scoped-and-never-pooled
 	 */
 	public function deliveryState(TaskInterface $task): array {
-		$unknown = [
-			'state' => PortalTaskDelivery::STATE_NOT_RECORDED,
-			'channels' => [],
-			'requestedAt' => null,
-			'deliveredAt' => null,
-		];
-		if ($this->deliveries === null) {
-			return $unknown;
+		$rows = null;
+		if ($this->deliveries !== null) {
+			$rows = $this->deliveryRows(deliveries: $this->deliveries, task: $task);
 		}
 
+		if ($rows === null) {
+			return [
+				'state' => PortalTaskDelivery::STATE_NOT_RECORDED,
+				'channels' => [],
+				'requestedAt' => null,
+				'deliveredAt' => null,
+			];
+		}
+
+		return PortalTaskDelivery::summarise(rows: $rows);
+	}//end deliveryState()
+
+	/**
+	 * The task's recorded delivery rows, or null when they cannot be read.
+	 *
+	 * @param PortalTaskDeliveryMapper $deliveries The delivery store.
+	 * @param TaskInterface            $task       The task.
+	 *
+	 * @return array|null The rows, or null after logging why they could not be read.
+	 */
+	private function deliveryRows(PortalTaskDeliveryMapper $deliveries, TaskInterface $task): ?array {
 		try {
-			$rows = $this->deliveries->findForTask(taskUuid: (string)$task->getUuid());
+			return $deliveries->findForTask(taskUuid: (string)$task->getUuid());
 		} catch (Throwable $failure) {
 			$this->logger->debug(
 				'[TaskInboxService] Could not read delivery state: ' . $failure->getMessage(),
 				['task' => $task->getUuid()]
 			);
 
-			return $unknown;
+			return null;
 		}
-
-		return PortalTaskDelivery::summarise(rows: $rows);
-	}//end deliveryState()
+	}//end deliveryRows()
 
 	/**
 	 * Subject context for a set of tasks, for readers outside this service
@@ -291,7 +293,13 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-truth-flows-one-way-and-the-one-path-back-is-a-gate
 	 */
 	public function enrich(TaskInterface $task): array {
-		return $this->row(task: $task, subjects: $this->subjectContexts(tasks: [$task]), now: $this->temporal->now());
+		$listing = new InboxListing(
+			subjects: $this->subjectContexts(tasks: [$task]),
+			now: $this->temporal->now(),
+			openBlockers: $this->openBlockers(tasks: [$task])
+		);
+
+		return $this->row(task: $task, listing: $listing);
 	}//end enrich()
 
 	/**
@@ -307,14 +315,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	private function openBlockers(array $tasks): array {
-		$uuids = [];
-		foreach ($tasks as $task) {
-			$blockedBy = (string)$task->getBlockedBy();
-			if ($blockedBy !== '') {
-				$uuids[] = $blockedBy;
-			}
-		}
-
+		$uuids = self::blockerUuids(tasks: $tasks);
 		if ($uuids === [] || $this->blockers === null) {
 			return [];
 		}
@@ -327,6 +328,25 @@ class TaskInboxService implements TaskInboxServiceInterface {
 			return [];
 		}
 	}//end openBlockers()
+
+	/**
+	 * The uuids the tasks are blocked by, in task order, blanks left out.
+	 *
+	 * @param array<int, TaskInterface> $tasks The tasks.
+	 *
+	 * @return array<int, string> The blocker uuids.
+	 */
+	private static function blockerUuids(array $tasks): array {
+		$uuids = [];
+		foreach ($tasks as $task) {
+			$blockedBy = (string)$task->getBlockedBy();
+			if ($blockedBy !== '') {
+				$uuids[] = $blockedBy;
+			}
+		}
+
+		return $uuids;
+	}//end blockerUuids()
 
 	/**
 	 * Synthesize a display title for a titleless task — on read, never persisted.
@@ -352,17 +372,30 @@ class TaskInboxService implements TaskInboxServiceInterface {
 			$action = 'task';
 		}
 
-		$subjectName = trim((string)($subject['title'] ?? ''));
-		if ($subjectName === '') {
-			$subjectName = trim((string)$task->getObjectUuid());
-		}
-
+		$subjectName = self::subjectNameOf(task: $task, subject: $subject);
 		if ($subjectName === '') {
 			return ucfirst($action);
 		}
 
 		return sprintf('%s: %s', ucfirst($action), $subjectName);
 	}//end displayTitle()
+
+	/**
+	 * The name a derived title gives the subject: its title, else the task's object uuid.
+	 *
+	 * @param TaskInterface             $task    The task.
+	 * @param array<string, mixed>|null $subject The subject context, when one was read.
+	 *
+	 * @return string The name, or '' when neither is known.
+	 */
+	private static function subjectNameOf(TaskInterface $task, ?array $subject): string {
+		$subjectName = trim((string)($subject['title'] ?? ''));
+		if ($subjectName === '') {
+			return trim((string)$task->getObjectUuid());
+		}
+
+		return $subjectName;
+	}//end subjectNameOf()
 
 	/**
 	 * Resolve subject context for a page of tasks, in ONE batch.
@@ -378,6 +411,22 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function subjectContexts(array $tasks): array {
+		$uuids = self::subjectUuids(tasks: $tasks);
+		if ($uuids === [] || $this->objects === null) {
+			return [];
+		}
+
+		return $this->contextsOf(objects: $this->subjectObjects(tasks: $tasks, uuids: $uuids));
+	}//end subjectContexts()
+
+	/**
+	 * The distinct subject uuids of a page, in first-seen order.
+	 *
+	 * @param array<int, TaskInterface> $tasks The page.
+	 *
+	 * @return array<int, int|string> The uuids.
+	 */
+	private static function subjectUuids(array $tasks): array {
 		$uuids = [];
 		foreach ($tasks as $task) {
 			$objectUuid = trim((string)$task->getObjectUuid());
@@ -386,12 +435,19 @@ class TaskInboxService implements TaskInboxServiceInterface {
 			}
 		}
 
-		if ($uuids === [] || $this->objects === null) {
-			return [];
-		}
+		return array_keys($uuids);
+	}//end subjectUuids()
 
+	/**
+	 * The context of every subject object that yields one, by uuid.
+	 *
+	 * @param array<array-key, mixed> $objects The subject objects.
+	 *
+	 * @return array<string, array<string, mixed>> Context by object uuid.
+	 */
+	private function contextsOf(array $objects): array {
 		$contexts = [];
-		foreach ($this->subjectObjects(tasks: $tasks, uuids: array_keys($uuids)) as $object) {
+		foreach ($objects as $object) {
 			$serialised = [];
 			if (method_exists($object, 'jsonSerialize') === true) {
 				$serialised = $object->jsonSerialize();
@@ -404,7 +460,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 		}
 
 		return $contexts;
-	}//end subjectContexts()
+	}//end contextsOf()
 
 	/**
 	 * The subject objects of a page: located ones from their own tables, the

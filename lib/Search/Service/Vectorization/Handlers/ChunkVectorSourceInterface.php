@@ -83,4 +83,13 @@ interface ChunkVectorSourceInterface {
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function endOffset(): int;
+
+	/**
+	 * How many chunks the chunk's source has.
+	 *
+	 * @return int
+	 *
+	 * @spec openspec/specs/vector-embeddings/spec.md
+	 */
+	public function totalChunks(): int;
 }//end interface

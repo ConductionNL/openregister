@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden test for RateLimiterService::consumeDistinctKeyBudget: which calls
+ * Golden test for RateLimiterService::consumeFromBudget: which calls
  * are admitted and which refused, what the bucket looks like after an
  * admitted call, and that a refused call writes nothing.
  *
@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Service\Configuration\DistinctKeyBudget;
 use OCA\OpenRegister\Service\Configuration\RateLimiterService;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -100,11 +101,9 @@ class RateLimiterDistinctKeyBudgetGoldenTest extends TestCase {
 		}
 
 		$before = time();
-		$retry = $this->limiter($seed)->consumeDistinctKeyBudget(
-			bucketKey: 'getmiss:alice',
-			distinctKey: $key,
-			maxKeys: $max,
-			windowSeconds: 300
+		$retry = $this->limiter($seed)->consumeFromBudget(
+			budget: new DistinctKeyBudget(bucketKey: 'getmiss:alice', maxKeys: $max, windowSeconds: 300),
+			distinctKey: $key
 		);
 
 		if ($stored === null) {
@@ -128,11 +127,9 @@ class RateLimiterDistinctKeyBudgetGoldenTest extends TestCase {
 	}//end testTheBudget()
 
 	public function testABucketExactlyOneWindowOldResets(): void {
-		$retry = $this->limiter(['t' => time() - 300, 'keys' => ['a']])->consumeDistinctKeyBudget(
-			bucketKey: 'b',
-			distinctKey: 'c',
-			maxKeys: 1,
-			windowSeconds: 300
+		$retry = $this->limiter(['t' => time() - 300, 'keys' => ['a']])->consumeFromBudget(
+			budget: new DistinctKeyBudget(bucketKey: 'b', maxKeys: 1, windowSeconds: 300),
+			distinctKey: 'c'
 		);
 
 		self::assertNull($retry);
@@ -140,11 +137,9 @@ class RateLimiterDistinctKeyBudgetGoldenTest extends TestCase {
 	}//end testABucketExactlyOneWindowOldResets()
 
 	public function testRetryAfterIsAtLeastOneSecond(): void {
-		$retry = $this->limiter(['t' => time() - 299, 'keys' => ['a']])->consumeDistinctKeyBudget(
-			bucketKey: 'b',
-			distinctKey: 'c',
-			maxKeys: 1,
-			windowSeconds: 300
+		$retry = $this->limiter(['t' => time() - 299, 'keys' => ['a']])->consumeFromBudget(
+			budget: new DistinctKeyBudget(bucketKey: 'b', maxKeys: 1, windowSeconds: 300),
+			distinctKey: 'c'
 		);
 
 		// 299 or 300 seconds old: still live at 299, reset at 300.

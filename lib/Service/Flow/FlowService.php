@@ -36,10 +36,12 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
 use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Db\FlowMapperInterface;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowVersionMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
 
@@ -69,6 +71,38 @@ class FlowService implements FlowServiceInterface {
 	private const DEFAULT_APP = 'openregister';
 
 	/**
+	 * The client-editable string fields and their setters, in apply order.
+	 *
+	 * Part of the allowlist that IS the security boundary — see
+	 * {@see applyEditableFields()}.
+	 *
+	 * @var array<string, string>
+	 */
+	private const EDITABLE_STRING_FIELDS = [
+		'name' => 'setName',
+		'description' => 'setDescription',
+		'trigger' => 'setTrigger',
+		'triggerRegister' => 'setTriggerRegister',
+		'triggerSchema' => 'setTriggerSchema',
+		'cron' => 'setCron',
+		'executionMode' => 'setExecutionMode',
+		'notes' => 'setNotes',
+		'comment' => 'setComment',
+		'applicationSlug' => 'setApplicationSlug',
+	];
+
+	/**
+	 * The client-editable array fields and their setters, in apply order.
+	 *
+	 * @var array<string, string>
+	 */
+	private const EDITABLE_ARRAY_FIELDS = [
+		'nodes' => 'setNodes',
+		'edges' => 'setEdges',
+		'limits' => 'setLimits',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowDefinitionStore $definitions The flow table and the trigger index derived from its nodes.
@@ -95,12 +129,7 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function caller(): FlowCaller {
-		return new FlowCaller(
-			mapper: $this->definitions->mapper,
-			userSession: $this->platform->userSession,
-			container: $this->platform->container,
-			logger: $this->platform->logger
-		);
+		return new FlowCaller(mapper: $this->definitions->mapper, platform: $this->platform);
 	}//end caller()
 
 	/**
@@ -114,15 +143,25 @@ class FlowService implements FlowServiceInterface {
 	 *
 	 * @return array<int, Flow> The flows visible to the caller.
 	 *
+	 * Kept for its callers (FlowController, other apps); delegates to listFlows().
+	 *
 	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
 	 */
-	public function findAll(
-		?string $app = null,
-		?string $applicationSlug = null,
-		?bool $enabled = null,
-		int $limit = 100,
-		int $offset = 0,
-	): array {
+	public function findAll(?string $app=null, ?string $applicationSlug=null, ?bool $enabled=null, int $limit=100, int $offset=0): array {
+		$filters = ['app' => $app, 'applicationSlug' => $applicationSlug, 'enabled' => $enabled];
+		return $this->listFlows(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
+	}//end findAll()
+
+	/**
+	 * List the caller's flows in their active organisation, newest first.
+	 *
+	 * @param ListQuery $query The page, and the `app`, `applicationSlug` and `enabled` filters (each null for any).
+	 *
+	 * @return array<int, Flow> The flows visible to the caller.
+	 *
+	 * @spec openspec/changes/flow-application-slug/specs/flow-engine/spec.md
+	 */
+	public function listFlows(ListQuery $query): array {
 		$organisation = $this->caller()->activeOrganisation();
 		if ($organisation === null) {
 			// No resolvable tenant means no flows, never every tenant's flows.
@@ -130,15 +169,15 @@ class FlowService implements FlowServiceInterface {
 		}
 
 		return $this->definitions->mapper->findAllFlows(
-			app: $app,
-			applicationSlug: $applicationSlug,
-			organisation: $organisation,
-			enabled: $enabled,
-			limit: $limit,
-			offset: $offset
+			selection: new FlowSelection(
+				app: $query->filters['app'] ?? null,
+				applicationSlug: $query->filters['applicationSlug'] ?? null,
+				organisation: $organisation,
+				enabled: $query->filters['enabled'] ?? null
+			),
+			query: new ListQuery(limit: $query->limit, offset: ($query->offset ?? 0))
 		);
-
-	}//end findAll()
+	}//end listFlows()
 
 	/**
 	 * Count the flows visible to the caller.
@@ -156,7 +195,8 @@ class FlowService implements FlowServiceInterface {
 			return 0;
 		}
 
-		return $this->definitions->mapper->countFlows(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
+		$selection = new FlowSelection(app: $app, applicationSlug: $applicationSlug, organisation: $organisation);
+		return $this->definitions->mapper->countFlows(selection: $selection);
 	}//end count()
 
 	/**
@@ -490,53 +530,10 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function applyEditableFields(Flow $flow, array $data): void {
-		$strings = [
-			'name' => 'setName',
-			'description' => 'setDescription',
-			'trigger' => 'setTrigger',
-			'triggerRegister' => 'setTriggerRegister',
-			'triggerSchema' => 'setTriggerSchema',
-			'cron' => 'setCron',
-			'executionMode' => 'setExecutionMode',
-			'notes' => 'setNotes',
-			'comment' => 'setComment',
-			'applicationSlug' => 'setApplicationSlug',
-		];
+		$data = self::withNormalisedComment(data: $data);
 
-		// A flow authored as a definition file carries its rationale under the
-		// top-level `$comment` key — the JSON-Schema convention for "a human
-		// wrote this, no reader should interpret it". That key cannot be a
-		// column name, so it is normalised here rather than at every call site.
-		//
-		// `comment` wins when both are present: the explicit API field is a
-		// deliberate write, `$comment` is whatever the file happened to carry.
-		if (array_key_exists('$comment', $data) === true && array_key_exists('comment', $data) === false) {
-			$data['comment'] = $data['$comment'];
-		}
-
-		foreach ($strings as $key => $setter) {
-			if (array_key_exists($key, $data) === true) {
-				$value = $data[$key];
-				if ($value === null) {
-					$flow->$setter(null);
-					continue;
-				}
-
-				$flow->$setter((string)$value);
-			}
-		}
-
-		$arrays = [
-			'nodes' => 'setNodes',
-			'edges' => 'setEdges',
-			'limits' => 'setLimits',
-		];
-
-		foreach ($arrays as $key => $setter) {
-			if (array_key_exists($key, $data) === true) {
-				$flow->$setter((array)($data[$key] ?? []));
-			}
-		}
+		self::applyStringFields(flow: $flow, data: $data);
+		self::applyArrayFields(flow: $flow, data: $data);
 
 		if (array_key_exists('enabled', $data) === true) {
 			$flow->setEnabled((bool)$data['enabled']);
@@ -545,6 +542,69 @@ class FlowService implements FlowServiceInterface {
 		$this->applyInheritableSettings(flow: $flow, data: $data);
 
 	}//end applyEditableFields()
+
+	/**
+	 * The payload with a definition file's `$comment` carried over to `comment`.
+	 *
+	 * A flow authored as a definition file carries its rationale under the
+	 * top-level `$comment` key — the JSON-Schema convention for "a human
+	 * wrote this, no reader should interpret it". That key cannot be a
+	 * column name, so it is normalised here rather than at every call site.
+	 *
+	 * `comment` wins when both are present: the explicit API field is a
+	 * deliberate write, `$comment` is whatever the file happened to carry.
+	 *
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return array<string, mixed> The fields, normalised.
+	 */
+	private static function withNormalisedComment(array $data): array {
+		if (array_key_exists('$comment', $data) === true && array_key_exists('comment', $data) === false) {
+			$data['comment'] = $data['$comment'];
+		}
+
+		return $data;
+	}//end withNormalisedComment()
+
+	/**
+	 * Apply the present string fields: null is stored, anything else stringified.
+	 *
+	 * @param Flow                 $flow The flow to mutate.
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return void
+	 */
+	private static function applyStringFields(Flow $flow, array $data): void {
+		foreach (self::EDITABLE_STRING_FIELDS as $key => $setter) {
+			if (array_key_exists($key, $data) === false) {
+				continue;
+			}
+
+			$value = $data[$key];
+			if ($value === null) {
+				$flow->$setter(null);
+				continue;
+			}
+
+			$flow->$setter((string)$value);
+		}
+	}//end applyStringFields()
+
+	/**
+	 * Apply the present array fields: null becomes an empty array, a scalar a one-element array.
+	 *
+	 * @param Flow                 $flow The flow to mutate.
+	 * @param array<string, mixed> $data The incoming fields.
+	 *
+	 * @return void
+	 */
+	private static function applyArrayFields(Flow $flow, array $data): void {
+		foreach (self::EDITABLE_ARRAY_FIELDS as $key => $setter) {
+			if (array_key_exists($key, $data) === true) {
+				$flow->$setter((array)($data[$key] ?? []));
+			}
+		}
+	}//end applyArrayFields()
 
 	/**
 	 * Apply the three settings a flow may inherit from the administrator default.
@@ -701,18 +761,32 @@ class FlowService implements FlowServiceInterface {
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
-	public function run(
-		string $uuid,
-		array $subject = [],
-		array $context = [],
-		bool $sync = false,
-		string $trigger = Flow::TRIGGER_MANUAL
-	): FlowRun {
+	public function run(string $uuid, array $subject=[], array $context=[], bool $sync=false, string $trigger=Flow::TRIGGER_MANUAL): FlowRun {
+		return $this->runFlow(uuid: $uuid, options: new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: $trigger));
+	}//end run()
+
+	/**
+	 * Queue a run of a flow the caller owns, as run() describes it.
+	 *
+	 * The flow is resolved in the caller's organisation and the owner check runs
+	 * before anything is queued.
+	 *
+	 * @param string         $uuid    The flow uuid.
+	 * @param FlowRunOptions $options The subject, run metadata, whether to wait, and the trigger.
+	 *
+	 * @return FlowRun The queued run, or the finished run when the caller waits.
+	 *
+	 * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
+	 * @throws FlowRunRefused When the caller may not run this flow (no owner, not theirs).
+	 *
+	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 */
+	public function runFlow(string $uuid, FlowRunOptions $options): FlowRun {
 		$flow = $this->find(uuid: $uuid);
 		$this->assertRunnable(flow: $flow);
 
-		return $this->start(flow: $flow, options: new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: $trigger));
-	}//end run()
+		return $this->start(flow: $flow, options: $options);
+	}//end runFlow()
 
 	/**
 	 * Run a flow on behalf of a declared action whose right the caller already holds.
@@ -725,22 +799,17 @@ class FlowService implements FlowServiceInterface {
 	 * (ADR-023). The run still executes as the acting user, so every write
 	 * inside it is checked against their rights.
 	 *
-	 * @param string               $uuid    The flow uuid.
-	 * @param array<string, mixed> $subject `{uuid, register, schema}` of the object.
-	 * @param array<string, mixed> $context Run-level metadata.
-	 * @param boolean              $sync    Execute inline and return the finished run.
+	 * @param string         $uuid    The flow uuid.
+	 * @param FlowRunOptions $options The subject (`{uuid, register, schema}`), run-level metadata, whether to
+	 *                                execute inline, and the trigger (manual for an action).
 	 *
-	 * @return FlowRun The queued run, or the finished run when $sync is true.
+	 * @return FlowRun The queued run, or the finished run when the options ask for a sync run.
 	 *
 	 * @throws DoesNotExistException When no such flow exists.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As run(): $sync chooses who advances the run.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-inline-steps-are-a-straight-line-lowered-to-the-one-flow-engine
 	 */
-	public function runForAction(string $uuid, array $subject, array $context, bool $sync): FlowRun {
-		$options = new FlowRunOptions(subject: $subject, context: $context, sync: $sync, trigger: Flow::TRIGGER_MANUAL);
-
+	public function runForAction(string $uuid, FlowRunOptions $options): FlowRun {
 		return $this->start(flow: $this->definitions->mapper->findByUuid($uuid), options: $options);
 	}//end runForAction()
 
@@ -756,12 +825,14 @@ class FlowService implements FlowServiceInterface {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	private function start(Flow $flow, FlowRunOptions $options): FlowRun {
-		$run = $this->dispatch->runner->queue(
+		$run = $this->dispatch->runner->queueRun(
 			flowId: (string)$flow->getUuid(),
-			subject: $options->subject,
-			trigger: $options->trigger,
-			context: $options->context,
-			user: $this->caller()->actingUser()
+			options: new FlowRunQueueOptions(
+				subject: $options->subject,
+				trigger: $options->trigger,
+				context: $options->context,
+				user: $this->caller()->actingUser()
+			)
 		);
 
 		if ($options->sync === false) {

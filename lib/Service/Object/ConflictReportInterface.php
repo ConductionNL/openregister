@@ -23,8 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 
 /**
  * Declares only what callers outside the component use of ConflictReport; the rest
@@ -57,14 +55,12 @@ interface ConflictReportInterface {
 	/**
 	 * The conflicting properties, with the three readings each.
 	 *
-	 * @param ObjectEntity           $stored     The object as it is now.
-	 * @param Schema                 $schema     Its schema, for the field filter.
-	 * @param array<string, mixed>   $sent       What the caller is trying to write.
+	 * @param RefusedWrite           $write       The stored object, its schema and what the caller sent.
 	 * @param array<int, AuditTrail> $intervening The changes since the caller read, newest first.
 	 *
 	 * @return array<string, mixed> The 409 body.
 	 *
 	 * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
 	 */
-	public function build(ObjectEntity $stored, Schema $schema, array $sent, array $intervening): array;
+	public function build(RefusedWrite $write, array $intervening): array;
 }//end interface

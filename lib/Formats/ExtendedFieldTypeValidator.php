@@ -79,27 +79,12 @@ class ExtendedFieldTypeValidator implements ExtendedFieldTypeValidatorInterface 
 	];
 
 	/**
-	 * Validate a `color` value against the property's declared format.
+	 * Validate a `color` value against the declared format of its property.
 	 *
 	 * The default format is `hex`. The `rgba` format requires exactly four
 	 * components inside the `rgba(...)` envelope. The `oklch` format validates
 	 * the `oklch(L C H)` syntax. Returns `null` on success or the exact 422
 	 * message mandated by REQ-EFT-005 on failure.
-	 *
-	 * @param mixed $value The colour value submitted by the client.
-	 * @param string|null $format The declared `format` annotation (null => hex).
-	 * @param string $propertyName The property name (for the error message).
-	 *
-	 * @return string|null Null on success, or the exact 422 error message on failure.
-	 *
-	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-005
-	 */
-	public function validateColor(mixed $value, ?string $format, string $propertyName): ?string {
-		return $this->validateColorProperty(value: $value, property: new FormattedProperty(name: $propertyName, format: $format));
-	}//end validateColor()
-
-	/**
-	 * Validate a `color` value against the declared format of its property.
 	 *
 	 * @param mixed             $value    The colour value submitted by the client.
 	 * @param FormattedProperty $property The property name and its declared `format` (null => hex).
@@ -220,27 +205,13 @@ class ExtendedFieldTypeValidator implements ExtendedFieldTypeValidatorInterface 
 	}//end validateRecurrence()
 
 	/**
-	 * Materialise the next N upcoming occurrences for a recurrence RRULE.
+	 * Materialise the next N upcoming occurrences of a recurrence window.
 	 *
-	 * Iterates the RRULE from `now` and collects up to `$count` ISO-8601
-	 * occurrence timestamps. `$count` is clamped to [1, MAX_OCCURRENCES]. The
-	 * RRULE string itself is never modified — callers preserve it for round-trip
-	 * integrity and attach the result under the `_occurrences` virtual field.
-	 *
-	 * @param string $rrule The RFC 5545 RRULE string.
-	 * @param int $count The number of occurrences to emit.
-	 * @param DateTimeInterface|null $start The iteration start (defaults to now).
-	 *
-	 * @return array<int, string> ISO-8601 occurrence timestamps, or empty on parse failure.
-	 *
-	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
-	 */
-	public function materialiseOccurrences(string $rrule, int $count, ?DateTimeInterface $start = null): array {
-		return $this->occurrencesIn(window: new RecurrenceWindow(rrule: $rrule, count: $count, start: $start));
-	}//end materialiseOccurrences()
-
-	/**
-	 * Materialise the occurrences of a recurrence window; see {@see self::materialiseOccurrences()}.
+	 * Iterates the RRULE from the window's start (now when absent) and collects
+	 * up to its count of ISO-8601 occurrence timestamps. The count is clamped to
+	 * [1, MAX_OCCURRENCES]. The RRULE string itself is never modified — callers
+	 * preserve it for round-trip integrity and attach the result under the
+	 * `_occurrences` virtual field.
 	 *
 	 * @param RecurrenceWindow $window The RRULE, the number of occurrences and the start.
 	 *

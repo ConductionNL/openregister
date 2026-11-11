@@ -454,17 +454,9 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function document(array $data, string $state): array {
-		$user = $this->userSession->getUser();
-		$uid = '';
-		$groups = [];
-		if ($user !== null) {
-			$uid = $user->getUID();
-			$groups = $this->groupManager->getUserGroupIds($user);
-		}
-
 		return [
 			'object' => $data,
-			'user' => ['uid' => $uid, 'groups' => $groups],
+			'user' => ConditionUser::of(userSession: $this->userSession, groupManager: $this->groupManager),
 			'state' => $state,
 		];
 	}//end document()

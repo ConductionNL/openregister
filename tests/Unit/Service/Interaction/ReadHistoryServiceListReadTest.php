@@ -21,8 +21,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Interaction;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Interaction\ProcessingListRead;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\ProcessingLogService;
+use OCA\OpenRegister\Service\ProcessingRead;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -91,13 +93,13 @@ class ReadHistoryServiceListReadTest extends TestCase {
 		$groups = [];
 		$log    = $this->createMock(ProcessingLogService::class);
 		$log->expects($this->exactly(2))
-			->method('logReadList')
+			->method('recordReadList')
 			->willReturnCallback(
-				static function (array $objects, string $action, ?string $channel, ?string $actor, array $query) use (&$groups): void {
+				static function (array $objects, ProcessingRead $read) use (&$groups): void {
 					$groups[] = [
 						array_map(static fn (ObjectEntity $o): string => $o->getUuid(), $objects),
-						$action,
-						$query,
+						$read->action,
+						$read->query,
 					];
 				}
 			);
@@ -105,14 +107,13 @@ class ReadHistoryServiceListReadTest extends TestCase {
 		$this->container->method('get')->with(ProcessingLogService::class)->willReturn($log);
 		$this->logger->expects($this->never())->method('warning');
 
-		$this->service()->registerProcessingReadList(
+		$this->service()->registerListRead(
 			[
 				$entity,
 				['naam' => 'x', '@self' => ['id' => 'u-2', 'register' => 1, 'schema' => 2]],
 				['@self' => ['uuid' => 'u-3', 'register' => 1, 'schema' => 3, 'organisation' => 'org']],
 			],
-			['_search' => 'jan'],
-			'export'
+			new ProcessingListRead(['_search' => 'jan'], 'export')
 		);
 
 		$this->assertSame(
@@ -133,14 +134,14 @@ class ReadHistoryServiceListReadTest extends TestCase {
 	public function testARenderedRowCarriesItsDataAndOrganisation(): void {
 		$seen = null;
 		$log  = $this->createMock(ProcessingLogService::class);
-		$log->method('logReadList')->willReturnCallback(
+		$log->method('recordReadList')->willReturnCallback(
 			static function (array $objects) use (&$seen): void {
 				$seen = $objects[0];
 			}
 		);
 		$this->container->method('get')->willReturn($log);
 
-		$this->service()->registerProcessingReadList([['bsn' => '1', '@self' => ['uuid' => 'u', 'register' => 'r', 'schema' => 's', 'organisation' => 'o']]]);
+		$this->service()->registerListRead([['bsn' => '1', '@self' => ['uuid' => 'u', 'register' => 'r', 'schema' => 's', 'organisation' => 'o']]], new ProcessingListRead());
 
 		$this->assertSame('1', $seen->getObject()['bsn']);
 		$this->assertArrayNotHasKey('@self', $seen->getObject());
@@ -163,12 +164,13 @@ class ReadHistoryServiceListReadTest extends TestCase {
 				['rows' => 3, 'of' => 3]
 			);
 
-		$this->service()->registerProcessingReadList(
+		$this->service()->registerListRead(
 			[
 				'plain string',
 				['@self' => ['uuid' => 'u', 'register' => 'r']],
 				['@self' => ['uuid' => ['x'], 'register' => 'r', 'schema' => 's']],
-			]
+			],
+			new ProcessingListRead()
 		);
 
 	}//end testUnattributableRowsAreReportedAndLogNothing()
@@ -182,7 +184,7 @@ class ReadHistoryServiceListReadTest extends TestCase {
 		$this->container->expects($this->never())->method('get');
 		$this->logger->expects($this->never())->method('warning');
 
-		$this->service()->registerProcessingReadList([]);
+		$this->service()->registerListRead([], new ProcessingListRead());
 
 	}//end testAnEmptyPageDoesNothing()
 
@@ -197,7 +199,7 @@ class ReadHistoryServiceListReadTest extends TestCase {
 			->method('debug')
 			->with('[AVG] processing-log list read hook skipped', ['exception' => 'no service']);
 
-		$this->service()->registerProcessingReadList([['@self' => ['id' => 'u', 'register' => 'r', 'schema' => 's']]]);
+		$this->service()->registerListRead([['@self' => ['id' => 'u', 'register' => 'r', 'schema' => 's']]], new ProcessingListRead());
 
 	}//end testAFailingLogIsSkipped()
 }//end class

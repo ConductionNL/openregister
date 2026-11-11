@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use DateTime;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccountDirectory;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetAccounts;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns;
@@ -43,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
@@ -116,26 +118,26 @@ class ExampleSetSmallUnitsGoldenTest extends TestCase {
 	public function testFillMissingBranches(): void {
 		$profile = ['headline' => 'Kop', 'role' => '', 'organisation' => 'Org', 'absence' => null, 'status' => null];
 
-		$none = new ExampleSetProfiles($this->users(user: null), $this->createMock(IAccountManager::class), $this->createMock(ContainerInterface::class));
+		$none = new ExampleSetProfiles(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $this->createMock(ContainerInterface::class), apps: $this->createMock(\OCP\App\IAppManager::class), users: $this->users(user: null)), $this->createMock(IAccountManager::class));
 		$this->assertSame(['account ghost is not there'], $none->fillMissing(uid: 'ghost', profile: $profile));
 
 		$log     = [];
 		$account = $this->account(values: ['headline' => 'held', 'role' => '', 'organisation' => 'held too'], log: $log);
 		$manager = $this->manager(account: $account, log: $log);
-		$full    = new ExampleSetProfiles($this->users(user: $this->createMock(IUser::class)), $manager, $this->createMock(ContainerInterface::class));
+		$full    = new ExampleSetProfiles(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $this->createMock(ContainerInterface::class), apps: $this->createMock(\OCP\App\IAppManager::class), users: $this->users(user: $this->createMock(IUser::class))), $manager);
 		$this->assertSame([], $full->fillMissing(uid: 'pieter', profile: $profile));
 		$this->assertSame(['getAccount'], $log);
 
 		$log     = [];
 		$account = $this->account(values: ['headline' => '  ', 'role' => '', 'organisation' => 'held'], log: $log);
 		$manager = $this->manager(account: $account, log: $log);
-		$partial = new ExampleSetProfiles($this->users(user: $this->createMock(IUser::class)), $manager, $this->createMock(ContainerInterface::class));
+		$partial = new ExampleSetProfiles(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $this->createMock(ContainerInterface::class), apps: $this->createMock(\OCP\App\IAppManager::class), users: $this->users(user: $this->createMock(IUser::class))), $manager);
 		$this->assertSame([], $partial->fillMissing(uid: 'pieter', profile: $profile));
 		$this->assertSame(['getAccount', 'set headline=Kop', 'updateAccount'], $log);
 
 		$failing = $this->createMock(IAccountManager::class);
 		$failing->method('getAccount')->willThrowException(new RuntimeException('store down'));
-		$broken = new ExampleSetProfiles($this->users(user: $this->createMock(IUser::class)), $failing, $this->createMock(ContainerInterface::class));
+		$broken = new ExampleSetProfiles(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $this->createMock(ContainerInterface::class), apps: $this->createMock(\OCP\App\IAppManager::class), users: $this->users(user: $this->createMock(IUser::class))), $failing);
 		$this->assertSame(['profile of pieter: store down'], $broken->fillMissing(uid: 'pieter', profile: $profile));
 	}//end testFillMissingBranches()
 
@@ -175,13 +177,13 @@ class ExampleSetSmallUnitsGoldenTest extends TestCase {
 	public function testCreateUserBranches(): void {
 		$warnings = [];
 
-		$this->assertSame(ExampleSetAccounts::ALREADY_EXISTS, $this->accounts(made: new RuntimeException('Duplicate entry for key'), warnings: $warnings)->createUser(uid: 'a', displayName: 'A', email: '', password: 'p'));
+		$this->assertSame(ExampleSetAccounts::ALREADY_EXISTS, $this->accounts(made: new RuntimeException('Duplicate entry for key'), warnings: $warnings)->createAccount(account: new ExampleSetNewAccount(uid: 'a', displayName: 'A', email: '', password: 'p')));
 		$this->assertSame([], $warnings);
 
-		$this->assertSame('backend down', $this->accounts(made: new RuntimeException('backend down'), warnings: $warnings)->createUser(uid: 'a', displayName: 'A', email: '', password: 'p'));
+		$this->assertSame('backend down', $this->accounts(made: new RuntimeException('backend down'), warnings: $warnings)->createAccount(account: new ExampleSetNewAccount(uid: 'a', displayName: 'A', email: '', password: 'p')));
 		$this->assertSame([['OpenRegister: an example set account was not created', ['uid' => 'a', 'reason' => 'backend down']]], $warnings);
 
-		$this->assertSame('Nextcloud refused the account', $this->accounts(made: false, warnings: $warnings)->createUser(uid: 'a', displayName: 'A', email: '', password: 'p'));
+		$this->assertSame('Nextcloud refused the account', $this->accounts(made: false, warnings: $warnings)->createAccount(account: new ExampleSetNewAccount(uid: 'a', displayName: 'A', email: '', password: 'p')));
 
 		$calls = [];
 		$user  = $this->createMock(IUser::class);
@@ -192,9 +194,9 @@ class ExampleSetSmallUnitsGoldenTest extends TestCase {
 		$user->method('setSystemEMailAddress')->willReturnCallback(function (string $email) use (&$calls): void {
 			$calls[] = 'email '.$email;
 		});
-		$this->assertSame('', $this->accounts(made: $user, warnings: $warnings)->createUser(uid: 'a', displayName: 'Anna', email: '', password: 'p'));
+		$this->assertSame('', $this->accounts(made: $user, warnings: $warnings)->createAccount(account: new ExampleSetNewAccount(uid: 'a', displayName: 'Anna', email: '', password: 'p')));
 		$this->assertSame(['name Anna'], $calls);
-		$this->assertSame('', $this->accounts(made: $user, warnings: $warnings)->createUser(uid: 'a', displayName: 'Anna', email: 'a@example.org', password: 'p'));
+		$this->assertSame('', $this->accounts(made: $user, warnings: $warnings)->createAccount(account: new ExampleSetNewAccount(uid: 'a', displayName: 'Anna', email: 'a@example.org', password: 'p')));
 		$this->assertSame(['name Anna', 'name Anna', 'email a@example.org'], $calls);
 	}//end testCreateUserBranches()
 
@@ -208,18 +210,18 @@ class ExampleSetSmallUnitsGoldenTest extends TestCase {
 		$values = new ExampleSetValues();
 
 		$gaps = [];
-		$this->assertSame(7, $values->fill(value: 7, context: [], gaps: $gaps));
-		$this->assertSame(null, $values->fill(value: null, context: [], gaps: $gaps));
-		$this->assertSame('plain {text}', $values->fill(value: 'plain {text}', context: [], gaps: $gaps));
-		$this->assertSame(['a', 1, ['b' => true]], $values->fill(value: ['a', 1, ['b' => true]], context: [], gaps: $gaps));
+		$this->assertSame(7, $values->fill(value: 7, scope: new ExampleSetFillScope(context: [], gaps: $gaps)));
+		$this->assertSame(null, $values->fill(value: null, scope: new ExampleSetFillScope(context: [], gaps: $gaps)));
+		$this->assertSame('plain {text}', $values->fill(value: 'plain {text}', scope: new ExampleSetFillScope(context: [], gaps: $gaps)));
+		$this->assertSame(['a', 1, ['b' => true]], $values->fill(value: ['a', 1, ['b' => true]], scope: new ExampleSetFillScope(context: [], gaps: $gaps)));
 		$this->assertSame([], $gaps);
 
 		$gaps = [];
-		$this->assertSame('{{nope:thing}}', $values->fill(value: '{{nope:thing}}', context: [], gaps: $gaps));
+		$this->assertSame('{{nope:thing}}', $values->fill(value: '{{nope:thing}}', scope: new ExampleSetFillScope(context: [], gaps: $gaps)));
 		$this->assertSame(['{{nope:thing}}'], $gaps);
 
 		$gaps = [];
-		$this->assertSame(['x {{nope:thing}} y'], $values->fill(value: ['x {{nope:thing}} y'], context: [], gaps: $gaps));
+		$this->assertSame(['x {{nope:thing}} y'], $values->fill(value: ['x {{nope:thing}} y'], scope: new ExampleSetFillScope(context: [], gaps: $gaps)));
 		$this->assertSame(['{{nope:thing}}'], $gaps);
 	}//end testFillBranches()
 
@@ -309,7 +311,7 @@ class ExampleSetSmallUnitsGoldenTest extends TestCase {
 			$container->method('get')->willReturn($service);
 		}
 
-		return new ExampleSetProfiles($this->users(user: $this->createMock(IUser::class)), $this->createMock(IAccountManager::class), $container);
+		return new ExampleSetProfiles(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $container, apps: $this->createMock(\OCP\App\IAppManager::class), users: $this->users(user: $this->createMock(IUser::class))), $this->createMock(IAccountManager::class));
 	}//end withStatus()
 
 	/**

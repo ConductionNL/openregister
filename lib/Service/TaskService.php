@@ -39,11 +39,13 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCA\OpenRegister\Service\Task\VtodoCalendarLocator;
@@ -110,9 +112,9 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	}//end __construct()
 
 	/**
-	 * Get all tasks for the current user across all VTODO-supporting calendars.
+	 * One page of the session user's tasks across all VTODO-supporting calendars, soonest due first.
 	 *
-	 * Returns all VTODOs (optionally filtered by status) from the user's calendars.
+	 * Returns the VTODOs (optionally filtered by status) from the user's calendars.
 	 * Tasks with X-OPENREGISTER-* properties include linking metadata.
 	 *
 	 * This walks every calendar and filters in PHP, which is why it no longer
@@ -122,27 +124,6 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * calendar read-only. No assignee filter exists: an assignee was never
 	 * carried on a VTODO as anything but description prose, and the prose is
 	 * gone.
-	 *
-	 * @param string|null $status Optional status filter (e.g. 'needs-action', 'completed')
-	 * @param int $limit Maximum number of tasks to return
-	 * @param int $offset Number of tasks to skip
-	 *
-	 * @return array{results: array, total: int} Task results with total count
-	 *
-	 * @throws Exception If no user is logged in
-	 *
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-the-projection-carries-a-real-assignee-not-prose
-	 */
-	public function getAllUserTasks(
-		?string $status = null,
-		int $limit = 50,
-		int $offset = 0,
-	): array {
-		return $this->listUserTasks(status: $status, query: new ListQuery(limit: $limit, offset: $offset));
-	}//end getAllUserTasks()
-
-	/**
-	 * One page of the session user's tasks across all VTODO calendars, soonest due first (see getAllUserTasks()).
 	 *
 	 * @param string|null $status Optional status filter (e.g. 'needs-action', 'completed')
 	 * @param ListQuery   $query  The page: limit and offset (no offset is the first task).
@@ -392,16 +373,13 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * Builds a VCALENDAR/VTODO string with X-OPENREGISTER-* properties and
 	 * an RFC 9253 LINK property, then stores it in the user's calendar.
 	 *
-	 * @param int $registerId The register ID to link
-	 * @param int $schemaId The schema ID to link
-	 * @param string $objectUuid The object UUID to link
-	 * @param string $objectTitle The object title for the LINK label
-	 * @param array $data Task data: summary, description, priority, due, status
+	 * A payload that carries an engine task identity is REFUSED before anything
+	 * is read or stored: a projected VTODO is created only by the projection,
+	 * so a VTODO carrying `X-OPENREGISTER-TASK` always corresponds to a task
+	 * the engine authorized into existence.
 	 *
-	 * A payload that carries an engine task identity is REFUSED: a projected
-	 * VTODO is created only by the projection, so a VTODO carrying
-	 * `X-OPENREGISTER-TASK` always corresponds to a task the engine
-	 * authorized into existence.
+	 * @param ObjectRef       $ref   The object to link: its register id, schema id and uuid.
+	 * @param LinkedTaskDraft $draft The object title for the LINK label, and the task data: summary, description, priority, due, status
 	 *
 	 * @return array|null The created task in JSON-friendly format, or null if the calendar data was not a VTODO
 	 *
@@ -411,37 +389,16 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * @spec openspec/specs/object-interactions/spec.md
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
 	 */
-	public function createTask(int $registerId, int $schemaId, string $objectUuid, string $objectTitle, array $data): ?array {
-		$ref = new ObjectRef(register: $registerId, schema: $schemaId, id: $objectUuid);
-		return $this->createObjectTask(ref: $ref, objectTitle: $objectTitle, data: $data);
-	}//end createTask()
-
-	/**
-	 * Create a new CalDAV task linked to an OpenRegister object (see createTask()).
-	 *
-	 * A payload that carries an engine task identity is REFUSED before anything is read or stored.
-	 *
-	 * @param ObjectRef $ref         The object to link: its register id, schema id and uuid.
-	 * @param string    $objectTitle The object title for the LINK label
-	 * @param array     $data        Task data: summary, description, priority, due, status
-	 *
-	 * @return array|null The created task in JSON-friendly format, or null if the calendar data was not a VTODO
-	 *
-	 * @throws Exception If no user is logged in or no calendar found
-	 * @throws TaskAccessDeniedException If the payload attempts to set an engine task identity
-	 *
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-tasks-on-objects-via-caldav-vtodo
-	 */
-	public function createObjectTask(ObjectRef $ref, string $objectTitle, array $data): ?array {
-		if ($this->carriesEngineIdentity(data: $data) === true) {
+	public function createObjectTask(ObjectRef $ref, LinkedTaskDraft $draft): ?array {
+		if ($this->carriesEngineIdentity(data: $draft->data) === true) {
 			throw new TaskAccessDeniedException(
 				message: 'An engine task cannot be created through the object task endpoint; only OpenRegister projects engine tasks into a calendar.'
 			);
 		}
 
 		$calendarId = $this->findUserCalendar()['id'];
-		$link = ['registerId' => (int)$ref->register, 'schemaId' => (int)$ref->schema, 'objectUuid' => $ref->id, 'objectTitle' => $objectTitle];
-		$document = $this->documents->compose(...$link, data: $data);
+		$link = new ObjectRef(register: (int)$ref->register, schema: (int)$ref->schema, id: $ref->id);
+		$document = $this->documents->composeFor(ref: $link, draft: $draft);
 
 		$this->calDavBackend->createCalendarObject($calendarId, $document['uri'], $document['calendarData']);
 
@@ -459,25 +416,6 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * what is stored afterwards is the engine's own rendering. Without a
 	 * gate the update is refused, never applied unchecked.
 	 *
-	 * @param string $calendarId The calendar ID containing the task
-	 * @param string $taskUri The URI of the task to update
-	 * @param array $data Fields to update: summary, description, priority, due, status
-	 *
-	 * @return array|null The updated task in JSON-friendly format, or null if calendar data was not a VTODO
-	 *
-	 * @throws Exception If the task is not found or update fails
-	 * @throws TaskAccessDeniedException When a projected VTODO's change is refused
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
-	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-compatibility-with-nextcloud-tasks-app
-	 */
-	public function updateTask(string $calendarId, string $taskUri, array $data): ?array {
-		return $this->changeTask(at: new TaskLocation(calendarId: $calendarId, uri: $taskUri), data: $data);
-	}//end updateTask()
-
-	/**
-	 * Update an existing CalDAV task (see updateTask()).
-	 *
 	 * @param TaskLocation $at   The calendar and URI of the task to update
 	 * @param array        $data Fields to update: summary, description, priority, due, status
 	 *
@@ -486,6 +424,7 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * @throws Exception If the task is not found or update fails
 	 * @throws TaskAccessDeniedException When a projected VTODO's change is refused
 	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-10
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/object-interactions/spec.md#requirement-task-compatibility-with-nextcloud-tasks-app
 	 */
 	public function changeTask(TaskLocation $at, array $data): ?array {
@@ -524,23 +463,6 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 *
 	 * The tasks of an object are those in the caller's own calendar that carry
 	 * the object's uuid, so this answers for the calendar and the link at once.
-	 *
-	 * @param string $objectUuid The object the caller addressed.
-	 * @param string $calendarId The calendar the caller named.
-	 * @param string $taskUri    The task the caller named.
-	 *
-	 * @return void
-	 *
-	 * @throws Exception With code 404 when it is not.
-	 *
-	 * @spec openspec/specs/generic-integrations/spec.md
-	 */
-	public function requireTaskOf(string $objectUuid, string $calendarId, string $taskUri): void {
-		$this->requireTaskAt(objectUuid: $objectUuid, at: new TaskLocation(calendarId: $calendarId, uri: $taskUri));
-	}//end requireTaskOf()
-
-	/**
-	 * Refuse a task that is not one of the caller's tasks on the given object (see requireTaskOf()).
 	 *
 	 * @param string       $objectUuid The object the caller addressed.
 	 * @param TaskLocation $at         The calendar and task the caller named.
@@ -734,6 +656,6 @@ class TaskService implements ObjectCalendarTasksInterface, UserTaskListInterface
 	 * @return array|null Task array or null if not a VTODO
 	 */
 	private function vtodoToArray(string $calendarData, TaskLocation $at): ?array {
-		return $this->documents->taskOf(calendarData: $calendarData, calendarId: (string)$at->calendarId, uri: $at->uri);
+		return $this->documents->taskOf(calendarData: $calendarData, at: $at);
 	}//end vtodoToArray()
 }//end class

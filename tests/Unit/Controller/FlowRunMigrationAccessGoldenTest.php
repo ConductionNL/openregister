@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
+use OCA\OpenRegister\Service\Flow\VersionRunsMigration;
 use OCA\OpenRegister\Controller\FlowRunMigrationController;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
@@ -193,7 +194,7 @@ class FlowRunMigrationAccessGoldenTest extends TestCase {
 		$this->flows->method('find')->willReturn(new Flow());
 		$this->params = ['reason' => ' upgrade ', 'sourceVersion' => '1', 'targetVersion' => '2', 'mapping' => 7];
 		$this->migrations->expects($this->once())->method('migrateRunsOfVersion')
-			->with('flow-1', 1, $this->equalTo(new FlowRunMigrationTarget(2, 'upgrade', 'alice', [])))
+			->with($this->equalTo(new VersionRunsMigration('flow-1', 1, new FlowRunMigrationTarget(2, 'upgrade', 'alice', []))))
 			->willReturn(['moved' => 4]);
 
 		$response = $this->controller()->migrateRuns('flow-1');

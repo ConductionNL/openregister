@@ -22,6 +22,7 @@ use Closure;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\LinkTarget;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -114,7 +115,7 @@ trait ObjectLinkActionsTrait
 	 */
 	private function runOnLinkedObject(ObjectLinkRoute $route, Closure $action): JSONResponse {
 		try {
-			$object = $this->validateObject(register: $route->register, schema: $route->schema, id: $route->id);
+			$object = $this->resolveLinkedObject(ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id));
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		}

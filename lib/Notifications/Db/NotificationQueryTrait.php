@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\QueryBuilder\IParameter;
@@ -130,25 +131,26 @@ trait NotificationQueryTrait {
 	}//end findFirstOrNull()
 
 	/**
-	 * Narrow to rows scoped to the value or to nothing at all ("mine or nobody's").
+	 * Narrow each scope column to rows scoped to the value or to nothing at all ("mine or nobody's").
 	 *
-	 * @param IQueryBuilder $qb     The query.
-	 * @param string        $column The scope column.
-	 * @param string|null   $value  The scope asked for; null leaves the query alone.
+	 * @param IQueryBuilder              $qb      The query.
+	 * @param array<string, string|null> $columns Scope column to the scope asked for; a null value leaves the query alone.
 	 *
 	 * @return void
 	 */
-	private function whereScopedOrUnscoped(IQueryBuilder $qb, string $column, ?string $value): void {
-		if ($value === null) {
-			return;
-		}
+	private function whereScopedOrUnscoped(IQueryBuilder $qb, array $columns): void {
+		foreach ($columns as $column => $value) {
+			if ($value === null) {
+				continue;
+			}
 
-		$qb->andWhere(
-			$qb->expr()->orX(
-				$qb->expr()->isNull($column),
-				$qb->expr()->eq($column, $qb->createNamedParameter($value))
-			)
-		);
+			$qb->andWhere(
+				$qb->expr()->orX(
+					$qb->expr()->isNull($column),
+					$qb->expr()->eq($column, $qb->createNamedParameter($value))
+				)
+			);
+		}
 
 	}//end whereScopedOrUnscoped()
 
@@ -192,19 +194,19 @@ trait NotificationQueryTrait {
 	/**
 	 * Apply an optional limit and offset.
 	 *
-	 * @param IQueryBuilder $qb     The query.
-	 * @param int|null      $limit  The row cap, or null for none.
-	 * @param int|null      $offset The rows to skip, or null for none.
+	 * @param IQueryBuilder $qb    The query.
+	 * @param ListQuery     $query The row cap (unbounded for none) and the rows to skip (null for none).
 	 *
 	 * @return void
 	 */
-	private function page(IQueryBuilder $qb, ?int $limit, ?int $offset): void {
+	private function page(IQueryBuilder $qb, ListQuery $query): void {
+		$limit = $query->limitOrNull();
 		if ($limit !== null) {
 			$qb->setMaxResults($limit);
 		}
 
-		if ($offset !== null) {
-			$qb->setFirstResult($offset);
+		if ($query->offset !== null) {
+			$qb->setFirstResult($query->offset);
 		}
 
 	}//end page()

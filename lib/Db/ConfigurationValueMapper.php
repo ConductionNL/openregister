@@ -70,27 +70,10 @@ class ConfigurationValueMapper extends QBMapper {
 			->where($qb->expr()->eq('layer', $qb->createNamedParameter($layer)))
 			->andWhere($qb->expr()->eq('config_key', $qb->createNamedParameter($configKey)))
 			->setMaxResults(1);
-		$qb->andWhere(self::layerRefMatch(qb: $qb, layerRef: $layerRef));
+		$qb->andWhere($this->layerRefMatch(qb: $qb, layerRef: $layerRef));
 
 		return $this->findOneOrNull(qb: $qb);
 	}//end findAtAddress()
-
-	/**
-	 * The layer reference condition: the given reference, or none at all.
-	 *
-	 * @param IQueryBuilder $qb       The query being built.
-	 * @param string|null   $layerRef The layer reference, or null for a layer without one.
-	 *
-	 * @return string The condition.
-	 */
-	private static function layerRefMatch(IQueryBuilder $qb, ?string $layerRef): string {
-		$match = $qb->expr()->isNull('layer_ref');
-		if ($layerRef !== null) {
-			$match = $qb->expr()->eq('layer_ref', $qb->createNamedParameter($layerRef));
-		}
-
-		return (string)$match;
-	}//end layerRefMatch()
 
 	/**
 	 * The one value a query finds, or null when it finds none.
@@ -106,6 +89,22 @@ class ConfigurationValueMapper extends QBMapper {
 			return null;
 		}
 	}//end findOneOrNull()
+
+	/**
+	 * The condition on the layer reference: equal to it, or none when there is none.
+	 *
+	 * @param IQueryBuilder $qb       The query.
+	 * @param string|null   $layerRef The layer reference.
+	 *
+	 * @return string The condition.
+	 */
+	private function layerRefMatch(IQueryBuilder $qb, ?string $layerRef): string {
+		if ($layerRef === null) {
+			return $qb->expr()->isNull('layer_ref');
+		}
+
+		return $qb->expr()->eq('layer_ref', $qb->createNamedParameter($layerRef));
+	}//end layerRefMatch()
 
 	/**
 	 * Every recorded value for one key, across layers.

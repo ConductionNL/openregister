@@ -131,17 +131,10 @@ class OdtTableBuilder {
 		$columns = max(1, ...array_map('count', [...$header, ...$body, []]));
 
 		$table = $this->element(name: 'table:table', style: 'OR_Table');
-		$column = $this->content->createElementNS(HtmlToOdt::NS_TABLE, 'table:table-column');
-		$column->setAttributeNS(HtmlToOdt::NS_TABLE, 'table:number-columns-repeated', (string) $columns);
-		$table->appendChild($column);
+		$table->appendChild($this->columnSpec(columns: $columns));
 
 		if ($header !== []) {
-			$headerRows = $this->content->createElementNS(HtmlToOdt::NS_TABLE, 'table:table-header-rows');
-			foreach ($header as $cells) {
-				$headerRows->appendChild($this->row(cells: array_pad($cells, $columns, ''), style: 'OR_TH'));
-			}
-
-			$table->appendChild($headerRows);
+			$table->appendChild($this->headerRows(header: $header, columns: $columns));
 		}
 
 		$styles = ['OR_TD', 'OR_TD_Alt'];
@@ -151,6 +144,37 @@ class OdtTableBuilder {
 
 		return $table;
 	}//end build()
+
+	/**
+	 * The column declaration: one column repeated across the table's width.
+	 *
+	 * @param int $columns The number of columns.
+	 *
+	 * @return DOMElement The declaration.
+	 */
+	private function columnSpec(int $columns): DOMElement {
+		$column = $this->content->createElementNS(HtmlToOdt::NS_TABLE, 'table:table-column');
+		$column->setAttributeNS(HtmlToOdt::NS_TABLE, 'table:number-columns-repeated', (string) $columns);
+
+		return $column;
+	}//end columnSpec()
+
+	/**
+	 * The header rows, each padded to the table's width.
+	 *
+	 * @param array<int, array<int, string>> $header  The header rows.
+	 * @param int                            $columns The table's width.
+	 *
+	 * @return DOMElement The header rows element.
+	 */
+	private function headerRows(array $header, int $columns): DOMElement {
+		$headerRows = $this->content->createElementNS(HtmlToOdt::NS_TABLE, 'table:table-header-rows');
+		foreach ($header as $cells) {
+			$headerRows->appendChild($this->row(cells: array_pad($cells, $columns, ''), style: 'OR_TH'));
+		}
+
+		return $headerRows;
+	}//end headerRows()
 
 	/**
 	 * One table row with a cell style.
@@ -170,15 +194,28 @@ class OdtTableBuilder {
 		foreach ($cells as $text) {
 			$cell = $this->element(name: 'table:table-cell', style: $style);
 			$cell->setAttributeNS(HtmlToOdt::NS_OFFICE, 'office:value-type', 'string');
-			$paragraph = $this->content->createElementNS(HtmlToOdt::NS_TEXT, 'text:p');
-			$paragraph->setAttributeNS(HtmlToOdt::NS_TEXT, 'text:style-name', $paragraphStyle);
-			$paragraph->appendChild($this->content->createTextNode($text));
-			$cell->appendChild($paragraph);
+			$cell->appendChild($this->cellParagraph(text: $text, style: $paragraphStyle));
 			$row->appendChild($cell);
 		}
 
 		return $row;
 	}//end row()
+
+	/**
+	 * The paragraph inside a cell.
+	 *
+	 * @param string $text  The cell's text.
+	 * @param string $style The paragraph style.
+	 *
+	 * @return DOMElement The paragraph.
+	 */
+	private function cellParagraph(string $text, string $style): DOMElement {
+		$paragraph = $this->content->createElementNS(HtmlToOdt::NS_TEXT, 'text:p');
+		$paragraph->setAttributeNS(HtmlToOdt::NS_TEXT, 'text:style-name', $style);
+		$paragraph->appendChild($this->content->createTextNode($text));
+
+		return $paragraph;
+	}//end cellParagraph()
 
 	/**
 	 * A `table:` element with a style name.

@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -82,14 +83,13 @@ class WebhookLogMapper extends QBMapper implements WebhookLogMapperInterface {
 	 * Find logs for a specific webhook
 	 *
 	 * @param int $webhookId Webhook ID
-	 * @param int|null $limit Limit results
-	 * @param int|null $offset Offset results
+	 * @param ListQuery $page The page (limit, offset); unbounded by default. Other fields are ignored.
 	 *
 	 * @return WebhookLog[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\WebhookLog>
 	 */
-	public function findByWebhook(int $webhookId, ?int $limit = null, ?int $offset = null): array {
+	public function findByWebhook(int $webhookId, ListQuery $page=new ListQuery(limit: ListQuery::UNBOUNDED)): array {
 		$qb = $this->db->getQueryBuilder();
 
 		$qb->select('*')
@@ -97,7 +97,7 @@ class WebhookLogMapper extends QBMapper implements WebhookLogMapperInterface {
 			->where($qb->expr()->eq('webhook', $qb->createNamedParameter($webhookId, IQueryBuilder::PARAM_INT)))
 			->orderBy('created', 'DESC');
 
-		(new QueryPage(limit: $limit, offset: $offset))->applyTo(qb: $qb);
+		(new QueryPage(limit: $page->limitOrNull(), offset: $page->offset))->applyTo(qb: $qb);
 
 		return $this->findEntities(query: $qb);
 	}//end findByWebhook()
@@ -153,22 +153,11 @@ class WebhookLogMapper extends QBMapper implements WebhookLogMapperInterface {
 	 */
 	public function getStatistics(int $webhookId): array {
 		$qb = $this->db->getQueryBuilder();
-
-		// Get database platform to determine boolean handling.
-		$platform = $qb->getConnection()->getDatabasePlatform();
-
-		// Build conditional expressions for success/failure counts.
-		// PostgreSQL uses TRUE/FALSE for booleans, MySQL/MariaDB use 1/0.
-		$successCase = 'SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful';
-		$failedCase = 'SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed';
-		if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
-			$successCase = 'SUM(CASE WHEN success = TRUE THEN 1 ELSE 0 END) as successful';
-			$failedCase = 'SUM(CASE WHEN success = FALSE THEN 1 ELSE 0 END) as failed';
-		}
+		$sums = $this->outcomeSums(qb: $qb);
 
 		$qb->select($qb->createFunction('COUNT(*) as total'))
-			->addSelect($qb->createFunction($successCase))
-			->addSelect($qb->createFunction($failedCase))
+			->addSelect($qb->createFunction($sums['successful']))
+			->addSelect($qb->createFunction($sums['failed']))
 			->from($this->getTableName());
 
 		// Only filter by webhook if a specific webhook is requested.
@@ -180,10 +169,45 @@ class WebhookLogMapper extends QBMapper implements WebhookLogMapperInterface {
 		$row = $result->fetch();
 		$result->closeCursor();
 
+		return $this->statisticsOf(row: $row);
+	}//end getStatistics()
+
+	/**
+	 * The successful and failed sums for the connection's database platform.
+	 *
+	 * PostgreSQL uses TRUE/FALSE for booleans, MySQL/MariaDB use 1/0.
+	 *
+	 * @param IQueryBuilder $qb The query whose connection decides.
+	 *
+	 * @return array{successful: string, failed: string} The two SUM expressions.
+	 */
+	private function outcomeSums(IQueryBuilder $qb): array {
+		$platform = $qb->getConnection()->getDatabasePlatform();
+		if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
+			return [
+				'successful' => 'SUM(CASE WHEN success = TRUE THEN 1 ELSE 0 END) as successful',
+				'failed' => 'SUM(CASE WHEN success = FALSE THEN 1 ELSE 0 END) as failed',
+			];
+		}
+
+		return [
+			'successful' => 'SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful',
+			'failed' => 'SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed',
+		];
+	}//end outcomeSums()
+
+	/**
+	 * The statistics read from the totals row; a missing row or sum reads as zero.
+	 *
+	 * @param array|false $row The totals row.
+	 *
+	 * @return array{total: int, successful: int, failed: int}
+	 */
+	private function statisticsOf(array|false $row): array {
 		return [
 			'total' => (int)($row['total'] ?? 0),
 			'successful' => (int)($row['successful'] ?? 0),
 			'failed' => (int)($row['failed'] ?? 0),
 		];
-	}//end getStatistics()
+	}//end statisticsOf()
 }//end class

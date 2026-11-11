@@ -70,7 +70,7 @@ class ArchiveMoveGuardsGoldenTest extends TestCase {
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('checkPermission')->willReturnCallback(
 			function (...$args) use ($allow): void {
-				$this->asked[] = $args[1] . '|' . var_export($args[2], true) . '|' . $args[3];
+				$this->asked[] = $args[1] . '|' . var_export($args[2]->userId, true) . '|' . $args[2]->objectOwner;
 				if ($allow === false) {
 					throw new NotAuthorizedException(message: 'no');
 				}
@@ -94,7 +94,7 @@ class ArchiveMoveGuardsGoldenTest extends TestCase {
 	 */
 	private static function outcome(ArchiveHandler $handler, ?string $register, ?string $schema): string {
 		try {
-			$handler->archive(identifier: 'o-1', register: $register, schema: $schema);
+			$handler->archiveWith(new \OCA\OpenRegister\Service\Object\ObjectStateRequest(identifier: 'o-1', reason: null, register: $register, schema: $schema));
 			return 'ok';
 		} catch (\Exception $e) {
 			return (new \ReflectionClass($e))->getShortName() . ': ' . $e->getMessage();

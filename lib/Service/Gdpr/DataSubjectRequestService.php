@@ -120,11 +120,9 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * Returns a list of envelopes:
 	 *   [['object' => <ObjectEntity json>, 'gdprEntities' => [{type,value,category,detectedAt}, ...]], ...]
 	 *
-	 * @param string $subjectId Subject identifier value (email, …).
-	 * @param string|null $type Optional GdprEntity type filter.
-	 * @param string $mode `exact` (default) or `ilike`.
-	 * @param bool $rbac Apply RBAC scoping (default true).
-	 * @param bool $multitenancy Apply tenant scoping (default true).
+	 * @param SubjectQuery $query        The subject value, optional GdprEntity type and match mode.
+	 * @param bool         $rbac         Apply RBAC scoping (default true).
+	 * @param bool         $multitenancy Apply tenant scoping (default true).
 	 *
 	 * @return array<int, array{object: array, gdprEntities: array}>
 	 *
@@ -132,11 +130,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
-	public function findSubjectData(
-		string $subjectId, ?string $type = null, string $mode = 'exact', bool $rbac = true, bool $multitenancy = true
-	): array {
-		$query = new SubjectQuery(subjectId: $subjectId, type: $type, mode: $mode);
-
+	public function findSubjectData(SubjectQuery $query, bool $rbac = true, bool $multitenancy = true): array {
 		return $this->serialiseHits(hits: $this->findSubjectObjects(query: $query, rbac: $rbac, multitenancy: $multitenancy));
 	}//end findSubjectData()
 
@@ -233,7 +227,7 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * @return array{subject: string, type: string|null, generatedAt: string, objectCount: int, objects: array}
 	 */
 	public function assembleAccessExport(string $subjectId, ?string $type = null): array {
-		$envelopes = $this->findSubjectData(subjectId: $subjectId, type: $type);
+		$envelopes = $this->findSubjectData(query: new SubjectQuery(subjectId: $subjectId, type: $type));
 
 		return [
 			'subject' => trim($subjectId),
@@ -289,26 +283,19 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * what the handler does next. Withholding one record never blocks the rest
 	 * of the request.
 	 *
-	 * @param string $subjectId Subject identifier value.
-	 * @param string|null $type Optional GdprEntity type filter.
-	 * @param string $eraseMode One of the ERASE_MODE_* constants.
-	 * @param bool $dryRun When true, report matches/holds without mutating.
+	 * The subject is trimmed and an unknown erase mode pseudonymises.
+	 *
+	 * @param ErasureRequest $request The subject, type filter, erase mode and dry-run switch.
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md#requirement-erasure-honours-legal-hold-and-is-mode-parameterised
 	 */
-	public function erase(
-		string $subjectId,
-		?string $type = null,
-		string $eraseMode = self::ERASE_MODE_PSEUDONYMISE,
-		bool $dryRun = false,
-	): array {
-		$eraseMode = $this->normaliseEraseMode(eraseMode: $eraseMode);
+	public function erase(ErasureRequest $request): array {
+		$eraseMode = $this->normaliseEraseMode(eraseMode: $request->eraseMode);
+		$subjectId = trim($request->subjectId);
 
-		return $this->eraseFor(request: new ErasureRequest(subjectId: trim($subjectId), type: $type, eraseMode: $eraseMode, dryRun: $dryRun));
+		return $this->eraseFor(request: new ErasureRequest(subjectId: $subjectId, type: $request->type, eraseMode: $eraseMode, dryRun: $request->dryRun));
 	}//end erase()
 
 	/**
@@ -336,18 +323,15 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	 * (active flag + reason + timestamp), RBAC/tenant scoped, attributed
 	 * to the DSAR activity. Jurisdiction wording stays in the leaf app.
 	 *
-	 * @param string $objectIdentifier Object id/uuid.
-	 * @param bool $restricted Whether processing is restricted.
-	 * @param string $reason Reason recorded on the marker.
+	 * @param string         $objectIdentifier Object id/uuid.
+	 * @param ProcessingFlag $flag             Whether processing is restricted, and the reason recorded on the marker.
 	 *
 	 * @return array<string, mixed>|null Updated object envelope, or null on miss.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
-	public function setRestriction(string $objectIdentifier, bool $restricted, string $reason): ?array {
+	public function setRestriction(string $objectIdentifier, ProcessingFlag $flag): ?array {
 		return $this->setMarker(
 			objectIdentifier: $objectIdentifier,
-			marker: new ProcessingMarker(op: 'restrict', active: $restricted, reason: $reason)
+			marker: new ProcessingMarker(op: 'restrict', active: $flag->active, reason: $flag->reason)
 		);
 
 	}//end setRestriction()
@@ -355,18 +339,15 @@ class DataSubjectRequestService implements DataSubjectRequestServiceInterface {
 	/**
 	 * Flag/unflag objection on a single object (art-21).
 	 *
-	 * @param string $objectIdentifier Object id/uuid.
-	 * @param bool $objected Whether the subject objects to processing.
-	 * @param string $reason Reason recorded on the marker.
+	 * @param string         $objectIdentifier Object id/uuid.
+	 * @param ProcessingFlag $flag             Whether the subject objects to processing, and the reason recorded on the marker.
 	 *
 	 * @return array<string, mixed>|null Updated object envelope, or null on miss.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 */
-	public function setObjection(string $objectIdentifier, bool $objected, string $reason): ?array {
+	public function setObjection(string $objectIdentifier, ProcessingFlag $flag): ?array {
 		return $this->setMarker(
 			objectIdentifier: $objectIdentifier,
-			marker: new ProcessingMarker(op: 'object', active: $objected, reason: $reason)
+			marker: new ProcessingMarker(op: 'object', active: $flag->active, reason: $flag->reason)
 		);
 
 	}//end setObjection()

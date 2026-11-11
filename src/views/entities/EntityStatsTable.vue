@@ -32,6 +32,29 @@ import { displayDateTime } from '../../services/displayDateTime.js'
  *
  * @spec exclude Presentational entity statistics table; no behaviour of its own.
  */
+/**
+ * Every row the table can draw for an entity, by field key; the source row
+ * only when the entity has a source.
+ *
+ * @param {object} entity The entity
+ * @return {Object<string, object|null>} The rows by key
+ */
+function statRows(entity) {
+	return {
+		value: { label: t('openregister', 'Value'), value: entity.value },
+		type: { label: t('openregister', 'Type'), value: entity.type, badge: 'badge-type' },
+		category: { label: t('openregister', 'Category'), value: entity.category, badge: 'badge-category' },
+		detectedAt: { label: t('openregister', 'Detected At'), value: displayDateTime(entity.detectedAt) },
+		confidence: {
+			label: t('openregister', 'Confidence Score'),
+			value: entity.confidence ? (entity.confidence * 100).toFixed(2) + '%' : '-',
+		},
+
+		source: entity.source ? { label: t('openregister', 'Source'), value: entity.source } : null,
+		relations: { label: t('openregister', 'Relations'), value: entity.relationCount || 0 },
+	}
+}
+
 export default {
 	name: 'EntityStatsTable',
 
@@ -69,20 +92,7 @@ export default {
 		 * @return {Array} The rows
 		 */
 		rows() {
-			const entity = this.entity
-			const all = {
-				value: { label: t('openregister', 'Value'), value: entity.value },
-				type: { label: t('openregister', 'Type'), value: entity.type, badge: 'badge-type' },
-				category: { label: t('openregister', 'Category'), value: entity.category, badge: 'badge-category' },
-				detectedAt: { label: t('openregister', 'Detected At'), value: displayDateTime(entity.detectedAt) },
-				confidence: {
-					label: t('openregister', 'Confidence Score'),
-					value: entity.confidence ? (entity.confidence * 100).toFixed(2) + '%' : '-',
-				},
-
-				source: entity.source ? { label: t('openregister', 'Source'), value: entity.source } : null,
-				relations: { label: t('openregister', 'Relations'), value: entity.relationCount || 0 },
-			}
+			const all = statRows(this.entity)
 			return this.fields
 				.filter((key) => all[key])
 				.map((key) => ({ key, ...all[key] }))

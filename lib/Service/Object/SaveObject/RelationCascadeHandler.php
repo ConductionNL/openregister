@@ -255,28 +255,16 @@ class RelationCascadeHandler {
 	 * Recursively scans for relations in data that need to be resolved.
 	 *
 	 * This method walks through the data array looking for properties that contain
-	 * object references (UUIDs, URLs, or numeric IDs) that need to be resolved.
+	 * object references (UUIDs, URLs, or numeric IDs) that need to be resolved:
+	 * one level of data, nested levels included.
 	 *
-	 * @param array $data The data array to scan.
-	 * @param string $prefix The current property path prefix.
-	 * @param null|Schema $schema The schema to validate against.
+	 * @param RelationScan $scan The data, its path prefix and the schema to validate against.
 	 *
 	 * @return array Array of relation paths that need resolution.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
-		return $this->relationsIn(scan: new RelationScan(data: $data, prefix: $prefix, schema: $schema));
-	}//end scanForRelations()
-
-	/**
-	 * The relation paths of one level of data, nested levels included.
-	 *
-	 * @param RelationScan $scan The data, its path prefix and the schema.
-	 *
-	 * @return array Array of relation paths that need resolution.
-	 */
-	private function relationsIn(RelationScan $scan): array {
+	public function scanForRelations(RelationScan $scan): array {
 		$relations = [];
 		foreach (array_keys($scan->data) as $key) {
 			// Special metadata fields are never relations.
@@ -288,7 +276,7 @@ class RelationCascadeHandler {
 		}
 
 		return $relations;
-	}//end relationsIn()
+	}//end scanForRelations()
 
 	/**
 	 * The path of a key of a scanned level: a top-level key is its own path, so an integer key stays an integer.
@@ -330,7 +318,7 @@ class RelationCascadeHandler {
 			return [$path];
 		}
 
-		return $this->scanForRelations(data: $value, prefix: $path, schema: $scan->schema);
+		return $this->scanForRelations(scan: new RelationScan(data: $value, prefix: $path, schema: $scan->schema));
 	}//end relationsAt()
 
 	/**
@@ -493,7 +481,7 @@ class RelationCascadeHandler {
 	 */
 	public function updateObjectRelations(ObjectEntity $objectEntity, RelationScan $scan): ObjectEntity {
 		// Scan for relations.
-		$relations = $this->relationsIn(scan: $scan);
+		$relations = $this->scanForRelations(scan: $scan);
 
 		if (empty($relations) === true) {
 			return $objectEntity;

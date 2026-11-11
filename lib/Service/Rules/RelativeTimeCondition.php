@@ -52,6 +52,7 @@ namespace OCA\OpenRegister\Service\Rules;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
+use OCA\OpenRegister\Service\Flow\Timer\UnitConversion;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use Throwable;
 
@@ -530,10 +531,12 @@ class RelativeTimeCondition {
 		$unit = (string)$offset['unit'];
 		if ($unit === self::UNIT_WORKING_HOURS) {
 			$value = $this->calculator->convert(
-				value: $value,
-				fromUnit: SlaCalculatorInterface::UNIT_HOURS,
-				toUnit: SlaCalculatorInterface::UNIT_BUSINESS_DAYS,
-				calendar: $moment->calendar
+				conversion: new UnitConversion(
+					value: $value,
+					fromUnit: SlaCalculatorInterface::UNIT_HOURS,
+					toUnit: SlaCalculatorInterface::UNIT_BUSINESS_DAYS,
+					calendar: $moment->calendar
+				)
 			);
 		}
 

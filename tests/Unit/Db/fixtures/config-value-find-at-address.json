@@ -8,7 +8,6 @@
     "#1 expr.eq(config_key, :p2, NULL)",
     "#1 andWhere(eq(config_key, :p2, NULL))",
     "#1 setMaxResults(1)",
-    "#1 expr.isNull(layer_ref)",
     "#1 param :p3 = anna, 2",
     "#1 expr.eq(layer_ref, :p3, NULL)",
     "#1 andWhere(eq(layer_ref, :p3, NULL))",

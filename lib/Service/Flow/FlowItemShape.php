@@ -193,7 +193,22 @@ final class FlowItemShape {
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
 	private static function pairedIndex(array $member, ?int $fallback): ?int {
-		$paired = ($member[self::PAIRED_ITEM] ?? null);
+		$tracked = self::trackedIndex(paired: ($member[self::PAIRED_ITEM] ?? null));
+		if ($tracked !== null) {
+			return $tracked;
+		}
+
+		return $fallback;
+	}//end pairedIndex()
+
+	/**
+	 * The input index a member's own provenance names: `{item: n}` or a bare int.
+	 *
+	 * @param mixed $paired The member's paired-item value.
+	 *
+	 * @return int|null The index, or null when it names none.
+	 */
+	private static function trackedIndex(mixed $paired): ?int {
 		if (is_array($paired) === true && isset($paired['item']) === true) {
 			return (int)$paired['item'];
 		}
@@ -202,6 +217,6 @@ final class FlowItemShape {
 			return $paired;
 		}
 
-		return $fallback;
-	}//end pairedIndex()
+		return null;
+	}//end trackedIndex()
 }//end class

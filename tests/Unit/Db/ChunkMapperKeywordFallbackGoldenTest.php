@@ -27,6 +27,7 @@ use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -71,7 +72,7 @@ class ChunkMapperKeywordFallbackGoldenTest extends TestCase {
 		);
 
 		try {
-			$result = json_encode((new ChunkMapper($db, $logger))->searchByKeyword(query: 'report', limit: 5, filters: [], allowUnrankedFallback: $fallback));
+			$result = json_encode((new ChunkMapper($db, $logger))->searchByKeyword(search: new KeywordChunkSearch(query: 'report', limit: 5, allowUnrankedFallback: $fallback)));
 		} catch (RuntimeException $e) {
 			$result = 'thrown';
 		}

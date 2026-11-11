@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\NestedPathTarget;
 use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
@@ -112,10 +113,8 @@ class ArrayElementFilterTest extends TestCase {
 	 */
 	public function testPostgresMatchesOneElementOnEveryField(): void {
 		$sql = (new ArrayElementFilter())->condition(
-			column: 't.properties',
-			fields: ['propertyDefinition' => 'pd-7', 'value' => ['in' => ['a', 'b']]],
-			bind: self::bind(),
-			isPostgres: true
+			column: new NestedPathTarget(expression: 't.properties', bind: self::bind(), isPostgres: true),
+			fields: ['propertyDefinition' => 'pd-7', 'value' => ['in' => ['a', 'b']]]
 		);
 
 		$this->assertStringStartsWith(
@@ -133,10 +132,8 @@ class ArrayElementFilterTest extends TestCase {
 	 */
 	public function testMysqlReadsTheElementsThroughJsonTable(): void {
 		$sql = (new ArrayElementFilter())->condition(
-			column: 't.properties',
-			fields: ['propertyDefinition' => 'pd-7'],
-			bind: self::bind(),
-			isPostgres: false
+			column: new NestedPathTarget(expression: 't.properties', bind: self::bind(), isPostgres: false),
+			fields: ['propertyDefinition' => 'pd-7']
 		);
 
 		$this->assertStringContainsString(needle: "JSON_TABLE(CASE WHEN JSON_TYPE(t.properties) = 'ARRAY'", haystack: (string)$sql);
@@ -149,7 +146,10 @@ class ArrayElementFilterTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFieldNameOutsideAPlainNameWritesNothing(): void {
-		$sql = (new ArrayElementFilter())->condition(column: 't.properties', fields: ["value') OR 1=1 --" => 'x'], bind: self::bind(), isPostgres: true);
+		$sql = (new ArrayElementFilter())->condition(
+			column: new NestedPathTarget(expression: 't.properties', bind: self::bind(), isPostgres: true),
+			fields: ["value') OR 1=1 --" => 'x']
+		);
 		$this->assertNull(actual: $sql);
 	}//end testAFieldNameOutsideAPlainNameWritesNothing()
 

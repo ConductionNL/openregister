@@ -29,11 +29,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use DateTimeImmutable;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimersInterface;
 use OCA\OpenRegister\Service\Case\CasePlanServiceInterface;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -92,7 +94,7 @@ class CaseItemTimerListener implements IEventListener {
 	private function onTransitioned(CaseItemTransitionedEvent $event): void {
 		$item = $event->getItem();
 		if ($item->getState() === CaseItem::STATE_ACTIVE) {
-			$this->timers->onEntered(item: $item, actor: null);
+			$this->timers->onEntered(item: $item, act: new FlowTimerAct(actor: null, now: new DateTimeImmutable()));
 		}
 
 		if ($item->isInTerminalState() === true) {

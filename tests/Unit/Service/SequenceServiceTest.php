@@ -24,6 +24,7 @@ namespace Unit\Service;
 
 use OCA\OpenRegister\Db\Sequence;
 use OCA\OpenRegister\Db\SequenceMapper;
+use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\DB\Exception as DbException;
 use OCP\IDBConnection;
@@ -89,7 +90,7 @@ class SequenceServiceTest extends TestCase {
 		$this->mapper->method('incrementScope')->willReturn(0);
 		$this->mapper->expects($this->once())->method('insert');
 
-		$value = $this->service->reserveNext(registerId: 1, schemaId: 2, scopeKey: '2026');
+		$value = $this->service->reserveNext(new SequenceScope(registerId: 1, schemaId: 2, scopeKey: '2026'));
 		$this->assertSame(1, $value);
 
 	}//end testFirstReservationSeedsAndReturnsOne()
@@ -108,7 +109,7 @@ class SequenceServiceTest extends TestCase {
 		$this->mapper->method('incrementScope')->willReturn(1);
 		$this->mapper->method('findForScope')->willReturn($this->row(3));
 
-		$value = $this->service->reserveNext(registerId: 1, schemaId: 2, scopeKey: '2026');
+		$value = $this->service->reserveNext(new SequenceScope(registerId: 1, schemaId: 2, scopeKey: '2026'));
 		$this->assertSame(2, $value);
 
 	}//end testSubsequentReservationIncrements()
@@ -130,7 +131,7 @@ class SequenceServiceTest extends TestCase {
 		);
 		$this->mapper->method('findForScope')->willReturn($this->row(3));
 
-		$value = $this->service->reserveNext(registerId: 1, schemaId: 2, scopeKey: '2026');
+		$value = $this->service->reserveNext(new SequenceScope(registerId: 1, schemaId: 2, scopeKey: '2026'));
 		$this->assertSame(2, $value);
 
 	}//end testSeedRaceFallsBackToIncrement()
@@ -148,7 +149,7 @@ class SequenceServiceTest extends TestCase {
 		$this->mapper->method('incrementScope')->willThrowException(new DbException('boom'));
 
 		$this->expectException(DbException::class);
-		$this->service->reserveNext(registerId: 1, schemaId: 2, scopeKey: '2026');
+		$this->service->reserveNext(new SequenceScope(registerId: 1, schemaId: 2, scopeKey: '2026'));
 
 	}//end testUnexpectedErrorRollsBack()
 

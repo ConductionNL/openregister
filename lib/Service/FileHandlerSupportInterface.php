@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\File\ShareLinkRequest;
 use OCP\Files\Node;
 use OCP\IUser;
 use OCP\Share\IShare;
@@ -78,9 +79,8 @@ interface FileHandlerSupportInterface extends ObjectFilesInterface, FileFolderSe
 	 *
 	 * See https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-share-api.html#create-a-new-share.
 	 *
-	 * @param string $path Path (from root) to the file/folder which should be shared
-	 * @param int|null $shareType The share type (0=user, 1=group, 3=public link, 4=email, etc.)
-	 * @param int|null $permissions Permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all)
+	 * @param ShareLinkRequest $request The path (from root), the share type (0=user, 1=group, 3=public link, 4=email,
+	 *                                  etc.) and the permissions (1=read, 2=update, 4=create, 8=delete, 16=share, 31=all).
 	 *
 	 * @throws \Exception If creating the share link fails
 	 *
@@ -90,7 +90,7 @@ interface FileHandlerSupportInterface extends ObjectFilesInterface, FileFolderSe
 	 *
 	 * @spec exclude Public share-link creation; deferred to the file-actions FileSharingHandler follow-up pass (see file-actions tasks.md DROP list).
 	 */
-	public function createShareLink(string $path, ?int $shareType = 3, ?int $permissions = null): string;
+	public function createShareLink(ShareLinkRequest $request): string;
 
 	/**
 	 * Clean and extract filename from a file path that may contain folder ID prefixes.

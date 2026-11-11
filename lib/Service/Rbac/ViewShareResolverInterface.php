@@ -35,13 +35,12 @@ interface ViewShareResolverInterface {
 	 * because the view said so. Mixing the two would put `owner` on a row an
 	 * administrator does not own and cannot hand back.
 	 *
-	 * @param array<string, mixed> $view The view, as the entity serialises it.
-	 * @param string $userId The caller.
-	 * @param string[] $userGroups The caller's group ids.
+	 * @param array<string, mixed> $view  The view, as the entity serialises it.
+	 * @param ViewerReach          $reach The caller and their group ids.
 	 *
 	 * @return string|null One of owner, write, read, or null when the view grants nothing.
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
-	public function accessFor(array $view, string $userId, array $userGroups): ?string;
+	public function accessOf(array $view, ViewerReach $reach): ?string;
 }//end interface

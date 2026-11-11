@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeSources;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCP\IL10N;
@@ -43,6 +44,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 
 /**
  * Pins the access outcomes of ObjectReadNode::execute().
@@ -125,7 +127,7 @@ final class ObjectReadAccessGoldenTest extends TestCase {
 		$config = ['register' => 'r', 'schema' => 's', 'filters' => ['status' => '{{status}}'], 'limit' => 5];
 
 		try {
-			$out = $node->execute($items, $config, $context);
+			$out = $node->execute(new FlowNodeCall(items: $items, config: $config, context: $context));
 			$actual = [
 				'outcome' => 'allowed',
 				'reads' => $reads,
@@ -234,8 +236,7 @@ final class ObjectReadAccessGoldenTest extends TestCase {
 		return new ObjectReadNode(
 			sources: new ObjectNodeSources(objects: $objects, registers: $registers, schemas: $schemas),
 			userManager: $users,
-			l10n: $l10n,
-			urls: $this->createMock(IURLGenerator::class)
+			presentation: new FlowNodePresentation(l10n: $l10n, urls: $this->createMock(IURLGenerator::class))
 		);
 	}//end node()
 }//end class

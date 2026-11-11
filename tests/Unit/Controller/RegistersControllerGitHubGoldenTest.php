@@ -36,6 +36,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
 
 /**
  * Golden test for RegistersController::publishToGitHub().
@@ -173,8 +175,8 @@ class RegistersControllerGitHubGoldenTest extends TestCase {
 	private function gitHub(array $case): GitHubClientInterface {
 		$client = $this->createMock(GitHubClientInterface::class);
 		$client->method('getFileSha')->willReturnCallback(
-			function (...$args) use ($case): ?string {
-				$this->calls[] = ['getFileSha', ...array_values($args)];
+			function (GitHubFileLocation $file) use ($case): ?string {
+				$this->calls[] = ['getFileSha', $file->owner, $file->repo, $file->path, $file->branch];
 				if (($case['shaFails'] ?? false) === true) {
 					throw new Exception('no file');
 				}
@@ -193,8 +195,8 @@ class RegistersControllerGitHubGoldenTest extends TestCase {
 			}
 		);
 		$client->method('publishConfiguration')->willReturnCallback(
-			function (...$args) use ($case): array {
-				$this->calls[] = ['publishConfiguration', ...array_values($args)];
+			function (GitHubFileLocation $file, GitHubFileWrite $write) use ($case): array {
+				$this->calls[] = ['publishConfiguration', $file->owner, $file->repo, $file->path, $file->branch, $write->content, $write->commitMessage, $write->fileSha];
 				if (($case['publishFails'] ?? false) === true) {
 					throw new Exception('refused');
 				}

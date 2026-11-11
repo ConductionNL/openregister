@@ -18,10 +18,12 @@ use OCA\OpenRegister\Listener\PartyMergeListener;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyMergeRules;
 use OCA\OpenRegister\Service\Party\PartyServiceInterface;
+use OCA\OpenRegister\Service\PersonLinkRef;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Golden outcomes of a party merge: which personal-data rows are moved, kept,
@@ -199,7 +201,7 @@ class PartyMergeListenerGoldenTest extends TestCase {
 		$moved = $this->link(objectUuid: 'case-2', partyUuid: 'party-b', role: 'belanghebbende');
 		$this->links->method('findByPartyUuid')->willReturn([$duplicate, $moved]);
 		$this->links->method('findByObjectContactAndRole')->willReturnCallback(
-			fn (string $objectUuid): ?ContactLink => ['case-1' => $held][$objectUuid] ?? null
+			fn (PersonLinkRef $ref): ?ContactLink => ['case-1' => $held][$ref->objectUuid] ?? null
 		);
 		$this->objects->expects($this->never())->method('saveObject');
 
@@ -285,10 +287,7 @@ class PartyMergeListenerGoldenTest extends TestCase {
 				],
 				'id' => 'party-a',
 			],
-			$this->anything(),
-			'1',
-			'7',
-			'party-a'
+			$this->callback(static fn (ObjectSaveOptions $options): bool => $options->target->register == '1' && $options->target->schema == '7' && $options->uuid == 'party-a')
 		)->willReturn($this->party(uuid: 'party-a'));
 
 		$this->listener()->handle(new ObjectsMergedEvent('party-a', ['party-b'], 'merge-1'));

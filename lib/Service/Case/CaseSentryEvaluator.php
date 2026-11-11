@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
+use OCA\OpenRegister\Service\Flow\FlowExpressionDataOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 
 /**
@@ -169,29 +170,9 @@ class CaseSentryEvaluator {
 	}//end validateSentryShape()
 
 	/**
-	 * Which entry sentry admits an item now, if any.
-	 *
-	 * Empty entry criteria mean "satisfied as soon as the parent is active";
-	 * the parent check is the CALLER's (the tree knows the parent), this
-	 * method answers the criteria alone.
-	 *
-	 * @param CaseItem $item The item.
-	 * @param CasePlanTree $tree The plan.
-	 * @param array<string, mixed> $object The anchoring object's data.
-	 * @param string|null $event The event being handled, or null.
-	 * @param array<string, mixed> $payload The event's payload.
-	 *
-	 * @return string|null The admitting sentry's id, {@see DEFAULT_ENTRY}, or null when none fires.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
-	 */
-	public function entrySentry(CaseItem $item, CasePlanTree $tree, array $object, ?string $event = null, array $payload = []): ?string {
-		return $this->entrySentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: $object, event: $event, payload: $payload));
-	}//end entrySentry()
-
-	/**
 	 * Which entry sentry admits an item on one occasion, if any. Empty entry
-	 * criteria admit at once ({@see DEFAULT_ENTRY}).
+	 * criteria admit at once ({@see DEFAULT_ENTRY}); the parent check is the
+	 * CALLER's (the tree knows the parent), this method answers the criteria alone.
 	 *
 	 * @param CaseItem           $item     The item.
 	 * @param CaseSentryOccasion $occasion The plan, the object and the event being handled.
@@ -208,24 +189,6 @@ class CaseSentryEvaluator {
 
 		return $this->firingSentry(criteria: $criteria, moment: $this->momentOf(occasion: $occasion));
 	}//end entrySentryOn()
-
-	/**
-	 * Which exit sentry exits an item now, if any. Empty exit criteria never
-	 * fire.
-	 *
-	 * @param CaseItem $item The item.
-	 * @param CasePlanTree $tree The plan.
-	 * @param array<string, mixed> $object The anchoring object's data.
-	 * @param string|null $event The event being handled, or null.
-	 * @param array<string, mixed> $payload The event's payload.
-	 *
-	 * @return string|null The firing sentry's id, or null.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
-	 */
-	public function exitSentry(CaseItem $item, CasePlanTree $tree, array $object, ?string $event = null, array $payload = []): ?string {
-		return $this->exitSentryOn(item: $item, occasion: new CaseSentryOccasion(tree: $tree, object: $object, event: $event, payload: $payload));
-	}//end exitSentry()
 
 	/**
 	 * Which exit sentry exits an item on one occasion, if any. Empty exit
@@ -248,25 +211,9 @@ class CaseSentryEvaluator {
 	}//end exitSentryOn()
 
 	/**
-	 * The document an if-part is evaluated against: `dataFor()`'s shape
-	 * extended with a `case` key. Additive, so a flow expression author
-	 * already knows every other key.
-	 *
-	 * @param CasePlanTree $tree The plan.
-	 * @param array<string, mixed> $object The anchoring object's data.
-	 * @param string|null $event The event being handled.
-	 * @param array<string, mixed> $payload The event's payload.
-	 *
-	 * @return array<string, mixed> The data document.
-	 *
-	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
-	 */
-	public function dataFor(CasePlanTree $tree, array $object, ?string $event, array $payload): array {
-		return $this->dataOn(occasion: new CaseSentryOccasion(tree: $tree, object: $object, event: $event, payload: $payload));
-	}//end dataFor()
-
-	/**
-	 * The document an if-part is evaluated against on one occasion: see {@see dataFor()}.
+	 * The document an if-part is evaluated against on one occasion:
+	 * `FlowExpression::dataFor()`'s shape extended with a `case` key. Additive,
+	 * so a flow expression author already knows every other key.
 	 *
 	 * @param CaseSentryOccasion $occasion The plan, the object and the event being handled.
 	 *
@@ -277,7 +224,7 @@ class CaseSentryEvaluator {
 	public function dataOn(CaseSentryOccasion $occasion): array {
 		$object = $occasion->object;
 		$context = ['event' => $occasion->event, 'payload' => $occasion->payload];
-		$data = FlowExpression::dataFor(item: [FlowItems::JSON => $object], context: $context);
+		$data = FlowExpression::documentFor(item: [FlowItems::JSON => $object], options: new FlowExpressionDataOptions(context: $context));
 		$data['subject'] = $object;
 		$data['case'] = ['items' => $occasion->tree->stateMap(), 'object' => $object] + $context;
 

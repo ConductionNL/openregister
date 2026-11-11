@@ -56,7 +56,6 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
-use Throwable;
 
 /**
  * Turns a settings write into per-key audit rows on the existing chain.
@@ -224,16 +223,7 @@ class SettingsChangeAuditor {
 	public function recordChange(string $app, SettingsChange $change): int {
 		$rows = [];
 		foreach ($this->diff(change: $change) as $entry) {
-			$rows[] = $this->row(
-				action: self::ACTION_UPDATED,
-				changed: [
-					'app' => $app,
-					'key' => $entry['key'],
-					'old' => $entry['old'],
-					'new' => $entry['new'],
-					'secret' => $entry['secret'],
-				]
-			);
+			$rows[] = $this->updateRow(app: $app, entry: $entry);
 		}
 
 		if ($rows === []) {
@@ -242,6 +232,27 @@ class SettingsChangeAuditor {
 
 		return $this->write(rows: $rows);
 	}//end recordChange()
+
+	/**
+	 * The row for one changed key.
+	 *
+	 * @param string                                                 $app   The app whose settings changed.
+	 * @param array{key: string, old: mixed, new: mixed, secret: bool} $entry The change.
+	 *
+	 * @return AuditTrail The row.
+	 */
+	private function updateRow(string $app, array $entry): AuditTrail {
+		return $this->row(
+			action: self::ACTION_UPDATED,
+			changed: [
+				'app' => $app,
+				'key' => $entry['key'],
+				'old' => $entry['old'],
+				'new' => $entry['new'],
+				'secret' => $entry['secret'],
+			]
+		);
+	}//end updateRow()
 
 	/**
 	 * Record a configuration import, as ONE row naming what it overwrote.
@@ -285,13 +296,7 @@ class SettingsChangeAuditor {
 	 * @return AuditTrail The row.
 	 */
 	private function row(string $action, array $changed): AuditTrail {
-		$user = $this->userSession->getUser();
-		$userId = 'system';
-		$userName = 'System';
-		if ($user !== null) {
-			$userId = $user->getUID();
-			$userName = $user->getDisplayName();
-		}
+		[$userId, $userName] = $this->actor();
 
 		$row = new AuditTrail();
 		$row->setUuid(Uuid::v4()->toRfc4122());
@@ -305,6 +310,23 @@ class SettingsChangeAuditor {
 	}//end row()
 
 	/**
+	 * Who is making the change: the session user, or the system when there is none.
+	 *
+	 * @return array{0: string, 1: string} The user id and display name.
+	 */
+	private function actor(): array {
+		$user = $this->userSession->getUser();
+		$userId = 'system';
+		$userName = 'System';
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		return [$userId, $userName];
+	}//end actor()
+
+	/**
 	 * Write the rows through the one path that seals.
 	 *
 	 * @param array<int, AuditTrail> $rows The rows.
@@ -312,22 +334,12 @@ class SettingsChangeAuditor {
 	 * @return int How many were written.
 	 */
 	private function write(array $rows): int {
-		try {
-			$this->mapper->insertAuditTrails(entries: $rows);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[SettingsChangeAuditor] Could not record a settings change; the setting itself was stored',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'entries' => count($rows),
-					'exception' => $e->getMessage(),
-				]
-			);
-			return 0;
-		}
+		$writer = new AuditRowWriter(mapper: $this->mapper, logger: $this->logger);
 
-		return count($rows);
+		return $writer->write(
+			rows: $rows,
+			failure: '[SettingsChangeAuditor] Could not record a settings change; the setting itself was stored'
+		);
 	}//end write()
 
 	/**

@@ -41,6 +41,8 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
+use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -80,26 +82,28 @@ class FlowTimerSubjectTerminalListener implements IEventListener {
 			if ($event instanceof TaskTerminalEvent === true) {
 				$task = $event->getTask();
 				$uuid = (string)$task->getUuid();
+				$reason = sprintf(
+					"Task '%s' reached terminal state '%s' (outcome '%s').",
+					$uuid,
+					(string)$task->getState(),
+					(string)$task->getOutcome()
+				);
 				$cancelled = $this->timers->cancelForSubject(
-					subjectType: 'task',
-					subjectUuid: $uuid,
-					reason: sprintf(
-						"Task '%s' reached terminal state '%s' (outcome '%s').",
-						$uuid,
-						(string)$task->getState(),
-						(string)$task->getOutcome()
-					),
-					actor: sprintf('task:%s', $uuid)
+					subject: new TimerSubjectRef(type: 'task', uuid: $uuid),
+					change: new TimerChange(reason: $reason, actor: sprintf('task:%s', $uuid))
 				);
 				$this->report(count: $cancelled, subject: 'task ' . $uuid);
 				return;
 			}
 
 			if ($event instanceof FlowRunTerminalEvent === true) {
+				$runUuid = $event->getRunUuid();
 				$cancelled = $this->timers->cancelForRun(
-					runUuid: $event->getRunUuid(),
-					reason: sprintf("Run '%s' reached terminal status '%s'.", $event->getRunUuid(), $event->getStatus()),
-					actor: sprintf('flow-run:%s', $event->getRunUuid())
+					runUuid: $runUuid,
+					change: new TimerChange(
+						reason: sprintf("Run '%s' reached terminal status '%s'.", $runUuid, $event->getStatus()),
+						actor: sprintf('flow-run:%s', $runUuid)
+					)
 				);
 				$this->report(count: $cancelled, subject: 'run ' . $event->getRunUuid());
 			}

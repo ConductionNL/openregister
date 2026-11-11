@@ -39,6 +39,8 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleDispatcherInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRulesInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\TaskTransitionNotifier;
+use OCA\OpenRegister\Service\Task\TaskAct;
+use OCA\OpenRegister\Service\Task\TaskAnswer;
 use OCA\OpenRegister\Service\Task\TaskCalendarProjector;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskProjectionService;
@@ -53,6 +55,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * Every branch of handleWrite(), request() and isProjected(), pinned.
@@ -118,13 +121,13 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 
 			return $outcome;
 		};
-		$tasks->method('complete')->willReturnCallback(
-			static fn (string $uuid, string $outcome, ?string $resultText, ?string $comment, ?string $actor): Task => $answer(
-				['complete', $uuid, $outcome, $resultText, $comment, $actor]
+		$tasks->method('completeWithAnswer')->willReturnCallback(
+			static fn (string $uuid, TaskAnswer $completion, ?string $actor): Task => $answer(
+				['complete', $uuid, $completion->outcome, $completion->resultText, $completion->comment, $actor]
 			)
 		);
 		$tasks->method('cancel')->willReturnCallback(
-			static fn (string $uuid, ?string $reason, ?string $actor): Task => $answer(['cancel', $uuid, $reason, $actor])
+			static fn (TaskActorRef $ref, ?string $reason): Task => $answer(['cancel', $ref->uuid, $reason, $ref->actor])
 		);
 
 		return $tasks;
@@ -324,7 +327,7 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 		);
 		$this->assertSame(
 			[DoesNotExistException::class, 'no such task'],
-			self::outcome(fn () => $this->gate()->request(taskUuid: self::UUID, verb: 'assign', actor: null))
+			self::outcome(fn () => $this->gate()->request(taskUuid: self::UUID, act: new TaskAct(verb: 'assign', actor: null)))
 		);
 		$this->assertSame(
 			[
@@ -350,7 +353,7 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 		$this->assertSame('RENDERED:active', $this->gate()->handleWrite(calendarData: self::vtodo(status: 'IN-PROCESS'), actor: 'alice'));
 		$this->assertSame('RENDERED:completed', $this->gate()->handleWrite(calendarData: self::vtodo(status: 'COMPLETED'), actor: 'alice'));
 		$this->assertSame('RENDERED:completed', $this->gate()->handleWrite(calendarData: self::vtodo(status: 'CANCELLED'), actor: null));
-		$this->assertSame($done, $this->gate()->request(taskUuid: 'other-uuid', verb: 'cancel', actor: 'bob'));
+		$this->assertSame($done, $this->gate()->request(taskUuid: 'other-uuid', act: new TaskAct(verb: 'cancel', actor: 'bob')));
 
 		$this->assertSame(
 			[
@@ -401,7 +404,7 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 
 		$this->assertSame(
 			[TaskAccessDeniedException::class, $reason],
-			self::outcome(fn () => $this->gate()->request(taskUuid: self::UUID, verb: 'assign', actor: 'alice'))
+			self::outcome(fn () => $this->gate()->request(taskUuid: self::UUID, act: new TaskAct(verb: 'assign', actor: 'alice')))
 		);
 		$this->assertSame(
 			array_merge([['find', self::UUID]], self::refusal(verb: 'assign', actor: 'alice', reason: $reason, audited: true)),
@@ -453,7 +456,7 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 
 			$this->assertSame(
 				[TaskAccessDeniedException::class, 'nobody'],
-				self::outcome(fn () => $this->gate()->request(taskUuid: self::UUID, verb: 'cancel', actor: $actor))
+				self::outcome(fn () => $this->gate()->request(taskUuid: self::UUID, act: new TaskAct(verb: 'cancel', actor: $actor)))
 			);
 			$this->assertSame(
 				[
@@ -484,7 +487,7 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 
 		$this->assertSame(
 			[TaskConflictException::class, 'raced!'],
-			self::outcome(fn () => $this->gate()->request(taskUuid: self::UUID, verb: 'complete', actor: 'alice'))
+			self::outcome(fn () => $this->gate()->request(taskUuid: self::UUID, act: new TaskAct(verb: 'complete', actor: 'alice')))
 		);
 		$refusal = self::refusal(verb: 'complete', actor: 'alice', reason: 'raced!', audited: true);
 		$this->assertSame(
@@ -505,7 +508,7 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 		$unsaved = new Task();
 		$unsaved->setUuid(self::UUID);
 		$this->world = ['task' => $unsaved, 'lifecycle' => $unsaved];
-		self::outcome(fn () => $this->gate()->request(taskUuid: self::UUID, verb: 'edit', actor: 'alice'));
+		self::outcome(fn () => $this->gate()->request(taskUuid: self::UUID, act: new TaskAct(verb: 'edit', actor: 'alice')));
 		$this->assertSame(['find', 'reconcile', 'notify', 'info'], array_map(static fn (array $event): string => $event[0], $this->events));
 	}//end testRefusalSideEffectsFailSoft()
 }//end class

@@ -95,19 +95,19 @@ class GeoSpatialEvaluatorTest extends TestCase {
 
 	public function testNearIncludesPointInsideRadius(): void {
 		// Two points ~111m apart at this latitude: 5.12,52.09 and 5.12,52.091
-		$filter = GeoFilter::fromNearAndRadius(5.12, 52.09, 500);
+		$filter = GeoFilter::fromNearAndRadius(['lon' => 5.12, 'lat' => 52.09, 'radius' => 500]);
 		$this->assertTrue($this->evaluator->matches($this->point(5.12, 52.091), $filter));
 	}//end testNearIncludesPointInsideRadius()
 
 	public function testNearExcludesPointOutsideRadius(): void {
 		// 5.12 → 5.13 is ~684m at lat 52, well outside 500m.
-		$filter = GeoFilter::fromNearAndRadius(5.12, 52.09, 500);
+		$filter = GeoFilter::fromNearAndRadius(['lon' => 5.12, 'lat' => 52.09, 'radius' => 500]);
 		$this->assertFalse($this->evaluator->matches($this->point(5.13, 52.09), $filter));
 	}//end testNearExcludesPointOutsideRadius()
 
 	public function testNearRejectsZeroOrNegativeRadius(): void {
 		$this->expectException(InvalidArgumentException::class);
-		GeoFilter::fromNearAndRadius(5.12, 52.09, 0);
+		GeoFilter::fromNearAndRadius(['lon' => 5.12, 'lat' => 52.09, 'radius' => 0]);
 	}//end testNearRejectsZeroOrNegativeRadius()
 
 	public function testHaversineKnownDistance(): void {
