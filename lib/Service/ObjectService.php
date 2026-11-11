@@ -3065,6 +3065,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             $stored = $this->assertMayWriteUnseen(request: $request);
             if ($stored === null) {
                 $this->refuseANumericUuidForANewObject(uuid: $request->uuid, _rbac: $request->rbac);
+                $this->refuseAnUpperCaseUuidForANewObject(uuid: $request->uuid, _rbac: $request->rbac);
             }
 
             return $stored;
@@ -3098,6 +3099,37 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             message: 'An identifier of only digits names a stored object by its id and cannot be the uuid of a new object.'
         );
     }//end refuseANumericUuidForANewObject()
+
+    /**
+     * Refuse a new object whose caller-chosen uuid is a UUID with upper-case letters.
+     *
+     * A uuid is matched without regard to case on some databases and with it on
+     * others, so two spellings of one UUID could name two rows. New objects take
+     * the lower-case form. Skipped with RBAC off, as for the digits-only refusal.
+     *
+     * @param string $uuid  The uuid the save names, which no stored row holds.
+     * @param bool   $_rbac Whether the write is judged for the signed-in caller.
+     *
+     * @return void
+     *
+     * @throws ValidationException When the uuid is a UUID that is not lower case.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function refuseAnUpperCaseUuidForANewObject(string $uuid, bool $_rbac): void
+    {
+        if ($_rbac === false || $uuid === strtolower($uuid)) {
+            return;
+        }
+
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $uuid) !== 1) {
+            return;
+        }
+
+        throw new ValidationException(
+            message: 'The uuid of a new object is written in lower case: use "'.strtolower($uuid).'".'
+        );
+    }//end refuseAnUpperCaseUuidForANewObject()
 
     /**
      * Ask the create permission, about the incoming data.
