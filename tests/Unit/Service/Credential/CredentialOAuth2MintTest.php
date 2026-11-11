@@ -34,6 +34,9 @@ namespace Unit\Service\Credential;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
@@ -172,13 +175,19 @@ class CredentialOAuth2MintTest extends TestCase {
 		);
 
 		return new CredentialBrokerService(
-			$objectService,
-			$store,
-			$this->createMock(ProviderCatalogue::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IClientService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(OrganisationService::class)
+			sources: new CredentialSources(
+				objectService: $objectService,
+				credentialStore: $store,
+				catalogue: $this->createMock(ProviderCatalogue::class)
+			),
+			principals: new CredentialPrincipals(
+				userSession: $this->createMock(IUserSession::class),
+				organisationService: $this->createMock(OrganisationService::class)
+			),
+			outbound: new CredentialOutbound(
+				clientService: $this->createMock(IClientService::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}
 }
