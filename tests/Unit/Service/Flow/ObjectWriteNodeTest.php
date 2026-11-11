@@ -33,6 +33,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 
 /**
  * Unit coverage for the `openregister.object-write` node.
@@ -580,7 +582,8 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$patched = null;
 		$this->objects->method('patchObject')->willReturnCallback(
-			function (string $objectId) use (&$patched): ObjectEntity {
+			function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true) use (&$patched): ObjectEntity {
+				$objectId = $patch->objectId;
 				$patched = $objectId;
 
 				return $this->entity($objectId, []);
@@ -772,7 +775,12 @@ class ObjectWriteNodeTest extends TestCase {
 		$seen = null;
 		$this->objects->expects($this->never())->method('saveObject');
 		$this->objects->method('patchObject')->willReturnCallback(
-			function (string $objectId, array $data, mixed $register = null, mixed $schema = null, bool $_rbac = true, bool $_multitenancy = true, ?IUser $currentUser = null) use (&$seen): ObjectEntity {
+			function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true) use (&$seen): ObjectEntity {
+				$objectId = $patch->objectId;
+				$data = $patch->data;
+				$register = $patch->target->register;
+				$schema = $patch->target->schema;
+				$currentUser = $patch->currentUser;
 				$seen = compact('objectId', 'data', 'register', 'schema', '_rbac', '_multitenancy', 'currentUser');
 
 				return $this->entity($objectId, ['sourceId' => 'x', 'title' => 'Alpha', 'status' => 'seen']);
@@ -861,7 +869,11 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$seen = null;
 		$this->objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, mixed $register = null, mixed $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false, ?IUser $currentUser = null) use (&$seen): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$seen): bool {
+				$uuid = $deletion->uuid;
+				$register = $deletion->target->register;
+				$schema = $deletion->target->schema;
+				$currentUser = $deletion->currentUser;
 				$seen = compact('uuid', 'register', 'schema', '_rbac', '_multitenancy', '_retentionSweep', 'currentUser');
 
 				return true;
@@ -999,16 +1011,8 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$seen = null;
 		$this->objects->method('deleteObject')->willReturnCallback(
-			function (
-				string $uuid,
-				mixed $register = null,
-				mixed $schema = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-				bool $_retentionSweep = false,
-				?IUser $currentUser = null,
-				bool $permanent = false
-			) use (&$seen): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$seen): bool {
+				$permanent = $deletion->permanent;
 				$seen = $permanent;
 
 				return true;
@@ -1250,7 +1254,7 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$deletes = 0;
 		$this->objects->method('deleteObject')->willReturnCallback(
-			static function () use (&$deletes): bool {
+			static function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$deletes): bool {
 				$deletes++;
 
 				return true;
@@ -1283,7 +1287,7 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$attempts = 0;
 		$this->objects->method('deleteObject')->willReturnCallback(
-			static function () use (&$attempts): bool {
+			static function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$attempts): bool {
 				$attempts++;
 
 				return false;
