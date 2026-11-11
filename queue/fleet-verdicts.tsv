@@ -1387,6 +1387,7 @@ opencatalogi	2532	62021e4a15b674fe820803542eb7d68bedce4be9	GREEN	FV08:5	tree gre
 opencatalogi	2533	78124ad164b4fb19df1e120bbc77dffb614b34a9	GREEN	FV08:5	tree green (phpunit 4754, 56 baseline errors only; vitest 736 ok), diff review clean
 opencatalogi	2534	fa7e34401ad3cdfae0dc77e7077563234bc254c4	GREEN	FV08:5	tree green (phpunit 4754, 56 baseline errors only; vitest 736 ok), diff review clean
 opencatalogi	2535	5a6f5c450d7ff3a6275645bf3c7e3eed31b5c770	GREEN	FV08:5	tree green (phpunit 4754, 56 baseline errors only; vitest 736 ok), diff review clean
+stackiq	1441	ae2500a15d083052cfae9a4b7673610a1fc89dbd	GREEN	FV14:s1	unit suites green on the tree (baseline failures excluded)
 shillinq	2636	ebb8d52661608a493bb15bd528f5e8c60c7a3a71	GREEN	FV03:9	tree green (phpunit 7282 ok, vitest 1070 ok), diff review clean
 shillinq	2644	c9f62b0e10a27d326ae5496091984a414e4dba73	GREEN	FV03:9	tree green (phpunit 7282 ok, vitest 1070 ok), diff review clean
 shillinq	2658	333715c8b39cf310a4f446a99af2ebe6856a8715	GREEN	FV03:9	tree green (phpunit 7282 ok, vitest 1070 ok), diff review clean
