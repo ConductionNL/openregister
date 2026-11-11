@@ -2493,3 +2493,4 @@ stackiq	1563	b5e635f12bbd23a2b26cb99f60a7b51ac375b828	GREEN	vm1:18168	tree of 18
 stackiq	1564	cb210390fd077d2b19d04ddd5db72e03c1e20911	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
 stackiq	1565	af55c569d42659ac6aa8f844bfb954481d7a456a	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
 stackiq	1566	5ab13f5f94e07f7055777c2fc0e65bc1bb71e1eb	GREEN	vm1:18168	tree of 18 green on adb463af44; unit failures only inherited (29); floor held
+opencatalogi	2540	fbca0cc3b945a9f54174e5c21732bff1ad34871a	GREEN	vm2:4	unit 5133: only the 5 baseline errors; floor holds; validation order kept
