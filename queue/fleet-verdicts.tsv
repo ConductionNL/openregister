@@ -416,3 +416,27 @@ pipelinq	3231	7f2f4505d8d1bf76a487b50adc9ce2ad00d92733	GREEN	FV07:3	tree green: 
 integriq	3076	08d995daf1d2214cf995ef501b165565958b9ccb	RED	FV09:1	phpunit AppOwnedInterfaceBindingTest::testEveryBareAppOwnedInterfaceIsBound (ServiceBindings.php aliases moved into constant maps, the source-text binding check no longer finds them)
 opencatalogi	2469	3561fa9dc2775471ffa7d52cd8cadeaf334ee6aa	CONFLICT	FV08:2	conflicts with tree of earlier PRs on development
 opencatalogi	2472	c949ca88787c25207ce05a5293ff74417bca4b97	CONFLICT	FV08:2	conflicts with tree of earlier PRs on development
+integriq	3062	21e6df9fa387c3d113f8e3610c808ee5f23655cf	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3063	f2a451b9d21d2a54354a5383eaf458e94a911dc7	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3064	2b97b064e58f769e78034f136ddcaccd5f09d14e	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3065	1da12bfb659c3f08e33d28de4f73e3de946a632d	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3066	f97c8e99d6146b5f8f1987b3e5bc5aafb5e6a978	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3067	593dd3abcdbf032e59b4c5d3fc44198e878e807e	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3068	76464e454c8e7afad07e15d0dab78306534caffc	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3069	b15639998c4a69ef8645ec2b0e66878eb2876ffb	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3070	dc7c1b10ddfae02ecb10c81fa1f13228e6c0c3dd	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3071	aa429ba40a25450f2f4affbf72d443e1eccfaeb1	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3072	e73053358e69da9a079a2acaf9c23ef4451e3335	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3073	89168b326c83f688ed52890009df2da53ecd0a66	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3074	4f5782c8f5bbca6b36287c4d4bde83e9bb6d33d5	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3075	0278dc3de218027e9e5f3aba39196b4dbec757f1	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3077	b3219a73817c3b869aa75a7349961d58d6a6ceb2	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3078	12623805775497f264440a31b529a09384362c03	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3079	409d4977901cff752fd9fcc64fa48fce0bcf380d	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3080	9344a87c1688a8324549ff89a0d43c59553d8886	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3081	558730bcd1d1e3af1b077a015c3a806d9a148138	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3082	932254b860b031d109f8e9687f17f32362741ad3	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3084	10f823ed6584fd84492ddafca692a2a476c30d9d	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3085	61517258a373d5ee8518d05cb99a6edb0991ee63	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3086	e7ff97c01970d93554cc5e2e5e1a2242983cfdb9	GREEN	FV09:1	unit suite green on the verify tree
+integriq	3087	afb7a187c176c00b7cf9953b560c58b99b453a89	GREEN	FV09:1	unit suite green on the verify tree
