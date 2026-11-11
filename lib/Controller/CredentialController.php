@@ -68,6 +68,7 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
@@ -576,9 +577,10 @@ class CredentialController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				uuid: $target->uuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
+					uuid: $target->uuid
+				)
 			);
 		} catch (Throwable $e) {
 			$this->services->session->logger->error(
@@ -679,9 +681,10 @@ class CredentialController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA,
-				uuid: (string) $existing->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
+					uuid: (string) $existing->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to update shares'], Http::STATUS_INTERNAL_SERVER_ERROR);

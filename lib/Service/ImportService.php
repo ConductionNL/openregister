@@ -71,6 +71,9 @@ use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Service for importing data from various formats with ReactPHP optimization
@@ -762,12 +765,13 @@ class ImportService implements ObjectImporterInterface {
 	private function saveJsonImportRow(array $row, array $target): ObjectEntity {
 		return $this->stores->objectService->saveObject(
 			object: $row['body'],
-			register: $target['register'],
-			schema: $target['schema'],
-			uuid: $row['uuid'],
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $target['register'], schema: $target['schema']),
+				uuid: $row['uuid'],
+				actor: new SaveActor(currentUser: $target['currentUser'])
+			),
 			_rbac: $target['_rbac'],
-			_multitenancy: $target['_multitenancy'],
-			currentUser: $target['currentUser']
+			_multitenancy: $target['_multitenancy']
 		);
 	}//end saveJsonImportRow()
 

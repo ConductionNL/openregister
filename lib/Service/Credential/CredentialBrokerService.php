@@ -81,6 +81,7 @@ use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
@@ -509,8 +510,7 @@ class CredentialBrokerService {
 		// below, which already bypasses RBAC for exactly this reason.
 		$saved = $this->sources->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA)),
 			_rbac: false,
 			_multitenancy: false
 		);

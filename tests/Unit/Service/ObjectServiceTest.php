@@ -85,7 +85,9 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -767,8 +769,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->service->saveObject(
 			object: ['x' => 1],
-			register: $this->register,
-			schema: $schemaNoVal
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $schemaNoVal))
 		);
 
 		$this->assertNotNull($handlerScope, 'The save never reached the handler.');
