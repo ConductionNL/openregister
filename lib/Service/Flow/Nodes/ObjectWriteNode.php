@@ -149,6 +149,7 @@ use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
@@ -878,11 +879,12 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 		}
 
 		return $this->objects->patchObject(
-			objectId: (string)$item->matched->getUuid(),
-			data: $item->payload,
-			register: $plan->register,
-			schema: $plan->schema,
-			currentUser: $plan->owner
+			patch: new ObjectPatch(
+				objectId: (string)$item->matched->getUuid(),
+				data: $item->payload,
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				currentUser: $plan->owner
+			)
 		);
 	}//end persist()
 
