@@ -122,7 +122,13 @@ class CaseControllerForwardingGoldenTest extends TestCase {
 			return $this->item();
 		});
 
-		$response = $this->controller()->attach('o', 'k', 'humanTask', 'N', 'D', 'p', [1], [2], ['u'], ['g'], 'r', '2026-01-01', '2026-02-01', false);
+		$body = [
+			'objectUuid' => 'o', '_route' => 'openregister.case.attach',
+			'expiresAt' => '2026-02-01', 'required' => 'false', 'key' => 'k', 'type' => 'humanTask', 'name' => 'N', 'description' => 'D', 'parent' => 'p',
+			'entryCriteria' => [1], 'exitCriteria' => [2], 'candidateUsers' => ['u'], 'candidateGroups' => ['g'], 'candidateRole' => 'r', 'dueAt' => '2026-01-01',
+		];
+
+		$response = $this->controller($body)->attach('o');
 
 		$this->assertSame(Http::STATUS_CREATED, $response->getStatus());
 		$this->assertSame('i-1', $response->getData()['uuid']);
@@ -146,7 +152,7 @@ class CaseControllerForwardingGoldenTest extends TestCase {
 			throw new CaseValidationException('An ad-hoc item cannot declare its own authorization');
 		});
 
-		$response = $this->controller(['authorization' => null, 'name' => 'ignored'])->attach('o', 'k');
+		$response = $this->controller(['authorization' => null, 'key' => 'k', 'name' => null])->attach('o');
 
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertSame([['o', ['key' => 'k', 'required' => true, 'authorization' => null], 'alice']], $this->calls);
@@ -158,9 +164,34 @@ class CaseControllerForwardingGoldenTest extends TestCase {
 			return $this->item();
 		});
 
-		$this->controller(['key' => 'body'])->attach('o');
+		$this->controller(['name' => 'N'])->attach('o');
 
-		$this->assertSame([['o', ['required' => true], 'alice']], $this->calls);
+		$this->assertSame([['o', ['name' => 'N', 'required' => true], 'alice']], $this->calls);
+	}
+
+	public function testAttachReadsRequiredTheWayARouteBindsABoolean(): void {
+		$this->plans->method('attachAdHoc')->willReturnCallback(function (CaseAdHocRequest $request): CaseItem {
+			$this->calls[] = $request->data['required'];
+			return $this->item();
+		});
+
+		foreach (['false', '0', '', '1', 'true', 'yes'] as $value) {
+			$this->request = $this->createMock(IRequest::class);
+			$this->controller(['required' => $value])->attach('o');
+		}
+
+		$this->assertSame([false, false, false, true, true, true], $this->calls);
+	}
+
+	public function testAttachRefusesAFieldOfTheWrongTypeBeforeTheService(): void {
+		$this->plans->expects($this->never())->method('attachAdHoc');
+
+		$wrongList   = $this->controller(['entryCriteria' => 'not-a-list'])->attach('o');
+		$this->request = $this->createMock(IRequest::class);
+		$wrongString = $this->controller(['name' => ['N']])->attach('o');
+
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['error' => 'Parameter `entryCriteria` must be an array']], [$wrongList->getStatus(), $wrongList->getData()]);
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['error' => 'Parameter `name` must be a string']], [$wrongString->getStatus(), $wrongString->getData()]);
 	}
 
 	public function testTransitionForwardsItsReason(): void {

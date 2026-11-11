@@ -73,6 +73,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests that a save cannot reach a draft its caller cannot read.
@@ -205,7 +206,7 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->method('validateObject')->willReturn(new ValidationResult(null));
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -244,7 +245,7 @@ class ObjectServiceHiddenRowWriteTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end setUp()
 
 	/**

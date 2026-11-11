@@ -29,7 +29,7 @@ namespace Unit\Service\Import;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Import\ImportCommit;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\ImportPreview;

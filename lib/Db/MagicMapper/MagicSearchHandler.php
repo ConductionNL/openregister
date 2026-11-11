@@ -70,6 +70,7 @@ use OCA\OpenRegister\Support\NullFilter;
 use OCA\OpenRegister\Support\OrderParameter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\DB\QueryBuilder\ICompositeExpression;
+use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
@@ -4254,89 +4255,166 @@ class MagicSearchHandler {
 	 * @return void
 	 */
 	private function applyFullTextSearch(TableFilterRun $run, bool $fuzzyEnabled = false): void {
-		$qb     = $run->qb;
 		$search = trim($run->query['_search']);
-		$schema = $run->schema();
-		$isPostgres = $this->isPostgresPlatform();
+		$scope  = new SearchLeafScope(schema: $run->schema(), isPostgres: $this->isPostgresPlatform());
+		$scope->fuzzyEnabled = $fuzzyEnabled;
+		$searchRun           = new SearchTermRun(filter: $run, scope: $scope);
 
 		// A term carrying AND/OR/NOT, brackets, a quoted phrase or a wildcard is
 		// parsed and compiled. Anything else keeps the substring match below,
 		// unchanged, which is what makes an operator-free term mean exactly what
 		// it meant before this change.
 		if ($this->termParser->needsParsing(term: $search) === true) {
-			$scope = new SearchLeafScope(schema: $schema, isPostgres: $isPostgres);
-			$scope->fuzzyEnabled = $fuzzyEnabled;
-			$qb->andWhere(
-				$this->termCompiler->compile(
-					node: $this->termParser->parse(term: $search),
-					leafBuilder: fn (string $pattern, string $literal): string => $this->buildSearchLeafQbSql(
-						qb: $qb,
-						leaf: $scope->term(pattern: $pattern, literal: $literal)
-					)
-				)
-			);
-
+			$this->applyParsedSearch(run: $searchRun);
 			return;
-		}//end if
+		}
 
-		$properties = $schema->getProperties();
+		$this->applySubstringSearch(run: $searchRun);
+	}//end applyFullTextSearch()
+
+	/**
+	 * Narrow the query by a parsed boolean search term
+	 *
+	 * @param SearchTermRun $run The search: filter pass and leaf scope.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function applyParsedSearch(SearchTermRun $run): void {
+		$qb    = $run->qb();
+		$scope = $run->scope;
+		$qb->andWhere(
+			$this->termCompiler->compile(
+				node: $this->termParser->parse(term: $run->term()),
+				leafBuilder: fn (string $pattern, string $literal): string => $this->buildSearchLeafQbSql(
+					qb: $qb,
+					leaf: $scope->term(pattern: $pattern, literal: $literal)
+				)
+			)
+		);
+	}//end applyParsedSearch()
+
+	/**
+	 * Narrow the query by an operator-free term: a case-insensitive substring
+	 * match on the text properties and the name, description and summary, plus
+	 * a similarity match on the name when fuzzy matching is asked
+	 *
+	 * @param SearchTermRun $run The search: filter pass and leaf scope.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function applySubstringSearch(SearchTermRun $run): void {
+		$qb = $run->qb();
 		$searchConditions = $qb->expr()->orX();
 
 		// Use lowercase search for case-insensitive matching.
-		$lowerSearch = strtolower($search);
-		$searchPattern = $qb->createNamedParameter('%' . $lowerSearch . '%');
-		$searchTermParam = $qb->createNamedParameter($search);
-
-		// Search in text-based schema properties (LIKE only for performance).
-		// Skip date/time formatted fields — PostgreSQL LOWER() only works on text columns.
-		$dateFormats = ['date', 'date-time', 'time'];
-		foreach ($properties ?? [] as $field => $propertyConfig) {
-			// An encrypted property's column holds ciphertext (see
-			// MagicMapper::buildTableColumnsFromSchema()); including it in a LIKE
-			// full-text scan would scan envelopes that can never match a
-			// plaintext search term. Skip explicitly rather than let it
-			// silently fail to match.
-			if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
-				continue;
-			}
-
-			if (($propertyConfig['type'] ?? '') === 'string'
-				&& in_array($propertyConfig['format'] ?? '', $dateFormats, true) === false
-			) {
-				$columnName = $this->sanitizeColumnName(name: $field);
-				// Quote the column to handle reserved words (e.g., 'case', 'status').
-				// Without quoting, LOWER(t.case) raises a PostgreSQL syntax error.
-				$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-				$searchConditions->add(
-					$qb->expr()->like(
-						$qb->createFunction("LOWER(t.{$quotedCol})"),
-						$searchPattern
-					)
-				);
-			}
-		}//end foreach
-
-		// Search in metadata text fields (LIKE for all).
-		$searchConditions->add(
-			$qb->expr()->like($qb->createFunction('LOWER(t._name)'), $searchPattern)
+		$searchPattern   = $qb->createNamedParameter('%' . strtolower($run->term()) . '%');
+		$searchTermParam = $qb->createNamedParameter($run->term());
+		$predicates      = array_merge(
+			$this->propertySearchPredicates(run: $run, pattern: $searchPattern),
+			$this->metadataSearchPredicates(qb: $qb, pattern: $searchPattern),
+			$this->fuzzyNamePredicates(run: $run, termParam: $searchTermParam)
 		);
-		$searchConditions->add(
-			$qb->expr()->like($qb->createFunction('LOWER(t._description)'), $searchPattern)
-		);
-		$searchConditions->add(
-			$qb->expr()->like($qb->createFunction('LOWER(t._summary)'), $searchPattern)
-		);
-
-		// Add fuzzy matching ONLY when explicitly requested via _fuzzy=true.
-		// This uses pg_trgm similarity() for typo tolerance at ~13% performance cost.
-		if ($fuzzyEnabled === true) {
-			$searchConditions->add(
-				$qb->createFunction("similarity(t._name::text, {$searchTermParam}) > 0.1")
-			);
+		foreach ($predicates as $predicate) {
+			$searchConditions->add($predicate);
 		}
 
 		$qb->andWhere($searchConditions);
-	}//end applyFullTextSearch()
+	}//end applySubstringSearch()
+
+	/**
+	 * The substring predicates on the schema's text properties
+	 *
+	 * @param SearchTermRun      $run     The search: filter pass and leaf scope.
+	 * @param IParameter|string $pattern The bound `%term%` parameter.
+	 *
+	 * @return list<string|\Stringable> The predicates, in property order
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function propertySearchPredicates(SearchTermRun $run, IParameter|string $pattern): array {
+		$qb         = $run->qb();
+		$predicates = [];
+		foreach ($run->scope->schema->getProperties() ?? [] as $field => $propertyConfig) {
+			if ($this->isSubstringSearchable(propertyConfig: $propertyConfig) === false) {
+				continue;
+			}
+
+			// Quote the column to handle reserved words (e.g., 'case', 'status').
+			// Without quoting, LOWER(t.case) raises a PostgreSQL syntax error.
+			$quotedCol    = $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $field), isPostgres: $run->scope->isPostgres);
+			$predicates[] = $qb->expr()->like($qb->createFunction("LOWER(t.{$quotedCol})"), $pattern);
+		}
+
+		return $predicates;
+	}//end propertySearchPredicates()
+
+	/**
+	 * Whether the substring search scans a property: a text property that is
+	 * neither encrypted nor date/time formatted
+	 *
+	 * An encrypted property's column holds ciphertext (see
+	 * MagicMapper::buildTableColumnsFromSchema()); including it in a LIKE
+	 * full-text scan would scan envelopes that can never match a plaintext
+	 * search term. Date/time formatted fields are skipped because PostgreSQL
+	 * LOWER() only works on text columns (LIKE only, for performance).
+	 *
+	 * @param mixed $propertyConfig The property definition.
+	 *
+	 * @return bool True when the property is scanned
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
+	 */
+	private function isSubstringSearchable(mixed $propertyConfig): bool {
+		if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
+			return false;
+		}
+
+		return ($propertyConfig['type'] ?? '') === 'string'
+			&& in_array($propertyConfig['format'] ?? '', ['date', 'date-time', 'time'], true) === false;
+	}//end isSubstringSearchable()
+
+	/**
+	 * The substring predicates on the name, description and summary columns
+	 *
+	 * @param IQueryBuilder     $qb      The query builder.
+	 * @param IParameter|string $pattern The bound `%term%` parameter.
+	 *
+	 * @return list<string|\Stringable> The predicates
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function metadataSearchPredicates(IQueryBuilder $qb, IParameter|string $pattern): array {
+		$predicates = [];
+		foreach (['_name', '_description', '_summary'] as $metadataColumn) {
+			$predicates[] = $qb->expr()->like($qb->createFunction("LOWER(t.{$metadataColumn})"), $pattern);
+		}
+
+		return $predicates;
+	}//end metadataSearchPredicates()
+
+	/**
+	 * The similarity predicate on the name, only when fuzzy matching is asked via `_fuzzy=true`
+	 *
+	 * This uses pg_trgm similarity() for typo tolerance at ~13% performance cost.
+	 *
+	 * @param SearchTermRun     $run       The search: filter pass and leaf scope.
+	 * @param IParameter|string $termParam The bound term parameter.
+	 *
+	 * @return list<string|\Stringable> The predicate, or none
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function fuzzyNamePredicates(SearchTermRun $run, IParameter|string $termParam): array {
+		if ($run->scope->fuzzyEnabled === false) {
+			return [];
+		}
+
+		return [$run->qb()->createFunction("similarity(t._name::text, {$termParam}) > 0.1")];
+	}//end fuzzyNamePredicates()
 
 	/**
 	 * Build the SQL for one literal term on the QueryBuilder path.
@@ -4358,36 +4436,100 @@ class MagicSearchHandler {
 	 *                                      to be the same one or the two paths could disagree.
 	 */
 	private function buildSearchLeafQbSql(IQueryBuilder $qb, SearchLeaf $leaf): string {
-		$patternParam = $qb->createNamedParameter($leaf->pattern);
-		$conditions = [];
-		foreach ($this->searchableProperties(scope: $leaf->scope) as $field => $propertyConfig) {
-			$quotedCol = $this->searchColumn(scope: $leaf->scope, propName: $field);
-			$matchType = PropertySearchProfile::matchTypeFor(property: $propertyConfig);
-			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $leaf->scope->isPostgres === true) {
-				$fuzzyParam = $qb->createNamedParameter($leaf->literal);
-				$conditions[] = "similarity(COALESCE(t.{$quotedCol}::text, ''), {$fuzzyParam}) > 0.1";
-				continue;
-			}
-
-			$columnPattern = $patternParam;
-			if ($matchType !== PropertySearchProfile::MATCH_FULLTEXT) {
-				$columnPattern = $qb->createNamedParameter($this->patternForMatchType(matchType: $matchType, leaf: $leaf));
-			}
-
-			$conditions[] = "LOWER(COALESCE(t.{$quotedCol}, '')) LIKE {$columnPattern}";
-		}//end foreach
-
-		foreach (['_name', '_description', '_summary'] as $metadataColumn) {
-			$conditions[] = "LOWER(COALESCE(t.{$metadataColumn}, '')) LIKE {$patternParam}";
-		}
-
-		if ($leaf->scope->fuzzyEnabled === true) {
-			$literalParam = $qb->createNamedParameter($leaf->literal);
-			$conditions[] = "similarity(COALESCE(t._name::text, ''), {$literalParam}) > 0.1";
-		}
+		$run        = new SearchLeafRun(qb: $qb, leaf: $leaf);
+		$conditions = array_merge(
+			$this->leafPropertyConditionsQbSql(run: $run),
+			$this->leafMetadataConditionsQbSql(run: $run)
+		);
 
 		return '(' . implode(' OR ', $conditions) . ')';
 	}//end buildSearchLeafQbSql()
+
+	/**
+	 * The conditions of one literal term on the searchable schema properties
+	 *
+	 * @param SearchLeafRun $run The leaf: query builder, term and its bound pattern.
+	 *
+	 * @return string[] The conditions, in property order
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) Same pure reader as buildSearchLeafSql(), and it has
+	 *                                      to be the same one or the two paths could disagree.
+	 */
+	private function leafPropertyConditionsQbSql(SearchLeafRun $run): array {
+		$conditions = [];
+		foreach ($this->searchableProperties(scope: $run->leaf->scope) as $field => $propertyConfig) {
+			$quotedCol = $this->searchColumn(scope: $run->leaf->scope, propName: $field);
+			$matchType = PropertySearchProfile::matchTypeFor(property: $propertyConfig);
+			if ($matchType === PropertySearchProfile::MATCH_FUZZY && $run->leaf->scope->isPostgres === true) {
+				$conditions[] = $this->leafFuzzyConditionQbSql(run: $run, quotedCol: $quotedCol);
+				continue;
+			}
+
+			$columnPattern = $this->leafColumnPatternQbSql(run: $run, matchType: $matchType);
+			$conditions[]  = "LOWER(COALESCE(t.{$quotedCol}, '')) LIKE {$columnPattern}";
+		}
+
+		return $conditions;
+	}//end leafPropertyConditionsQbSql()
+
+	/**
+	 * The similarity condition of a fuzzy property on PostgreSQL
+	 *
+	 * @param SearchLeafRun $run       The leaf: query builder, term and its bound pattern.
+	 * @param string        $quotedCol The quoted column.
+	 *
+	 * @return string The condition
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function leafFuzzyConditionQbSql(SearchLeafRun $run, string $quotedCol): string {
+		$fuzzyParam = $run->qb->createNamedParameter($run->leaf->literal);
+		return "similarity(COALESCE(t.{$quotedCol}::text, ''), {$fuzzyParam}) > 0.1";
+	}//end leafFuzzyConditionQbSql()
+
+	/**
+	 * The bound pattern a property compares with: the term's own for a
+	 * full-text property, else one shaped for its match type
+	 *
+	 * @param SearchLeafRun $run       The leaf: query builder, term and its bound pattern.
+	 * @param string        $matchType The property's match type.
+	 *
+	 * @return string The bound parameter
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function leafColumnPatternQbSql(SearchLeafRun $run, string $matchType): string {
+		if ($matchType === PropertySearchProfile::MATCH_FULLTEXT) {
+			return $run->patternParam;
+		}
+
+		return (string)$run->qb->createNamedParameter($this->patternForMatchType(matchType: $matchType, leaf: $run->leaf));
+	}//end leafColumnPatternQbSql()
+
+	/**
+	 * The conditions of one literal term on the name, description and summary,
+	 * plus a similarity match on the name when fuzzy matching is on
+	 *
+	 * @param SearchLeafRun $run The leaf: query builder, term and its bound pattern.
+	 *
+	 * @return string[] The conditions
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function leafMetadataConditionsQbSql(SearchLeafRun $run): array {
+		$conditions = [];
+		foreach (['_name', '_description', '_summary'] as $metadataColumn) {
+			$conditions[] = "LOWER(COALESCE(t.{$metadataColumn}, '')) LIKE {$run->patternParam}";
+		}
+
+		if ($run->leaf->scope->fuzzyEnabled === true) {
+			$literalParam = $run->qb->createNamedParameter($run->leaf->literal);
+			$conditions[] = "similarity(COALESCE(t._name::text, ''), {$literalParam}) > 0.1";
+		}
+
+		return $conditions;
+	}//end leafMetadataConditionsQbSql()
 
 	/**
 	 * Apply sorting to the query

@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts;
 
 use Exception;
-use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -31,8 +30,8 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\RenderSelection;
-use OCA\OpenRegister\Service\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use OCP\IUser;
 
@@ -1265,8 +1264,7 @@ interface ObjectOperationsInterface {
      *
      * PUT semantics, inherited from `saveObject()`: `$data` becomes the object's
      * data in full, so a stored property absent from `$data` is written away
-     * rather than left alone. There is no read of the existing object here — the
-     * commented-out `find()` below is the whole history of that idea — so a
+     * rather than left alone. There is no read of the existing object here, so a
      * one-key payload stores a one-key object and reports success.
      *
      * Callers holding a PARTIAL payload want `patchObject()`, which reads,
@@ -1280,8 +1278,8 @@ interface ObjectOperationsInterface {
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $data          The object's COMPLETE new data. Anything omitted is dropped.
-     * @param bool   $_rbac         Apply RBAC checks
-     * @param bool   $_multitenancy Apply multitenancy filtering
+     * @param bool   $_rbac         Apply RBAC checks; passed to the save as saveObject() takes it
+     * @param bool   $_multitenancy Apply multitenancy filtering; passed to the save as saveObject() takes it
      *
      * @return ObjectEntity Replaced object entity
      *

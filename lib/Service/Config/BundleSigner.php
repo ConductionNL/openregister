@@ -121,26 +121,38 @@ class BundleSigner {
 		unset($bundle['provenance']);
 
 		$publicKeyB64 = (string)($provenance['publicKey'] ?? '');
-		$signature = base64_decode((string)($provenance['signature'] ?? ''), true);
-		$publicKey = base64_decode($publicKeyB64, true);
-
-		$valid = false;
-		if ($signature !== false && $publicKey !== false) {
-			try {
-				$valid = sodium_crypto_sign_verify_detached($signature, $this->canonical(bundle: $bundle), $publicKey);
-			} catch (Throwable $e) {
-				$valid = false;
-			}
-		}
 
 		return [
 			'signed' => true,
-			'valid' => $valid,
+			'valid' => $this->signatureValid(bundle: $bundle, provenance: $provenance),
 			'trusted' => $this->isKeyTrusted(publicKeyB64: $publicKeyB64),
 			'publicKey' => $publicKeyB64,
 		];
 
 	}//end verify()
+
+	/**
+	 * Whether a bundle's detached signature verifies against the key its provenance names.
+	 *
+	 * @param array $bundle     The bundle, without its provenance.
+	 * @param array $provenance The provenance: base64 public key and signature.
+	 *
+	 * @return bool True when the signature is well-formed and valid.
+	 */
+	private function signatureValid(array $bundle, array $provenance): bool {
+		$signature = base64_decode((string)($provenance['signature'] ?? ''), true);
+		$publicKey = base64_decode((string)($provenance['publicKey'] ?? ''), true);
+		if ($signature === false || $publicKey === false) {
+			return false;
+		}
+
+		try {
+			return sodium_crypto_sign_verify_detached($signature, $this->canonical(bundle: $bundle), $publicKey);
+		} catch (Throwable $e) {
+			return false;
+		}
+
+	}//end signatureValid()
 
 	/**
 	 * This instance's public key, base64, so an operator can share it for others

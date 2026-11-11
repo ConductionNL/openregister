@@ -45,6 +45,19 @@ use Psr\Log\LoggerInterface;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  */
 class ToolManagementHandler {
+	/**
+	 * A tool lookup that found the tool.
+	 *
+	 * @var string
+	 */
+	private const LOADED = 'loaded';
+
+	/**
+	 * A tool lookup that found no registered candidate.
+	 *
+	 * @var string
+	 */
+	private const NOT_FOUND = 'not_found';
 
 	/**
 	 * Constructor
@@ -139,29 +152,38 @@ class ToolManagementHandler {
 			$tool = $this->toolRegistry->getTool($candidate);
 			if ($tool !== null) {
 				$tool->setAgent($agent);
-				$this->logger->debug(
-					message: '[ToolManagementHandler] Loaded tool',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'id' => $candidate,
-					]
-				);
+				$this->logLookup(id: $candidate, outcome: self::LOADED);
 				return $tool;
 			}
 		}
 
-		$this->logger->warning(
-			message: '[ToolManagementHandler] Tool not found',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'id' => $toolId,
-			]
-		);
+		$this->logLookup(id: $toolId, outcome: self::NOT_FOUND);
 
 		return null;
 	}//end loadTool()
+
+	/**
+	 * Log the outcome of a tool lookup: loaded (debug) or not found (warning).
+	 *
+	 * @param mixed  $id      The id the tool was found under, or the stored id none of whose candidates is registered.
+	 * @param string $outcome self::LOADED or self::NOT_FOUND.
+	 *
+	 * @return void
+	 */
+	private function logLookup(mixed $id, string $outcome): void {
+		$context = [
+			'file' => __FILE__,
+			'line' => __LINE__,
+			'id' => $id,
+		];
+
+		if ($outcome === self::LOADED) {
+			$this->logger->debug(message: '[ToolManagementHandler] Loaded tool', context: $context);
+			return;
+		}
+
+		$this->logger->warning(message: '[ToolManagementHandler] Tool not found', context: $context);
+	}//end logLookup()
 
 	/**
 	 * The ids to try for a stored tool id.

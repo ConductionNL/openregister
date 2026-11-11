@@ -237,11 +237,7 @@ class FlowItemPlacement {
 		// on each. Comparing the raw place name there would match nothing and
 		// silently drop every routed item into an empty branch, which is the
 		// failure mode this engine exists to refuse rather than produce.
-		$target = $output;
-		$split = strpos($output, '#');
-		if ($split !== false) {
-			$target = substr($output, 0, $split);
-		}
+		$target = self::nodeOfPlace(place: $output);
 
 		$out = [];
 		foreach ($items as $item) {
@@ -257,6 +253,22 @@ class FlowItemPlacement {
 
 		return $out;
 	}//end itemsForOutput()
+
+	/**
+	 * The node a place belongs to: the place itself, or the part before `#` for a join's edge place.
+	 *
+	 * @param string $place The place name.
+	 *
+	 * @return string The node.
+	 */
+	private static function nodeOfPlace(string $place): string {
+		$split = strpos($place, '#');
+		if ($split !== false) {
+			return substr($place, 0, $split);
+		}
+
+		return $place;
+	}//end nodeOfPlace()
 
 	/**
 	 * The pinned output for a step, or null when it is not pinned.

@@ -225,18 +225,29 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 			&& $configuration['client_assertion_type'] === 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
 		) {
 			$callConfig['form_params']['client_assertion_type'] = $configuration['client_assertion_type'];
-			$callConfig['form_params']['client_assertion'] = $this->fetchJWTToken(
-				configuration: [
-					'algorithm' => 'PS256',
-					'secret' => $configuration['private_key'],
-					'x5t' => $configuration['x5t'],
-					'payload' => $configuration['payload'],
-				]
-			);
+			$callConfig['form_params']['client_assertion'] = $this->clientAssertionJwt(configuration: $configuration);
 		}
 
 		return $callConfig;
 	}//end withClientAssertion()
+
+	/**
+	 * The signed JWT a client presents as its assertion (PS256 over the configured private key).
+	 *
+	 * @param array $configuration The authentication configuration.
+	 *
+	 * @return string
+	 */
+	private function clientAssertionJwt(array $configuration): string {
+		return $this->fetchJWTToken(
+			configuration: [
+				'algorithm' => 'PS256',
+				'secret' => $configuration['private_key'],
+				'x5t' => $configuration['x5t'],
+				'payload' => $configuration['payload'],
+			]
+		);
+	}//end clientAssertionJwt()
 
 	/**
 	 * Create call options for OAuth with Password Credentials.
@@ -259,6 +270,18 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 			],
 		];
 
+		return self::withPasswordCredentials(callConfig: $callConfig, configuration: $configuration);
+	}//end createPasswordConfig()
+
+	/**
+	 * Add the username and password where the configuration says they go: the body, or basic auth.
+	 *
+	 * @param array $callConfig    The token request so far.
+	 * @param array $configuration The authentication configuration.
+	 *
+	 * @return array
+	 */
+	private static function withPasswordCredentials(array $callConfig, array $configuration): array {
 		if ($configuration['authentication'] === 'body') {
 			$callConfig['form_params']['username'] = $configuration['username'];
 			$callConfig['form_params']['password'] = $configuration['password'];
@@ -270,7 +293,7 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 		}
 
 		return $callConfig;
-	}//end createPasswordConfig()
+	}//end withPasswordCredentials()
 
 	/**
 	 * Request an OAuth Access Token with the given configuration.
@@ -285,13 +308,7 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function fetchOAuthTokens(array $configuration): string {
-		if (isset($configuration['grant_type']) === false) {
-			throw new BadRequestException('Grant type not set, cannot request token');
-		}
-
-		if (isset($configuration['tokenUrl']) === false) {
-			throw new BadRequestException('Token URL not set, cannot request token');
-		}
+		self::assertTokenRequest(configuration: $configuration);
 
 		$callConfig = $this->grantCallConfig(configuration: $configuration);
 
@@ -305,6 +322,25 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 
 		return $result['access_token'];
 	}//end fetchOAuthTokens()
+
+	/**
+	 * Refuse a token request without a grant type or a token URL.
+	 *
+	 * @param array $configuration The authentication configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws BadRequestException When either is not set.
+	 */
+	private static function assertTokenRequest(array $configuration): void {
+		if (isset($configuration['grant_type']) === false) {
+			throw new BadRequestException('Grant type not set, cannot request token');
+		}
+
+		if (isset($configuration['tokenUrl']) === false) {
+			throw new BadRequestException('Token URL not set, cannot request token');
+		}
+	}//end assertTokenRequest()
 
 	/**
 	 * The token call options for the configured grant type.
@@ -394,6 +430,28 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 	}//end getHSJWK()
 
 	/**
+	 * The configuration keys that carry secret material and never reach a payload template.
+	 *
+	 * @var list<string>
+	 */
+	private const PAYLOAD_SECRET_KEYS = [
+		'secret',
+		'clientSecret',
+		'client_secret',
+		'password',
+		'privateKey',
+		'private_key',
+		'apiKey',
+		'api_key',
+		'token',
+		'accessToken',
+		'access_token',
+		'refreshToken',
+		'refresh_token',
+		'authorization',
+	];
+
+	/**
 	 * Generate the JWT Payload by rendering the Twig template.
 	 *
 	 * @param array $configuration The source auth configuration.
@@ -410,25 +468,8 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 		// SEC-SVC-4: never expose secret material to the payload template
 		// context. Strip credential-bearing keys so a crafted payload template
 		// cannot echo adjacent secrets into the rendered claim set.
-		$secretKeys = [
-			'secret',
-			'clientSecret',
-			'client_secret',
-			'password',
-			'privateKey',
-			'private_key',
-			'apiKey',
-			'api_key',
-			'token',
-			'accessToken',
-			'access_token',
-			'refreshToken',
-			'refresh_token',
-			'authorization',
-		];
-
 		$context = $configuration;
-		foreach ($secretKeys as $secretKey) {
+		foreach (self::PAYLOAD_SECRET_KEYS as $secretKey) {
 			unset($context[$secretKey]);
 		}
 

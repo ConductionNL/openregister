@@ -97,19 +97,30 @@ final class ReviewPolicy implements ReviewPolicyInterface {
 
 		$ownership = ($declaration['ownership'] ?? self::OWNERSHIP_OPEN);
 
+		return new self(
+			deciderOwned: $ownership !== self::OWNERSHIP_OPEN,
+			supervisors: self::supervisorsOf(declared: ($declaration['supervisors'] ?? [])),
+			hideOthers: (($declaration['hideOthers'] ?? false) === true)
+		);
+	}//end fromDeclaration()
+
+	/**
+	 * The declared supervisor groups, trimmed, without blanks or repeats, in order.
+	 *
+	 * @param mixed $declared The declared supervisors.
+	 *
+	 * @return array<int, string> The group ids.
+	 */
+	private static function supervisorsOf(mixed $declared): array {
 		$supervisors = [];
-		foreach ((array)($declaration['supervisors'] ?? []) as $group) {
+		foreach ((array)$declared as $group) {
 			if (is_string($group) === true && trim($group) !== '') {
 				$supervisors[trim($group)] = true;
 			}
 		}
 
-		return new self(
-			deciderOwned: $ownership !== self::OWNERSHIP_OPEN,
-			supervisors: array_keys($supervisors),
-			hideOthers: (($declaration['hideOthers'] ?? false) === true)
-		);
-	}//end fromDeclaration()
+		return array_keys($supervisors);
+	}//end supervisorsOf()
 
 	/**
 	 * Whether a decision belongs to the person who took it.

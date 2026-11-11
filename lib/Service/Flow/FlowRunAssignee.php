@@ -187,11 +187,10 @@ class FlowRunAssignee {
 		}
 
 		// Fail CLOSED: an assigned decision is never anonymous.
-		if ($uid === null || trim($uid) === '') {
+		$actor = self::answeringActor(uid: $uid);
+		if ($actor === null) {
 			return false;
 		}
-
-		$actor = trim($uid);
 
 		// 🔴 A BARE STRING KEEPS ITS OLD, WIDER MEANING: uid OR group. Today's
 		// guard tries uid equality and then group membership, so a stored
@@ -312,6 +311,21 @@ class FlowRunAssignee {
 		// rather than inferred from a passing suite.
 		return ($this->groupManager !== null && $this->groupManager->isInGroup($actor, $assignee) === true);
 	}//end matchesLegacyString()
+
+	/**
+	 * The answering user, trimmed, or null when there is none to hold an assignment.
+	 *
+	 * @param string|null $uid The answering user.
+	 *
+	 * @return string|null The actor, or null for a missing, empty or blank uid.
+	 */
+	private static function answeringActor(?string $uid): ?string {
+		if ($uid === null || trim($uid) === '') {
+			return null;
+		}
+
+		return trim($uid);
+	}//end answeringActor()
 
 	/**
 	 * The typed reading: whoever the reference means, right now.

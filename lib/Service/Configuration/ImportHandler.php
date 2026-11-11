@@ -36,7 +36,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -2361,7 +2361,7 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function isUnchangedConfiguration(ImportRun $run): bool {
-		if ($run->appId === null || $run->version === null || $run->force === true) {
+		if ($this->alwaysReimports(run: $run) === true) {
 			return false;
 		}
 
@@ -2377,6 +2377,17 @@ class ImportHandler {
 		);
 		return true;
 	}//end isUnchangedConfiguration()
+
+	/**
+	 * Whether an import is never skipped as unchanged: no app, no version, or forced.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return bool True when the stored hash is not consulted.
+	 */
+	private function alwaysReimports(ImportRun $run): bool {
+		return $run->appId === null || $run->version === null || $run->force === true;
+	}//end alwaysReimports()
 
 	/**
 	 * Log that a forced import bypasses the version check.
@@ -2905,6 +2916,18 @@ class ImportHandler {
 		}
 
 		$run->slugsAndIdsMap = $this->mappingMapper->getSlugToIdMap(includeNullOrg: true);
+		$this->logMappingImportStart(run: $run);
+		$this->importEachMapping(run: $run);
+	}//end importMappingComponents()
+
+	/**
+	 * Log how many mappings the import lists, and their keys.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 */
+	private function logMappingImportStart(ImportRun $run): void {
 		$this->logger->debug(
 			message: '[ImportHandler] Starting mapping import',
 			context: [
@@ -2914,7 +2937,16 @@ class ImportHandler {
 				'mappingKeys' => array_keys($run->data['components']['mappings']),
 			]
 		);
+	}//end logMappingImportStart()
 
+	/**
+	 * Import every listed mapping, named after its key when it has no name, and log the count.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 */
+	private function importEachMapping(ImportRun $run): void {
 		foreach ($run->data['components']['mappings'] as $key => $mappingData) {
 			if (isset($mappingData['name']) === false && is_string($key) === true) {
 				$mappingData['name'] = $key;
@@ -2927,7 +2959,7 @@ class ImportHandler {
 			message: '[ImportHandler] Mapping import completed',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'importedCount' => count($run->result['mappings'])]
 		);
-	}//end importMappingComponents()
+	}//end importEachMapping()
 
 	/**
 	 * Import one mapping, logging and skipping it when it fails.
@@ -3286,6 +3318,18 @@ class ImportHandler {
 			return;
 		}
 
+		$this->recordStoredListedObject(run: $run, stored: $this->storeListedObject(seed: $seed, objectData: $objectData));
+	}//end importListedObject()
+
+	/**
+	 * Create a listed object, or update the stored one; null when the stored one is left unchanged.
+	 *
+	 * @param ListedSeed $seed       The resolved seed.
+	 * @param array      $objectData The listed object.
+	 *
+	 * @return ObjectEntity|null The created or updated object, or null when unchanged.
+	 */
+	private function storeListedObject(ListedSeed $seed, array $objectData): ?ObjectEntity {
 		$existingObject = $this->existingListedObject(seed: $seed);
 
 		// Integer ids, not slugs, in @self, so no internal lookup uses a slug.
@@ -3301,29 +3345,52 @@ class ImportHandler {
 		$objectData = $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $seed->schema);
 
 		if ($existingObject === null) {
-			$run->result['objects'][] = $this->createListedObject(seed: $seed, listed: ['data' => $objectData, 'uuid' => $listedUuid]);
-			return;
+			return $this->createListedObject(seed: $seed, listed: ['data' => $objectData, 'uuid' => $listedUuid]);
 		}
 
-		// A search returns arrays or ObjectEntity instances. The array check
-		// comes first: calling jsonSerialize() on an array result threw, and
-		// the per-object catch reported it as a failed seed.
-		if (is_array($existingObject) === false) {
-			$existingObject = $existingObject->jsonSerialize();
+		$existing = $this->serialisedListedObject(existing: $existingObject);
+		return $this->updateListedObject(seed: $seed, listed: ['data' => $objectData, 'existing' => $existing]);
+	}//end storeListedObject()
+
+	/**
+	 * A stored listed object as an array.
+	 *
+	 * A search returns arrays or ObjectEntity instances. The array check
+	 * comes first: calling jsonSerialize() on an array result threw, and
+	 * the per-object catch reported it as a failed seed.
+	 *
+	 * @param mixed $existing The search result.
+	 *
+	 * @return array The stored object.
+	 */
+	private function serialisedListedObject(mixed $existing): array {
+		if (is_array($existing) === false) {
+			return $existing->jsonSerialize();
 		}
 
-		$updated = $this->updateListedObject(seed: $seed, listed: ['data' => $objectData, 'existing' => $existingObject]);
-		if ($updated === null) {
-			// COUNTED, not just logged. Skipping an unchanged object is the
-			// DESIGNED behaviour of a re-import, but a debug line is invisible
-			// to the caller, and the caller is the one that has to tell an
-			// operator whether the import worked.
+		return $existing;
+	}//end serialisedListedObject()
+
+	/**
+	 * Count a listed object as imported, or as unchanged when it was left as stored.
+	 *
+	 * Skipping an unchanged object is the DESIGNED behaviour of a re-import, but
+	 * a debug line is invisible to the caller, and the caller is the one that has
+	 * to tell an operator whether the import worked: so it is COUNTED, not just logged.
+	 *
+	 * @param ImportRun         $run    The import.
+	 * @param ObjectEntity|null $stored The created or updated object, or null when unchanged.
+	 *
+	 * @return void
+	 */
+	private function recordStoredListedObject(ImportRun $run, ?ObjectEntity $stored): void {
+		if ($stored === null) {
 			$run->result['unchanged']['objects']++;
 			return;
 		}
 
-		$run->result['objects'][] = $updated;
-	}//end importListedObject()
+		$run->result['objects'][] = $stored;
+	}//end recordStoredListedObject()
 
 	/**
 	 * The register, schema and context a listed object is imported into, or null when either is missing.
@@ -3378,7 +3445,7 @@ class ImportHandler {
 	 */
 	private function listedRegister(mixed $rawRegister): ?Register {
 		$register = $this->registersMap[$rawRegister] ?? null;
-		if ($register !== null || is_string($rawRegister) === false || $rawRegister === '') {
+		if ($register !== null || $this->isLookupSlug(raw: $rawRegister) === false) {
 			return $register;
 		}
 
@@ -3403,7 +3470,7 @@ class ImportHandler {
 	 */
 	private function listedSchema(mixed $rawSchema): ?Schema {
 		$schema = $this->schemasMap[$rawSchema] ?? null;
-		if ($schema !== null || is_string($rawSchema) === false || $rawSchema === '') {
+		if ($schema !== null || $this->isLookupSlug(raw: $rawSchema) === false) {
 			return $schema;
 		}
 
@@ -3416,6 +3483,17 @@ class ImportHandler {
 		$this->schemasMap[$rawSchema] = $schema;
 		return $schema;
 	}//end listedSchema()
+
+	/**
+	 * Whether a listed register or schema reference is a slug a mapper lookup can take: a non-empty string.
+	 *
+	 * @param mixed $raw The raw reference.
+	 *
+	 * @return bool True for a non-empty string.
+	 */
+	private function isLookupSlug(mixed $raw): bool {
+		return is_string($raw) === true && $raw !== '';
+	}//end isLookupSlug()
 
 	/**
 	 * The stored object with a listed object's register, schema and slug, or null.
@@ -3762,29 +3840,68 @@ class ImportHandler {
 	 */
 	private function resolveSeedReferenceTokens(array $data, ?string $appId = null): array {
 		$objects = ($data['components']['objects'] ?? null);
-		if (is_array($objects) === false) {
+		$index = $this->seedReferenceIndex(objects: $objects);
+		if ($index === null) {
 			return $data;
 		}
 
-		// Only genuine reference targets get a pre-resolved identity, and the
-		// work is skipped entirely when no object references another.
-		$index = new SeedReferenceIndex(logger: $this->logger);
-		$index->collectFromObjects(objects: $objects);
-		if ($index->isEmpty() === true) {
-			return $data;
-		}
-
-		foreach ($this->referencedSeeds(objects: $objects, index: $index) as $position => $targetData) {
-			$uuid = $this->seedReferenceTargetUuid(targetData: $targetData, appId: $appId);
-			if ($uuid !== null) {
-				$objects[$position]['@self']['id'] = $uuid;
-				$index->record(self: $objects[$position]['@self']);
-			}
+		$targetIds = $this->referenceTargetIds(targets: $this->referencedSeeds(objects: $objects, index: $index), appId: $appId);
+		foreach ($targetIds as $position => $uuid) {
+			$objects[$position]['@self']['id'] = $uuid;
+			$index->record(self: $objects[$position]['@self']);
 		}
 
 		$data['components']['objects'] = $index->replaceInObjects(objects: $objects);
 		return $data;
 	}//end resolveSeedReferenceTokens()
+
+	/**
+	 * The reference index of the listed seed objects, or null when there is nothing to resolve.
+	 *
+	 * Only genuine reference targets get a pre-resolved identity, and the
+	 * work is skipped entirely when no object references another.
+	 *
+	 * @param mixed $objects The raw `components.objects` list.
+	 *
+	 * @return SeedReferenceIndex|null The index, or null when the list is absent or references nothing.
+	 */
+	private function seedReferenceIndex(mixed $objects): ?SeedReferenceIndex {
+		if (is_array($objects) === false) {
+			return null;
+		}
+
+		$index = new SeedReferenceIndex(logger: $this->logger);
+		$index->collectFromObjects(objects: $objects);
+		if ($index->isEmpty() === true) {
+			return null;
+		}
+
+		return $index;
+	}//end seedReferenceIndex()
+
+	/**
+	 * The UUID each referenced seed target is stored under, by its position in the list.
+	 *
+	 * A target that resolves to no UUID is left out. The index is not read
+	 * here, so resolving every target before recording them gives the same
+	 * UUIDs, in the same order, as resolving and recording one by one.
+	 *
+	 * @param array       $targets The referenced seed objects, by position.
+	 * @param string|null $appId   The importing app, for the foreign-schema guard.
+	 *
+	 * @return array<int|string, mixed> The UUIDs, by position.
+	 */
+	private function referenceTargetIds(array $targets, ?string $appId): array {
+		$targetIds = [];
+		foreach ($targets as $position => $targetData) {
+			$uuid = $this->seedReferenceTargetUuid(targetData: $targetData, appId: $appId);
+			if ($uuid !== null) {
+				$targetIds[$position] = $uuid;
+			}
+		}
+
+		return $targetIds;
+	}//end referenceTargetIds()
 
 	/**
 	 * The seed objects another seed refers to, under their list positions.
@@ -4180,24 +4297,47 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function findAppConfigurationByApp(AppImport $import): ?Configuration {
-		$appId = $import->appId;
-		try {
-			$configurations = $this->configurationMapper->findByApp($appId, systemLookup: true);
-		} catch (Exception $e) {
-			$this->logger->debug(
-				message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one",
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			return null;
-		}
-
+		$configurations = $this->storedAppConfigurations(appId: $import->appId);
 		if (count($configurations) === 0) {
 			return null;
 		}
 
 		$configuration = $configurations[0];
+		$this->logFoundAppConfiguration(import: $import, configuration: $configuration);
+
+		return $configuration;
+	}//end findAppConfigurationByApp()
+
+	/**
+	 * The configurations stored for an app; a failing lookup is logged and gives none.
+	 *
+	 * @param string $appId The app id.
+	 *
+	 * @return array The stored configurations.
+	 */
+	private function storedAppConfigurations(string $appId): array {
+		try {
+			return $this->configurationMapper->findByApp($appId, systemLookup: true);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one",
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return [];
+		}
+	}//end storedAppConfigurations()
+
+	/**
+	 * Log the configuration found for an app, and whether its version is already up to date.
+	 *
+	 * @param AppImport     $import        The app import.
+	 * @param Configuration $configuration The configuration found.
+	 *
+	 * @return void
+	 */
+	private function logFoundAppConfiguration(AppImport $import, Configuration $configuration): void {
 		$this->logger->debug(
-			message: "[ImportHandler] Found existing configuration for app {$appId}",
+			message: "[ImportHandler] Found existing configuration for app {$import->appId}",
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
@@ -4206,16 +4346,26 @@ class ImportHandler {
 			]
 		);
 
+		$this->logUpToDateAppConfiguration(import: $import, configuration: $configuration);
+	}//end logFoundAppConfiguration()
+
+	/**
+	 * Log that a found configuration is up to date, unless the import is forced or newer.
+	 *
+	 * @param AppImport     $import        The app import.
+	 * @param Configuration $configuration The configuration found.
+	 *
+	 * @return void
+	 */
+	private function logUpToDateAppConfiguration(AppImport $import, Configuration $configuration): void {
 		$existingVersion = $configuration->getVersion() ?? '0.0.0';
 		if ($import->force === false && version_compare($import->version, $existingVersion, '<=') === true) {
 			$this->logger->debug(
 				message: "[ImportHandler] Config version ({$existingVersion}) up-to-date, checking seedData",
-				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $appId, 'force' => $import->force]
+				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $import->appId, 'force' => $import->force]
 			);
 		}
-
-		return $configuration;
-	}//end findAppConfigurationByApp()
+	}//end logUpToDateAppConfiguration()
 
 	/**
 	 * The steps every app import ends with: an application register when the
@@ -4518,9 +4668,63 @@ class ImportHandler {
 		$schemas = $update->result['schemas'];
 		$configuration = $update->configuration;
 
+		$details = $this->withImportedSchemas(details: $details, schemas: $schemas);
+		$register = $this->applicationRegister(details: $details);
+
+		// Surface the auto-created register in the import result so callers
+		// see a complete (Configuration, Schemas, Register) triple.
+		$update->result['registers'] = self::withRegister(registers: ($update->result['registers'] ?? []), register: $register);
+		$this->linkConfigurationRegister(configuration: $configuration, register: $register);
+
+		if ($this->magicMapper !== null) {
+			$this->ensureApplicationMagicTables(register: $register, schemas: $schemas);
+		}
+	}//end autoCreateRegisterIfApplication()
+
+	/**
+	 * The application register details with the imported schemas and their saved ids.
+	 *
+	 * @param array<string, mixed> $details The register details.
+	 * @param array                $schemas The imported schemas.
+	 *
+	 * @return array<string, mixed> The details.
+	 */
+	private function withImportedSchemas(array $details, array $schemas): array {
 		$details['schemas'] = $schemas;
 		$details['schemaIds'] = self::savedSchemaIds(schemas: $schemas);
+		return $details;
+	}//end withImportedSchemas()
 
+	/**
+	 * The application register: the existing one reconciled, else a new one.
+	 *
+	 * @param array<string, mixed> $details The register slug, schemas and schema ids.
+	 *
+	 * @return Register The register.
+	 */
+	private function applicationRegister(array $details): Register {
+		$existingRegister = $this->existingApplicationRegister(slug: $details['slug']);
+
+		$register = null;
+		if ($existingRegister !== null) {
+			$register = $this->reconcileApplicationRegister(register: $existingRegister, details: $details);
+		}
+
+		if ($register === null) {
+			$register = $this->createApplicationRegister(details: $details);
+		}
+
+		return $register;
+	}//end applicationRegister()
+
+	/**
+	 * The register with the application register's slug in the active organisation, if any.
+	 *
+	 * @param mixed $slug The application register slug.
+	 *
+	 * @return Register|null The existing register, or null.
+	 */
+	private function existingApplicationRegister(mixed $slug): ?Register {
 		// Idempotent lookup on (slug, organisationId). The find cache on
 		// RegisterMapper already keys by slug, so this is cheap.
 		// Use findAll with filters so we can scope to organisation explicitly
@@ -4529,38 +4733,36 @@ class ImportHandler {
 		$existingRegisters = $this->registerMapper->findAll(
 			limit: 1,
 			offset: 0,
-			filters: ['slug' => $details['slug']],
+			filters: ['slug' => $slug],
 			_rbac: false,
 			_multitenancy: true
 		);
-
-		$register = null;
 		if (count($existingRegisters) > 0) {
-			$register = $this->reconcileApplicationRegister(register: $existingRegisters[0], details: $details);
+			return $existingRegisters[0];
 		}
 
-		if ($register === null) {
-			$register = $this->createApplicationRegister(details: $details);
-		}
+		return null;
+	}//end existingApplicationRegister()
 
-		// Surface the auto-created register in the import result so callers
-		// see a complete (Configuration, Schemas, Register) triple.
-		$update->result['registers'] = self::withRegister(registers: ($update->result['registers'] ?? []), register: $register);
-
-		// Keep the Configuration entity's registers[] field in sync so the
-		// triple stays consistent and a follow-up `_extend=registers` GET
-		// serializes the new ID without an extra round-trip.
+	/**
+	 * Keep the Configuration entity's registers[] field in sync with the application register.
+	 *
+	 * The triple stays consistent and a follow-up `_extend=registers` GET
+	 * serializes the new ID without an extra round-trip.
+	 *
+	 * @param Configuration $configuration The app's configuration.
+	 * @param Register      $register      The application register.
+	 *
+	 * @return void
+	 */
+	private function linkConfigurationRegister(Configuration $configuration, Register $register): void {
 		$configRegisterIds = $configuration->getRegisters() ?? [];
 		if (in_array($register->getId(), $configRegisterIds, true) === false) {
 			$configRegisterIds[] = $register->getId();
 			$configuration->setRegisters($configRegisterIds);
 			$this->configurationMapper->update($configuration);
 		}
-
-		if ($this->magicMapper !== null) {
-			$this->ensureApplicationMagicTables(register: $register, schemas: $schemas);
-		}
-	}//end autoCreateRegisterIfApplication()
+	}//end linkConfigurationRegister()
 
 	/**
 	 * The slug, title and description of the register an `application` configuration declares.
@@ -4717,42 +4919,96 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function unshadowedSchemaIds(Register $register, array $details): array {
+		$newSlugToId = $this->importedSchemaIdsBySlug(schemas: $details['schemas']);
+
+		$kept = [];
+		foreach ($register->getSchemas() ?? [] as $currentId) {
+			$currentId = (int)$currentId;
+			$shadowed = $this->shadowedListing(schemaId: $currentId, newSlugToId: $newSlugToId);
+			if ($shadowed === null) {
+				$kept[] = $currentId;
+				continue;
+			}
+
+			$this->logPrunedShadowedSchema(registerSlug: $details['slug'], shadowed: $shadowed);
+		}
+
+		return $kept;
+	}//end unshadowedSchemaIds()
+
+	/**
+	 * The imported schema ids by lower-cased slug, for the schemas that have both.
+	 *
+	 * @param array $schemas The imported schemas.
+	 *
+	 * @return array<string, int> Lower(slug) => id.
+	 */
+	private function importedSchemaIdsBySlug(array $schemas): array {
 		$newSlugToId = [];
-		foreach ($details['schemas'] as $schema) {
+		foreach ($schemas as $schema) {
 			if ($schema instanceof Schema && $schema->getId() !== null && $schema->getSlug() !== null) {
 				$newSlugToId[strtolower($schema->getSlug())] = (int)$schema->getId();
 			}
 		}
 
-		$kept = [];
-		foreach ($register->getSchemas() ?? [] as $currentId) {
-			$currentId = (int)$currentId;
-			try {
-				$existingSlug = $this->schemaMapper->find($currentId, _multitenancy: false)->getSlug();
-			} catch (\Throwable $ignore) {
-				$existingSlug = null;
-			}
+		return $newSlugToId;
+	}//end importedSchemaIdsBySlug()
 
-			$shadowedBy = $newSlugToId[strtolower((string)$existingSlug)] ?? null;
-			if ($existingSlug === null || $shadowedBy === null || $shadowedBy === $currentId) {
-				$kept[] = $currentId;
-				continue;
-			}
+	/**
+	 * A listed schema id a freshly imported schema shadows: same slug (case-insensitively), other id.
+	 *
+	 * An id whose schema cannot be loaded is kept: there is nothing to compare it against.
+	 *
+	 * @param int                $schemaId    The listed schema id.
+	 * @param array<string, int> $newSlugToId The imported schema ids by lower-cased slug.
+	 *
+	 * @return array{id: int, slug: string, by: int}|null The shadowed listing, or null when the id is kept.
+	 */
+	private function shadowedListing(int $schemaId, array $newSlugToId): ?array {
+		$existingSlug = $this->listedSchemaSlug(schemaId: $schemaId);
+		$shadowedBy = $newSlugToId[strtolower((string)$existingSlug)] ?? null;
+		if ($existingSlug === null || $shadowedBy === null || $shadowedBy === $schemaId) {
+			return null;
+		}
 
-			$this->logger->debug(
-				message: sprintf(
-					"[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
-					$details['slug'],
-					$currentId,
-					$existingSlug,
-					$shadowedBy
-				),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}//end foreach
+		return ['id' => $schemaId, 'slug' => $existingSlug, 'by' => $shadowedBy];
+	}//end shadowedListing()
 
-		return $kept;
-	}//end unshadowedSchemaIds()
+	/**
+	 * The slug of a listed schema, or null when it cannot be loaded.
+	 *
+	 * @param int $schemaId The listed schema id.
+	 *
+	 * @return string|null The slug.
+	 */
+	private function listedSchemaSlug(int $schemaId): ?string {
+		try {
+			return $this->schemaMapper->find($schemaId, _multitenancy: false)->getSlug();
+		} catch (\Throwable $ignore) {
+			return null;
+		}
+	}//end listedSchemaSlug()
+
+	/**
+	 * Log a listed schema id pruned in favour of the app-owned schema that shadows it.
+	 *
+	 * @param mixed                                  $registerSlug The application register slug.
+	 * @param array{id: int, slug: string, by: int} $shadowed     The shadowed listing.
+	 *
+	 * @return void
+	 */
+	private function logPrunedShadowedSchema(mixed $registerSlug, array $shadowed): void {
+		$this->logger->debug(
+			message: sprintf(
+				"[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
+				$registerSlug,
+				$shadowed['id'],
+				$shadowed['slug'],
+				$shadowed['by']
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logPrunedShadowedSchema()
 
 	/**
 	 * A result's registers with the given one added, unless a register with its id is already there.
@@ -4947,12 +5203,23 @@ class ImportHandler {
 	 * @return ObjectEntity|null The existing object, or null when the seed is new.
 	 */
 	private function orSuffixedSeed(?ObjectEntity $found, SeedDataObject $object): ?ObjectEntity {
-		if ($found !== null || isset($object->data['uuid']) === true || $object->register === null) {
+		if ($found !== null || $this->mayHaveSuffixedSlug(object: $object) === false) {
 			return $found;
 		}
 
 		return $this->findSuffixedSeed(object: $object, register: $object->register);
 	}//end orSuffixedSeed()
+
+	/**
+	 * Whether a seed may be stored under a suffixed slug: it carries no uuid and has a register.
+	 *
+	 * @param SeedDataObject $object The seed object.
+	 *
+	 * @return bool True when the suffixed-slug lookup applies.
+	 */
+	private function mayHaveSuffixedSlug(SeedDataObject $object): bool {
+		return isset($object->data['uuid']) === false && $object->register !== null;
+	}//end mayHaveSuffixedSlug()
 
 	/**
 	 * Set the slug of a new seed object.
@@ -5600,26 +5867,64 @@ class ImportHandler {
 			return null;
 		}
 
+		return $this->storedSeedObject(seed: $seed, object: $object);
+	}//end findStoredSeedObject()
+
+	/**
+	 * The stored object with a seed's identifier; none when absent, none (and marked ambiguous) when several.
+	 *
+	 * @param SeedImport     $seed   The seed pass.
+	 * @param SeedDataObject $object The seed object, with its register.
+	 *
+	 * @return ObjectEntity|null The stored object, or null.
+	 */
+	private function storedSeedObject(SeedImport $seed, SeedDataObject $object): ?ObjectEntity {
 		try {
-			return $this->routingMapper->find(
-				identifier: $object->identifier,
-				register: $object->register,
-				schema: $object->schema,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
-			);
+			return $this->routedSeedObject(object: $object);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return null;
 		} catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			$object->ambiguous = true;
-			$this->logger->warning(
-				message: "[ImportHandler] Multiple seed objects found with identifier '{$object->identifier}' - skipping to avoid duplication",
-				context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $seed->schemaSlug, 'identifier' => $object->identifier]
-			);
+			$this->markAmbiguousSeed(seed: $seed, object: $object);
 			return null;
 		}
-	}//end findStoredSeedObject()
+	}//end storedSeedObject()
+
+	/**
+	 * Find a seed by its identifier in its register and schema (RBAC/multitenancy bypassed).
+	 *
+	 * @param SeedDataObject $object The seed object, with its register.
+	 *
+	 * @return ObjectEntity The stored object.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException          When none is stored.
+	 * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When several are.
+	 */
+	private function routedSeedObject(SeedDataObject $object): ObjectEntity {
+		return $this->routingMapper->find(
+			identifier: $object->identifier,
+			register: $object->register,
+			schema: $object->schema,
+			includeDeleted: false,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end routedSeedObject()
+
+	/**
+	 * Mark a seed whose identifier matches several stored objects, so it is skipped rather than duplicated.
+	 *
+	 * @param SeedImport     $seed   The seed pass.
+	 * @param SeedDataObject $object The seed object.
+	 *
+	 * @return void
+	 */
+	private function markAmbiguousSeed(SeedImport $seed, SeedDataObject $object): void {
+		$object->ambiguous = true;
+		$this->logger->warning(
+			message: "[ImportHandler] Multiple seed objects found with identifier '{$object->identifier}' - skipping to avoid duplication",
+			context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $seed->schemaSlug, 'identifier' => $object->identifier]
+		);
+	}//end markAmbiguousSeed()
 
 	/**
 	 * Insert a new seed object through the routing mapper (else the object entity mapper), then its related items.

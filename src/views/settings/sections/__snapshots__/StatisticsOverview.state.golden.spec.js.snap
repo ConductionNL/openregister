@@ -1,0 +1,36 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`StatisticsOverview.data starts from these values, in this order 1`] = `
+{
+  "keys": [
+    "showMassValidateModal",
+    "massValidateCompleted",
+    "objectStats",
+    "massValidateConfig",
+    "memoryPrediction",
+    "memoryPredictionLoading",
+  ],
+  "state": {
+    "massValidateCompleted": false,
+    "massValidateConfig": {
+      "batchSize": 1000,
+      "collectErrors": false,
+      "maxObjects": 0,
+      "mode": "serial",
+    },
+    "memoryPrediction": {
+      "formatted": {
+        "available": "Unknown",
+        "total_predicted": "Unknown",
+      },
+      "prediction_safe": true,
+    },
+    "memoryPredictionLoading": false,
+    "objectStats": {
+      "loading": false,
+      "totalObjects": 0,
+    },
+    "showMassValidateModal": false,
+  },
+}
+`;

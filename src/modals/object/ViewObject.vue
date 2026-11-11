@@ -1112,6 +1112,147 @@ function blankValueFor(property) {
 }
 
 /**
+ * The rows of a new object: each property of its schema, if any, with its
+ * default value.
+ *
+ * @param {object|undefined} schema The current schema.
+ * @return {Array<Array>} The rows, as [key, value].
+ */
+function newObjectRows(schema) {
+	const schemaProperties = schema?.properties
+	if (!schemaProperties) {
+		return []
+	}
+	return schemaDefaultRows(schemaProperties)
+}
+
+/**
+ * Each schema property with its default value.
+ *
+ * @param {object} schemaProperties The schema's properties.
+ * @return {Array<Array>} The rows, as [key, value].
+ */
+function schemaDefaultRows(schemaProperties) {
+	return Object.entries(schemaProperties).map(([key, schemaProperty]) => [
+		key,
+		defaultValueFor(schemaProperty),
+	])
+}
+
+/**
+ * The rows of the schema properties a stored object does not hold yet, with
+ * their default values.
+ *
+ * @param {object} objectData The stored object.
+ * @param {object} schemaProperties The schema's properties.
+ * @return {Array<Array>} The rows, as [key, value].
+ */
+function missingSchemaRows(objectData, schemaProperties) {
+	return Object.entries(schemaProperties)
+		.filter(([key]) => !Object.hasOwn(objectData, key))
+		.map(([key, schemaProperty]) => [key, defaultValueFor(schemaProperty)])
+}
+
+/**
+ * The `@self` metadata of a blank object in a register and schema.
+ *
+ * @param {number|string} register The register id, or ''.
+ * @param {number|string} schema The schema id, or ''.
+ * @return {object} The metadata.
+ */
+function blankSelf(register, schema) {
+	return {
+		id: '',
+		uuid: '',
+		uri: '',
+		register,
+		schema,
+		...blankBookkeeping(),
+	}
+}
+
+/**
+ * The bookkeeping metadata of a blank object: no relations, files, folder,
+ * dates, lock or owner yet.
+ *
+ * @return {object} The metadata.
+ */
+function blankBookkeeping() {
+	return {
+		relations: '',
+		files: '',
+		folder: '',
+		updated: '',
+		created: '',
+		locked: null,
+		owner: '',
+	}
+}
+
+/**
+ * The value a blank object starts with for a property: its default, else the
+ * blank value of its type.
+ *
+ * @param {object} property The schema property.
+ * @return {unknown} The value.
+ */
+function initialValueFor(property) {
+	return property.default !== undefined
+		? property.default
+		: blankValueFor(property)
+}
+
+/**
+ * Clear what the modal showed: the edits, titles, tab, attachments, outcome
+ * and copy state.
+ *
+ * @param {object} modal The modal.
+ * @return {void}
+ */
+function clearFormState(modal) {
+	modal.isUpdated = false
+	modal.registerTitle = ''
+	modal.schemaTitle = ''
+	modal.activeTab = 0
+	modal.selectedAttachments = []
+	modal.activeAttachment = null
+	modal.success = null
+	modal.error = null
+	modal.isCopied = false
+}
+
+/**
+ * Forget the register and schema chosen for a new object, and the choices
+ * the store offered.
+ *
+ * @param {object} modal The modal.
+ * @return {void}
+ */
+function clearNewObjectScope(modal) {
+	// Clear register/schema selection state
+	modal.selectedRegisterForNewObject = null
+	modal.selectedSchemaForNewObject = null
+	modal.registerSchemaSelectionConfirmed = false
+	objectStore.availableRegistersForNewObject = null
+	objectStore.availableSchemasForNewObject = null
+}
+
+/**
+ * Stop the pending property change notifications.
+ *
+ * @param {object} modal The modal.
+ * @return {void}
+ */
+function clearPropertyChangeTimers(modal) {
+	// Clear debounce timers
+	Object.values(modal.propertyChangeDebounceTimers).forEach((timer) => {
+		if (timer) clearTimeout(timer)
+	})
+	modal.propertyChangeDebounceTimers = {}
+	modal.pendingNotifications = {}
+}
+
+/**
  * The id of a reference that is either an object with an id or the id itself.
  *
  * @param {unknown} reference The reference.
@@ -1324,6 +1465,35 @@ const RELATION_TABS = [
 	{ title: 'Relations', component: 'RelationsTab' },
 ]
 
+/**
+ * How a property change toast looks.
+ */
+const CHANGE_TOAST_STYLE = `
+				position: fixed;
+				top: 20px;
+				right: 20px;
+				background: var(--color-success);
+				color: white;
+				padding: 12px 16px;
+				border-radius: 6px;
+				box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+				z-index: 10000;
+				font-size: 14px;
+				max-width: 300px;
+			`
+
+/**
+ * Take an element out of the page, if it is still in it.
+ *
+ * @param {HTMLElement} element The element
+ * @return {void}
+ */
+function removeElement(element) {
+	if (element.parentNode) {
+		element.parentNode.removeChild(element)
+	}
+}
+
 export default {
 	name: 'ViewObject',
 	components: {
@@ -1439,20 +1609,7 @@ export default {
 		objectProperties() {
 			// For new objects, show schema properties with default values
 			if (!objectStore?.objectItem) {
-				const schemaProperties = this.currentSchema?.properties
-				if (!schemaProperties) {
-					return []
-				}
-
-				const defaultProperties = []
-
-				for (const [key, schemaProperty] of Object.entries(
-					schemaProperties,
-				)) {
-					defaultProperties.push([key, defaultValueFor(schemaProperty)])
-				}
-
-				return defaultProperties
+				return newObjectRows(this.currentSchema)
 			}
 
 			const objectData = objectStore.objectItem
@@ -1464,15 +1621,10 @@ export default {
 			)
 
 			// Add schema properties that don't exist in the object yet
-			const missingSchemaProperties = []
-			for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
-				if (!Object.hasOwn(objectData, key)) {
-					missingSchemaProperties.push([
-						key,
-						defaultValueFor(schemaProperty),
-					])
-				}
-			}
+			const missingSchemaProperties = missingSchemaRows(
+				objectData,
+				schemaProperties,
+			)
 
 			// Combine existing properties and missing schema properties
 			return [...existingProperties, ...missingSchemaProperties]
@@ -1903,29 +2055,9 @@ export default {
 		 */
 		closeModal() {
 			// Clear state first
-			this.isUpdated = false
-			this.registerTitle = ''
-			this.schemaTitle = ''
-			this.activeTab = 0
-			this.selectedAttachments = []
-			this.activeAttachment = null
-			this.success = null
-			this.error = null
-			this.isCopied = false
-
-			// Clear register/schema selection state
-			this.selectedRegisterForNewObject = null
-			this.selectedSchemaForNewObject = null
-			this.registerSchemaSelectionConfirmed = false
-			objectStore.availableRegistersForNewObject = null
-			objectStore.availableSchemasForNewObject = null
-
-			// Clear debounce timers
-			Object.values(this.propertyChangeDebounceTimers).forEach((timer) => {
-				if (timer) clearTimeout(timer)
-			})
-			this.propertyChangeDebounceTimers = {}
-			this.pendingNotifications = {}
+			clearFormState(this)
+			clearNewObjectScope(this)
+			clearPropertyChangeTimers(this)
 
 			// Clear any timeouts
 			clearTimeout(this.closeModalTimeout)
@@ -2043,28 +2175,15 @@ export default {
 		 */
 		blankObjectData() {
 			const initialData = {
-				'@self': {
-					id: '',
-					uuid: '',
-					uri: '',
-					register: this.currentRegister?.id || '',
-					schema: this.currentSchema?.id || '',
-					relations: '',
-					files: '',
-					folder: '',
-					updated: '',
-					created: '',
-					locked: null,
-					owner: '',
-				},
+				'@self': blankSelf(
+					this.currentRegister?.id || '',
+					this.currentSchema?.id || '',
+				),
 			}
 			for (const [key, property] of Object.entries(
 				this.currentSchema?.properties || {},
 			)) {
-				initialData[key] =
-					property.default !== undefined
-						? property.default
-						: blankValueFor(property)
+				initialData[key] = initialValueFor(property)
 			}
 			return initialData
 		},
@@ -2567,13 +2686,11 @@ export default {
 			if (!property) {
 				return `Property '${key}' is not defined in the current schema. This property exists in the object but is not part of the schema definition.`
 			}
-			const required =
-				this.currentSchema?.required?.includes(key) || property.required
 			const check = {
 				key,
 				value,
 				property,
-				required,
+				required: this.isRequiredProperty(key, property),
 				isValidDate: (v) => this.isValidDate(v),
 			}
 			for (const problem of PROPERTY_PROBLEMS) {
@@ -2581,6 +2698,18 @@ export default {
 				if (message) return message
 			}
 			return `Property '${key}' has an invalid value`
+		},
+
+		/**
+		 * Whether a property must have a value: the schema lists it as
+		 * required, or the property says so itself.
+		 *
+		 * @param {string} key The property
+		 * @param {object} property Its schema definition
+		 * @return {boolean} True when required
+		 */
+		isRequiredProperty(key, property) {
+			return this.currentSchema?.required?.includes(key) || property.required
 		},
 
 		getPropertyWarningMessage(key, _value) {
@@ -2688,10 +2817,7 @@ export default {
 		 */
 		updatePropertyValue(key, newValue) {
 			// Get the old value for comparison
-			const oldValue =
-				this.formData[key] !== undefined
-					? this.formData[key]
-					: this.objectProperties.find(([k]) => k === key)?.[1]
+			const oldValue = this.shownValueOf(key)
 
 			// Convert value based on schema property type
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2707,26 +2833,59 @@ export default {
 					oldValue,
 					newValue: convertedValue,
 				}
-
-				// Clear existing debounce timer for this property
-				if (this.propertyChangeDebounceTimers[key]) {
-					clearTimeout(this.propertyChangeDebounceTimers[key])
-				}
-
-				// Set new debounce timer (500ms delay)
-				this.propertyChangeDebounceTimers[key] = setTimeout(() => {
-					const notification = this.pendingNotifications[key]
-					if (notification) {
-						this.showPropertyChangeNotification(
-							key,
-							notification.oldValue,
-							notification.newValue,
-						)
-						delete this.pendingNotifications[key]
-					}
-					delete this.propertyChangeDebounceTimers[key]
-				}, 500)
+				this.debounceChangeNotice(key)
 			}
+		},
+
+		/**
+		 * A property's value as the form shows it: the edited value, else the
+		 * value of its row.
+		 *
+		 * @param {string} key The property
+		 * @return {unknown} The value
+		 */
+		shownValueOf(key) {
+			return this.formData[key] !== undefined
+				? this.formData[key]
+				: this.objectProperties.find(([k]) => k === key)?.[1]
+		},
+
+		/**
+		 * Show a property's pending change notice 500 ms after its last change.
+		 *
+		 * @param {string} key The property
+		 * @return {void}
+		 */
+		debounceChangeNotice(key) {
+			// Clear existing debounce timer for this property
+			if (this.propertyChangeDebounceTimers[key]) {
+				clearTimeout(this.propertyChangeDebounceTimers[key])
+			}
+
+			// Set new debounce timer (500ms delay)
+			this.propertyChangeDebounceTimers[key] = setTimeout(
+				() => this.showPendingChange(key),
+				500,
+			)
+		},
+
+		/**
+		 * Show a property's pending change notice, and forget it and its timer.
+		 *
+		 * @param {string} key The property
+		 * @return {void}
+		 */
+		showPendingChange(key) {
+			const notification = this.pendingNotifications[key]
+			if (notification) {
+				this.showPropertyChangeNotification(
+					key,
+					notification.oldValue,
+					notification.newValue,
+				)
+				delete this.pendingNotifications[key]
+			}
+			delete this.propertyChangeDebounceTimers[key]
 		},
 
 		/**
@@ -2758,29 +2917,13 @@ export default {
 			// Create a simple notification - you could replace this with a proper toast library
 			const notification = document.createElement('div')
 			notification.className = 'property-change-toast'
-			notification.style.cssText = `
-				position: fixed;
-				top: 20px;
-				right: 20px;
-				background: var(--color-success);
-				color: white;
-				padding: 12px 16px;
-				border-radius: 6px;
-				box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-				z-index: 10000;
-				font-size: 14px;
-				max-width: 300px;
-			`
+			notification.style.cssText = CHANGE_TOAST_STYLE
 			notification.textContent = `Property '${key}' changed from '${oldValue}' to '${newValue}'`
 
 			document.body.appendChild(notification)
 
 			// Remove notification after 3 seconds
-			setTimeout(() => {
-				if (notification.parentNode) {
-					notification.parentNode.removeChild(notification)
-				}
-			}, 3000)
+			setTimeout(() => removeElement(notification), 3000)
 		},
 
 		/**

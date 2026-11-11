@@ -77,32 +77,13 @@ class RegisterConfigurationLocator {
 	 * @spec openspec/changes/archive/2026-10-30-dedupe-shared-schemas/proposal.md
 	 */
 	public function schemasFor(Register $register): array {
-		$appId = (string)$register->getApplication();
-		if ($appId === '') {
+		$settings = $this->settingsDirectory(register: $register);
+		if ($settings === null) {
 			return [];
 		}
-
-		try {
-			$appPath = $this->appManager->getAppPath($appId);
-		} catch (Throwable $e) {
-			unset($e);
-			return [];
-		}
-
-		$settings = ($appPath . '/lib/Settings');
-		$slug     = strtolower((string)$register->getSlug());
 
 		foreach ($this->documents(directory: $settings) as $document) {
-			$data = $this->readJson(path: $document);
-			if ($data === null) {
-				continue;
-			}
-
-			if (basename($document) === ($appId . '_register.json')) {
-				$data = $this->mergeFragments(base: $data, directory: ($settings . '/register.d'));
-			}
-
-			$schemas = self::schemasForRegisterSlug(document: $data, registerSlug: $slug);
+			$schemas = $this->schemasInDocument(document: $document, register: $register);
 			if ($schemas !== []) {
 				return $schemas;
 			}
@@ -110,6 +91,51 @@ class RegisterConfigurationLocator {
 
 		return [];
 	}//end schemasFor()
+
+	/**
+	 * The `lib/Settings` directory of the register's app, or null when it has no app or the app is unknown.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return string|null The directory.
+	 */
+	private function settingsDirectory(Register $register): ?string {
+		$appId = (string)$register->getApplication();
+		if ($appId === '') {
+			return null;
+		}
+
+		try {
+			$appPath = $this->appManager->getAppPath($appId);
+		} catch (Throwable $e) {
+			unset($e);
+			return null;
+		}
+
+		return ($appPath . '/lib/Settings');
+	}//end settingsDirectory()
+
+	/**
+	 * The register's schema definitions one configuration document declares, with the
+	 * app's own `register.d` fragments merged over the app's own register document.
+	 *
+	 * @param string   $document The document's path.
+	 * @param Register $register The register.
+	 *
+	 * @return array<string, array<string, mixed>> Lowercased schema slug => definition; empty when it declares none.
+	 */
+	private function schemasInDocument(string $document, Register $register): array {
+		$data = $this->readJson(path: $document);
+		if ($data === null) {
+			return [];
+		}
+
+		if (basename($document) === ((string)$register->getApplication() . '_register.json')) {
+			$data = $this->mergeFragments(base: $data, directory: (dirname($document) . '/register.d'));
+		}
+
+		return self::schemasForRegisterSlug(document: $data, registerSlug: strtolower((string)$register->getSlug()));
+	}//end schemasInDocument()
 
 	/**
 	 * Pull one register's schema definitions out of a configuration document.

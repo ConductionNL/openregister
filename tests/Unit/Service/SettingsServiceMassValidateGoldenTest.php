@@ -10,6 +10,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\MassValidationRequest;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\IAppContainer;
@@ -20,7 +21,7 @@ use Throwable;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 
 /**
- * Records the mapper calls, log lines and result of massValidateObjects(), per scenario,
+ * Records the mapper calls, log lines and result of massValidate(), per scenario,
  * against fixtures/settings-mass-validate-golden.json. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  * Clock and memory readings are replaced by a fixed marker before comparing.
  *
@@ -29,6 +30,13 @@ use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  */
 class SettingsServiceMassValidateGoldenTest extends TestCase {
+
+	/**
+	 * The request fields a scenario does not set.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const DEFAULTS = ['maxObjects' => 0, 'batchSize' => 1000, 'mode' => 'serial', 'collectErrors' => false];
 
 	private const CLOCK_KEYS = [
 		'timestamp', 'duration_seconds', 'objects_per_second', 'start_memory', 'end_memory', 'peak_memory', 'memory_used',
@@ -159,7 +167,7 @@ class SettingsServiceMassValidateGoldenTest extends TestCase {
 	public function testMassValidateGolden(array $s): void {
 		$service = $this->service($s);
 		try {
-			$this->calls[] = ['result', $this->fixClock($service->massValidateObjects(...$s['args']))];
+			$this->calls[] = ['result', $this->fixClock($service->massValidate(request: new MassValidationRequest(...($s['args'] + self::DEFAULTS))))];
 		} catch (Throwable $e) {
 			$message = $e->getMessage();
 			if ($e instanceof \TypeError) {

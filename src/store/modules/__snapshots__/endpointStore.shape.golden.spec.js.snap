@@ -1,0 +1,32 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`the endpoint store exposes the same state, in the same order, and the same actions: actions 1`] = `
+[
+  "setEndpointItem",
+  "getEndpointItem",
+  "setEndpointList",
+  "getEndpointList",
+  "refreshEndpointList",
+  "createEndpoint",
+  "updateEndpoint",
+  "deleteEndpoint",
+  "testEndpoint",
+  "_hotUpdate",
+]
+`;
+
+exports[`the endpoint store exposes the same state, in the same order, and the same actions: initial state 1`] = `
+{
+  "endpointItem": null,
+  "endpointList": [],
+  "viewMode": "cards",
+}
+`;
+
+exports[`the endpoint store exposes the same state, in the same order, and the same actions: state 1`] = `
+[
+  "endpointItem",
+  "endpointList",
+  "viewMode",
+]
+`;
