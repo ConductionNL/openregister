@@ -1637,3 +1637,28 @@ shillinq	2720	a5f6ebe4c3943553ba35364423ec1160c0420bd8	GREEN	FV03:10	tree green 
 shillinq	2722	f082ac5a206018c07ed933c35ec70f2149c5de0a	GREEN	FV03:10	tree green (phpunit 7260 ok, vitest 1073 ok), diff review clean
 shillinq	2724	2f4e8fc61fa5039621e0246021d87232b839572e	GREEN	FV03:10	tree green (phpunit 7260 ok, vitest 1073 ok), diff review clean
 shillinq	2726	f88adb9db37a0e4e6e41daa2cf343583a863cd05	GREEN	FV03:10	tree green (phpunit 7260 ok, vitest 1073 ok), diff review clean
+integriq	3218	f51cd3a404b77bfb15abba83912a8008e9ee04dd	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3219	4e6a14163f85ef9c4405547bd36ad84bd2cf688e	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3220	1e58c267ebe86bbc20f03ac7a43e31c6df599d40	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3221	31f1d75ca9b480b0fffcff5b05b71ba0ff5af517	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3222	ce723cbffe7751e81e4c9248cc7daace6c5666da	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3223	4c85fbc6a022485f042c4db1c178d3fb311033ba	BLOCK	FV09:7	lib/Service/MessageValidation/OpenApiChecker.php moves the null-schema check after reference resolution, so a body schema whose $ref resolves to null now validates as valid where the old code threw a TypeError
+integriq	3224	2016f4c7178fb9717e438798808a8ada04f6dcb2	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3225	b05367bf954a3d248d6ecb0fe14f20e3dafe1ccf	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3226	9f4f29d6876e2a9389f6cfd5ccb2ceb50ac6ccff	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3227	34df1bbf67146d61061631450568c9cf1ac57c56	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3228	fd647060af1ca816079e9fba146b2c4f5d6d3fd7	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3229	aa50741d07cd3a195afaa82e0306d4ba32dfe315	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3230	ab9ecc0e6fdf1ebd2355678b6f9f22a4b2f0e084	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3231	a2b7c57f258baf386bf5ca7f9cc85d29ce60525d	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3232	e13b5fec86eaeb0cfed56c4e69c309c06977e8b9	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3233	1fe7afe24fb479f8c1708cc47b875b0563b8a6cb	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3234	1cb6839161ebdda0cef408d31a7979a139f34800	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3235	ea95bdecf8bcc2c663c394d7736ccf6769482db6	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3236	29ab78a9d673ef1e597f617491126bfd796be632	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3237	a306f99e5cd5f4f27c6573cb3534bf1984d345c3	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3238	73feace017b204e39ee301251ecadbf25087d80c	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3239	a8fcde07b8b2851600760e5f783a02d40436ead1	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3240	853b875376f4294d4322844f0e6969550e228716	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3241	73f1effed66a982369a29f4ec8f186f352c96ada	GREEN	FV09:7	unit suite green on the verify tree
+integriq	3242	25d928ea5218a4f47f35d538c37f134899b2eba9	GREEN	FV09:7	unit suite green on the verify tree
