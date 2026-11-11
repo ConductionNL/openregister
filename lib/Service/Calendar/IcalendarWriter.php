@@ -91,8 +91,29 @@ class IcalendarWriter {
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function calendar(CalendarContents $contents): string {
-		$timeZone = $contents->timeZone;
-		$lines = [
+		$lines = array_merge(
+			$this->calendarHeader(contents: $contents),
+			$this->timeZoneLines(contents: $contents),
+			$contents->componentLines,
+			['END:VCALENDAR']
+		);
+
+		$folded = array_map([$this, 'fold'], $lines);
+
+		return implode("\r\n", $folded) . "\r\n";
+	}//end calendar()
+
+	/**
+	 * The opening lines of a VCALENDAR: version, product, scale, method and name.
+	 *
+	 * @param CalendarContents $contents The name, zone, component lines and years.
+	 *
+	 * @return array<int, string> The unfolded lines.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	private function calendarHeader(CalendarContents $contents): array {
+		return [
 			'BEGIN:VCALENDAR',
 			'VERSION:2.0',
 			'PRODID:' . self::PRODID,
@@ -100,22 +121,28 @@ class IcalendarWriter {
 			'METHOD:PUBLISH',
 			'X-WR-CALNAME:' . $this->escapeText(value: $contents->calendarName),
 		];
+	}//end calendarHeader()
 
-		if ($timeZone !== null) {
-			$lines[] = 'X-WR-TIMEZONE:' . $timeZone->getName();
-			$lines = array_merge(
-				$lines,
-				$this->timeZoneComponent(timeZone: $timeZone, years: $contents->years)
-			);
+	/**
+	 * The calendar's time zone name and VTIMEZONE component, when it has a zone.
+	 *
+	 * @param CalendarContents $contents The name, zone, component lines and years.
+	 *
+	 * @return array<int, string> The unfolded lines; empty without a zone.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	private function timeZoneLines(CalendarContents $contents): array {
+		$timeZone = $contents->timeZone;
+		if ($timeZone === null) {
+			return [];
 		}
 
-		$lines = array_merge($lines, $contents->componentLines);
-		$lines[] = 'END:VCALENDAR';
-
-		$folded = array_map([$this, 'fold'], $lines);
-
-		return implode("\r\n", $folded) . "\r\n";
-	}//end calendar()
+		return array_merge(
+			['X-WR-TIMEZONE:' . $timeZone->getName()],
+			$this->timeZoneComponent(timeZone: $timeZone, years: $contents->years)
+		);
+	}//end timeZoneLines()
 
 	/**
 	 * Build the VTIMEZONE component for a zone over a year range.
@@ -134,18 +161,55 @@ class IcalendarWriter {
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function timeZoneComponent(DateTimeZone $timeZone, CalendarYearSpan $years): array {
+		$transitions = $this->transitionsOver(timeZone: $timeZone, years: $years);
+
+		$lines = ['BEGIN:VTIMEZONE', 'TZID:' . $timeZone->getName()];
+		$lines = array_merge($lines, $this->transitionComponents(transitions: $transitions));
+
+		if (count($transitions) <= 1) {
+			$offset = $this->formatOffset(seconds: (int)($transitions[0]['offset'] ?? 0));
+			$lines  = array_merge($lines, $this->fixedOffsetComponent(timeZone: $timeZone, offset: $offset));
+		}
+
+		$lines[] = 'END:VTIMEZONE';
+
+		return $lines;
+	}//end timeZoneComponent()
+
+	/**
+	 * A zone's transitions from the year before a span to the year after it, from PHP's zone database.
+	 *
+	 * @param DateTimeZone     $timeZone The zone.
+	 * @param CalendarYearSpan $years    The years to cover.
+	 *
+	 * @return array<int, array<string, mixed>> The transitions; empty when the zone reports none.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	private function transitionsOver(DateTimeZone $timeZone, CalendarYearSpan $years): array {
 		$start = (new DateTimeImmutable(sprintf('%04d-01-01T00:00:00+00:00', ($years->fromYear - 1))))->getTimestamp();
-		$end = (new DateTimeImmutable(sprintf('%04d-12-31T23:59:59+00:00', ($years->toYear + 1))))->getTimestamp();
+		$end   = (new DateTimeImmutable(sprintf('%04d-12-31T23:59:59+00:00', ($years->toYear + 1))))->getTimestamp();
 
 		$transitions = $timeZone->getTransitions($start, $end);
 		if ($transitions === false) {
-			$transitions = [];
+			return [];
 		}
 
-		$lines = ['BEGIN:VTIMEZONE', 'TZID:' . $timeZone->getName()];
+		return $transitions;
+	}//end transitionsOver()
 
+	/**
+	 * One STANDARD or DAYLIGHT sub-component per transition after the first, each from the offset before it.
+	 *
+	 * @param array<int, array<string, mixed>> $transitions The zone's transitions; the first only gives the starting offset.
+	 *
+	 * @return array<int, string> The unfolded lines.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	private function transitionComponents(array $transitions): array {
+		$lines          = [];
 		$previousOffset = ($transitions[0]['offset'] ?? 0);
-		$emitted = 0;
 
 		foreach (array_slice($transitions, 1) as $transition) {
 			$lines = array_merge(
@@ -153,23 +217,31 @@ class IcalendarWriter {
 				$this->transitionComponent(transition: $transition, previousOffset: $previousOffset)
 			);
 			$previousOffset = (int)$transition['offset'];
-			$emitted++;
 		}
-
-		if ($emitted === 0) {
-			$offset = $this->formatOffset(seconds: (int)$previousOffset);
-			$lines[] = 'BEGIN:STANDARD';
-			$lines[] = 'DTSTART:19700101T000000';
-			$lines[] = 'TZOFFSETFROM:' . $offset;
-			$lines[] = 'TZOFFSETTO:' . $offset;
-			$lines[] = 'TZNAME:' . $timeZone->getName();
-			$lines[] = 'END:STANDARD';
-		}
-
-		$lines[] = 'END:VTIMEZONE';
 
 		return $lines;
-	}//end timeZoneComponent()
+	}//end transitionComponents()
+
+	/**
+	 * The single STANDARD sub-component of a zone with no transitions in range, carrying its fixed offset.
+	 *
+	 * @param DateTimeZone $timeZone The zone.
+	 * @param string       $offset   The formatted offset.
+	 *
+	 * @return array<int, string> The unfolded lines.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	private function fixedOffsetComponent(DateTimeZone $timeZone, string $offset): array {
+		return [
+			'BEGIN:STANDARD',
+			'DTSTART:19700101T000000',
+			'TZOFFSETFROM:' . $offset,
+			'TZOFFSETTO:' . $offset,
+			'TZNAME:' . $timeZone->getName(),
+			'END:STANDARD',
+		];
+	}//end fixedOffsetComponent()
 
 	/**
 	 * One STANDARD or DAYLIGHT sub-component for a zone transition.

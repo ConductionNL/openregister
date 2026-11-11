@@ -56,13 +56,27 @@ class OoxmlElements {
 
 		$children = [];
 		foreach ($parent->childNodes as $child) {
-			if ($child instanceof DOMElement && $child->localName === $localName) {
+			if (self::isElementNamed(node: $child, localName: $localName) === true) {
 				$children[] = $child;
 			}
 		}
 
 		return $children;
 	}//end children()
+
+	/**
+	 * Whether a node is an element with this local name.
+	 *
+	 * @param mixed  $node      The node.
+	 * @param string $localName The local name.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-assert-if-true DOMElement $node
+	 */
+	private static function isElementNamed(mixed $node, string $localName): bool {
+		return ($node instanceof DOMElement && $node->localName === $localName);
+	}//end isElementNamed()
 
 	/**
 	 * The first direct child with the given local name, or null.

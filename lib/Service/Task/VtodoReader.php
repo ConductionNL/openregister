@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
-use OCA\OpenRegister\Service\TaskLocation;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 
 /**
  * Reads the standard fields and the X-OPENREGISTER-* properties of a VTODO.

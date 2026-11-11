@@ -124,6 +124,99 @@ import CheckCircleOutline from 'vue-material-design-icons/CheckCircleOutline.vue
 import { qualityStore } from '../../store/store.js'
 
 /**
+ * The first list on an object whose entries are all source records.
+ *
+ * @param {object} object The master object
+ * @return {Array<object>} The list, or none
+ */
+function firstSourceList(object) {
+	for (const value of Object.values(object)) {
+		if (isSourceList(value)) {
+			return value
+		}
+	}
+	return []
+}
+
+/**
+ * Whether a value is a non-empty list of source records.
+ *
+ * @param {*} value The value
+ * @return {boolean} True when every entry names its source system
+ */
+function isSourceList(value) {
+	return (
+		Array.isArray(value)
+		&& value.length > 0
+		&& value.every(
+			(entry) => entry && typeof entry === 'object' && 'sourceSystem' in entry,
+		)
+	)
+}
+
+/**
+ * The filled-in attribute values a source record gives, with its source.
+ *
+ * @param {object} record The source record
+ * @return {Array<{attribute: string, value: *, sourceSystem: string}>} The values
+ */
+function filledValuesOf(record) {
+	const sourceSystem = record.sourceSystem ?? ''
+	const values = record.values ?? record.mappedAttributes ?? {}
+	if (!values || typeof values !== 'object') return []
+	return Object.entries(values)
+		.filter(([, value]) => value !== null && value !== undefined && value !== '')
+		.map(([attribute, value]) => ({ attribute, value, sourceSystem }))
+}
+
+/**
+ * Stringify a source value for the select option label.
+ *
+ * @param {*} value Raw attribute value.
+ * @return {string} The text.
+ */
+function displayValue(value) {
+	if (typeof value === 'object') return JSON.stringify(value)
+	return String(value)
+}
+
+/**
+ * Add a source's value to its attribute's options, once per distinct value;
+ * the first source to give a value names it.
+ *
+ * @param {object} perAttribute The options per attribute, by value key
+ * @param {{attribute: string, value: *, sourceSystem: string}} candidate The value
+ * @return {void}
+ */
+function addConflictOption(perAttribute, { attribute, value, sourceSystem }) {
+	if (!perAttribute[attribute]) perAttribute[attribute] = new Map()
+	const key = JSON.stringify(value)
+	if (!perAttribute[attribute].has(key)) {
+		perAttribute[attribute].set(key, {
+			id: `${attribute}::${sourceSystem}::${key}`,
+			label: `${displayValue(value)} (${sourceSystem})`,
+			value,
+			sourceSystem,
+		})
+	}
+}
+
+/**
+ * The attributes the sources give more than one value for, with those values.
+ *
+ * @param {object} perAttribute The options per attribute, by value key
+ * @return {Array<{attribute: string, options: Array<object>}>} The conflicts
+ */
+function disagreeing(perAttribute) {
+	return Object.entries(perAttribute)
+		.filter(([, options]) => options.size > 1)
+		.map(([attribute, options]) => ({
+			attribute,
+			options: Array.from(options.values()),
+		}))
+}
+
+/**
  * Steward-facing conflict-resolution modal (ADR-045 #E). Computes, per
  * attribute, the set of DISAGREEING values across the master object's linked
  * source records (attributes with a single value, or full agreement, are
@@ -206,21 +299,7 @@ export default {
 					(entry) => entry && typeof entry === 'object',
 				)
 
-			for (const value of Object.values(this.object)) {
-				if (
-					Array.isArray(value)
-					&& value.length > 0
-					&& value.every(
-						(entry) =>
-							entry
-							&& typeof entry === 'object'
-							&& 'sourceSystem' in entry,
-					)
-				) {
-					return value
-				}
-			}
-			return []
+			return firstSourceList(this.object)
 		},
 
 		/**
@@ -235,32 +314,12 @@ export default {
 			const perAttribute = {}
 
 			for (const record of this.sourceRecords) {
-				const sourceSystem = record.sourceSystem ?? ''
-				const values = record.values ?? record.mappedAttributes ?? {}
-				if (!values || typeof values !== 'object') continue
-
-				for (const [attribute, value] of Object.entries(values)) {
-					if (value === null || value === undefined || value === '')
-						continue
-					if (!perAttribute[attribute]) perAttribute[attribute] = new Map()
-					const key = JSON.stringify(value)
-					if (!perAttribute[attribute].has(key)) {
-						perAttribute[attribute].set(key, {
-							id: `${attribute}::${sourceSystem}::${key}`,
-							label: `${this.displayValue(value)} (${sourceSystem})`,
-							value,
-							sourceSystem,
-						})
-					}
+				for (const candidate of filledValuesOf(record)) {
+					addConflictOption(perAttribute, candidate)
 				}
 			}
 
-			return Object.entries(perAttribute)
-				.filter(([, options]) => options.size > 1)
-				.map(([attribute, options]) => ({
-					attribute,
-					options: Array.from(options.values()),
-				}))
+			return disagreeing(perAttribute)
 		},
 
 		/**
@@ -293,18 +352,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Stringify a source value for the select option label.
-		 *
-		 * @param {*} value Raw attribute value.
-		 * @spec exclude UI presentation helper
-		 * @return {string}
-		 */
-		displayValue(value) {
-			if (typeof value === 'object') return JSON.stringify(value)
-			return String(value)
-		},
-
 		/**
 		 * No-op change handler kept for template symmetry with other
 		 * NcSelect usages in this store's modals; `canSave` already reacts

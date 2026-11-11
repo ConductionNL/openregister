@@ -136,25 +136,50 @@ class MatrixRowsFromApps {
 		}
 
 		$event = new MatrixRowsRequestedEvent(schema: $schema, provider: $provider);
+		if ($this->dispatched(event: $event, provider: $provider) === false) {
+			return [];
+		}
+
+		return $this->ownedRows(event: $event, provider: $provider);
+	}//end ask()
+
+	/**
+	 * Dispatch the request; a failing listener is logged and means no rows.
+	 *
+	 * @param MatrixRowsRequestedEvent $event    The request.
+	 * @param string                   $provider The provider id, for the log.
+	 *
+	 * @return bool False when the dispatch failed.
+	 */
+	private function dispatched(MatrixRowsRequestedEvent $event, string $provider): bool {
 		try {
-			$this->dispatcher->dispatchTyped($event);
+			$this->dispatcher?->dispatchTyped($event);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[MatrixRowsFromApps] A matrix row provider failed; it contributes no rows',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'provider' => $provider, 'error' => $e->getMessage()]
 			);
-			return [];
+			return false;
 		}
 
+		return true;
+	}//end dispatched()
+
+	/**
+	 * The rows added by the app that owns the provider id; every other row is dropped and logged.
+	 *
+	 * @param MatrixRowsRequestedEvent $event    The answered request.
+	 * @param string                   $provider The provider id.
+	 *
+	 * @return array<int, array<string, mixed>> The rows the owning app added.
+	 */
+	private function ownedRows(MatrixRowsRequestedEvent $event, string $provider): array {
 		$owner = self::owningApp(provider: $provider);
 		$kept  = [];
 		foreach ($event->getRows() as $index => $row) {
 			$appId = $event->answeredBy(index: $index);
 			if ($appId === '' || $appId !== $owner) {
-				$this->logger->warning(
-					message: '[MatrixRowsFromApps] A provider row from an app that does not own the provider was dropped',
-					context: ['provider' => $provider, 'answeredBy' => $appId]
-				);
+				$this->logForeignRow(provider: $provider, appId: $appId);
 				continue;
 			}
 
@@ -162,7 +187,22 @@ class MatrixRowsFromApps {
 		}
 
 		return $kept;
-	}//end ask()
+	}//end ownedRows()
+
+	/**
+	 * Say that a provider row from an app that does not own the provider was dropped.
+	 *
+	 * @param string $provider The provider id.
+	 * @param string $appId    The app that answered, '' when unknown.
+	 *
+	 * @return void
+	 */
+	private function logForeignRow(string $provider, string $appId): void {
+		$this->logger->warning(
+			message: '[MatrixRowsFromApps] A provider row from an app that does not own the provider was dropped',
+			context: ['provider' => $provider, 'answeredBy' => $appId]
+		);
+	}//end logForeignRow()
 
 	/**
 	 * The app that owns a provider id: the part before the first dot (`dossiq`

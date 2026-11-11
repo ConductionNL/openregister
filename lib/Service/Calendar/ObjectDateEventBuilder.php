@@ -96,18 +96,51 @@ class ObjectDateEventBuilder {
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
 	public function build(ObjectDateOccurrence $occurrence): ?array {
-		$data = $occurrence->object->getObject();
+		$data  = $occurrence->object->getObject();
 		$start = $this->startMoment(occurrence: $occurrence, data: $data);
 		if ($start === null) {
 			return null;
 		}
 
-		$start = $start->setTimezone($occurrence->timeZone);
-		$span = new EventSpan(
+		$span  = $this->eventSpan(occurrence: $occurrence, start: $start->setTimezone($occurrence->timeZone));
+		$lines = $this->eventLines(occurrence: $occurrence, span: $span);
+
+		return [
+			'lines' => $lines,
+			'years' => [(int)$span->start->format('Y'), (int)$span->end->format('Y')],
+		];
+	}//end build()
+
+	/**
+	 * The span the event covers: from its start, in the tenant zone, to its end, and whether it is all-day.
+	 *
+	 * @param ObjectDateOccurrence $occurrence The occurrence.
+	 * @param DateTimeImmutable    $start      The start, in the tenant zone.
+	 *
+	 * @return EventSpan The span.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	private function eventSpan(ObjectDateOccurrence $occurrence, DateTimeImmutable $start): EventSpan {
+		return new EventSpan(
 			start: $start,
 			end: $this->endMoment(occurrence: $occurrence, start: $start),
-			allDay: $this->isAllDay(occurrence: $occurrence, data: $data)
+			allDay: $this->isAllDay(occurrence: $occurrence, data: $occurrence->object->getObject())
 		);
+	}//end eventSpan()
+
+	/**
+	 * The unfolded VEVENT lines of an occurrence over its span.
+	 *
+	 * @param ObjectDateOccurrence $occurrence The occurrence.
+	 * @param EventSpan            $span       The span the event covers.
+	 *
+	 * @return array<int, string> The lines, up to and including END:VEVENT.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	private function eventLines(ObjectDateOccurrence $occurrence, EventSpan $span): array {
+		$data  = $occurrence->object->getObject();
 		$lines = array_merge(
 			$this->headerLines(occurrence: $occurrence, data: $data),
 			$this->timingLines(span: $span, timeZone: $occurrence->timeZone),
@@ -118,11 +151,8 @@ class ObjectDateEventBuilder {
 
 		$lines[] = 'END:VEVENT';
 
-		return [
-			'lines' => $lines,
-			'years' => [(int)$span->start->format('Y'), (int)$span->end->format('Y')],
-		];
-	}//end build()
+		return $lines;
+	}//end eventLines()
 
 	/**
 	 * The start the event publishes on: the stored value, or the term engine's date for a deadline.
@@ -341,24 +371,36 @@ class ObjectDateEventBuilder {
 	 * @return array<int, string> The lines.
 	 */
 	private function timingLines(EventSpan $span, DateTimeZone $timeZone): array {
-		$start = $span->start;
-		$end = $span->end;
 		if ($span->allDay === true) {
-			// DTEND is exclusive, so a one-day event ends on the next day.
-			$exclusive = $end->modify('+1 day');
-			return [
-				'DTSTART;VALUE=DATE:' . $start->format('Ymd'),
-				'DTEND;VALUE=DATE:' . $exclusive->format('Ymd'),
-			];
+			return $this->allDayTimingLines(span: $span);
 		}
 
 		$tzid = $timeZone->getName();
 
 		return [
-			'DTSTART;TZID=' . $tzid . ':' . $start->format('Ymd\THis'),
-			'DTEND;TZID=' . $tzid . ':' . $end->format('Ymd\THis'),
+			'DTSTART;TZID=' . $tzid . ':' . $span->start->format('Ymd\THis'),
+			'DTEND;TZID=' . $tzid . ':' . $span->end->format('Ymd\THis'),
 		];
 	}//end timingLines()
+
+	/**
+	 * The DTSTART and DTEND of an all-day event, as dates.
+	 *
+	 * @param EventSpan $span The all-day span.
+	 *
+	 * @return array<int, string> The two lines.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	private function allDayTimingLines(EventSpan $span): array {
+		// DTEND is exclusive, so a one-day event ends on the next day.
+		$exclusive = $span->end->modify('+1 day');
+
+		return [
+			'DTSTART;VALUE=DATE:' . $span->start->format('Ymd'),
+			'DTEND;VALUE=DATE:' . $exclusive->format('Ymd'),
+		];
+	}//end allDayTimingLines()
 
 	/**
 	 * The DTSTAMP value: when the record last changed.
@@ -462,20 +504,34 @@ class ObjectDateEventBuilder {
 		}
 
 		$answers = $this->attendees->responsesByAttendee(object: $occurrence->object);
-		$lines = [];
 
+		return $this->inviteeLines(invitees: $invitees, answers: $answers);
+	}//end attendeeLines()
+
+	/**
+	 * One ATTENDEE line per named invitee, with the status they answered (needs-action when they did not).
+	 *
+	 * @param array<int, mixed>                   $invitees The declared invitees.
+	 * @param array<string, array<string, mixed>> $answers  The recorded answers, by attendee name.
+	 *
+	 * @return array<int, string> The ATTENDEE lines.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	private function inviteeLines(array $invitees, array $answers): array {
+		$lines = [];
 		foreach ($invitees as $invitee) {
 			$name = $this->inviteeName(invitee: $invitee);
 			if ($name === null) {
 				continue;
 			}
 
-			$status = ($answers[$name]['status'] ?? AppointmentAttendeeService::STATUS_NEEDS_ACTION);
+			$status  = ($answers[$name]['status'] ?? AppointmentAttendeeService::STATUS_NEEDS_ACTION);
 			$lines[] = 'ATTENDEE;PARTSTAT=' . $status . ':' . $this->attendeeAddress(name: $name);
 		}
 
 		return $lines;
-	}//end attendeeLines()
+	}//end inviteeLines()
 
 	/**
 	 * The stored invitee list of an appointment that declares one.
@@ -580,18 +636,29 @@ class ObjectDateEventBuilder {
 			return [];
 		}
 
-		$trigger = '-P' . $declaration->alarmOffsetDays . 'D';
-		if ($declaration->alarmOffsetDays === 0) {
-			$trigger = '-PT0S';
-		}
-
-
 		return [
 			'BEGIN:VALARM',
 			'ACTION:DISPLAY',
-			'TRIGGER;RELATED=START:' . $trigger,
+			'TRIGGER;RELATED=START:' . $this->alarmTrigger(offsetDays: $declaration->alarmOffsetDays),
 			'DESCRIPTION:' . $this->writer->escapeText(value: $declaration->property),
 			'END:VALARM',
 		];
 	}//end alarmLines()
+
+	/**
+	 * The VALARM trigger for an offset in days before the start: at the start itself for zero.
+	 *
+	 * @param int $offsetDays The days before the start.
+	 *
+	 * @return string The trigger duration.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	private function alarmTrigger(int $offsetDays): string {
+		if ($offsetDays === 0) {
+			return '-PT0S';
+		}
+
+		return '-P' . $offsetDays . 'D';
+	}//end alarmTrigger()
 }//end class

@@ -335,23 +335,17 @@ interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveOb
 	/**
 	 * Updates an existing object.
 	 *
-	 * @param Register|int|string $register The register containing the object.
-	 * @param Schema|int|string $schema The schema to validate against.
-	 * @param array $data The updated object data.
-	 * @param ObjectEntity $existingObject The existing object to update.
-	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
-	 * @param ObjectEntity|null $oldObject The original object before changes (optional).
+	 * @param StoredObjectUpdate  $update  The register, schema, new data and the stored object to update.
+	 * @param ObjectUpdateOptions $options Silent mode and the original object before changes.
 	 *
 	 * @return ObjectEntity The updated object entity.
 	 *
 	 * @throws Exception If there is an error during update.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Silent flag needed for audit trail control
-	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function updateObject(
-		Register|int|string $register, Schema|int|string $schema, array $data, ObjectEntity $existingObject,
-		bool $silent = false, ?ObjectEntity $oldObject = null
+		StoredObjectUpdate $update,
+		ObjectUpdateOptions $options = new ObjectUpdateOptions(),
 	): ObjectEntity;
 }//end interface

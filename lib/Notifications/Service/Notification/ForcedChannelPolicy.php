@@ -97,6 +97,26 @@ class ForcedChannelPolicy {
 	public const REFUSED_EXTERNAL = 'internal-only-recipient-outside-organisation';
 
 	/**
+	 * The save refusal of a forced channel declared without its reason.
+	 *
+	 * @var array{code:string,message:string}
+	 */
+	private const FORCED_WITHOUT_REASON = [
+		'code' => 'notification-forced-channel-without-reason',
+		'message' => 'A forced channel needs the reason it is forced: a user who cannot switch a notification off is owed the sentence that says why.',
+	];
+
+	/**
+	 * The save refusal of an internal-only kind whose every channel can leave the organisation.
+	 *
+	 * @var array{code:string,message:string}
+	 */
+	private const NO_INTERNAL_CHANNEL = [
+		'code' => 'notification-internal-only-has-no-internal-channel',
+		'message' => 'An internal-only kind declares only channels that can leave the organisation, so it would never send at all.',
+	];
+
+	/**
 	 * The effective decision for one recipient and one kind.
 	 *
 	 * The audience is REQUIRED and is an enum rather than a boolean with a
@@ -219,10 +239,7 @@ class ForcedChannelPolicy {
 		$reason = trim((string)($declaration[self::FORCED]['reason'] ?? ''));
 
 		if ($forcedChannels !== [] && $reason === '') {
-			$errors[] = [
-				'code' => 'notification-forced-channel-without-reason',
-				'message' => 'A forced channel needs the reason it is forced: a user who cannot switch a notification off is owed the sentence that says why.',
-			];
+			$errors[] = self::FORCED_WITHOUT_REASON;
 		}
 
 		$internalOnly = (($declaration[self::INTERNAL_ONLY] ?? false) === true);
@@ -230,36 +247,79 @@ class ForcedChannelPolicy {
 			return $errors;
 		}
 
-		$declared = $this->channelsOf(value: ($declaration['channels'] ?? []));
-		$usable = array_values(array_filter(
-			array_merge($declared, $forcedChannels),
-			static fn (string $channel): bool => in_array($channel, self::EXTERNAL_CAPABLE, true) === false
-		));
+		return array_merge($errors, $this->internalOnlyErrors(declaration: $declaration, forcedChannels: $forcedChannels));
+	}//end validate()
 
+	/**
+	 * What is wrong with an internal-only declaration's channels.
+	 *
+	 * @param array<string,mixed> $declaration    The notification's declaration.
+	 * @param array<int,string>   $forcedChannels Its forced channels.
+	 *
+	 * @return array<int,array{code:string,message:string}> The refusals.
+	 */
+	private function internalOnlyErrors(array $declaration, array $forcedChannels): array {
+		$errors = [];
+		$declared = $this->channelsOf(value: ($declaration['channels'] ?? []));
+		$usable = $this->internalChannels(channels: array_merge($declared, $forcedChannels));
 		if ($usable === []) {
-			$errors[] = [
-				'code' => 'notification-internal-only-has-no-internal-channel',
-				'message' => 'An internal-only kind declares only channels that can leave the organisation, so it would never send at all.',
-			];
+			$errors[] = self::NO_INTERNAL_CHANNEL;
 		}
 
-		$forcedExternal = array_values(array_filter(
-			$forcedChannels,
+		return array_merge($errors, $this->forcedExternalErrors(forcedChannels: $forcedChannels));
+	}//end internalOnlyErrors()
+
+	/**
+	 * The channels that cannot leave the organisation, in their order.
+	 *
+	 * @param array<int,string> $channels The channels.
+	 *
+	 * @return array<int,string> The channels not in EXTERNAL_CAPABLE.
+	 */
+	private function internalChannels(array $channels): array {
+		return array_values(array_filter(
+			$channels,
+			static fn (string $channel): bool => in_array($channel, self::EXTERNAL_CAPABLE, true) === false
+		));
+	}//end internalChannels()
+
+	/**
+	 * The channels that can leave the organisation, in their order.
+	 *
+	 * @param array<int,string> $channels The channels.
+	 *
+	 * @return array<int,string> The channels in EXTERNAL_CAPABLE.
+	 */
+	private function externalChannels(array $channels): array {
+		return array_values(array_filter(
+			$channels,
 			static fn (string $channel): bool => in_array($channel, self::EXTERNAL_CAPABLE, true) === true
 		));
+	}//end externalChannels()
 
-		if ($forcedExternal !== []) {
-			$errors[] = [
+	/**
+	 * The refusal of an internal-only kind that forces a channel able to leave the organisation.
+	 *
+	 * @param array<int,string> $forcedChannels The forced channels.
+	 *
+	 * @return array<int,array{code:string,message:string}> The refusal, or nothing.
+	 */
+	private function forcedExternalErrors(array $forcedChannels): array {
+		$forcedExternal = $this->externalChannels(channels: $forcedChannels);
+		if ($forcedExternal === []) {
+			return [];
+		}
+
+		return [
+			[
 				'code' => 'notification-internal-only-forces-external-channel',
 				'message' => sprintf(
 					'An internal-only kind forces %s, which can carry it outside the organisation. The two declarations contradict each other.',
 					implode(', ', $forcedExternal)
 				),
-			];
-		}
-
-		return $errors;
-	}//end validate()
+			],
+		];
+	}//end forcedExternalErrors()
 
 	/**
 	 * A channel list, however the declaration spells it.

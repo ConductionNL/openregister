@@ -168,26 +168,65 @@ class ReferencedByService implements ReferencedByServiceInterface {
 			return null;
 		}
 
+		return $this->readResolvedGroup(table: $table, page: $page);
+	}//end readGroup()
+
+	/**
+	 * Read one resolved schema group: its total and one page of summarised records.
+	 *
+	 * @param ReferencingTable $table The resolved table.
+	 * @param ReferencedByPage $page  The reference, page and access flag every group is read with.
+	 *
+	 * @return array|null The group, or null when it cannot be read.
+	 */
+	private function readResolvedGroup(ReferencingTable $table, ReferencedByPage $page): ?array {
 		$found = $this->queryGroup(table: $table, page: $page);
 		if ($found === null) {
 			return null;
 		}
 
-		$statusField = $this->resolveStatusField(schema: $table->schema);
-		$results     = [];
-		foreach ($this->referencingRecords(rows: $found['rows'], targetUuid: $page->targetUuid) as $record) {
-			$results[] = $this->summarise(record: $record, statusField: $statusField);
-		}
+		$records = $this->referencingRecords(rows: $found['rows'], targetUuid: $page->targetUuid);
+		$results = $this->summarisedRecords(schema: $table->schema, records: $records);
 
-		return [
-			'register' => $this->describe(entity: $table->register),
-			'schema' => $this->describe(entity: $table->schema),
+		return $this->describeTable(table: $table) + [
 			'total' => $found['total'],
 			'limit' => $page->limit,
 			'offset' => $page->offset,
 			'results' => $results,
 		];
-	}//end readGroup()
+	}//end readResolvedGroup()
+
+	/**
+	 * The register and schema of a group, described.
+	 *
+	 * @param ReferencingTable $table The resolved table.
+	 *
+	 * @return array{register: array, schema: array} The descriptions.
+	 */
+	private function describeTable(ReferencingTable $table): array {
+		return [
+			'register' => $this->describe(entity: $table->register),
+			'schema' => $this->describe(entity: $table->schema),
+		];
+	}//end describeTable()
+
+	/**
+	 * Summarise the referencing records of a group, with the status its schema's lifecycle field gives.
+	 *
+	 * @param Schema         $schema  The group's schema.
+	 * @param ObjectEntity[] $records The referencing records.
+	 *
+	 * @return array<int, array> The summaries, in order.
+	 */
+	private function summarisedRecords(Schema $schema, array $records): array {
+		$statusField = $this->resolveStatusField(schema: $schema);
+		$results     = [];
+		foreach ($records as $record) {
+			$results[] = $this->summarise(record: $record, statusField: $statusField);
+		}
+
+		return $results;
+	}//end summarisedRecords()
 
 	/**
 	 * Resolve a table's register and schema, keeping it only when it is the schema asked for.
