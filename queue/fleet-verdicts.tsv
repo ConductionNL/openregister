@@ -362,3 +362,4 @@ portaliq	2051	709744304119ac2bbdc8387946d73f431151b3f5	GREEN	FV06:1	unit suites 
 portaliq	2053	ba706d37f3e378ccd45b234fe5e07ab858db5986	GREEN	FV06:1	unit suites green on the tree
 opencatalogi\t2441\t511fcd2e4fdc67996b6ba24e610c0d70390d3001\tCONFLICT\tFV08:1\tconflicts with tree of earlier PRs on development
 opencatalogi	2427	952fe17e17388205ed50ac47ec95d032e30b0fe1	CONFLICT	FV08:1	conflicts with tree of earlier PRs on development
+opencatalogi	2441	511fcd2e4fdc67996b6ba24e610c0d70390d3001	CONFLICT	FV08:1	conflicts with tree of earlier PRs on development
