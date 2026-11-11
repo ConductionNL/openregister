@@ -1,0 +1,231 @@
+{
+    "no annotation": {
+        "schema": {
+            "title": "x"
+        },
+        "findings": [],
+        "refused": false
+    },
+    "valid annotation is allowed": {
+        "schema": {
+            "x-openregister-archival": {
+                "retention": {
+                    "default": "P7Y",
+                    "rules": [
+                        {
+                            "condition": "status == \"closed\"",
+                            "retention": "P10Y",
+                            "reason": "Closed cases"
+                        }
+                    ]
+                }
+            }
+        },
+        "findings": [],
+        "refused": false
+    },
+    "mutated default is refused": {
+        "schema": {
+            "x-openregister-archival": {
+                "retention": {
+                    "default": "P7",
+                    "rules": [
+                        {
+                            "condition": "status == \"closed\"",
+                            "retention": "P10Y",
+                            "reason": "Closed cases"
+                        }
+                    ]
+                }
+            }
+        },
+        "findings": [
+            {
+                "code": "archival-retention-default-malformed",
+                "message": "x-openregister-archival.retention.default \"P7\" is not a valid ISO-8601 duration (e.g. \"P30D\", \"PT1H\", \"P1Y6M\")."
+            }
+        ],
+        "refused": true
+    },
+    "annotation not an object": {
+        "schema": {
+            "x-openregister-archival": "P7Y"
+        },
+        "findings": [
+            {
+                "code": "archival-not-object",
+                "message": "x-openregister-archival must be an object."
+            }
+        ],
+        "refused": true
+    },
+    "retention missing": {
+        "schema": {
+            "x-openregister-archival": {
+                "category": "a"
+            }
+        },
+        "findings": [
+            {
+                "code": "archival-retention-missing",
+                "message": "x-openregister-archival.retention is required and must be an object."
+            }
+        ],
+        "refused": true
+    },
+    "retention unknown key and default missing": {
+        "schema": {
+            "x-openregister-archival": {
+                "retention": {
+                    "rulez": []
+                }
+            }
+        },
+        "findings": [
+            {
+                "code": "archival-retention-unknown-key",
+                "message": "x-openregister-archival.retention contains unknown key \"rulez\". Allowed: default, rules."
+            },
+            {
+                "code": "archival-retention-default-missing",
+                "message": "x-openregister-archival.retention.default is required (ISO-8601 duration, e.g. \"P30D\")."
+            }
+        ],
+        "refused": true
+    },
+    "default not a string": {
+        "schema": {
+            "x-openregister-archival": {
+                "retention": {
+                    "default": 30
+                }
+            }
+        },
+        "findings": [
+            {
+                "code": "archival-retention-default-malformed",
+                "message": "x-openregister-archival.retention.default \"30\" is not a valid ISO-8601 duration (e.g. \"P30D\", \"PT1H\", \"P1Y6M\")."
+            }
+        ],
+        "refused": true
+    },
+    "rules not an array": {
+        "schema": {
+            "x-openregister-archival": {
+                "retention": {
+                    "default": "P1Y",
+                    "rules": "all"
+                }
+            }
+        },
+        "findings": [
+            {
+                "code": "archival-rules-not-array",
+                "message": "x-openregister-archival.retention.rules must be an array of rule objects."
+            }
+        ],
+        "refused": true
+    },
+    "rule not an object": {
+        "schema": {
+            "x-openregister-archival": {
+                "retention": {
+                    "default": "P1Y",
+                    "rules": [
+                        "x",
+                        {
+                            "condition": "a",
+                            "retention": "P1D"
+                        }
+                    ]
+                }
+            }
+        },
+        "findings": [
+            {
+                "code": "archival-rule-not-object",
+                "message": "x-openregister-archival.retention.rules[0] must be an object."
+            }
+        ],
+        "refused": true
+    },
+    "rule with every key wrong": {
+        "schema": {
+            "x-openregister-archival": {
+                "retention": {
+                    "default": "P1Y",
+                    "rules": [
+                        {
+                            "when": "a",
+                            "condition": 5,
+                            "reason": 7
+                        }
+                    ]
+                }
+            }
+        },
+        "findings": [
+            {
+                "code": "archival-rule-unknown-key",
+                "message": "x-openregister-archival.retention.rules[0] contains unknown key \"when\". Allowed: condition, retention, reason."
+            },
+            {
+                "code": "archival-rule-condition-not-string",
+                "message": "x-openregister-archival.retention.rules[0].condition must be a non-empty string."
+            },
+            {
+                "code": "archival-rule-retention-missing",
+                "message": "x-openregister-archival.retention.rules[0].retention is required (ISO-8601 duration)."
+            },
+            {
+                "code": "archival-rule-reason-not-string",
+                "message": "x-openregister-archival.retention.rules[0].reason must be a string when present."
+            }
+        ],
+        "refused": true
+    },
+    "rule with empty condition and malformed retention": {
+        "schema": {
+            "x-openregister-archival": {
+                "retention": {
+                    "default": "P1Y",
+                    "rules": [
+                        {
+                            "condition": "  ",
+                            "retention": "ten years"
+                        }
+                    ]
+                }
+            }
+        },
+        "findings": [
+            {
+                "code": "archival-rule-condition-empty",
+                "message": "x-openregister-archival.retention.rules[0].condition must not be empty."
+            },
+            {
+                "code": "archival-rule-retention-malformed",
+                "message": "x-openregister-archival.retention.rules[0].retention \"ten years\" is not a valid ISO-8601 duration."
+            }
+        ],
+        "refused": true
+    },
+    "unknown top-level key only warns": {
+        "schema": {
+            "x-openregister-archival": {
+                "retention": {
+                    "default": "P1Y"
+                },
+                "_note": "x"
+            }
+        },
+        "findings": [
+            {
+                "code": "archival-unknown-key",
+                "severity": "warning",
+                "message": "x-openregister-archival contains unknown key \"_note\". Allowed: retention, aggregationLevel, useRestriction, temporalCoverage, category, categoryProperty, action."
+            }
+        ],
+        "refused": false
+    }
+}

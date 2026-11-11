@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCA\OpenRegister\Service\Sync\HarvestRun;
+use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCA\OpenRegister\Service\Sync\SourceFetcherLookupInterface;
 use OCA\OpenRegister\Service\Sync\SyncScheduleInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -142,47 +143,108 @@ class SyncDataJob extends TimedJob {
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	private function syncSource(Source $source): void {
-		$type = (string)$source->getType();
-		$fetcher = $this->fetcherRegistry->get($type);
+		$fetcher = $this->fetcherFor(source: $source);
 		if ($fetcher === null) {
-			$this->logger->warning(
-				message: sprintf('[SyncDataJob] No fetcher for source type "%s" (source %s)', $type, $source->getUuid())
-			);
 			return;
 		}
-
-		$executionId = (string)Uuid::v4();
 
 		// Overlap protection marker.
 		$source->setLastSyncStatus('running');
 		$this->sourceMapper->update($source);
 
 		try {
-			$since = null;
-			if ($source->getLastSyncToken() !== null) {
-				$since = $source->getLastSyncToken();
-			} elseif ($source->getLastSyncDate() !== null) {
-				$since = $source->getLastSyncDate()->format('c');
-			}
-
-			$summary = $this->pipeline->run(
-				new HarvestRun(source: $source, fetcher: $fetcher, executionId: $executionId, since: $since)
-			);
-
-			$source->setLastSyncStatus((string)($summary['status'] ?? 'success'));
-			$source->setLastSyncDate(new DateTime());
-			$this->sourceMapper->update($source);
-
-			$this->logger->info(
-				message: sprintf('[SyncDataJob] Synced source %s: %s', $source->getUuid(), (string)($summary['status'] ?? 'success'))
-			);
+			$summary = $this->harvest(source: $source, fetcher: $fetcher);
+			$this->recordSynced(source: $source, status: (string)($summary['status'] ?? 'success'));
 		} catch (Throwable $e) {
-			$source->setLastSyncStatus('failed');
-			$source->setLastSyncDate(new DateTime());
-			$this->sourceMapper->update($source);
-			$this->logger->error(
-				message: sprintf('[SyncDataJob] Source %s sync failed: %s', $source->getUuid(), $e->getMessage())
-			);
-		}//end try
+			$this->recordFailed(source: $source, error: $e);
+		}
 	}//end syncSource()
+
+	/**
+	 * The fetcher for a source's type, logging when there is none.
+	 *
+	 * @param Source $source The source to sync.
+	 *
+	 * @return SourceFetcherInterface|null
+	 */
+	private function fetcherFor(Source $source): ?SourceFetcherInterface {
+		$type    = (string)$source->getType();
+		$fetcher = $this->fetcherRegistry->get($type);
+		if ($fetcher === null) {
+			$this->logger->warning(
+				message: sprintf('[SyncDataJob] No fetcher for source type "%s" (source %s)', $type, $source->getUuid())
+			);
+		}
+
+		return $fetcher;
+	}//end fetcherFor()
+
+	/**
+	 * Run one harvest of a source through the pipeline.
+	 *
+	 * @param Source                 $source  The source to sync.
+	 * @param SourceFetcherInterface $fetcher The fetcher for its type.
+	 *
+	 * @return array The pipeline's summary.
+	 */
+	private function harvest(Source $source, SourceFetcherInterface $fetcher): array {
+		$executionId = (string)Uuid::v4();
+
+		return $this->pipeline->run(
+			new HarvestRun(source: $source, fetcher: $fetcher, executionId: $executionId, since: self::syncSince(source: $source))
+		);
+	}//end harvest()
+
+	/**
+	 * Where a harvest resumes: the source's sync token, else its last sync date.
+	 *
+	 * @param Source $source The source to sync.
+	 *
+	 * @return string|null Null for a source never synced.
+	 */
+	private static function syncSince(Source $source): ?string {
+		$since = null;
+		if ($source->getLastSyncToken() !== null) {
+			$since = $source->getLastSyncToken();
+		} elseif ($source->getLastSyncDate() !== null) {
+			$since = $source->getLastSyncDate()->format('c');
+		}
+
+		return $since;
+	}//end syncSince()
+
+	/**
+	 * Record a finished harvest on the source.
+	 *
+	 * @param Source $source The synced source.
+	 * @param string $status The pipeline's status.
+	 *
+	 * @return void
+	 */
+	private function recordSynced(Source $source, string $status): void {
+		$source->setLastSyncStatus($status);
+		$source->setLastSyncDate(new DateTime());
+		$this->sourceMapper->update($source);
+
+		$this->logger->info(
+			message: sprintf('[SyncDataJob] Synced source %s: %s', $source->getUuid(), $status)
+		);
+	}//end recordSynced()
+
+	/**
+	 * Record a failed harvest on the source.
+	 *
+	 * @param Source    $source The source.
+	 * @param Throwable $error  Why the harvest failed.
+	 *
+	 * @return void
+	 */
+	private function recordFailed(Source $source, Throwable $error): void {
+		$source->setLastSyncStatus('failed');
+		$source->setLastSyncDate(new DateTime());
+		$this->sourceMapper->update($source);
+		$this->logger->error(
+			message: sprintf('[SyncDataJob] Source %s sync failed: %s', $source->getUuid(), $error->getMessage())
+		);
+	}//end recordFailed()
 }//end class

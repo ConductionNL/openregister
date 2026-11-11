@@ -108,18 +108,36 @@ class PurposeContext {
 			return $this->declared;
 		}
 
+		return $this->requestDeclared();
+	}//end declared()
+
+	/**
+	 * The purpose code the request names: the header, else the underscored parameter.
+	 *
+	 * @return string|null The declared code, or null when the request names none.
+	 */
+	private function requestDeclared(): ?string {
 		$header = trim((string)$this->request->getHeader(self::HEADER));
 		if ($header !== '') {
 			return $header;
 		}
 
+		return $this->parameterDeclared();
+	}//end requestDeclared()
+
+	/**
+	 * The purpose code in the underscored request parameter, trimmed.
+	 *
+	 * @return string|null The declared code, or null when the parameter is absent, blank or not a string.
+	 */
+	private function parameterDeclared(): ?string {
 		$param = $this->request->getParam(key: self::PARAM);
 		if (is_string($param) === true && trim($param) !== '') {
 			return trim($param);
 		}
 
 		return null;
-	}//end declared()
+	}//end parameterDeclared()
 
 	/**
 	 * Declare a purpose from code, for a caller with no request headers.

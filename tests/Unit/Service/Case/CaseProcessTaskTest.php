@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
 
 /**
  * Real transition table, real definition validator, real realisation
@@ -119,13 +120,7 @@ class CaseProcessTaskTest extends TestCase {
 		$runs = $this->createMock(FlowRunService::class);
 		$run = new FlowRun();
 		$run->setUuid('run-9');
-		$runs->expects($this->once())->method('queue')->with(
-			'advice-flow',
-			['uuid' => CaseFixtures::OBJECT, 'register' => '1', 'schema' => '1'],
-			CaseRealisationService::RUN_TRIGGER,
-			['caseItem' => 'item-4'],
-			'alice'
-		)->willReturn($run);
+		$runs->expects($this->once())->method('queueRun')->with('advice-flow', $this->equalTo(new FlowRunQueueOptions(subject: ['uuid' => CaseFixtures::OBJECT, 'register' => '1', 'schema' => '1'], trigger: CaseRealisationService::RUN_TRIGGER, context: ['caseItem' => 'item-4'], user: 'alice')))->willReturn($run);
 		$tasks = $this->createMock(TaskService::class);
 		$tasks->expects($this->never())->method('import');
 

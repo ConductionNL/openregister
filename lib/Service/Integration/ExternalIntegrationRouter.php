@@ -127,14 +127,10 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 *                                      MUST declare storage='external'
 	 *                                      and a non-null
 	 *                                      getOpenConnectorSource().
-	 * @param string $method HTTP method ('GET' / 'POST' /
-	 *                       'PUT' / 'PATCH' / 'DELETE').
-	 * @param string $path Path relative to the source's
-	 *                     base URL.
-	 * @param array<string,mixed> $options Optional call options:
-	 *                                     - query: array of query params
-	 *                                     - body:  scalar or array body
-	 *                                     - headers: extra request headers
+	 * @param UpstreamRequest     $request  The HTTP method ('GET' / 'POST' / 'PUT' / 'PATCH' /
+	 *                                      'DELETE'), the path relative to the source's base URL,
+	 *                                      and the call options: query (query params), body
+	 *                                      (scalar or array body), headers (extra request headers).
 	 *
 	 * @return array<string,mixed> The decoded response body.
 	 *
@@ -147,9 +143,7 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-4
 	 */
-	public function call(IntegrationProvider $provider, string $method, string $path, array $options = []): array {
-		$request = new UpstreamRequest(method: $method, path: $path, options: $options);
-
+	public function call(IntegrationProvider $provider, UpstreamRequest $request): array {
 		return $this->runCall(run: new UpstreamCallRun(provider: $provider, request: $request, kind: 'call'));
 	}//end call()
 
@@ -215,9 +209,8 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 * metadata. The same failure classification as `call()` applies.
 	 *
 	 * @param IntegrationProvider $provider The provider making the call.
-	 * @param string $method HTTP method.
-	 * @param string $path Path relative to the source base URL.
-	 * @param array<string,mixed> $options Optional call options (query/body/headers).
+	 * @param UpstreamRequest     $request  The HTTP method, the path relative to the source base URL,
+	 *                                      and the call options (query/body/headers).
 	 *
 	 * @return array{body: array<string,mixed>, meta: array{status: int, durationMs: int, correlationId: ?string, headers: array<string,string>}}
 	 *
@@ -226,9 +219,7 @@ class ExternalIntegrationRouter implements ExternalIntegrationRouterInterface {
 	 *
 	 * @spec openspec/changes/integration-brp-audit-metadata/tasks.md
 	 */
-	public function callWithMeta(IntegrationProvider $provider, string $method, string $path, array $options = []): array {
-		$request = new UpstreamRequest(method: $method, path: $path, options: $options);
-
+	public function callWithMeta(IntegrationProvider $provider, UpstreamRequest $request): array {
 		return $this->runCallWithMeta(run: new UpstreamCallRun(provider: $provider, request: $request, kind: 'call (with meta)'));
 	}//end callWithMeta()
 

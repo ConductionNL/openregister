@@ -22,12 +22,13 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Trait;
 
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Pins what validateObject() hands the object service, in which order, and what it returns.
+ * Pins what resolveLinkedObject() hands the object service, in which order, and what it returns.
  */
 class ResolvesLinkedObjectTraitTest extends TestCase {
 
@@ -46,7 +47,7 @@ class ResolvesLinkedObjectTraitTest extends TestCase {
 			}
 
 			public function resolve(string $register, string $schema, string $id): ?ObjectEntity {
-				return $this->validateObject(register: $register, schema: $schema, id: $id);
+				return $this->resolveLinkedObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 			}
 		};
 	}

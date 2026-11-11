@@ -181,6 +181,23 @@ export async function previewPack(definition, rows) {
  */
 function slugTexts() {
 	return {
+		...packErrorTexts(),
+		...accessErrorTexts(),
+		'too-many-rows': t(
+			'openregister',
+			'There are too many sample rows to test at once.',
+		),
+	}
+}
+
+/**
+ * The text for each error slug about the pack itself: invalid, a locked or
+ * taken slug, or missing.
+ *
+ * @return {object} Slug to text.
+ */
+function packErrorTexts() {
+	return {
 		'invalid-pack': t('openregister', 'The pack is not valid.'),
 		'builtin-slug-locked': t(
 			'openregister',
@@ -191,6 +208,17 @@ function slugTexts() {
 			'Another pack already has this slug. Choose a different slug.',
 		),
 		'pack-not-found': t('openregister', 'This migration pack does not exist.'),
+	}
+}
+
+/**
+ * The text for each error slug about who sent the request: nobody signed
+ * in, or someone who is not an administrator.
+ *
+ * @return {object} Slug to text.
+ */
+function accessErrorTexts() {
+	return {
 		'not-authenticated': t(
 			'openregister',
 			'You are not signed in. Sign in and try again.',
@@ -198,10 +226,6 @@ function slugTexts() {
 		'admin-required': t(
 			'openregister',
 			'Only administrators can change migration packs.',
-		),
-		'too-many-rows': t(
-			'openregister',
-			'There are too many sample rows to test at once.',
 		),
 	}
 }

@@ -56,6 +56,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCA\OpenRegister\Service\Sharing\AccessLinkViewReaders;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IURLGenerator;
 use OCP\Security\IHasher;
 use OCP\Security\ISecureRandom;
@@ -367,8 +368,8 @@ class AccessLinkGoldenTest extends TestCase {
 		$calls = [];
 
 		$this->auditTrail->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with(
+			->method('recordObjectEvent')
+			->with(AuditTrailEvents::matching([
 				$object,
 				AccessLinkService::ACT_UPLOAD,
 				[
@@ -382,7 +383,7 @@ class AccessLinkGoldenTest extends TestCase {
 				'link:7a1f0f2e-0000-4000-8000-000000000001',
 				'Advice request',
 				'198.51.100.7'
-			)
+			]))
 			->willReturnCallback(
 				function () use (&$calls): AuditTrail {
 					$calls[] = 'audit';
@@ -418,8 +419,8 @@ class AccessLinkGoldenTest extends TestCase {
 		$object = new ObjectEntity();
 
 		$this->auditTrail->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with(
+			->method('recordObjectEvent')
+			->with(AuditTrailEvents::matching([
 				$object,
 				AccessLinkService::ACT_READ,
 				[
@@ -432,7 +433,7 @@ class AccessLinkGoldenTest extends TestCase {
 				'link:7a1f0f2e-0000-4000-8000-000000000001',
 				'link:7a1f0f2e-0000-4000-8000-000000000001',
 				null
-			)
+			]))
 			->willReturn(new AuditTrail());
 
 		$this->recordUse(link: $link, act: AccessLinkService::ACT_READ, object: $object, ipAddress: null);
@@ -442,7 +443,7 @@ class AccessLinkGoldenTest extends TestCase {
 
 	public function testAFailedAuditWriteIsLoggedAndTheUseIsStillCounted(): void {
 		$link = $this->link();
-		$this->auditTrail->method('createAuditTrailEntry')->willThrowException(new RuntimeException('db down'));
+		$this->auditTrail->method('recordObjectEvent')->willThrowException(new RuntimeException('db down'));
 		$this->logger->expects($this->once())
 			->method('error')
 			->with(
@@ -458,7 +459,7 @@ class AccessLinkGoldenTest extends TestCase {
 
 	public function testAUseWithNoObjectWritesNoEntryButCounts(): void {
 		$link = $this->link();
-		$this->auditTrail->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrail->expects($this->never())->method('recordObjectEvent');
 		$this->mapper->expects($this->once())->method('update');
 
 		$this->recordUse(link: $link, act: AccessLinkService::ACT_READ, object: null, ipAddress: '10.0.0.1');
@@ -468,7 +469,7 @@ class AccessLinkGoldenTest extends TestCase {
 
 	public function testAFailedCounterWriteNeverFailsTheUse(): void {
 		$link = $this->link();
-		$this->auditTrail->expects($this->once())->method('createAuditTrailEntry')->willReturn(new AuditTrail());
+		$this->auditTrail->expects($this->once())->method('recordObjectEvent')->willReturn(new AuditTrail());
 		$this->mapper->method('update')->willThrowException(new RuntimeException('db down'));
 
 		$this->recordUse(link: $link, act: AccessLinkService::ACT_READ, object: new ObjectEntity(), ipAddress: null);

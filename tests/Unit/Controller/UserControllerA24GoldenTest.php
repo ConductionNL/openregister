@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\UserController;
+use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\SecurityService;
 use OCA\OpenRegister\Service\UserService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\UserControllerFactory;
@@ -431,7 +432,7 @@ class UserControllerA24GoldenTest extends TestCase {
 		$this->loginWith(self::valid());
 		$this->userManager->expects($this->once())->method('checkPassword')->with('alice', 'pw')->willReturn(false);
 		$this->securityService->expects($this->once())->method('recordFailedLoginAttempt')
-			->with('alice', '10.0.0.1', 'invalid_credentials');
+			->with(new FailedAttempt('alice', '10.0.0.1', 'invalid_credentials'));
 		$this->securityService->expects($this->never())->method('recordSuccessfulLogin');
 		$this->userSession->expects($this->never())->method('setUser');
 
@@ -442,7 +443,7 @@ class UserControllerA24GoldenTest extends TestCase {
 		$this->loginWith(self::valid());
 		$this->userManager->method('checkPassword')->willReturn($this->user('alice', false));
 		$this->securityService->expects($this->once())->method('recordFailedLoginAttempt')
-			->with('alice', '10.0.0.1', 'account_disabled');
+			->with(new FailedAttempt('alice', '10.0.0.1', 'account_disabled'));
 		$this->userSession->expects($this->never())->method('setUser');
 
 		$this->assertOutcome(401, ['error' => 'Account is disabled'], true, $this->controller->login());
@@ -562,7 +563,7 @@ class UserControllerA24GoldenTest extends TestCase {
 		$this->passwordChange(['currentPassword' => 'bad', 'newPassword' => 'new']);
 		$this->userService->method('applyPasswordChange')->willThrowException(new RuntimeException('Current password is incorrect', 403));
 		$this->securityService->expects($this->once())->method('recordFailedLoginAttempt')
-			->with('alice', '10.0.0.1', 'password_change_incorrect');
+			->with(new FailedAttempt('alice', '10.0.0.1', 'password_change_incorrect'));
 
 		$this->assertOutcome(403, ['error' => 'Current password is incorrect'], true, $this->controller->changePassword());
 		$this->assertSame([], $this->errors);

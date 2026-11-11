@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\DraftRemovalFrame;
 use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -49,12 +50,12 @@ class DraftRemovalFrameTest extends TestCase {
 	 */
 	private function record(): DraftRemovalRecord {
 		$trail = $this->createMock(AuditTrailMapperInterface::class);
-		$trail->method('createAuditTrailEntry')->willReturnCallback(
+		$trail->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
 				$this->actors[] = $actorId;
 				return new AuditTrail();
 			}
-		);
+		));
 
 		return new DraftRemovalRecord($trail, new NullLogger());
 

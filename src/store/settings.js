@@ -67,6 +67,53 @@ function massValidateRequest(options) {
 }
 
 /**
+ * Ask the server to validate the objects.
+ *
+ * @param {object} options The mass validate options.
+ * @return {Promise<object>} The axios response.
+ * @spec exclude API passthrough to POST /api/settings/mass-validate
+ */
+function requestMassValidation(options) {
+	return axios.post(
+		generateUrl('/apps/openregister/api/settings/mass-validate'),
+		massValidateRequest(options),
+	)
+}
+
+/**
+ * Tell the user how a mass validation the server answered went.
+ *
+ * @param {object} data The server's answer.
+ * @return {void}
+ * @spec exclude API passthrough to POST /api/settings/mass-validate
+ */
+function reportMassValidation(data) {
+	if (data.success) {
+		showSuccess(
+			t('openregister', 'Mass validation completed successfully'),
+		)
+	} else {
+		showMassValidateFailure(data.message)
+	}
+}
+
+/**
+ * Log a failed settings load and tell the user.
+ *
+ * @param {Error} error What went wrong.
+ * @return {void}
+ * @spec exclude parallel fan-out wrapper over settings-load passthroughs
+ */
+function showLoadFailure(error) {
+	console.error('Failed to load settings:', error)
+	showError(
+		t('openregister', 'Failed to load settings: {error}', {
+			error: error.message,
+		}),
+	)
+}
+
+/**
  * Tell the user a mass validation failed.
  *
  * @param {string} message Why it failed.
@@ -595,25 +642,29 @@ export const useSettingsStore = defineStore('settings', {
 			this.loadingInProgress = true
 
 			try {
-				// Load all settings sections in parallel for better performance
-				await Promise.allSettled([
-					this.loadRbacSettings(),
-					this.loadMultitenancySettings(),
-					this.loadRetentionSettings(),
-					this.loadVersionInfo(),
-					this.loadAvailableOptions(),
-				])
+				await this.loadAllSections()
 			} catch (error) {
-				console.error('Failed to load settings:', error)
-				showError(
-					t('openregister', 'Failed to load settings: {error}', {
-						error: error.message,
-					}),
-				)
+				showLoadFailure(error)
 			} finally {
 				this.loading = false
 				this.loadingInProgress = false
 			}
+		},
+
+		/**
+		 * Load every settings section, in parallel for better performance.
+		 *
+		 * @return {Promise<Array<object>>} The settled loads
+		 * @spec exclude parallel fan-out wrapper over settings-load passthroughs
+		 */
+		loadAllSections() {
+			return Promise.allSettled([
+				this.loadRbacSettings(),
+				this.loadMultitenancySettings(),
+				this.loadRetentionSettings(),
+				this.loadVersionInfo(),
+				this.loadAvailableOptions(),
+			])
 		},
 
 		/**
@@ -627,32 +678,32 @@ export const useSettingsStore = defineStore('settings', {
 			this.massValidateResults = null
 
 			try {
-				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/mass-validate'),
-					massValidateRequest(options),
-				)
-
+				const response = await requestMassValidation(options)
 				this.massValidateResults = response.data
-
-				if (response.data.success) {
-					showSuccess(
-						t('openregister', 'Mass validation completed successfully'),
-					)
-				} else {
-					showMassValidateFailure(response.data.message)
-				}
-
+				reportMassValidation(response.data)
 				return response.data
 			} catch (error) {
-				console.error('Mass validation failed:', error)
-				const errorMessage = error.response?.data?.message || error.message
-				showMassValidateFailure(errorMessage)
-				this.massValidateResults = failedMassValidation(errorMessage)
+				this.massValidationFailed(error)
 				throw error
 			} finally {
 				this.massValidating = false
 			}
 		},
+		/**
+		 * Log a failed mass validation, say why it failed and keep its zero
+		 * results.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 * @spec exclude API passthrough to POST /api/settings/mass-validate
+		 */
+		massValidationFailed(error) {
+			console.error('Mass validation failed:', error)
+			const errorMessage = error.response?.data?.message || error.message
+			showMassValidateFailure(errorMessage)
+			this.massValidateResults = failedMassValidation(errorMessage)
+		},
+
 
 		/**
 		 * Load memory prediction for mass validation

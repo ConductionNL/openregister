@@ -317,13 +317,24 @@ class PresenceService implements PresenceServiceInterface {
 			return [];
 		}
 
+		return $this->departures(stale: $stale);
+	}//end expire()
+
+	/**
+	 * Who went from where, one entry per expired presence row.
+	 *
+	 * @param array<int, mixed> $stale The expired presence rows.
+	 *
+	 * @return array<int, array{user: string, object: string}>
+	 */
+	private function departures(array $stale): array {
 		$gone = [];
 		foreach ($stale as $row) {
 			$gone[] = ['user' => (string)$row->getUserId(), 'object' => (string)$row->getObjectUuid()];
 		}
 
 		return $gone;
-	}//end expire()
+	}//end departures()
 
 	/**
 	 * The oldest heartbeat still believed.

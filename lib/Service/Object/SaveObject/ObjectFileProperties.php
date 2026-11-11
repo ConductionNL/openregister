@@ -133,7 +133,7 @@ final class ObjectFileProperties {
 		$snapshot = $write->data;
 		foreach (array_keys($snapshot) as $name) {
 			if ($this->isFile(write: $write, name: $name) === true) {
-				$this->files->handleFileProperty(objectEntity: $write->entity, object: $write->data, propertyName: $name, schema: $write->schema);
+				$this->files->handleFileProperty(write: $write, propertyName: $name);
 				$stored[] = $name;
 			}
 		}

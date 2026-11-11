@@ -130,12 +130,7 @@ class DedupeRegistersCommand extends Command {
 		$apply = (bool)$input->getOption('apply');
 		$run = new DedupeRegistersRun(dryRun: ($apply === false), force: (bool)$input->getOption('force'));
 
-		if ($run->dryRun === true) {
-			$output->writeln(
-				'<comment>Running in DRY-RUN mode — no registers will be deleted. '
-				. 'Re-run with --apply to perform deletions.</comment>'
-			);
-		}
+		self::announceDryRun(run: $run, output: $output);
 
 		$registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 
@@ -148,23 +143,49 @@ class DedupeRegistersCommand extends Command {
 			return Command::SUCCESS;
 		}
 
+		$output->writeln(self::doneLine(run: $run));
+
+		return Command::SUCCESS;
+	}//end execute()
+
+	/**
+	 * Say, on a dry run, that nothing will be deleted.
+	 *
+	 * @param DedupeRegistersRun $run    The run.
+	 * @param OutputInterface    $output The console output.
+	 *
+	 * @return void
+	 */
+	private static function announceDryRun(DedupeRegistersRun $run, OutputInterface $output): void {
+		if ($run->dryRun === true) {
+			$output->writeln(
+				'<comment>Running in DRY-RUN mode — no registers will be deleted. '
+				. 'Re-run with --apply to perform deletions.</comment>'
+			);
+		}
+	}//end announceDryRun()
+
+	/**
+	 * The closing line: the duplicate groups, the deletions and the duplicates kept for holding objects.
+	 *
+	 * @param DedupeRegistersRun $run The finished run.
+	 *
+	 * @return string The line.
+	 */
+	private static function doneLine(DedupeRegistersRun $run): string {
 		$suffix = '';
 		if ($run->dryRun === true) {
 			$suffix = ' (dry run — no writes performed)';
 		}
 
-		$output->writeln(
-			sprintf(
-				'<info>Done. Duplicate slug groups=%d, deleted=%d, kept-non-empty=%d%s</info>',
-				$run->duplicateGroups,
-				$run->deleted,
-				$run->keptNonEmpty,
-				$suffix
-			)
+		return sprintf(
+			'<info>Done. Duplicate slug groups=%d, deleted=%d, kept-non-empty=%d%s</info>',
+			$run->duplicateGroups,
+			$run->deleted,
+			$run->keptNonEmpty,
+			$suffix
 		);
-
-		return Command::SUCCESS;
-	}//end execute()
+	}//end doneLine()
 
 	/**
 	 * Group registers by lowercased slug, ignoring registers without one.

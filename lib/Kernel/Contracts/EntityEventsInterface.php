@@ -21,7 +21,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts;
 
 use OCP\AppFramework\Db\Entity;
-use OCP\IUser;
 
 /**
  * Announces that an entity was created, updated, deleted or became terminal.
@@ -245,15 +244,14 @@ interface EntityEventsInterface {
 	/**
 	 * The decision metadata of an entity relation was updated.
 	 *
-	 * @param Entity $relation The relation as stored now.
-	 * @param array<string, array{previous: mixed, new: mixed}> $changedFields Only the fields that changed.
-	 * @param IUser|null $actingUser The user who decided; null for a system write.
+	 * @param RelationDecisionUpdate $update The relation as stored now, only the fields that changed,
+	 *                                       and the user who decided (null for a system write).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
-	public function entityRelationDecisionUpdated(Entity $relation, array $changedFields, ?IUser $actingUser): void;
+	public function entityRelationDecisionUpdated(RelationDecisionUpdate $update): void;
 
 	/**
 	 * A flow run reached a terminal status.

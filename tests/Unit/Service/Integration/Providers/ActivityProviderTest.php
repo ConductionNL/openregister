@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\Providers\MarkerScan;
 use OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning;
 use OCP\App\IAppManager;
@@ -82,7 +83,7 @@ class ActivityProviderTest extends TestCase {
 		$provider->stubRows = [
 			['activity_id' => 1, 'subject' => 'x [or:uuid]', 'type' => 'files', 'timestamp' => 100, 'affecteduser' => 'a', 'object_id' => 'uuid'],
 		];
-		self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
+		self::assertSame([], $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'uuid')));
 	}//end testListEmptyWhenAppMissing()
 
 	public function testListWidenedPayloadFlattensFields(): void {
@@ -106,7 +107,7 @@ class ActivityProviderTest extends TestCase {
 			],
 		];
 
-		$rows = $provider->list(register: 'r', schema: 's', objectId: 'uuid-1');
+		$rows = $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'uuid-1'));
 		self::assertCount(2, $rows);
 
 		// Row 1 — verify all flattened fields.
@@ -136,7 +137,7 @@ class ActivityProviderTest extends TestCase {
 			['activity_id' => 2, 'subject' => 'b [or:u]', 'type' => 'or:decision', 'timestamp' => 200, 'affecteduser' => 'bob', 'object_id' => 'u'],
 		];
 
-		$rows = $provider->list(register: 'r', schema: 's', objectId: 'u', filters: ['type' => 'or:decision']);
+		$rows = $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'u'), filters: ['type' => 'or:decision']);
 		self::assertCount(1, $rows);
 		self::assertSame('or:decision', $rows[0]['type']);
 	}//end testListFiltersByType()
@@ -148,7 +149,7 @@ class ActivityProviderTest extends TestCase {
 			['activity_id' => 2, 'subject' => 'b [or:u]', 'type' => 'files', 'timestamp' => 200, 'affecteduser' => 'bob', 'object_id' => 'u'],
 		];
 
-		$rows = $provider->list(register: 'r', schema: 's', objectId: 'u', filters: ['actor' => 'bob']);
+		$rows = $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'u'), filters: ['actor' => 'bob']);
 		self::assertCount(1, $rows);
 		self::assertSame('bob', $rows[0]['actor_id']);
 	}//end testListFiltersByActor()
@@ -160,7 +161,7 @@ class ActivityProviderTest extends TestCase {
 			['activity_id' => 2, 'subject' => 'new [or:u]', 'type' => 'files', 'timestamp' => 500, 'affecteduser' => 'bob', 'object_id' => 'u'],
 		];
 
-		$rows = $provider->list(register: 'r', schema: 's', objectId: 'u', filters: ['after' => 300]);
+		$rows = $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'u'), filters: ['after' => 300]);
 		self::assertCount(1, $rows);
 		self::assertSame(500, $rows[0]['timestamp']);
 	}//end testListFiltersByAfterTimestamp()
@@ -178,7 +179,7 @@ class ActivityProviderTest extends TestCase {
 			['activity_id' => 1, 'subject' => 'a [or:u]', 'type' => 'files', 'timestamp' => 100, 'affecteduser' => 'alice', 'object_id' => 'u'],
 		];
 
-		$rows = $provider->list(register: 'r', schema: 's', objectId: 'u');
+		$rows = $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'u'));
 		self::assertSame('internal', $rows[0]['visibility']);
 	}//end testEveryRowCarriesInternalVisibility()
 
@@ -196,7 +197,7 @@ class ActivityProviderTest extends TestCase {
 			['activity_id' => 2, 'subject' => 'b [or:u]', 'type' => 'files', 'timestamp' => 200, 'affecteduser' => 'bob', 'object_id' => 'u'],
 		];
 
-		self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'u', filters: ['visibility' => 'public']));
+		self::assertSame([], $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'u'), filters: ['visibility' => 'public']));
 	}//end testPublicOnlyReadReturnsNothing()
 
 	/**
@@ -213,14 +214,14 @@ class ActivityProviderTest extends TestCase {
 			['activity_id' => 2, 'subject' => 'b [or:u]', 'type' => 'files', 'timestamp' => 200, 'affecteduser' => 'bob', 'object_id' => 'u'],
 		];
 
-		self::assertCount(2, $provider->list(register: 'r', schema: 's', objectId: 'u', filters: ['visibility' => 'internal']));
-		self::assertCount(2, $provider->list(register: 'r', schema: 's', objectId: 'u', filters: ['visibility' => 'everyone']));
+		self::assertCount(2, $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'u'), filters: ['visibility' => 'internal']));
+		self::assertCount(2, $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'u'), filters: ['visibility' => 'everyone']));
 	}//end testInternalReadKeepsEveryRow()
 
 	public function testListHandlesEmptyResult(): void {
 		$provider = $this->buildProvider();
 		$provider->stubRows = [];
-		self::assertSame([], $provider->list(register: 'r', schema: 's', objectId: 'uuid'));
+		self::assertSame([], $provider->list(ref: new ObjectRef(register: 'r', schema: 's', id: 'uuid')));
 	}//end testListHandlesEmptyResult()
 
 	public function testHealthReportsOk(): void {

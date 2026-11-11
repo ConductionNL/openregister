@@ -24,6 +24,8 @@ use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use OCA\OpenRegister\Db\IdCursor;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
+use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarBatch;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -130,10 +132,8 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 			static fn (string $state, IdCursor $cursor): array => ($state === FlowTimer::STATE_ARMED && $cursor->afterId === 0 && $cursor->limit === 500) ? [$armed] : []
 		);
 		$this->service->expects($this->once())->method('supersede')->with(
-			't-armed',
-			$armed->getAnchorAt(),
-			'calendar-changed',
-			'calendar-recompute'
+			new TimerAnchorMove(uuid: 't-armed', anchorEventAt: $armed->getAnchorAt()),
+			new TimerChange(reason: 'calendar-changed', actor: 'calendar-recompute')
 		);
 		$this->recompute->expects($this->once())->method('recompute')->willReturnCallback(
 			function (CalendarBatch $batch): array {

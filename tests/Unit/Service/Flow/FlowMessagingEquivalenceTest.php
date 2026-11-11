@@ -83,40 +83,6 @@ class RecordingNcSender extends NcNotificationSender {
 	/** @var array<int, array<string, string>> */
 	public array $sends = [];
 
-	public function send(
-		string $uid,
-		ObjectEntity $object,
-		string $subjectKey,
-		string $name,
-		string $subject,
-		string $message,
-		array $context,
-		string $originApp = 'openregister',
-		array $actions = [],
-		bool $webPushActive = false,
-	): string {
-		$this->sends[] = [
-			'channel' => 'nc-notification',
-			'uid' => $uid,
-			'subject' => $subject,
-			'message' => $message,
-		];
-
-		return self::OUTCOME_DISPATCHED;
-	}
-
-	public function enqueueWebPush(
-		array $recipients,
-		string $ruleId,
-		string $originApp,
-		string $subject,
-		string $message,
-		array $actions,
-		ObjectEntity $object,
-	): void {
-		// Ride-alongs are not part of the delivery comparison.
-	}
-
 	public function notify(InAppNotice $notice): string {
 		$this->sends[] = [
 			'channel' => 'nc-notification',

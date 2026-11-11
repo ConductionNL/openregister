@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service;
 
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\EmbeddingProbe;
 use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
@@ -105,10 +106,7 @@ interface VectorizationServiceInterface {
 	 *
 	 * Delegates to VectorEmbeddings.
 	 *
-	 * @param string $query Query text to search for
-	 * @param int $limit Maximum number of results
-	 * @param array $filters Additional filters (entity_type, etc.)
-	 * @param string|null $provider Embedding provider
+	 * @param SemanticSearchRequest $request The query text, the maximum results, the filters and the embedding provider.
 	 *
 	 * @return array<int,array<string,mixed>> Search results
 	 *
@@ -116,7 +114,7 @@ interface VectorizationServiceInterface {
 	 *
 	 * @spec exclude One-line facade delegation to VectorEmbeddings::semanticSearch; no logic of its own.
 	 */
-	public function semanticSearch(string $query, int $limit = 10, array $filters = [], ?string $provider = null): array;
+	public function semanticSearch(SemanticSearchRequest $request): array;
 
 	/**
 	 * Test embedding generation with custom configuration

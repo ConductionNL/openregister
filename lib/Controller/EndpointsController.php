@@ -29,7 +29,9 @@ use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EndpointsControllerServices;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapperInterface;
+use OCA\OpenRegister\Db\EndpointLogScope;
 use OCA\OpenRegister\Db\EndpointMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\EndpointServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -662,10 +664,8 @@ class EndpointsController extends Controller {
 		if ($this->isCurrentUserAdmin() === false) {
 			$visibleIds = array_map(static fn (Endpoint $endpoint): int => (int)$endpoint->getId(), $this->endpointMapper->findAll());
 			[$logs, $total] = $this->endpointLogMapper->findPageWithin(
-				visibleIds: $visibleIds,
-				endpointId: $endpointId,
-				limit: $limit,
-				offset: $offset
+				scope: new EndpointLogScope(visibleIds: $visibleIds, endpointId: $endpointId),
+				query: new ListQuery(limit: $limit, offset: $offset)
 			);
 			return new JSONResponse(data: ['results' => $logs, 'total' => $total], statusCode: 200);
 		}

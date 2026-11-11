@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Edepot;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -275,11 +276,12 @@ class MdtoEventMapper {
 	 * @return array<int, AuditTrail> The rows.
 	 */
 	private function recentRows(string $uuid): array {
-		return $this->auditTrailMapper->findAll(
-			limit: self::MAX_EVENTS,
-			offset: null,
-			filters: ['object_uuid' => $uuid, 'action' => implode(',', array_keys(self::EVENT_TYPE_BY_ACTION))],
-			sort: ['created' => 'DESC'],
+		return $this->auditTrailMapper->findTrail(
+			query: new ListQuery(
+				limit: self::MAX_EVENTS,
+				filters: ['object_uuid' => $uuid, 'action' => implode(',', array_keys(self::EVENT_TYPE_BY_ACTION))],
+				sort: ['created' => 'DESC']
+			)
 		);
 	}//end recentRows()
 
@@ -292,11 +294,8 @@ class MdtoEventMapper {
 	 * @return array<int, AuditTrail> The rows.
 	 */
 	private function creationRows(string $uuid): array {
-		return $this->auditTrailMapper->findAll(
-			limit: 1,
-			offset: null,
-			filters: ['object_uuid' => $uuid, 'action' => 'create'],
-			sort: ['created' => 'ASC'],
+		return $this->auditTrailMapper->findTrail(
+			query: new ListQuery(limit: 1, filters: ['object_uuid' => $uuid, 'action' => 'create'], sort: ['created' => 'ASC'])
 		);
 	}//end creationRows()
 

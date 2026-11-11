@@ -39,6 +39,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 
 /**
  * DataSubjectRequestControllerTest.
@@ -100,7 +101,7 @@ class DataSubjectRequestControllerTest extends TestCase {
 
 		$this->service->expects($this->once())
 			->method('findSubjectData')
-			->with('bsn:123', 'person', 'ilike')
+			->with(new SubjectQuery('bsn:123', 'person', 'ilike'))
 			->willReturn([['uuid' => 'a'], ['uuid' => 'b']]);
 
 		$response = $this->controller->subjectData();

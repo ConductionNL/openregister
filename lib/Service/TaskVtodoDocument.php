@@ -27,7 +27,9 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\TaskLocation;
 use OCA\OpenRegister\Service\Task\VtodoReader;
 use Sabre\VObject\Reader;
 
@@ -76,7 +78,7 @@ final class TaskVtodoDocument {
 			return null;
 		}
 
-		return $this->reader->taskArray(vtodo: $vtodo, calendarId: (string)$at->calendarId, uri: $at->uri);
+		return $this->reader->taskArray(vtodo: $vtodo, at: $at);
 	}//end taskOf()
 
 	/**

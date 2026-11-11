@@ -32,6 +32,8 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use DateTime;
 use DateTimeImmutable;
 use Exception;
@@ -42,7 +44,6 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Exception\HookStoppedException;
@@ -200,14 +201,7 @@ class DeleteObject {
 		$options    = ($options ?? new RemovalOptions());
 		$identifier = $this->deletionIdentifier(object: $object);
 
-		// PERF: callers that already resolved the object AND its register/schema
-		// context (deleteObject() always has both after resolveDeletionContext())
-		// pass them in, skipping a full cross-magic-table re-scan per delete.
-		$given = null;
-		if ($object instanceof ObjectEntity === true && $options->table !== null) {
-			$given = new DeletionTarget(object: $object, register: $options->table->register, schema: $options->table->schema);
-		}
-
+		$given  = self::givenDeletionTarget(object: $object, options: $options);
 		$target = ($given ?? $this->lookUpDeletionTarget(object: $object, identifier: $identifier));
 
 		// Asked before the folder goes and before the row is marked deleted.
@@ -226,6 +220,27 @@ class DeleteObject {
 		$this->softDelete(target: $target, cascadeContext: $options->cascadeContext);
 		return true;
 	}//end delete()
+
+	/**
+	 * The deletion target the caller already resolved, when it handed in the
+	 * entity together with its register/schema context.
+	 *
+	 * PERF: callers that already resolved the object AND its register/schema
+	 * context (deleteObject() always has both after resolveDeletionContext())
+	 * pass them in, skipping a full cross-magic-table re-scan per delete.
+	 *
+	 * @param array|JsonSerializable $object  The object to delete.
+	 * @param RemovalOptions         $options The removal options.
+	 *
+	 * @return DeletionTarget|null The target, or null when it must be looked up.
+	 */
+	private static function givenDeletionTarget(array|JsonSerializable $object, RemovalOptions $options): ?DeletionTarget {
+		if ($object instanceof ObjectEntity === true && $options->table !== null) {
+			return new DeletionTarget(object: $object, register: $options->table->register, schema: $options->table->schema);
+		}
+
+		return null;
+	}//end givenDeletionTarget()
 
 	/**
 	 * The identifier of the object handed to delete().
@@ -472,45 +487,76 @@ class DeleteObject {
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	private function deleteObjectFolder(ObjectEntity $objectEntity): void {
-		if ($this->fileService === null) {
-			return;
-		}
-
 		// Skip objects that never had a folder bound (nothing to clean up).
-		$folderBinding = $objectEntity->getFolder();
-		if ($folderBinding === null || $folderBinding === '') {
+		if ($this->fileService === null || self::hasBoundFolder(objectEntity: $objectEntity) === false) {
 			return;
 		}
 
 		try {
-			$folder = $this->fileService->getObjectFolder(objectEntity: $objectEntity);
-			if ($folder === null) {
-				return;
-			}
-
-			$folder->delete();
-
-			$this->logger->info(
-				message: '[DeleteObject] Removed Nextcloud folder for permanently deleted object',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $objectEntity->getUuid(),
-				]
-			);
+			$this->removeObjectFolder(fileService: $this->fileService, objectEntity: $objectEntity);
 		} catch (\Throwable $e) {
 			// A missing or legacy folder must not abort the permanent delete.
-			$this->logger->warning(
-				message: '[DeleteObject] Failed to remove Nextcloud folder during permanent delete',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $objectEntity->getUuid(),
-					'error' => $e->getMessage(),
-				]
-			);
-		}//end try
+			$this->logFolderRemovalFailure(objectEntity: $objectEntity, error: $e);
+		}
 	}//end deleteObjectFolder()
+
+	/**
+	 * Whether the object has a folder bound to it.
+	 *
+	 * @param ObjectEntity $objectEntity The object.
+	 *
+	 * @return bool
+	 */
+	private static function hasBoundFolder(ObjectEntity $objectEntity): bool {
+		$folderBinding = $objectEntity->getFolder();
+		return ($folderBinding !== null && $folderBinding !== '');
+	}//end hasBoundFolder()
+
+	/**
+	 * Delete the object's Nextcloud folder, when it resolves, and log the removal.
+	 *
+	 * @param FileFolderServiceInterface $fileService  The file service.
+	 * @param ObjectEntity               $objectEntity The object.
+	 *
+	 * @return void
+	 */
+	private function removeObjectFolder(FileFolderServiceInterface $fileService, ObjectEntity $objectEntity): void {
+		$folder = $fileService->getObjectFolder(objectEntity: $objectEntity);
+		if ($folder === null) {
+			return;
+		}
+
+		$folder->delete();
+
+		$this->logger->info(
+			message: '[DeleteObject] Removed Nextcloud folder for permanently deleted object',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $objectEntity->getUuid(),
+			]
+		);
+	}//end removeObjectFolder()
+
+	/**
+	 * Log a folder that could not be removed during a permanent delete.
+	 *
+	 * @param ObjectEntity $objectEntity The object.
+	 * @param \Throwable   $error        Why it could not be removed.
+	 *
+	 * @return void
+	 */
+	private function logFolderRemovalFailure(ObjectEntity $objectEntity, \Throwable $error): void {
+		$this->logger->warning(
+			message: '[DeleteObject] Failed to remove Nextcloud folder during permanent delete',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $objectEntity->getUuid(),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logFolderRemovalFailure()
 
 	/**
 	 * Perform pre-flight deletion analysis for an object.
@@ -806,10 +852,8 @@ class DeleteObject {
 		[$userId] = $this->resolveUserContext();
 
 		$this->integrityService->logRestrictBlock(
-			objectUuid: $run->uuid,
-			schemaId: $run->object()->getSchema(),
-			analysis: $analysis,
-			userId: $userId
+			refused: new RefusedDeletion(objectUuid: $run->uuid, schemaId: $run->object()->getSchema(), userId: $userId),
+			analysis: $analysis
 		);
 
 		throw new ReferentialIntegrityException(analysis: $analysis);
@@ -834,10 +878,7 @@ class DeleteObject {
 
 			$integrityResult = $this->integrityService->applyDeletionActions(
 				$analysis,
-				$userId,
-				$run->uuid,
-				$activeOrg,
-				$run->triggerSlug()
+				new CascadeDeleteOrigin(userId: $userId, cascadeSource: $run->uuid, triggerSchemaSlug: $run->triggerSlug(), organisationId: $activeOrg)
 			);
 
 			// A RETAINED RECORD STAYS LIVE EVEN WHEN ITS PARENT GOES, so it is not
@@ -988,31 +1029,65 @@ class DeleteObject {
 			return;
 		}
 
-		// Resolve every level-one cascade target in one batched lookup.
-		$targets = [];
+		$handledIds = $this->softDeleteCascadeTargets(targets: $this->lookupCascadeTargets(cascadeIds: $cascadeIds));
+
+		// Legacy per-id pipeline for ids the batch lookup did not resolve.
+		foreach (self::unhandledIds(ids: $cascadeIds, handledIds: $handledIds) as $cascadeId) {
+			$options = new DeletionOptions(originalObjectId: $originalObjectId);
+			$this->deleteObject(request: new DeletionRequest(register: $register, schema: $schema, uuid: $cascadeId, options: $options));
+		}
+	}//end cascadeDeleteObjects()
+
+	/**
+	 * Resolve every level-one cascade target in one batched lookup.
+	 *
+	 * A failed lookup is logged and resolves nothing, so every id falls back to
+	 * the per-id pipeline.
+	 *
+	 * @param array<int, string> $cascadeIds The referenced ids.
+	 *
+	 * @return ObjectEntity[] The resolved targets.
+	 */
+	private function lookupCascadeTargets(array $cascadeIds): array {
 		try {
-			$targets = $this->objectEntityMapper->findStoredAcrossAllMagicTables(
+			return $this->objectEntityMapper->findStoredAcrossAllMagicTables(
 				uuids: $cascadeIds,
 				includeDeleted: true
 			);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
-				message: '[DeleteObject] Batched cascade lookup failed; falling back to per-id deletes',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logCascadeLookupFailure(error: $e);
 		}
 
-		// The batched write dispatches update events only, so a guard on the deleting
-		// event answers here: one refused child refuses the whole cascade.
-		foreach ($targets as $target) {
-			if (empty($target->getDeleted()) === true) {
-				$this->objectEntityMapper->assertDeletable(entity: $target);
-			}
-		}
+		return [];
+	}//end lookupCascadeTargets()
+
+	/**
+	 * Log a batched cascade lookup that failed.
+	 *
+	 * @param \Throwable $error Why it failed.
+	 *
+	 * @return void
+	 */
+	private function logCascadeLookupFailure(\Throwable $error): void {
+		$this->logger->warning(
+			message: '[DeleteObject] Batched cascade lookup failed; falling back to per-id deletes',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logCascadeLookupFailure()
+
+	/**
+	 * Guard, then batch-soft-delete the resolved targets that are not deleted yet.
+	 *
+	 * @param ObjectEntity[] $targets The resolved cascade targets.
+	 *
+	 * @return array<string, true> Ids taken care of (batch-deleted or already deleted), keyed by uuid.
+	 */
+	private function softDeleteCascadeTargets(array $targets): array {
+		$this->assertCascadeTargetsDeletable(targets: $targets);
 
 		$alreadyDeleted = array_filter($targets, static fn (ObjectEntity $target): bool => $target->isSoftDeleted());
 		$handledIds = $this->batchCascadeSoftDelete(targets: array_diff_key($targets, $alreadyDeleted));
@@ -1020,16 +1095,45 @@ class DeleteObject {
 			$handledIds[(string)$target->getUuid()] = true;
 		}
 
-		// Legacy per-id pipeline for ids the batch lookup did not resolve.
-		foreach ($cascadeIds as $cascadeId) {
-			if (isset($handledIds[$cascadeId]) === true) {
-				continue;
-			}
+		return $handledIds;
+	}//end softDeleteCascadeTargets()
 
-			$options = new DeletionOptions(originalObjectId: $originalObjectId);
-			$this->deleteObject(request: new DeletionRequest(register: $register, schema: $schema, uuid: $cascadeId, options: $options));
+	/**
+	 * Ask the delete guards about every live cascade target.
+	 *
+	 * The batched write dispatches update events only, so a guard on the deleting
+	 * event answers here: one refused child refuses the whole cascade.
+	 *
+	 * @param ObjectEntity[] $targets The resolved cascade targets.
+	 *
+	 * @return void
+	 */
+	private function assertCascadeTargetsDeletable(array $targets): void {
+		foreach ($targets as $target) {
+			if (empty($target->getDeleted()) === true) {
+				$this->objectEntityMapper->assertDeletable(entity: $target);
+			}
 		}
-	}//end cascadeDeleteObjects()
+	}//end assertCascadeTargetsDeletable()
+
+	/**
+	 * The ids the batch did not take care of, in their original order.
+	 *
+	 * @param array<int, string>  $ids        The referenced ids.
+	 * @param array<string, true> $handledIds The ids taken care of.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function unhandledIds(array $ids, array $handledIds): array {
+		$unhandled = [];
+		foreach ($ids as $id) {
+			if (isset($handledIds[$id]) === false) {
+				$unhandled[] = $id;
+			}
+		}
+
+		return $unhandled;
+	}//end unhandledIds()
 
 	/**
 	 * Collect the referenced ids of all `cascade: true` schema properties.
@@ -1047,31 +1151,67 @@ class DeleteObject {
 		$ids = [];
 		$properties = $schema->getProperties();
 		foreach ($properties ?? [] as $propertyName => $property) {
-			if (isset($property['cascade']) === false || $property['cascade'] !== true) {
+			if (self::isCascadeProperty(property: $property) === false) {
 				continue;
 			}
 
-			$value = $object->getObject()[$propertyName] ?? null;
-			if ($value === null) {
-				continue;
-			}
-
-			$candidates = [$value];
-			if (is_array($value) === true) {
-				$candidates = $value;
-			}
-
-			foreach ($candidates as $candidate) {
-				if (is_scalar($candidate) === false || (string)$candidate === '') {
-					continue;
-				}
-
-				$ids[] = (string)$candidate;
-			}
-		}//end foreach
+			$candidates = self::cascadeCandidatesOf(value: $object->getObject()[$propertyName] ?? null);
+			array_push($ids, ...self::usableCascadeIds(candidates: $candidates));
+		}
 
 		return array_values(array_unique($ids));
 	}//end collectCascadeTargetIds()
+
+	/**
+	 * Whether a schema property declares `cascade: true`.
+	 *
+	 * @param mixed $property The property definition.
+	 *
+	 * @return bool
+	 */
+	private static function isCascadeProperty(mixed $property): bool {
+		return (isset($property['cascade']) === true && $property['cascade'] === true);
+	}//end isCascadeProperty()
+
+	/**
+	 * The candidate references in one cascade property's value: none for null,
+	 * the members of an array, or the single value.
+	 *
+	 * @param mixed $value The property value.
+	 *
+	 * @return array<mixed>
+	 */
+	private static function cascadeCandidatesOf(mixed $value): array {
+		if ($value === null) {
+			return [];
+		}
+
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [$value];
+	}//end cascadeCandidatesOf()
+
+	/**
+	 * The scalar, non-empty candidates as id strings, in order.
+	 *
+	 * @param array<mixed> $candidates The candidate references.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function usableCascadeIds(array $candidates): array {
+		$ids = [];
+		foreach ($candidates as $candidate) {
+			if (is_scalar($candidate) === false || (string)$candidate === '') {
+				continue;
+			}
+
+			$ids[] = (string)$candidate;
+		}
+
+		return $ids;
+	}//end usableCascadeIds()
 
 	/**
 	 * Soft-delete a batch of resolved cascade targets.
@@ -1143,27 +1283,62 @@ class DeleteObject {
 			return;
 		}
 
+		$rows = $this->buildCascadeAuditRows(deleted: $deleted);
+		if (empty($rows) === true) {
+			return;
+		}
+
+		$this->insertCascadeAuditRows(rows: $rows);
+	}//end writeCascadeAuditTrails()
+
+	/**
+	 * Build one audit row per deleted entity; a row that cannot be built is logged and skipped.
+	 *
+	 * @param ObjectEntity[] $deleted The successfully soft-deleted entities.
+	 *
+	 * @return array<int, \OCA\OpenRegister\Db\AuditTrail> The rows, in entity order.
+	 */
+	private function buildCascadeAuditRows(array $deleted): array {
 		$rows = [];
 		foreach ($deleted as $entity) {
 			try {
 				$rows[] = $this->auditTrailMapper->buildEntry(change: new AuditedChange(old: $entity, new: null, action: 'delete'));
 			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[DeleteObject] Could not build cascade audit row',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'uuid' => $entity->getUuid(),
-						'error' => $e->getMessage(),
-					]
-				);
+				$this->logCascadeAuditRowFailure(entity: $entity, error: $e);
 			}
 		}
 
-		if (empty($rows) === true) {
-			return;
-		}
+		return $rows;
+	}//end buildCascadeAuditRows()
 
+	/**
+	 * Log a cascade audit row that could not be built.
+	 *
+	 * @param ObjectEntity $entity The entity the row was for.
+	 * @param \Throwable   $error  Why it could not be built.
+	 *
+	 * @return void
+	 */
+	private function logCascadeAuditRowFailure(ObjectEntity $entity, \Throwable $error): void {
+		$this->logger->warning(
+			message: '[DeleteObject] Could not build cascade audit row',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $entity->getUuid(),
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logCascadeAuditRowFailure()
+
+	/**
+	 * Insert the cascade audit rows in one bulk INSERT; a failure is logged, never thrown.
+	 *
+	 * @param array<int, \OCA\OpenRegister\Db\AuditTrail> $rows The rows.
+	 *
+	 * @return void
+	 */
+	private function insertCascadeAuditRows(array $rows): void {
 		try {
 			$this->auditTrailMapper->insertAuditTrails(entries: $rows);
 		} catch (\Throwable $e) {
@@ -1177,7 +1352,7 @@ class DeleteObject {
 				]
 			);
 		}
-	}//end writeCascadeAuditTrails()
+	}//end insertCascadeAuditRows()
 
 	/**
 	 * Invalidate caches per soft-deleted object (parity with delete()).
@@ -1292,51 +1467,97 @@ class DeleteObject {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Fail-closed writable checks require explicit branching
 	 */
 	private function delegateObjectSourceDelete(Schema $schema, DeletionRequest $request): bool {
-		$objectSource = $schema->getObjectSource();
-		$uuid         = $request->uuid;
-		$provider     = null;
-		if ($this->objectSourceRegistry !== null) {
-			$provider = $this->objectSourceRegistry->get((string)$objectSource['provider']);
+		$objectSource   = $schema->getObjectSource();
+		$provider       = $this->objectSourceProvider(objectSource: $objectSource);
+		$registerEntity = $this->objectSourceRegister(register: $request->register);
+		if (self::isWritableSource(objectSource: $objectSource, provider: $provider) === false || $registerEntity === null) {
+			throw self::readOnlySourceRefusal(schema: $schema, objectSource: $objectSource);
 		}
 
-		$registerEntity = $this->objectSourceRegister(register: $request->register);
+		$source = new SourcedTable(table: new RegisterSchema(register: $registerEntity, schema: $schema), config: ($objectSource['config'] ?? []));
 
+		// Pre-read for the audit record (best effort).
+		$old = $provider->find(source: $source, id: $request->uuid);
+		if ($provider->remove(source: $source, id: $request->uuid) === false) {
+			throw new DoesNotExistException('No external row matches id ' . $request->uuid);
+		}
+
+		$this->auditExternalDelete(old: $old, uuid: $request->uuid);
+		return true;
+	}//end delegateObjectSourceDelete()
+
+	/**
+	 * The provider an object-source block names, or null without a registry.
+	 *
+	 * @param array<string, mixed> $objectSource The schema's object-source block.
+	 *
+	 * @return \OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider|null The provider.
+	 */
+	private function objectSourceProvider(array $objectSource): ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider {
+		if ($this->objectSourceRegistry === null) {
+			return null;
+		}
+
+		return $this->objectSourceRegistry->get((string)$objectSource['provider']);
+	}//end objectSourceProvider()
+
+	/**
+	 * Whether the schema opted in to writes AND its provider can write.
+	 *
+	 * @param array<string, mixed> $objectSource The schema's object-source block.
+	 * @param mixed                $provider     The provider, or null.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-assert-if-true \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider $provider
+	 */
+	private static function isWritableSource(array $objectSource, mixed $provider): bool {
 		$writableOptIn = (($objectSource['readOnly'] ?? true) === false);
 		$writable = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
 
-		if ($writableOptIn === false || $writable === false || $registerEntity === null) {
-			throw new RuntimeException(
-				sprintf(
-					'Schema "%s" is a read-only projection of object-source provider "%s"; deletes are not allowed.',
-					(string)$schema->getSlug(),
-					$objectSource['provider']
-				)
+		return $writableOptIn === true && $writable === true;
+	}//end isWritableSource()
+
+	/**
+	 * The refusal of a delete on a source that is (for this delete) a read-only projection.
+	 *
+	 * @param Schema               $schema       The schema.
+	 * @param array<string, mixed> $objectSource The schema's object-source block.
+	 *
+	 * @return RuntimeException The refusal.
+	 */
+	private static function readOnlySourceRefusal(Schema $schema, array $objectSource): RuntimeException {
+		return new RuntimeException(
+			sprintf(
+				'Schema "%s" is a read-only projection of object-source provider "%s"; deletes are not allowed.',
+				(string)$schema->getSlug(),
+				$objectSource['provider']
+			)
+		);
+	}//end readOnlySourceRefusal()
+
+	/**
+	 * Record the audit row of an external delete, best effort: a failure is logged, never thrown.
+	 *
+	 * @param ObjectEntity|null $old  The row as it was, or null when the pre-read found none.
+	 * @param string            $uuid The id deleted.
+	 *
+	 * @return void
+	 */
+	private function auditExternalDelete(?ObjectEntity $old, string $uuid): void {
+		if ($old === null) {
+			return;
+		}
+
+		try {
+			$this->auditTrailMapper->createAuditTrail(old: $old, new: null, action: 'delete');
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'[DeleteObject] audit trail for external delete on uuid ' . $uuid . ' could not be recorded: ' . $e->getMessage(),
+				['file' => __FILE__, 'line' => __LINE__]
 			);
 		}
-
-		$config = ($objectSource['config'] ?? []);
-
-		// Pre-read for the audit record (best effort).
-		$old = $provider->find(register: $registerEntity, schema: $schema, id: $uuid, config: $config);
-
-		$deleted = $provider->remove(register: $registerEntity, schema: $schema, id: $uuid, config: $config);
-		if ($deleted === false) {
-			throw new DoesNotExistException('No external row matches id ' . $uuid);
-		}
-
-		if ($old !== null) {
-			try {
-				$this->auditTrailMapper->createAuditTrail(old: $old, new: null, action: 'delete');
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					'[DeleteObject] audit trail for external delete on uuid ' . $uuid . ' could not be recorded: ' . $e->getMessage(),
-					['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-		}
-
-		return true;
-	}//end delegateObjectSourceDelete()
+	}//end auditExternalDelete()
 
 	/**
 	 * The register of an object-source delete as an entity, or null when it does not resolve.
@@ -1356,10 +1577,22 @@ class DeleteObject {
 			return null;
 		}
 
+		return self::findRegister(registers: $this->registerMapper, register: $register);
+	}//end objectSourceRegister()
+
+	/**
+	 * Look a register up by id; one that cannot be found resolves to null.
+	 *
+	 * @param \OCA\OpenRegister\Db\RegisterMapperInterface $registers The register mapper.
+	 * @param int|string                                    $register  The register id.
+	 *
+	 * @return Register|null The register entity.
+	 */
+	private static function findRegister(\OCA\OpenRegister\Db\RegisterMapperInterface $registers, int|string $register): ?Register {
 		try {
-			return $this->registerMapper->find($register);
+			return $registers->find($register);
 		} catch (\Throwable $e) {
 			return null;
 		}
-	}//end objectSourceRegister()
+	}//end findRegister()
 }//end class
