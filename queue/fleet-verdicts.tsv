@@ -2708,6 +2708,28 @@ buildiq	1374	2a14b85f08f207da8ef4f24e5d009f70a3c62f25	GREEN	FV9-06:2	unit + vite
 buildiq	1375	db1c17d06fd4879da83964e498a83005dc2c4390	GREEN	FV9-06:2	unit + vitest green against baseline; floor holds
 buildiq	1376	18e35d203d20d50028dadf09a7e6b18aa86ad960	GREEN	FV9-06:2	unit + vitest green against baseline; floor holds
 buildiq	1377	3df881a9bbcfbf9added181f9c2df19e0a1e3983	GREEN	FV9-06:2	unit + vitest green against baseline; floor holds
+pipelinq	3451	e02848edc7fcbdb006ab72057e9a14b6ec3ac631	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3452	bf9444af0a97e0b470caba1949c8f47666906b63	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3453	82d3edaba8e8ef34e9dd8a0454df142a739ecf0e	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3454	7df9912cabe76c24bc1293cd78627f47b3350ae2	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3455	8bc6248f55e87a93575c343b1b70df7eeabad036	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3456	246a668824870c530c6048847a5c2d0d6a61a0b2	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3457	8b6ed17e42395f0a62e3cc295f7c11e52134b643	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3458	6ace8f36f0096f93b47585b14fc79c437cd245f9	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3459	58a12e0521eb31b15c7db33a6d8eb7b7dd19c740	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3460	1835b8b0f0a40564b1420d1989a68df257123905	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3461	b7545bd85364e49f1510b26fc09c436ad15e14cb	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3462	aa06bbb6b04402de5c29cfa7921bee07f048fd40	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3463	40e1b50f3955465136a52360fda028f1052adf47	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3464	baadddce0780d32526d864607c86d425e16e87bd	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3465	5c66a42f4a2d2e33f32e31b5488010e11a0cac2b	BLOCK	FV9-08:1	IngestProductVendorMaster moves the register/supplier_schema config reads out of the try/catch, so a throw now escapes ingest() instead of being logged
+pipelinq	3468	dde63a88469335ff7c8201be21f37b5cef8ce51d	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3469	4983c9bb41fa0e57accd2b3087c434f11a851660	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3470	09f1bf719c161dc04e6306de790d77aa9eddec9a	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3472	29725d240223d623af4fbf8bcd8032611cba3609	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3474	f2ad02a9f8519518571079132e80ca5fe6f9847b	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3475	f7c6abb56be4b73b6f5adb9642222bc683bc8918	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
+pipelinq	3476	a208384fe14d4ddea64fd62549bfc6cefc39cbd2	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
 learniq	2341	bb61e64f8b73d04588533109b663625c98558e80	GREEN	FV9-10:1	tree of 25: phpunit 5749 (baseline 26 errors/7 failures, none new), node --test 950 pass, floor held (overall 3.77 -> 3.82), diff review clean
 learniq	2342	3917d864e93494f4f944b888b0ddf6a045bf4d00	GREEN	FV9-10:1	tree of 25: phpunit 5749 (baseline 26 errors/7 failures, none new), node --test 950 pass, floor held (overall 3.77 -> 3.82), diff review clean
 learniq	2343	eaafce0db1fe18511da6b9539269f953061639b3	GREEN	FV9-10:1	tree of 25: phpunit 5749 (baseline 26 errors/7 failures, none new), node --test 950 pass, floor held (overall 3.77 -> 3.82), diff review clean
