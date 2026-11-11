@@ -411,30 +411,49 @@ class MemberOfResolver {
 	 */
 	private function rowCounts(array $data, array $spec): bool {
 		foreach ($spec['where'] as $field => $expected) {
-			$actual = ($data[$field] ?? null);
-			if (is_array($expected) === true) {
-				if ($this->operators->valueMatchesOperator(value: $actual, operators: $expected) === false) {
-					return false;
-				}
-
-				continue;
-			}
-
-			if ($actual !== $expected) {
+			if ($this->fieldPasses(actual: ($data[$field] ?? null), expected: $expected) === false) {
 				return false;
 			}
 		}
 
-		if ($spec['current'] === null) {
+		return $this->inWindow(data: $data, current: $spec['current']);
+	}//end rowCounts()
+
+	/**
+	 * Whether one field of a membership row passes its `where` filter.
+	 *
+	 * @param mixed $actual   The row's value, null when absent.
+	 * @param mixed $expected The filter: an operator map, or a value to equal.
+	 *
+	 * @return bool True when the value passes.
+	 */
+	private function fieldPasses(mixed $actual, mixed $expected): bool {
+		if (is_array($expected) === true) {
+			return $this->operators->valueMatchesOperator(value: $actual, operators: $expected) !== false;
+		}
+
+		return $actual === $expected;
+	}//end fieldPasses()
+
+	/**
+	 * Whether a membership row is current today, by the operand's validity window.
+	 *
+	 * @param array<string, mixed>                    $data    The row's data.
+	 * @param array{from: string, until: string}|null $current The window's field names, or null for no window.
+	 *
+	 * @return bool True when there is no window, or today falls inside it.
+	 */
+	private function inWindow(array $data, ?array $current): bool {
+		if ($current === null) {
 			return true;
 		}
 
 		$today = date('Y-m-d');
-		$from  = $this->dayOf(value: ($data[$spec['current']['from']] ?? null));
-		$until = $this->dayOf(value: ($data[$spec['current']['until']] ?? null));
+		$from  = $this->dayOf(value: ($data[$current['from']] ?? null));
+		$until = $this->dayOf(value: ($data[$current['until']] ?? null));
 
 		return ($from === '' || $from <= $today) && ($until === '' || $until >= $today);
-	}//end rowCounts()
+	}//end inWindow()
 
 	/**
 	 * The `Y-m-d` day of a stored date, or '' when there is none.

@@ -52,6 +52,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FlowLifecycleRefusalTrait;
 use OCA\OpenRegister\Controller\Support\FlowNodeCall;
 use OCA\OpenRegister\Controller\Support\FlowNodeRunControllerServices;
 use OCA\OpenRegister\Db\FlowRun;
@@ -104,6 +105,8 @@ use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
  * both need the same node resolution, which is the actual coupling.
  */
 class FlowNodeRunController extends Controller {
+	use FlowLifecycleRefusalTrait;
+
 	/**
 	 * Resolves the calling user.
 	 *
@@ -333,15 +336,7 @@ class FlowNodeRunController extends Controller {
 				)
 			);
 		} catch (FlowLifecycleRefusedInterface $e) {
-			return new JSONResponse(
-				[
-					'error' => $e->getMessage(),
-					'reason' => $e->getReason(),
-					'lifecycleStatus' => $e->getState(),
-					'flowId' => $e->getFlowId(),
-				],
-				Http::STATUS_CONFLICT
-			);
+			return $this->lifecycleRefusal(refusal: $e);
 		} catch (FlowDeadEndInterface $e) {
 			return new JSONResponse(
 				['error' => $e->getMessage(), 'nodes' => $e->getNodeIds()],

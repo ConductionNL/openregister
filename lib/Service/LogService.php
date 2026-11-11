@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use OCA\OpenRegister\Db\RegisterSchema;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ListQuery;
@@ -302,7 +303,9 @@ class LogService {
 			return $this->findAcrossTables(id: $id);
 		}
 
-		return $this->objectInTable->find(id: $id, register: $registerEntity, schema: $schemaEntity);
+		return $this->objectInTable->find(
+			object: new TableObjectRef(id: $id, table: new RegisterSchema(register: $registerEntity, schema: $schemaEntity))
+		);
 	}//end findObjectInScope()
 
 	/**

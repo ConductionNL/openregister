@@ -39,7 +39,9 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRecords;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentValues;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -678,12 +680,16 @@ final class ConfigurationServiceRegistrar {
 	 */
 	private static function buildDeploymentService(ContainerInterface $container): DeploymentService {
 		return new DeploymentService(
-			drafts: $container->get(ConfigurationDraftService::class),
-			previews: $container->get(DeploymentPreviewService::class),
-			store: $container->get(ConfigurationValueStore::class),
-			deployments: $container->get(ConfigurationDeploymentMapperInterface::class),
-			sets: $container->get(ConfigurationDraftSetMapperInterface::class),
-			db: $container->get('OCP\IDBConnection'),
+			values: new DeploymentValues(
+				drafts: $container->get(ConfigurationDraftService::class),
+				previews: $container->get(DeploymentPreviewService::class),
+				store: $container->get(ConfigurationValueStore::class)
+			),
+			records: new DeploymentRecords(
+				deployments: $container->get(ConfigurationDeploymentMapperInterface::class),
+				sets: $container->get(ConfigurationDraftSetMapperInterface::class),
+				db: $container->get('OCP\IDBConnection')
+			),
 			session: $container->get('OCP\IUserSession'),
 			logger: $container->get('Psr\Log\LoggerInterface')
 		);

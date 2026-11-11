@@ -59,6 +59,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use PDO;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Tests that a marked public rule widens the organisation filter by its own rows only.
@@ -209,13 +212,19 @@ class MagicSearchHandlerPublicReadBranchTest extends TestCase {
 		);
 
 		$this->rbac = new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$userManager,
-			$appConfig,
-			$conditionMatcher,
-			$container,
-			$logger
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $userManager
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $conditionMatcher,
+				container: $container,
+				logger: $logger
+			)
 		);
 
 	}//end setUp()

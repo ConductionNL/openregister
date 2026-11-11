@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\FlowLifecycleRefusalTrait;
 use OCA\OpenRegister\Controller\Support\FlowTestRunControllerServices;
 use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
@@ -51,6 +52,8 @@ use OCA\OpenRegister\Service\Flow\FlowRunQueueOptions;
  * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
  */
 class FlowTestRunController extends Controller {
+	use FlowLifecycleRefusalTrait;
+
 
 	/**
 	 * Queues and executes a run.
@@ -210,15 +213,7 @@ class FlowTestRunController extends Controller {
 				)
 			);
 		} catch (FlowLifecycleRefusedInterface $e) {
-			return new JSONResponse(
-				[
-					'error' => $e->getMessage(),
-					'reason' => $e->getReason(),
-					'lifecycleStatus' => $e->getState(),
-					'flowId' => $e->getFlowId(),
-				],
-				Http::STATUS_CONFLICT
-			);
+			return $this->lifecycleRefusal(refusal: $e);
 		} catch (FlowDeadEndInterface $e) {
 			return new JSONResponse(
 				['error' => $e->getMessage(), 'reason' => 'dead-end', 'flowId' => $flowId],
