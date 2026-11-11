@@ -2249,3 +2249,6 @@ dossiq	5815	4f43cd62c9ba135faf463f328e790ef62a7eb75d	GREEN	FV02:16	tree of 25 gr
 dossiq	5816	5612e873e93a23c1d0fababa2e2a2e4b4689769a	GREEN	FV02:16	tree of 25 green on php+js unit suites (54 inherited php failures)
 portaliq	2272	bd579b48885b521a082d9104c47c5947e9460222	GREEN	FV05:1	unit suite matches development baseline (85 inherited); diff reviewed, behaviour-preserving split
 shillinq	2277	30449492d399dbb12c238b925b1d8a68aa9e541e	CONFLICT	FV04:9	conflicts with development in lib/Service/GoodsReceiptNoteService.php, lib/Service/ServiceReceiptService.php
+versioniq	634	8f2c7377a2f8f45ad3e1cef94029c81aff554a3d	GREEN	FV15:5	tree green (phpunit 2 baseline failures only, no JS changes)
+versioniq	635	be632a8d2fad242f4ee0dd9d9ee36e092cca8422	GREEN	FV15:5	tree green (phpunit 2 baseline failures only, no JS changes)
+versioniq	636	8953fb85e2c142e59860101fedb8b1c53084755b	GREEN	FV15:5	tree green (phpunit 2 baseline failures only, no JS changes)
