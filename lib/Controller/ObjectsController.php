@@ -5756,6 +5756,22 @@ class ObjectsController extends Controller {
 	}//end exportFilenameBase()
 
 	/**
+	 * The export-service request for an export run as the signed-in caller.
+	 *
+	 * @param ObjectExport $export What to export.
+	 *
+	 * @return ObjectExportRequest
+	 */
+	private function callerExportRequest(ObjectExport $export): ObjectExportRequest {
+		return new ObjectExportRequest(
+			register: $export->register,
+			schema: $export->schema,
+			filters: $export->filters,
+			currentUser: $this->userSession->getUser(),
+		);
+	}//end callerExportRequest()
+
+	/**
 	 * Export as CSV.
 	 *
 	 * @param ObjectExport $export The export.
@@ -5766,12 +5782,7 @@ class ObjectsController extends Controller {
 	 */
 	private function csvExport(ObjectExport $export): DataDownloadResponse {
 		$content = $this->services->transfer->exportService->exportToCsv(
-			request: new ObjectExportRequest(
-				register: $export->register,
-				schema: $export->schema,
-				filters: $export->filters,
-				currentUser: $this->userSession->getUser(),
-			),
+			request: $this->callerExportRequest(export: $export),
 		);
 
 		$this->recordExportCompleted(export: $export, served: new ServedExport(format: 'csv', rowCount: $this->countCsvExportRows(csv: $content)));
@@ -5810,12 +5821,7 @@ class ObjectsController extends Controller {
 	private function pdfExport(ObjectExport $export): DataDownloadResponse|JSONResponse {
 		try {
 			$content = $this->services->transfer->exportService->exportToPdf(
-				request: new ObjectExportRequest(
-					register: $export->register,
-					schema: $export->schema,
-					filters: $export->filters,
-					currentUser: $this->userSession->getUser(),
-				),
+				request: $this->callerExportRequest(export: $export),
 			);
 		} catch (ExportTooLargeException $e) {
 			return self::exportTooLargeResponse(exception: $e);
@@ -5876,12 +5882,7 @@ class ObjectsController extends Controller {
 	 */
 	private function excelExport(ObjectExport $export): DataDownloadResponse {
 		$spreadsheet = $this->services->transfer->exportService->exportToExcel(
-			request: new ObjectExportRequest(
-				register: $export->register,
-				schema: $export->schema,
-				filters: $export->filters,
-				currentUser: $this->userSession->getUser(),
-			),
+			request: $this->callerExportRequest(export: $export),
 		);
 
 		// Create Excel writer and get content.
