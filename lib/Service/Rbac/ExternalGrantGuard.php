@@ -167,21 +167,10 @@ class ExternalGrantGuard implements ExternalGrantGuardInterface {
 	private function lapsingIn(?array $authorization, LapseWindow $window): array {
 		$lapsing = [];
 		foreach ($this->entries(authorization: $authorization) as $found) {
-			$ends = $this->externalEndOf(entry: $found['entry']);
-			// An end already past is not a warning, it is a lapse. Reporting it
-			// as "about to lapse" would send somebody to renew access that has
-			// already stopped answering.
-			if ($ends === null || $ends <= $window->now->getTimestamp() || $ends > $window->horizon()) {
-				continue;
+			$warning = $this->lapseWarning(found: $found, window: $window);
+			if ($warning !== null) {
+				$lapsing[] = $warning;
 			}
-
-			$lapsing[] = [
-				'action' => $found['action'],
-				'principal' => $this->principalOf(entry: $found['entry']),
-				'holders' => $this->holdersOf(entry: $found['entry']),
-				'endsAt' => date(DATE_ATOM, $ends),
-				'daysLeft' => (int)ceil((($ends - $window->now->getTimestamp()) / 86400)),
-			];
 		}
 
 		usort(
@@ -191,6 +180,32 @@ class ExternalGrantGuard implements ExternalGrantGuardInterface {
 
 		return $lapsing;
 	}//end lapsingIn()
+
+	/**
+	 * The warning for one entry whose external end falls inside the window, or null.
+	 *
+	 * @param array{action: string, entry: mixed} $found  The entry and the action it was written under.
+	 * @param LapseWindow                         $window The moment and how far ahead to look.
+	 *
+	 * @return array<string, mixed>|null The warning.
+	 */
+	private function lapseWarning(array $found, LapseWindow $window): ?array {
+		$ends = $this->externalEndOf(entry: $found['entry']);
+		// An end already past is not a warning, it is a lapse. Reporting it
+		// as "about to lapse" would send somebody to renew access that has
+		// already stopped answering.
+		if ($ends === null || $ends <= $window->now->getTimestamp() || $ends > $window->horizon()) {
+			return null;
+		}
+
+		return [
+			'action' => $found['action'],
+			'principal' => $this->principalOf(entry: $found['entry']),
+			'holders' => $this->holdersOf(entry: $found['entry']),
+			'endsAt' => date(DATE_ATOM, $ends),
+			'daysLeft' => (int)ceil((($ends - $window->now->getTimestamp()) / 86400)),
+		];
+	}//end lapseWarning()
 
 	/**
 	 * The end of an external entry, or null for an internal one or one without an end.
@@ -221,23 +236,49 @@ class ExternalGrantGuard implements ExternalGrantGuardInterface {
 
 		$found = [];
 		foreach ($authorization as $action => $value) {
-			if (is_string($action) === false
-				|| in_array($action, self::SKIPPED_KEYS, true) === true
-				|| is_array($value) === false
-			) {
+			if (self::isRuleList(action: $action, value: $value) === false) {
 				continue;
 			}
 
-			foreach ($value as $entry) {
-				$found[] = [
-					'action' => $action,
-					'entry' => $entry,
-				];
-			}
+			$found = array_merge($found, self::entriesUnder(action: $action, entries: $value));
 		}
 
 		return $found;
 	}//end entries()
+
+	/**
+	 * Whether a block key and its value are a verb's rule list.
+	 *
+	 * @param mixed $action The key.
+	 * @param mixed $value  Its value.
+	 *
+	 * @return bool True for a verb that is not skipped, holding a list.
+	 */
+	private static function isRuleList(mixed $action, mixed $value): bool {
+		return (is_string($action) === true
+			&& in_array($action, self::SKIPPED_KEYS, true) === false
+			&& is_array($value) === true);
+	}//end isRuleList()
+
+	/**
+	 * Every entry of one verb's rule list, with the verb.
+	 *
+	 * @param string            $action  The verb.
+	 * @param array<int, mixed> $entries The entries.
+	 *
+	 * @return array<int, array{action: string, entry: mixed}> The entries.
+	 */
+	private static function entriesUnder(string $action, array $entries): array {
+		$found = [];
+		foreach ($entries as $entry) {
+			$found[] = [
+				'action' => $action,
+				'entry' => $entry,
+			];
+		}
+
+		return $found;
+	}//end entriesUnder()
 
 	/**
 	 * Whether an entry declares its principal is outside the organisation.
