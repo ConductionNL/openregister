@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
@@ -59,19 +60,31 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'contacts';
 
 	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ContactService $contactService Backing service.
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 *
-	 * @return void
+	 * @param AppProviderDescription $description    The app manager and localisation.
+	 * @param ContactService         $contactService Backing service.
 	 */
 	public function __construct(
+		AppProviderDescription $description,
 		private ContactService $contactService,
-		private IAppManager $appManager,
-		private IL10N $l10n,
 	) {
+		$this->appManager = $description->appManager;
+		$this->l10n = $description->l10n;
 	}//end __construct()
 
 	public function getId(): string {
@@ -93,17 +106,15 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	/**
 	 * List vCard links for an OR object.
 	 *
-	 * @param string $register Register slug or numeric id (unused — CardDAV scope is per-user).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Optional filters (currently ignored).
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->contactsOf(objectId: $objectId);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->contactsOf(objectId: $ref->id);
 	}//end list()
 
 	/**
@@ -129,9 +140,7 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	 * Only the role can be updated through the registry path — the
 	 * vCard itself is owned by NC Contacts.
 	 *
-	 * @param string $register Register slug or numeric id (unused).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid; the link must belong to it.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Numeric link id.
 	 * @param array<string,mixed> $payload Must carry `role`.
 	 *
@@ -139,9 +148,9 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array {
+	public function update(ObjectRef $ref, string $entityId, array $payload): array {
 		$role = (string)($payload['role'] ?? '');
-		$link = $this->contactService->updateRole(linkId: (int)$entityId, role: $role, objectUuid: $objectId);
+		$link = $this->contactService->updateRole(linkId: (int)$entityId, role: $role, objectUuid: $ref->id);
 		return $link->jsonSerialize();
 	}//end update()
 
@@ -156,17 +165,15 @@ class ContactsProvider extends AbstractIntegrationProvider {
 	 * Any non-404 Throwable from the cleanup is swallowed at provider
 	 * level so the registry tab degrades gracefully per AD-23.
 	 *
-	 * @param string $register Register slug or numeric id (unused).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid; the link must belong to it.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Numeric link id.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		$this->contactService->unlinkContact(linkId: (int)$entityId, objectUuid: $objectId);
+	public function delete(ObjectRef $ref, string $entityId): void {
+		$this->contactService->unlinkContact(linkId: (int)$entityId, objectUuid: $ref->id);
 	}//end delete()
 
 	/**

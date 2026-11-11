@@ -24,12 +24,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkUpsertSql;
 use OCA\OpenRegister\Db\MagicMapper\MagicCrossTableScan;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\MagicMapper\MagicUpsertChunkRun;
 use OCA\OpenRegister\Db\MagicMapper\TableSyncColumns;
 use OCA\OpenRegister\Db\Register;
@@ -81,11 +84,11 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 
 	public function testNumberColumnWideningEdges(): void {
 		$column = new MagicNumberColumn();
-		$this->assertSame(['precision' => 12, 'scale' => 4], $column->widening(['type' => 'DECIMAL', 'precision' => 10, 'scale' => 2], 10, 4));
-		$this->assertNull($column->widening(['type' => 'decimal', 'precision' => '20', 'scale' => '6'], 20, 6));
-		$this->assertNull($column->widening(['type' => 'decimal', 'precision' => 20], 20, 6));
-		$this->assertNull($column->widening([], 20, 6));
-		$this->assertSame(['precision' => 65, 'scale' => 30], $column->widening(['type' => 'numeric', 'precision' => 60, 'scale' => 10], 60, 40));
+		$this->assertSame(['precision' => 12, 'scale' => 4], $column->widening(['type' => 'DECIMAL', 'precision' => 10, 'scale' => 2], ['precision' => 10, 'scale' => 4]));
+		$this->assertNull($column->widening(['type' => 'decimal', 'precision' => '20', 'scale' => '6'], ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->widening(['type' => 'decimal', 'precision' => 20], ['precision' => 20, 'scale' => 6]));
+		$this->assertNull($column->widening([], ['precision' => 20, 'scale' => 6]));
+		$this->assertSame(['precision' => 65, 'scale' => 30], $column->widening(['type' => 'numeric', 'precision' => 60, 'scale' => 10], ['precision' => 60, 'scale' => 40]));
 	}//end testNumberColumnWideningEdges()
 
 	public function testCreatedStatistics(): void {
@@ -265,9 +268,8 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 		$magicMapper->method('checkTableExistsInDatabase')->willReturn(false);
 		$magicMapper->method('createTableForRegisterSchema')->willThrowException(new Exception('boom'));
 		$handler = new MagicTableHandler(
-			db: $this->createMock(IDBConnection::class),
+			sql: new MagicTableSql(db: $this->createMock(IDBConnection::class), config: $this->createMock(IConfig::class), logger: $this->createMock(LoggerInterface::class)),
 			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->createMock(LoggerInterface::class),
 			magicMapper: $magicMapper
 		);
 
@@ -279,7 +281,7 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 		$schema->setTitle('Sch');
 
 		try {
-			$handler->ensureTableForRegisterSchema($register, $schema);
+			$handler->ensureTargetTable(new MagicTableTarget($register, $schema));
 			$this->fail('Expected an exception');
 		} catch (Exception $e) {
 			$this->assertSame("Failed to create/update table for register 'Reg' + schema 'Sch': boom", $e->getMessage());
@@ -294,9 +296,8 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 		$magicMapper->expects($this->once())->method('invalidateTableCache')->with('5_12');
 		$magicMapper->expects($this->once())->method('createTableForRegisterSchema')->willReturn(true);
 		$handler = new MagicTableHandler(
-			db: $this->createMock(IDBConnection::class),
+			sql: new MagicTableSql(db: $this->createMock(IDBConnection::class), config: $this->createMock(IConfig::class), logger: $this->createMock(LoggerInterface::class)),
 			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->createMock(LoggerInterface::class),
 			magicMapper: $magicMapper
 		);
 
@@ -304,7 +305,7 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 		$register->setId(5);
 		$schema = new Schema();
 		$schema->setId(12);
-		$this->assertTrue($handler->ensureTableForRegisterSchema($register, $schema, true));
+		$this->assertTrue($handler->ensureTargetTable(new MagicTableTarget($register, $schema), true));
 	}//end testForcedEnsureDropsAndRecreatesAnExistingTable()
 
 	/**
@@ -343,9 +344,8 @@ class MagicTableDdlUnitsGoldenTest extends TestCase {
 	 */
 	private function handler(IAppConfig $appConfig, IDBConnection $db): MagicTableHandler {
 		return new MagicTableHandler(
-			db: $db,
+			sql: new MagicTableSql(db: $db, config: $this->createMock(IConfig::class), logger: $this->createMock(LoggerInterface::class)),
 			appConfig: $appConfig,
-			logger: $this->createMock(LoggerInterface::class),
 			magicMapper: $this->magicMapper()
 		);
 	}//end handler()

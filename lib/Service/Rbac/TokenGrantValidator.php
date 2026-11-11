@@ -51,6 +51,13 @@ use DateTimeInterface;
 class TokenGrantValidator {
 
 	/**
+	 * How many days ahead a lapsing grant is warned about.
+	 *
+	 * @var int
+	 */
+	public const LAPSE_WARNING_DAYS = 14;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param PermissionCatalogueInterface $catalogue The canonical verb vocabulary.
@@ -63,20 +70,19 @@ class TokenGrantValidator {
 	/**
 	 * Why a grant may not be issued, or null when it may.
 	 *
-	 * @param array<string, mixed> $grant       The submitted grant.
-	 * @param array<int, string>   $issuerVerbs The verbs the issuer themselves holds.
-	 * @param DateTimeInterface    $now         The moment of issue.
+	 * @param TokenGrantIssue $issue The submitted grant, the issuer's own verbs and the moment of issue.
 	 *
 	 * @return string|null The reason, or null.
 	 *
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
 	 */
-	public function refusalFor(array $grant, array $issuerVerbs, DateTimeInterface $now): ?string {
+	public function refusalFor(TokenGrantIssue $issue): ?string {
+		$grant = $issue->grant;
 		// The four checks run in the ORDER they used to, and each returns the
 		// same sentence it used to, because the first refusal is the one the
 		// caller shows and reordering them would change which one that is.
-		return ($this->verbRefusal(verbs: ($grant['verbs'] ?? null), issuerVerbs: $issuerVerbs)
-			?? $this->expiryRefusal(grant: $grant, now: $now)
+		return ($this->verbRefusal(verbs: ($grant['verbs'] ?? null), issuerVerbs: $issue->issuerVerbs)
+			?? $this->expiryRefusal(grant: $grant, now: $issue->now)
 			?? $this->axisRefusal(grant: $grant)
 			?? $this->rateLimitRefusal(rateLimit: ($grant['rateLimit'] ?? null)));
 	}//end refusalFor()
@@ -198,20 +204,32 @@ class TokenGrantValidator {
 	/**
 	 * Whether a grant lapses soon enough to warn its holder about (C40.2).
 	 *
-	 * @param TokenGrant        $grant  The grant.
-	 * @param DateTimeInterface $now    The moment.
-	 * @param int               $within How many days ahead counts as soon.
+	 * @param TokenGrant        $grant The grant.
+	 * @param DateTimeInterface $now   The moment.
+	 *
+	 * @return bool True when it lapses within {@see self::LAPSE_WARNING_DAYS} days.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
+	 */
+	public function lapsesSoon(TokenGrant $grant, DateTimeInterface $now): bool {
+		return self::lapsesWithin(daysLeft: $grant->daysLeft(now: $now), within: self::LAPSE_WARNING_DAYS);
+	}//end lapsesSoon()
+
+	/**
+	 * Whether a grant with this many days left lapses within the window.
+	 *
+	 * @param int|null $daysLeft The grant's days left, null when it has no end date.
+	 * @param int      $within   How many days ahead counts as soon.
 	 *
 	 * @return bool True when the holder should be warned.
 	 *
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
 	 */
-	public function lapsesSoon(TokenGrant $grant, DateTimeInterface $now, int $within = 14): bool {
-		$days = $grant->daysLeft(now: $now);
-		if ($days === null) {
+	public static function lapsesWithin(?int $daysLeft, int $within): bool {
+		if ($daysLeft === null) {
 			return false;
 		}
 
-		return ($days >= 0 && $days <= $within);
-	}//end lapsesSoon()
+		return ($daysLeft >= 0 && $daysLeft <= $within);
+	}//end lapsesWithin()
 }//end class

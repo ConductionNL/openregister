@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Task\SequenceProvenance;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCA\OpenRegister\Service\Task\TaskSequenceServices;
 use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskTrigger;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -209,7 +210,7 @@ class TaskSequenceServiceTest extends TestCase {
 		);
 
 		$this->tasks->expects(self::once())->method('enable')
-			->with('task-2', 'task-sequence:seq-1', self::stringContains('position 2'));
+			->with('task-2', self::callback(static fn (TaskTrigger $trigger): bool => $trigger->source === 'task-sequence:seq-1' && str_contains($trigger->reason, 'position 2')));
 		$this->dispatcher->expects(self::never())->method('dispatchTyped');
 
 		$this->service->onTaskTerminal(task: $this->positionTask(1, Task::STATE_COMPLETED, 'approved'));
@@ -276,7 +277,9 @@ class TaskSequenceServiceTest extends TestCase {
 
 		$terminated = [];
 		$this->tasks->method('terminateAsMoot')->willReturnCallback(
-			function (string $uuid, string $reason, string $source) use (&$terminated): Task {
+			function (string $uuid, TaskTrigger $trigger) use (&$terminated): Task {
+				$reason = $trigger->reason;
+				$source = $trigger->source;
 				$terminated[] = [$uuid, $reason, $source];
 
 				return new Task();
@@ -346,7 +349,9 @@ class TaskSequenceServiceTest extends TestCase {
 	private function recordTerminations(): \ArrayObject {
 		$terminated = new \ArrayObject();
 		$this->tasks->method('terminateAsMoot')->willReturnCallback(
-			static function (string $uuid, string $reason, string $source) use ($terminated): Task {
+			static function (string $uuid, TaskTrigger $trigger) use ($terminated): Task {
+				$reason = $trigger->reason;
+				$source = $trigger->source;
 				$terminated[] = [$uuid, $reason];
 
 				return new Task();
@@ -440,7 +445,7 @@ class TaskSequenceServiceTest extends TestCase {
 		$this->firstPositionCompletedWith($outcome);
 
 		$this->tasks->expects(self::once())->method('enable')
-			->with('task-2', 'task-sequence:seq-1', self::stringContains('position 2'));
+			->with('task-2', self::callback(static fn (TaskTrigger $trigger): bool => $trigger->source === 'task-sequence:seq-1' && str_contains($trigger->reason, 'position 2')));
 		$this->tasks->expects(self::never())->method('terminateAsMoot');
 		$this->dispatcher->expects(self::never())->method('dispatchTyped');
 

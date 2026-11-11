@@ -149,8 +149,9 @@ class EdepotTransferServiceGoldenTest extends TestCase {
 		);
 
 		$builder = $this->createMock(SipPackageBuilder::class);
-		$builder->method('build')->willReturnCallback(
-			function (string $transferId, array $objectsWithFiles, int $maxPackageSize = 0, string $format = 'zip'): array {
+		$builder->method('package')->willReturnCallback(
+			function (\OCA\OpenRegister\Service\Edepot\TransferPackageRequest $request): array {
+				[$transferId, $objectsWithFiles, $maxPackageSize, $format] = [$request->transferId, $request->objectsWithFiles, $request->maxPackageSize, $request->format];
 				$uuids = array_map(static fn (array $item): ?string => $item['object']->getUuid(), $objectsWithFiles);
 				$files = array_map(static fn (array $item): int => count($item['files']), $objectsWithFiles);
 				$this->calls[] = ['build', $transferId, $uuids, $files, $maxPackageSize, $format];

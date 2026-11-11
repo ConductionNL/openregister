@@ -70,11 +70,8 @@ interface ContactServiceInterface {
 	 * per-uid Contacts route (no PHOTO is set on freshly-created
 	 * vCards yet).
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param int $registerId The register ID.
-	 * @param array $data Contact data: `fullName` or `displayName`, `email`,
-	 *                    `phone`, `org`, `role`.
-	 * @param int|null $schemaId Optional schema id (Tier-2).
+	 * @param ContactPlacement $placement Where it is linked (object, register, schema) and in what role.
+	 * @param array            $data      Contact data: `fullName` or `displayName`, `email`, `phone`, `org`.
 	 *
 	 * @return ContactLink The created link.
 	 *
@@ -82,12 +79,7 @@ interface ContactServiceInterface {
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */
-	public function createAndLinkContact(
-		string $objectUuid,
-		int $registerId,
-		array $data,
-		?int $schemaId = null,
-	): ContactLink;
+	public function createAndLinkContact(ContactPlacement $placement, array $data): ContactLink;
 
 	/**
 	 * Remove a contact link.

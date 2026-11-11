@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\ProvenanceOptions;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
 use PHPUnit\Framework\TestCase;
 
@@ -85,17 +86,12 @@ class ProvenanceResolverTest extends TestCase {
 		?array $denial = null,
 		bool $denyEnforced = true,
 	): array {
-		return $this->resolver->forPrincipals($principals)->forActions(
-			[$action],
-			[
+		return $this->resolver->forPrincipals($principals)->forActions([$action], new ProvenanceOptions([
 				'object' => $objectAuthorization,
 				'schema' => $schemaAuthorization,
 				'register' => $registerAuth,
 				'roleDefinitions' => $roleDefinitions,
-			],
-			[$action => $denial],
-			$denyEnforced
-		)[$action];
+			], [$action => $denial], $denyEnforced))[$action];
 	}//end forAction()
 
 	/**
@@ -317,16 +313,11 @@ class ProvenanceResolverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAWholeVocabularyIsReportedAtOnce(): void {
-		$provenance = $this->resolver->forPrincipals($this->principals('ana', ['behandelaars']))->forActions(
-			actions: ['read', 'update', 'delete'],
-			blocks: [
+		$provenance = $this->resolver->forPrincipals($this->principals('ana', ['behandelaars']))->forActions(actions: ['read', 'update', 'delete'], options: new ProvenanceOptions(blocks: [
 				'schema' => ['read' => ['behandelaars'], 'update' => ['behandelaars']],
-			],
-			denials: [
+			], denials: [
 				'update' => ['rule' => 'behandelaars', 'principal' => 'behandelaars', 'action' => 'update', 'conditional' => false],
-			],
-			enforced: true
-		);
+			], enforced: true));
 
 		$this->assertSame(['read', 'update', 'delete'], array_keys($provenance));
 		$this->assertTrue($provenance['read']['granted']);

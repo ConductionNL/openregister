@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Unit\Service\GraphQL;
 
 use GraphQL\Error\Error;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -102,8 +103,8 @@ class GraphQLResolverRecordRulesTest extends TestCase {
 
 		$rbac = $this->createMock(PropertyRbacHandler::class);
 		$rbac->method('getUnauthorizedProperties')->willReturnCallback(
-			function (Schema $schema, array $object): array {
-				$this->seen['update'] = $object;
+			function (PropertyWriteCheck $write): array {
+				$this->seen['update'] = $write->request->object;
 				return [];
 			}
 		);

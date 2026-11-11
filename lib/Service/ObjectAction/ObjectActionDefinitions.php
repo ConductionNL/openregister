@@ -74,21 +74,6 @@ class ObjectActionDefinitions implements ObjectActionDefinitionsInterface {
 	}//end forSchema()
 
 	/**
-	 * One action of a schema, or null when it declares or inherits none by that key.
-	 *
-	 * @param Schema                   $schema   The schema.
-	 * @param string                   $key      The action key.
-	 * @param Register|int|string|null $register The register, or its id.
-	 *
-	 * @return ObjectActionDefinition|null The definition.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-register-may-declare-actions-its-schemas-inherit
-	 */
-	public function find(Schema $schema, string $key, Register|int|string|null $register = null): ?ObjectActionDefinition {
-		return ($this->forSchema(schema: $schema, register: $register)[$key] ?? null);
-	}//end find()
-
-	/**
 	 * Merge register defaults under a schema's own declarations.
 	 *
 	 * @param array<string, mixed> $schemaConfig   The schema configuration.

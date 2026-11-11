@@ -27,16 +27,20 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Search\Service\DashboardService;
 use OCA\OpenRegister\Search\Service\DashboardSizes;
 use OCA\OpenRegister\Search\Service\RegisterSchemaLookup;
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -162,7 +166,8 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 			}
 		);
 		$mapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (mixed ...$args): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
+				$args = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters), $listing->sort];
 				$this->note('objects.findAllInRegisterSchemaTable', $args);
 				return [$this->entity(ObjectEntity::class, 100), $this->entity(ObjectEntity::class, 666)];
 			}
@@ -178,7 +183,8 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 			}
 		);
 		$mapper->method('getStatistics')->willReturnCallback(
-			function (mixed ...$args): array {
+			function (StatisticsScope $scope): array {
+				$args = [$scope->registerId, $scope->schemaId, $scope->exclude];
 				$this->note('objects.getStatistics', $args);
 				return ['total' => 11, 'size' => 12, 'invalid' => 13, 'deleted' => 14, 'locked' => 15, 'published' => 16];
 			}
@@ -188,7 +194,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 
 	private function audit(): AuditTrailMapperInterface {
 		$mapper = $this->createMock(AuditTrailMapperInterface::class);
-		$mapper->method('findAll')->willReturnCallback(
+		$mapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			function (mixed ...$args): array {
 				$this->note('audit.findAll', $args);
 				if ($this->pairsFail === true) {
@@ -197,7 +203,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 
 				return [$this->entity(AuditTrail::class, 200), $this->entity(AuditTrail::class, 666)];
 			}
-		);
+		));
 		$mapper->method('update')->willReturnCallback(
 			function (AuditTrail $log): AuditTrail {
 				$this->note('audit.update', [$log]);
@@ -208,7 +214,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 				return $log;
 			}
 		);
-		$mapper->method('getStatistics')->willReturn(['total' => 21, 'size' => 22]);
+		$mapper->method('statisticsTotals')->willReturn(['total' => 21, 'size' => 22]);
 		return $mapper;
 	}//end audit()
 

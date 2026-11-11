@@ -44,6 +44,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Service\PresenceBeat;
+use OCA\OpenRegister\Notifications\Service\PresenceLookup;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\PresenceService
@@ -123,7 +125,7 @@ final class PresenceServiceTest extends TestCase {
 	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-an-object-knows-who-has-it-open
 	 */
 	public function testTheFirstBeatIsAnArrival(): void {
-		$beat = $this->service()->heartbeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(0));
+		$beat = $this->service()->heartbeat(beat: new PresenceBeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(0)));
 
 		self::assertTrue($beat['arrived']);
 		self::assertSame('anna', $beat['presence']->getUserId());
@@ -138,12 +140,10 @@ final class PresenceServiceTest extends TestCase {
 	 */
 	public function testABeatInsideTheWindowIsNotAnArrival(): void {
 		$service = $this->service();
-		$service->heartbeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(0));
+		$service->heartbeat(beat: new PresenceBeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(0)));
 
 		$renewal = $service->heartbeat(
-			userId: 'anna',
-			objectUuid: self::OBJ,
-			now: $this->at(PresenceService::BEAT_SECONDS)
+			beat: new PresenceBeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(PresenceService::BEAT_SECONDS))
 		);
 
 		self::assertFalse(
@@ -164,13 +164,11 @@ final class PresenceServiceTest extends TestCase {
 	 */
 	public function testTheArrivalTimeSurvivesARenewal(): void {
 		$service = $this->service();
-		$first = $service->heartbeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(0));
+		$first = $service->heartbeat(beat: new PresenceBeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(0)));
 		$arrived = $first['presence']->getArrivedAt()->getTimestamp();
 
 		$renewal = $service->heartbeat(
-			userId: 'anna',
-			objectUuid: self::OBJ,
-			now: $this->at(PresenceService::BEAT_SECONDS)
+			beat: new PresenceBeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(PresenceService::BEAT_SECONDS))
 		);
 
 		self::assertSame($arrived, $renewal['presence']->getArrivedAt()->getTimestamp());
@@ -190,12 +188,10 @@ final class PresenceServiceTest extends TestCase {
 	 */
 	public function testABeatAfterTheWindowIsAnArrivalAgain(): void {
 		$service = $this->service();
-		$service->heartbeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(0));
+		$service->heartbeat(beat: new PresenceBeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(0)));
 
 		$back = $service->heartbeat(
-			userId: 'anna',
-			objectUuid: self::OBJ,
-			now: $this->at(PresenceService::WINDOW_SECONDS + 1)
+			beat: new PresenceBeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(PresenceService::WINDOW_SECONDS + 1))
 		);
 
 		self::assertTrue(
@@ -213,12 +209,10 @@ final class PresenceServiceTest extends TestCase {
 	 */
 	public function testTheEdgeOfTheWindowIsStillPresent(): void {
 		$service = $this->service();
-		$service->heartbeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(0));
+		$service->heartbeat(beat: new PresenceBeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(0)));
 
 		$edge = $service->heartbeat(
-			userId: 'anna',
-			objectUuid: self::OBJ,
-			now: $this->at(PresenceService::WINDOW_SECONDS)
+			beat: new PresenceBeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(PresenceService::WINDOW_SECONDS))
 		);
 
 		self::assertFalse($edge['arrived'], 'the window is inclusive at its edge');
@@ -252,7 +246,7 @@ final class PresenceServiceTest extends TestCase {
 			[$this->row(user: 'anna'), $this->row(user: 'bram')]
 		);
 
-		$present = $this->service()->present(objectUuid: self::OBJ, exceptUser: 'anna', now: $this->at(0));
+		$present = $this->service()->present(lookup: new PresenceLookup(objectUuid: self::OBJ, exceptUser: 'anna', now: $this->at(0)));
 
 		self::assertSame(['bram'], array_column($present, 'user'));
 	}
@@ -322,7 +316,7 @@ final class PresenceServiceTest extends TestCase {
 		$mapper->method('insert')->willThrowException(new RuntimeException('table is gone'));
 
 		$beat = (new PresenceService($mapper, new NullLogger()))
-			->heartbeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(0));
+			->heartbeat(beat: new PresenceBeat(userId: 'anna', objectUuid: self::OBJ, now: $this->at(0)));
 
 		self::assertFalse($beat['arrived'], 'nothing changed, so nothing is pushed');
 		self::assertNull($beat['presence']);
@@ -338,8 +332,8 @@ final class PresenceServiceTest extends TestCase {
 	public function testABlankReaderOrObjectIsNoBeat(): void {
 		$this->mapper->expects($this->never())->method('insert');
 
-		self::assertSame(['arrived' => false, 'presence' => null], $this->service()->heartbeat(userId: ' ', objectUuid: self::OBJ, now: $this->at(0)));
-		self::assertSame(['arrived' => false, 'presence' => null], $this->service()->heartbeat(userId: 'anna', objectUuid: '', now: $this->at(0)));
+		self::assertSame(['arrived' => false, 'presence' => null], $this->service()->heartbeat(beat: new PresenceBeat(userId: ' ', objectUuid: self::OBJ, now: $this->at(0))));
+		self::assertSame(['arrived' => false, 'presence' => null], $this->service()->heartbeat(beat: new PresenceBeat(userId: 'anna', objectUuid: '', now: $this->at(0))));
 	}
 
 	/**
@@ -352,7 +346,7 @@ final class PresenceServiceTest extends TestCase {
 	public function testAnUnreadableListIsEmpty(): void {
 		$this->mapper->method('findPresent')->willThrowException(new RuntimeException('table is gone'));
 
-		self::assertSame([], $this->service()->present(objectUuid: self::OBJ, now: $this->at(0)));
+		self::assertSame([], $this->service()->present(lookup: new PresenceLookup(objectUuid: self::OBJ, now: $this->at(0))));
 	}
 
 	/**

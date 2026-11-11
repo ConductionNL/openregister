@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 
+use OCA\OpenRegister\Service\ExampleSet\CollectivePageText;
+use OCA\OpenRegister\Service\ExampleSet\CollectiveSeat;
+use OCA\OpenRegister\Service\ExampleSet\CollectiveTeam;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesStore;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -171,43 +174,43 @@ class ExampleSetCollectivesStoreBehaviourTest extends TestCase {
 	public function testAnExistingCollectiveIsReusedNotCreated(): void {
 		$service = $this->collectives(existing: self::entity(id: 12));
 
-		$this->assertSame(['id' => 12, 'created' => false], $this->store()->collective('admin', 'Demo', []));
+		$this->assertSame(['id' => 12, 'created' => false], $this->store()->collectiveOf(new CollectiveTeam('admin', []), 'Demo'));
 		$this->assertSame([['find', 'admin', 'Demo']], $service->calls);
 	}
 
 	public function testAMissingCollectiveIsCreatedInDutch(): void {
 		$service = $this->collectives(existing: null);
 
-		$this->assertSame(['id' => 77, 'created' => true], $this->store()->collective('admin', 'Demo', []));
+		$this->assertSame(['id' => 77, 'created' => true], $this->store()->collectiveOf(new CollectiveTeam('admin', []), 'Demo'));
 		$this->assertSame([['find', 'admin', 'Demo'], ['create', 'admin', 'nl', 'Demo']], $service->calls);
 	}
 
 	public function testAPageWithTheSameTitleIsReused(): void {
 		$pages = $this->pages(pages: [self::entity(id: 3, title: 'Other'), self::entity(id: 4, title: 'Welkom')]);
 
-		$this->assertSame(['id' => 4, 'created' => false], $this->store()->page(9, 'admin', 'Welkom', 'body'));
+		$this->assertSame(['id' => 4, 'created' => false], $this->store()->page(new CollectiveSeat(9, 'admin'), new CollectivePageText('Welkom', 'body')));
 		$this->assertSame([['findAll', 9, 'admin']], $pages->calls);
 	}
 
 	public function testANewPageIsCreatedAtTheRootWithItsContent(): void {
 		$pages = $this->pages(pages: [self::entity(id: 3, title: 'Other')]);
 
-		$this->assertSame(['id' => 501, 'created' => true], $this->store()->page(9, 'admin', 'Welkom', 'body'));
+		$this->assertSame(['id' => 501, 'created' => true], $this->store()->page(new CollectiveSeat(9, 'admin'), new CollectivePageText('Welkom', 'body')));
 		$this->assertSame(['createBase', 9, 0, 'Welkom', null, 'admin', null, 'body'], $pages->calls[1]);
 	}
 
 	public function testPageExistsFollowsTheFindOutcome(): void {
 		$this->pages(findOk: true);
-		$this->assertTrue($this->store()->pageExists(1, 2, 'admin'));
+		$this->assertTrue($this->store()->pageFound(new CollectiveSeat(1, 'admin'), 2));
 
 		$this->pages(findOk: false);
-		$this->assertFalse($this->store()->pageExists(1, 2, 'admin'));
+		$this->assertFalse($this->store()->pageFound(new CollectiveSeat(1, 'admin'), 2));
 	}
 
 	public function testDeletePageTrashesItDirectly(): void {
 		$pages = $this->pages();
 
-		$this->store()->deletePage(1, 2, 'admin');
+		$this->store()->deletePage(new CollectiveSeat(1, 'admin'), 2);
 
 		$this->assertSame([['trash', 1, 2, 'admin', true]], $pages->calls);
 	}

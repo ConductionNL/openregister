@@ -71,6 +71,17 @@ class DedupAnnotationValidator implements DedupAnnotationValidatorInterface {
 			return [['code' => 'dedup.not-object', 'message' => 'x-openregister-dedup must be an object.']];
 		}
 
+		return $this->annotationErrors(annotation: $annotation);
+	}//end validate()
+
+	/**
+	 * The errors of an annotation that is an object: no rules, or the rules, threshold, keys and policy.
+	 *
+	 * @param array<string, mixed> $annotation The `x-openregister-dedup` block.
+	 *
+	 * @return array<int, array{code: string, message: string}> Errors; empty when valid.
+	 */
+	private function annotationErrors(array $annotation): array {
 		$matchRules = ($annotation['matchRules'] ?? null);
 		if (is_array($matchRules) === false || count($matchRules) === 0) {
 			return [['code' => 'dedup.no-rules', 'message' => 'x-openregister-dedup requires a non-empty "matchRules" array.']];
@@ -82,7 +93,7 @@ class DedupAnnotationValidator implements DedupAnnotationValidatorInterface {
 			$this->validateBlockingKeys(annotation: $annotation),
 			$this->validateCreatePolicy(annotation: $annotation)
 		);
-	}//end validate()
+	}//end annotationErrors()
 
 	/**
 	 * Validate every match rule, keeping the rules' order.

@@ -24,8 +24,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
+use OCA\OpenRegister\Service\Rbac\AuthorizationAssignment;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -106,7 +108,7 @@ class ObjectAuthorizationWriterTest extends TestCase {
 		);
 
 		$writer = new ObjectAuthorizationWriter(mapper: $mapper, db: $db, logger: $logger);
-		$writer->writeAuthorizationBlock(register: $register, schema: $schema, objectUuid: 'uuid-1', block: $block);
+		$writer->writeAuthorizationBlock(table: new RegisterSchema(register: $register, schema: $schema), assignment: new AuthorizationAssignment(objectUuid: 'uuid-1', block: $block));
 
 		return ['calls' => $calls, 'log' => $log];
 	}//end write()

@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -56,13 +57,13 @@ final class ExplodeNodeCharacterisationTest extends TestCase {
 	public function testOnlyALiteralFalseDropsTheRecord(): void {
 		$items = [FlowItems::item(json: ['repo' => 'r', 'list' => ['x']])];
 
-		$dropped = $this->node->execute($items, ['path' => 'list', 'keepRecord' => false], []);
+		$dropped = $this->node->execute(new FlowNodeCall(items: $items, config: ['path' => 'list', 'keepRecord' => false], context: []));
 		$this->assertSame(['item' => 'x'], $dropped[0][FlowItems::JSON]);
 
-		$kept = $this->node->execute($items, ['path' => 'list', 'keepRecord' => 0], []);
+		$kept = $this->node->execute(new FlowNodeCall(items: $items, config: ['path' => 'list', 'keepRecord' => 0], context: []));
 		$this->assertSame(['repo' => 'r', 'list' => ['x'], 'item' => 'x'], $kept[0][FlowItems::JSON]);
 
-		$nullKept = $this->node->execute($items, ['path' => 'list', 'keepRecord' => null], []);
+		$nullKept = $this->node->execute(new FlowNodeCall(items: $items, config: ['path' => 'list', 'keepRecord' => null], context: []));
 		$this->assertSame('r', $nullKept[0][FlowItems::JSON]['repo']);
 	}//end testOnlyALiteralFalseDropsTheRecord()
 
@@ -74,7 +75,7 @@ final class ExplodeNodeCharacterisationTest extends TestCase {
 	public function testTheEntryLandsUnderItemByDefaultAndWins(): void {
 		$items = [FlowItems::item(json: ['item' => 'old', 'list' => ['new']])];
 
-		$out = $this->node->execute($items, ['path' => ' list '], []);
+		$out = $this->node->execute(new FlowNodeCall(items: $items, config: ['path' => ' list '], context: []));
 
 		$this->assertSame('new', $out[0][FlowItems::JSON]['item']);
 	}//end testTheEntryLandsUnderItemByDefaultAndWins()
@@ -92,7 +93,7 @@ final class ExplodeNodeCharacterisationTest extends TestCase {
 			FlowItems::item(json: ['list' => ['c']]),
 		];
 
-		$out = $this->node->execute($items, ['path' => 'list', 'as' => 'e'], []);
+		$out = $this->node->execute(new FlowNodeCall(items: $items, config: ['path' => 'list', 'as' => 'e'], context: []));
 
 		$this->assertSame(
 			[['a', ['item' => 0]], ['b', ['item' => 0]], ['c', ['item' => 2]]],
@@ -119,6 +120,6 @@ final class ExplodeNodeCharacterisationTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessage('The explode path "list" is not a list.');
 
-		$this->node->execute($items, ['path' => 'list'], []);
+		$this->node->execute(new FlowNodeCall(items: $items, config: ['path' => 'list'], context: []));
 	}//end testALaterScalarFailsTheWholeStep()
 }//end class

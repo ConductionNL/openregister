@@ -41,6 +41,10 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
+use OCA\OpenRegister\Service\Object\DeletionOptions;
+use OCA\OpenRegister\Service\Object\RemovalOptions;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -126,9 +130,8 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 			$this->objectMapper,
 			$this->cacheHandler,
 			$this->userSession,
-			$this->auditTrailMapper,
+			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->createMock(LoggerInterface::class)),
 			$this->settingsService,
-			$this->createMock(LoggerInterface::class),
 			$this->integrityService,
 			$this->createMock(IDBConnection::class),
 			$this->createMock(OrganisationMapper::class)
@@ -251,7 +254,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		// Children: one built audit row each, persisted with ONE bulk insert.
 		$this->auditTrailMapper
 			->expects($this->exactly(2))
-			->method('buildAuditTrail')
+			->method('buildEntry')
 			->willReturn(new AuditTrail());
 		$this->auditTrailMapper
 			->expects($this->once())
@@ -265,7 +268,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 			->method('createAuditTrail')
 			->willReturn(new AuditTrail());
 
-		$result = $this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid');
+		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'parent-uuid'));
 
 		$this->assertTrue($result);
 		$this->assertCount(2, $batchedEntities);
@@ -303,7 +306,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		$this->expectException(HookStoppedException::class);
 		$this->expectExceptionMessage('kept');
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid');
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'parent-uuid'));
 	}//end testARefusedChildStopsTheBatchedCascade()
 
 	/**
@@ -332,7 +335,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 			}
 		);
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid');
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'parent-uuid'));
 
 		$this->assertSame(['parent-uuid'], $asked);
 	}//end testASoftDeletedChildIsNotAskedAgain()
@@ -363,7 +366,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
 		$this->withAuditTrailsEnabled(false);
 
-		$this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid');
+		$this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'parent-uuid'));
 
 		$this->assertSame(['child-1'], array_keys($captured));
 		$this->assertNotSame($childA, $captured['child-1']);
@@ -419,7 +422,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
 		$this->withAuditTrailsEnabled(false);
 
-		$result = $this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid');
+		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'parent-uuid'));
 
 		$this->assertTrue($result);
 	}//end testCascadeFallsBackToPerIdPipelineForUnresolvedIds()
@@ -457,7 +460,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
 		$this->withAuditTrailsEnabled(false);
 
-		$this->assertTrue($this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid'));
+		$this->assertTrue($this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'parent-uuid')));
 		$this->assertSame(['child-live'], $written);
 		$this->assertSame($record, $gone->getDeleted());
 	}//end testAChildAlreadyDeletedKeepsItsDeletionRecord()
@@ -503,7 +506,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		$this->integrityService->method('hasIncomingOnDeleteReferences')->willReturn(false);
 		$this->withAuditTrailsEnabled(false);
 
-		$result = $this->handler->deleteObject(register: 1, schema: 10, uuid: 'parent-uuid');
+		$result = $this->handler->deleteObject(new DeletionRequest(register: 1, schema: 10, uuid: 'parent-uuid'));
 
 		$this->assertTrue($result);
 	}//end testCascadeBatchWriteFailureFallsBackToPerIdPipeline()
@@ -531,9 +534,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 
 		$result = $this->handler->delete(
-			object: $entity,
-			register: $this->makeRegister(),
-			schema: $this->makeSchema()
+			$entity, new RemovalOptions(table: new RegisterSchema(register: $this->makeRegister(), schema: $this->makeSchema()))
 		);
 
 		$this->assertTrue($result);
@@ -559,9 +560,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 
 		$this->handler->delete(
-			object: $entity,
-			register: $this->makeRegister(),
-			schema: $this->makeSchema()
+			$entity, new RemovalOptions(table: new RegisterSchema(register: $this->makeRegister(), schema: $this->makeSchema()))
 		);
 
 		$this->assertInstanceOf(ObjectEntity::class, $capturedOld);
@@ -599,10 +598,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 			->method('update');
 
 		$result = $this->handler->delete(
-			object: $entity,
-			cascadeContext: $cascadeContext,
-			register: $this->makeRegister(),
-			schema: $this->makeSchema()
+			$entity, new RemovalOptions(cascadeContext: $cascadeContext, table: new RegisterSchema(register: $this->makeRegister(), schema: $this->makeSchema()))
 		);
 
 		$this->assertTrue($result);
@@ -627,10 +623,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 
 		$result = $this->handler->deleteObject(
-			register: $this->makeRegister(),
-			schema: $this->makeSchema(),
-			uuid: 'uuid-pre',
-			preResolved: $entity
+			new DeletionRequest(register: $this->makeRegister(), schema: $this->makeSchema(), uuid: 'uuid-pre', options: new DeletionOptions(preResolved: $entity))
 		);
 
 		$this->assertTrue($result);
@@ -658,10 +651,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		$this->withAuditTrailsEnabled(false);
 
 		$result = $this->handler->deleteObject(
-			register: $register,
-			schema: $schema,
-			uuid: 'uuid-wanted',
-			preResolved: $mismatch
+			new DeletionRequest(register: $register, schema: $schema, uuid: 'uuid-wanted', options: new DeletionOptions(preResolved: $mismatch))
 		);
 
 		$this->assertTrue($result);

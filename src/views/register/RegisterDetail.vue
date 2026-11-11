@@ -81,51 +81,13 @@ import {
 			</template>
 
 			<!-- Charts -->
-			<div class="chartGrid">
-				<!-- Audit Trail Actions Chart -->
-				<div class="chartCard">
-					<h3>Audit Trail Actions</h3>
-					<Apexchart
-						type="line"
-						height="350"
-						:options="auditTrailChartOptions"
-						:series="
-							dashboardStore.chartData.auditTrailActions?.series || []
-						" />
-				</div>
-
-				<!-- Objects by Schema Chart -->
-				<div class="chartCard">
-					<h3>Objects by Schema</h3>
-					<Apexchart
-						type="pie"
-						height="350"
-						:options="schemaChartOptions"
-						:series="
-							dashboardStore.chartData.objectsBySchema?.series || []
-						"
-						:labels="
-							dashboardStore.chartData.objectsBySchema?.labels || []
-						" />
-				</div>
-
-				<!-- Objects by Size Chart -->
-				<div class="chartCard">
-					<h3>Objects by Size Distribution</h3>
-					<Apexchart
-						type="bar"
-						height="350"
-						:options="sizeChartOptions"
-						:series="[
-							{
-								name: 'Objects',
-								data:
-									dashboardStore.chartData.objectsBySize?.series
-									|| [],
-							},
-						]" />
-				</div>
-			</div>
+			<DetailChartGrid
+				:chartData="dashboardStore.chartData"
+				distributionKey="objectsBySchema"
+				distributionTitle="Objects by Schema"
+				:auditOptions="auditTrailChartOptions"
+				:distributionOptions="schemaChartOptions"
+				:sizeOptions="sizeChartOptions" />
 
 			<!-- Schemas -->
 			<div v-if="loadingSchemas" class="loadingContainer">
@@ -246,6 +208,13 @@ import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TableEye from 'vue-material-design-icons/TableEye.vue'
 import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
+import DetailChartGrid from './DetailChartGrid.vue'
+import { findActiveRegister } from './activeRegister.js'
+import {
+	auditTrailChartOptions,
+	distributionChartOptions,
+	sizeChartOptions,
+} from './detailChartOptions.js'
 import { getTheme } from '@/services/getTheme.js'
 
 export default {
@@ -259,6 +228,7 @@ export default {
 		NcActionButton,
 		NcButton,
 		CnDetailPage,
+		DetailChartGrid,
 		Apexchart: VueApexCharts,
 		FileCodeOutline,
 		FolderOutline,
@@ -291,17 +261,7 @@ export default {
 		 * @return {object|undefined}
 		 */
 		register() {
-			// Find the register in the dashboard store using the ID from the register
-			// store, falling back to the route param on a deep link / page refresh.
-			const registerId =
-				registerStore.getRegisterItem?.id || this.$route.params.id
-			if (!registerId) {
-				return undefined
-			}
-			// Route params are strings, the API returns numeric ids — compare as strings.
-			return dashboardStore.registers.find(
-				(r) => String(r.id) === String(registerId),
-			)
+			return findActiveRegister(this.$route)
 		},
 
 		/**
@@ -311,47 +271,10 @@ export default {
 		 * @return {object}
 		 */
 		auditTrailChartOptions() {
-			return {
-				chart: {
-					type: 'line',
-					toolbar: {
-						show: true,
-					},
-
-					zoom: {
-						enabled: true,
-					},
-				},
-
-				xaxis: {
-					categories:
-						dashboardStore.chartData.auditTrailActions?.labels || [],
-
-					title: {
-						text: 'Date',
-					},
-				},
-
-				yaxis: {
-					title: {
-						text: 'Number of Actions',
-					},
-				},
-
-				colors: ['#41B883', '#E46651', '#00D8FF'],
-				stroke: {
-					curve: 'smooth',
-					width: 2,
-				},
-
-				legend: {
-					position: 'top',
-				},
-
-				theme: {
-					mode: getTheme(),
-				},
-			}
+			return auditTrailChartOptions(
+				dashboardStore.chartData.auditTrailActions?.labels || [],
+				getTheme(),
+			)
 		},
 
 		/**
@@ -361,31 +284,9 @@ export default {
 		 * @return {object}
 		 */
 		schemaChartOptions() {
-			return {
-				chart: {
-					type: 'pie',
-				},
-
-				labels: dashboardStore.chartData.objectsBySchema?.labels || [],
-				legend: {
-					position: 'bottom',
-				},
-
-				responsive: [
-					{
-						breakpoint: 480,
-						options: {
-							chart: {
-								width: 200,
-							},
-
-							legend: {
-								position: 'bottom',
-							},
-						},
-					},
-				],
-			}
+			return distributionChartOptions(
+				dashboardStore.chartData.objectsBySchema?.labels || [],
+			)
 		},
 
 		/**
@@ -395,36 +296,9 @@ export default {
 		 * @return {object}
 		 */
 		sizeChartOptions() {
-			return {
-				chart: {
-					type: 'bar',
-				},
-
-				plotOptions: {
-					bar: {
-						horizontal: false,
-						columnWidth: '55%',
-						endingShape: 'rounded',
-					},
-				},
-
-				xaxis: {
-					categories: dashboardStore.chartData.objectsBySize?.labels || [],
-					title: {
-						text: 'Size Range',
-					},
-				},
-
-				yaxis: {
-					title: {
-						text: 'Number of Objects',
-					},
-				},
-
-				fill: {
-					opacity: 1,
-				},
-			}
+			return sizeChartOptions(
+				dashboardStore.chartData.objectsBySize?.labels || [],
+			)
 		},
 	},
 
@@ -712,8 +586,6 @@ export default {
 	gap: 20px;
 	padding: 20px;
 }
-
-@include chart-card;
 
 .cardGrid {
 	display: grid;

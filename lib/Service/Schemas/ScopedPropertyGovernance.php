@@ -215,9 +215,8 @@ class ScopedPropertyGovernance {
 	 * for a higher one or to retire a field they no longer use, which is the
 	 * decision the ceiling exists to force.
 	 *
-	 * @param Schema $schema   The schema being saved.
-	 * @param string $scope    The scope.
-	 * @param string $property The property being added.
+	 * @param Schema      $schema The schema being saved.
+	 * @param ScopedField $field  The property being added and its scope.
 	 *
 	 * @return void
 	 *
@@ -225,15 +224,15 @@ class ScopedPropertyGovernance {
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
 	 */
-	public function assertBelowCeiling(Schema $schema, string $scope, string $property): void {
+	public function assertBelowCeiling(Schema $schema, ScopedField $field): void {
 		$ceiling = $this->ceiling();
-		$already = $this->countAtScope(schema: $schema, field: new ScopedField(property: $property, scope: $scope));
+		$already = $this->countAtScope(schema: $schema, field: $field);
 
 		if ($already < $ceiling) {
 			return;
 		}
 
-		throw new ScopedPropertyException(sprintf(self::MSG_CEILING, $scope, $already, $ceiling, $property));
+		throw new ScopedPropertyException(sprintf(self::MSG_CEILING, $field->scope, $already, $ceiling, $field->property));
 	}//end assertBelowCeiling()
 
 	/**

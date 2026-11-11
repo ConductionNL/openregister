@@ -369,11 +369,11 @@ The system MUST support pagination through `_limit`, `_offset`, and `_page` para
 - **GIVEN** 150 matching objects
 - **WHEN** the user requests `?_offset=60&_limit=30`
 - **THEN** the system MUST return objects 61-90
-- **AND** `SearchQueryHandler.addPaginationUrls()` MUST add `next` and `prev` URL links
+- **AND** `PaginationLinks.around()` (applied by the objects controller) MUST add `next` and `prev` URL links
 
 #### Scenario: Pagination URLs generated only when needed
 - **GIVEN** a query returning 20 results with `_limit=30`
-- **WHEN** `addPaginationUrls()` is called with `page=1, pages=1`
+- **WHEN** `PaginationLinks.around()` is called with `page=1, pages=1`
 - **THEN** no `next` or `prev` URLs MUST be added (single page of results)
 
 #### Scenario: First page has no prev URL

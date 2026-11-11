@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -58,21 +59,41 @@ class RelationCascadeHandler {
 	public const SYSTEM_SCOPE = ['_rbac' => false, '_multitenancy' => false];
 
 	/**
+	 * Object entity data mapper.
+	 *
+	 * @var MagicObjectFinderInterface
+	 */
+	private readonly MagicObjectFinderInterface $objectEntityMapper;
+
+	/**
+	 * Schema mapper for schema operations.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Register mapper for register operations.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Constructor for RelationCascadeHandler.
 	 *
-	 * @param MagicObjectFinderInterface $objectEntityMapper Object entity data mapper.
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations.
-	 * @param RegisterMapperInterface $registerMapper Register mapper for register operations.
-	 * @param LoggerInterface $logger Logger interface for logging operations.
+	 * @param SchemaCatalogInterface $catalog The register, schema and object mappers.
+	 * @param LoggerInterface        $logger  Logger interface for logging operations.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
 	public function __construct(
-		private readonly MagicObjectFinderInterface $objectEntityMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
-		private readonly RegisterMapperInterface $registerMapper,
+		SchemaCatalogInterface $catalog,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->objectEntityMapper = $catalog->tables();
+		$this->schemaMapper       = $catalog->schemas();
+		$this->registerMapper     = $catalog->registers();
 	}//end __construct()
 
 	/**
@@ -234,28 +255,16 @@ class RelationCascadeHandler {
 	 * Recursively scans for relations in data that need to be resolved.
 	 *
 	 * This method walks through the data array looking for properties that contain
-	 * object references (UUIDs, URLs, or numeric IDs) that need to be resolved.
+	 * object references (UUIDs, URLs, or numeric IDs) that need to be resolved:
+	 * one level of data, nested levels included.
 	 *
-	 * @param array $data The data array to scan.
-	 * @param string $prefix The current property path prefix.
-	 * @param null|Schema $schema The schema to validate against.
+	 * @param RelationScan $scan The data, its path prefix and the schema to validate against.
 	 *
 	 * @return array Array of relation paths that need resolution.
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function scanForRelations(array $data, string $prefix = '', ?Schema $schema = null): array {
-		return $this->relationsIn(scan: new RelationScan(data: $data, prefix: $prefix, schema: $schema));
-	}//end scanForRelations()
-
-	/**
-	 * The relation paths of one level of data, nested levels included.
-	 *
-	 * @param RelationScan $scan The data, its path prefix and the schema.
-	 *
-	 * @return array Array of relation paths that need resolution.
-	 */
-	private function relationsIn(RelationScan $scan): array {
+	public function scanForRelations(RelationScan $scan): array {
 		$relations = [];
 		foreach (array_keys($scan->data) as $key) {
 			// Special metadata fields are never relations.
@@ -267,7 +276,7 @@ class RelationCascadeHandler {
 		}
 
 		return $relations;
-	}//end relationsIn()
+	}//end scanForRelations()
 
 	/**
 	 * The path of a key of a scanned level: a top-level key is its own path, so an integer key stays an integer.
@@ -309,7 +318,7 @@ class RelationCascadeHandler {
 			return [$path];
 		}
 
-		return $this->scanForRelations(data: $value, prefix: $path, schema: $scan->schema);
+		return $this->scanForRelations(scan: new RelationScan(data: $value, prefix: $path, schema: $scan->schema));
 	}//end relationsAt()
 
 	/**
@@ -472,7 +481,7 @@ class RelationCascadeHandler {
 	 */
 	public function updateObjectRelations(ObjectEntity $objectEntity, RelationScan $scan): ObjectEntity {
 		// Scan for relations.
-		$relations = $this->relationsIn(scan: $scan);
+		$relations = $this->scanForRelations(scan: $scan);
 
 		if (empty($relations) === true) {
 			return $objectEntity;

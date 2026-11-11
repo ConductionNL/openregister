@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Flow\Oversight\KillSwitchCheck;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltCheck;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltRecords;
 use OCA\OpenRegister\Service\Flow\Oversight\HaltLookup;
+use OCA\OpenRegister\Service\Flow\Oversight\HaltRequest;
 use OCA\OpenRegister\Service\Flow\Oversight\OrganisationHaltService;
 use OCA\OpenRegister\Service\Flow\RegisterFlowOversightEvent;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -173,7 +174,7 @@ class OrganisationHaltTest extends TestCase {
 	public function testAHaltStopsOnlyThatOrganisationsMatchingFlowSteps(): void {
 		$halts = $this->service();
 		$this->signIn();
-		$halt = $halts->engage(organisation: self::ORG_A, app: 'hermiq', reason: 'Incident 42: agent sent mail it should not');
+		$halt = $halts->engage(new HaltRequest(organisation: self::ORG_A, app: 'hermiq', reason: 'Incident 42: agent sent mail it should not'));
 
 		$this->assertSame(self::ORG_A, $halt['organisation']);
 		$this->assertSame('hermiq', $halt['app']);
@@ -200,7 +201,7 @@ class OrganisationHaltTest extends TestCase {
 	public function testANodeTypePrefixNarrowsTheHalt(): void {
 		$halts = $this->service();
 		$this->signIn();
-		$halts->engage(organisation: self::ORG_A, app: 'hermiq', reason: 'mail agent only', nodeTypePrefix: 'hermiq.mail');
+		$halts->engage(new HaltRequest(organisation: self::ORG_A, app: 'hermiq', reason: 'mail agent only', nodeTypePrefix: 'hermiq.mail'));
 
 		$registry = $this->registry(halts: $halts, runs: ['run-a' => self::ORG_A]);
 		$this->assertNotNull($registry->firstRefusal(context: ['runUuid' => 'run-a', 'nodeType' => 'hermiq.mail-send']));
@@ -215,7 +216,7 @@ class OrganisationHaltTest extends TestCase {
 	public function testAnUnattributedRunIsRefusedWhileAMatchingHaltExists(): void {
 		$halts = $this->service();
 		$this->signIn();
-		$halts->engage(organisation: self::ORG_A, app: 'hermiq', reason: 'incident');
+		$halts->engage(new HaltRequest(organisation: self::ORG_A, app: 'hermiq', reason: 'incident'));
 
 		$registry = $this->registry(halts: $halts, runs: []);
 		$this->assertNotNull($registry->firstRefusal(context: ['runUuid' => 'run-unknown', 'nodeType' => 'hermiq.agent-tick']));
@@ -230,7 +231,7 @@ class OrganisationHaltTest extends TestCase {
 	public function testTheReadAnAppAsksAndRelease(): void {
 		$halts = $this->service();
 		$this->signIn();
-		$halt = $halts->engage(organisation: self::ORG_A, app: 'hermiq', reason: 'incident');
+		$halt = $halts->engage(new HaltRequest(organisation: self::ORG_A, app: 'hermiq', reason: 'incident'));
 
 		$this->assertSame($halt['id'], $halts->haltFor(new HaltLookup(organisation: self::ORG_A, app: 'hermiq'))['id']);
 		$this->assertNotNull($halts->haltFor(new HaltLookup(organisation: self::ORG_A, app: 'hermiq', nodeType: 'hermiq.agent-tick')));
@@ -259,7 +260,7 @@ class OrganisationHaltTest extends TestCase {
 		$halts = $this->service();
 
 		try {
-			$halts->engage(organisation: self::ORG_A, app: 'hermiq', reason: 'no actor');
+			$halts->engage(new HaltRequest(organisation: self::ORG_A, app: 'hermiq', reason: 'no actor'));
 			$this->fail('engaged without an actor');
 		} catch (\InvalidArgumentException $e) {
 			$this->assertStringContainsString('actor', $e->getMessage());
@@ -272,16 +273,16 @@ class OrganisationHaltTest extends TestCase {
 			['org-nobody', 'hermiq', 'reason', 'organisation'],
 		] as [$organisation, $app, $reason, $named]) {
 			try {
-				$halts->engage(organisation: $organisation, app: $app, reason: $reason);
+				$halts->engage(new HaltRequest(organisation: $organisation, app: $app, reason: $reason));
 				$this->fail('engaged without ' . $named);
 			} catch (\InvalidArgumentException $e) {
 				$this->assertStringContainsString($named, $e->getMessage());
 			}
 		}
 
-		$halts->engage(organisation: self::ORG_A, app: 'hermiq', reason: 'first');
+		$halts->engage(new HaltRequest(organisation: self::ORG_A, app: 'hermiq', reason: 'first'));
 		try {
-			$halts->engage(organisation: self::ORG_A, app: 'hermiq', reason: 'second');
+			$halts->engage(new HaltRequest(organisation: self::ORG_A, app: 'hermiq', reason: 'second'));
 			$this->fail('engaged twice');
 		} catch (\InvalidArgumentException $e) {
 			$this->assertStringContainsString('already', $e->getMessage());

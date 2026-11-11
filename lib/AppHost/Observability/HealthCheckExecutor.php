@@ -27,14 +27,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Observability;
 
-use OCA\OpenRegister\AppHost\AppContainerLocator;
+use Generator;
 use OCA\OpenRegister\AppHost\IHealthCheckProvider;
-use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
-use OCP\IAppConfig;
-use OCP\IDBConnection;
-use OCP\ITempManager;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -53,21 +48,13 @@ class HealthCheckExecutor {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db Database connection (database check).
-	 * @param ITempManager $tempManager Temp-file manager (filesystem check).
-	 * @param IAppManager $appManager App manager (appEnabled check).
-	 * @param IAppConfig $appConfig App config (appConfig check).
-	 * @param ContainerInterface $container DI container (lazy orAvailable + fallback provider lookup).
-	 * @param AppContainerLocator $locator Reaches the calling app's own container.
-	 * @param LoggerInterface $logger PSR logger (exception messages logged, never returned).
+	 * @param LocalHealthChecks   $localChecks Database, filesystem, appEnabled and appConfig checks.
+	 * @param AppProviderResolver $providers   Resolves the app's IHealthCheckProvider (and orAvailable).
+	 * @param LoggerInterface     $logger      PSR logger (exception messages logged, never returned).
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
-		private readonly ITempManager $tempManager,
-		private readonly IAppManager $appManager,
-		private readonly IAppConfig $appConfig,
-		private readonly ContainerInterface $container,
-		private readonly AppContainerLocator $locator,
+		private readonly LocalHealthChecks $localChecks,
+		private readonly AppProviderResolver $providers,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -82,30 +69,13 @@ class HealthCheckExecutor {
 	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-2.2
 	 */
 	public function execute(ObservabilityManifest $manifest): HealthResult {
-		$checks = [];
+		$checks      = [];
 		$worstStatus = self::STATUS_OK;
 
-		foreach ($manifest->checks as $descriptor) {
-			[$ok, $message] = $this->runCheck(appId: $manifest->appId, descriptor: $descriptor);
-			$checks[$descriptor->id] = $this->formatCheckResult(ok: $ok, message: $message);
-
-			if ($ok === false) {
-				$worstStatus = $this->escalate(current: $worstStatus, severity: $descriptor->severity);
-			}
-		}
-
-		// Merge IHealthCheckProvider escape-hatch results.
-		foreach ($this->resolveProviderResults(appId: $manifest->appId) as $id => $result) {
-			$ok = ($result['ok'] ?? false) === true;
-			$severity = ($result['severity'] ?? 'critical');
-			if (in_array($severity, HealthCheckDescriptor::SEVERITIES, true) === false) {
-				$severity = 'critical';
-			}
-
-			$message = (string)($result['message'] ?? '');
-			$checks[$id] = $this->formatCheckResult(ok: $ok, message: $message);
-			if ($ok === false) {
-				$worstStatus = $this->escalate(current: $worstStatus, severity: $severity);
+		foreach ($this->outcomes(manifest: $manifest) as $id => $outcome) {
+			$checks[$id] = $this->formatCheckResult(ok: $outcome['ok'], message: $outcome['message']);
+			if ($outcome['ok'] === false) {
+				$worstStatus = $this->escalate(current: $worstStatus, severity: $outcome['severity']);
 			}
 		}
 
@@ -117,6 +87,42 @@ class HealthCheckExecutor {
 	}//end execute()
 
 	/**
+	 * Every check outcome by id: the declared checks, run one at a time, then the
+	 * IHealthCheckProvider escape-hatch results merged in after them.
+	 *
+	 * @param ObservabilityManifest $manifest The parsed manifest.
+	 *
+	 * @return Generator<string, array{ok: bool, message: string, severity: string}>
+	 */
+	private function outcomes(ObservabilityManifest $manifest): Generator {
+		foreach ($manifest->checks as $descriptor) {
+			[$ok, $message] = $this->runCheck(appId: $manifest->appId, descriptor: $descriptor);
+			yield $descriptor->id => ['ok' => $ok, 'message' => $message, 'severity' => $descriptor->severity];
+		}
+
+		foreach ($this->resolveProviderResults(appId: $manifest->appId) as $id => $result) {
+			yield $id => self::providerOutcome(result: $result);
+		}
+	}//end outcomes()
+
+	/**
+	 * The outcome of one provider result; an unknown severity counts as critical.
+	 *
+	 * @param array<string, mixed> $result The provider's result.
+	 *
+	 * @return array{ok: bool, message: string, severity: string}
+	 */
+	private static function providerOutcome(array $result): array {
+		$ok       = ($result['ok'] ?? false) === true;
+		$severity = ($result['severity'] ?? 'critical');
+		if (in_array($severity, HealthCheckDescriptor::SEVERITIES, true) === false) {
+			$severity = 'critical';
+		}
+
+		return ['ok' => $ok, 'message' => (string)($result['message'] ?? ''), 'severity' => $severity];
+	}//end providerOutcome()
+
+	/**
 	 * Run a single check descriptor.
 	 *
 	 * @param string $appId Calling app id.
@@ -126,36 +132,37 @@ class HealthCheckExecutor {
 	 */
 	private function runCheck(string $appId, HealthCheckDescriptor $descriptor): array {
 		try {
-			switch ($descriptor->type) {
-				case 'database':
-					return $this->checkDatabase();
-				case 'filesystem':
-					return $this->checkFilesystem();
-				case 'appEnabled':
-					return $this->checkAppEnabled(app: (string)$descriptor->app);
-				case 'appConfig':
-					return $this->checkAppConfig(appId: $appId, key: (string)$descriptor->key, assert: (string)$descriptor->assert);
-				case 'orAvailable':
-					return $this->checkOrAvailable();
-				default:
-					return [false, 'unknown check'];
+			if ($descriptor->type === 'orAvailable') {
+				return $this->checkOrAvailable();
 			}
+
+			return ($this->localChecks->run(appId: $appId, descriptor: $descriptor) ?? [false, 'unknown check']);
 		} catch (Throwable $e) {
 			// Log internals; return a generic message so health never leaks.
-			$logMessage = sprintf(
-				'[AppHost\\Health] Check "%s" (%s) for app "%s" threw: %s',
-				$descriptor->id,
-				$descriptor->type,
-				$appId,
-				$e->getMessage()
-			);
 			$this->logger->warning(
-				message: $logMessage,
+				message: self::failurePrefix(appId: $appId, descriptor: $descriptor) . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $appId]
 			);
 			return [false, 'check error'];
 		}//end try
 	}//end runCheck()
+
+	/**
+	 * The start of the log line of a check that threw, up to the exception message.
+	 *
+	 * @param string                $appId      Calling app id.
+	 * @param HealthCheckDescriptor $descriptor The check.
+	 *
+	 * @return string
+	 */
+	private static function failurePrefix(string $appId, HealthCheckDescriptor $descriptor): string {
+		return sprintf(
+			'[AppHost\\Health] Check "%s" (%s) for app "%s" threw: ',
+			$descriptor->id,
+			$descriptor->type,
+			$appId
+		);
+	}//end failurePrefix()
 
 	/**
 	 * Format a check outcome for the `checks` response map.
@@ -178,87 +185,12 @@ class HealthCheckExecutor {
 	}//end formatCheckResult()
 
 	/**
-	 * `SELECT 1` round-trip.
-	 *
-	 * @return array{0: bool, 1: string}
-	 */
-	private function checkDatabase(): array {
-		$result = $this->db->executeQuery('SELECT 1');
-		$result->fetch();
-		$result->closeCursor();
-		return [true, ''];
-	}//end checkDatabase()
-
-	/**
-	 * Write + unlink a temp file.
-	 *
-	 * @return array{0: bool, 1: string}
-	 */
-	private function checkFilesystem(): array {
-		$path = $this->tempManager->getTemporaryFile('-apphost-health');
-		if ($path === false || $path === '') {
-			return [false, 'temp file unavailable'];
-		}
-
-		$bytes = file_put_contents($path, 'ok');
-		$ok = ($bytes !== false);
-		// The ITempManager cleans its files on shutdown; unlink eagerly anyway.
-		@unlink($path);
-		if ($ok === true) {
-			return [true, ''];
-		}
-
-		return [false, 'temp write failed'];
-	}//end checkFilesystem()
-
-	/**
-	 * App-enabled check.
-	 *
-	 * @param string $app Target app id.
-	 *
-	 * @return array{0: bool, 1: string}
-	 */
-	private function checkAppEnabled(string $app): array {
-		$enabled = $this->appManager->isInstalled($app);
-		if ($enabled === true) {
-			return [true, ''];
-		}
-
-		return [false, 'app not enabled'];
-	}//end checkAppEnabled()
-
-	/**
-	 * App-config key assertion (present | nonEmpty).
-	 *
-	 * @param string $appId Calling app id.
-	 * @param string $key Config key.
-	 * @param string $assert present|nonEmpty.
-	 *
-	 * @return array{0: bool, 1: string}
-	 */
-	private function checkAppConfig(string $appId, string $key, string $assert): array {
-		$has = $this->appConfig->hasKey($appId, $key);
-		if ($has === false) {
-			return [false, 'config key missing'];
-		}
-
-		if ($assert === 'nonEmpty') {
-			$value = $this->appConfig->getValueString($appId, $key, '');
-			if ($value === '') {
-				return [false, 'config key empty'];
-			}
-		}
-
-		return [true, ''];
-	}//end checkAppConfig()
-
-	/**
 	 * OpenRegister availability — resolve ObjectService, non-null.
 	 *
 	 * @return array{0: bool, 1: string}
 	 */
 	private function checkOrAvailable(): array {
-		$service = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class);
+		$service = $this->providers->own()->get(\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface::class);
 		if ($service !== null) {
 			return [true, ''];
 		}
@@ -274,20 +206,9 @@ class HealthCheckExecutor {
 	 * @return array<string, array<string, mixed>>
 	 */
 	private function resolveProviderResults(string $appId): array {
-		$alias = IHealthCheckProvider::class . '::' . $appId;
 		try {
-			// Resolve from the CALLING APP's own container — where the app
-			// registered its `IHealthCheckProvider::<appId>` alias — not from
-			// OpenRegister's container, which cannot see another app's DI
-			// registrations (same root cause as the MCP-provider fix, #390).
-			$container = $this->locator->findOr(appId: $appId, fallback: $this->container);
-
-			if ($container->has($alias) === false) {
-				return [];
-			}
-
-			$provider = $container->get($alias);
-			if (($provider instanceof IHealthCheckProvider) === false) {
+			$provider = $this->providers->resolve(appId: $appId, interface: IHealthCheckProvider::class);
+			if ($provider === null) {
 				return [];
 			}
 

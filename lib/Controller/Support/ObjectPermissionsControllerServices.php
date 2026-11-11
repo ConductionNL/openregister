@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rbac\AccessReviewGateInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReportInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * The services of ObjectPermissionsController, bundled so its constructor stays small.
@@ -38,11 +39,13 @@ final class ObjectPermissionsControllerServices {
 	 * @param ObjectOperationsInterface   $objectService Names the register and schema the request resolved.
 	 * @param ObjectAccessReportInterface $report        Assembles the answer.
 	 * @param AccessReviewGateInterface   $gate          Resolves the object and decides who may ask.
+	 * @param LoggerInterface             $logger        Records unexpected failures.
 	 */
 	public function __construct(
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly ObjectAccessReportInterface $report,
 		public readonly AccessReviewGateInterface $gate,
+		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 }//end class

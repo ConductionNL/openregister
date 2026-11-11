@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
+use OCA\OpenRegister\Service\ShippedRegister;
 use OCA\OpenRegister\Command\DescriptorListCommand;
 use OCA\OpenRegister\Service\AppRegisterImportRunner;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
@@ -198,7 +199,7 @@ class DescriptorListCommandGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testImportWithoutAppOutput(): void {
-		$this->descriptors->expects($this->never())->method('reimport');
+		$this->descriptors->expects($this->never())->method('reimportShipped');
 
 		$expected = "--import requires --app naming the app whose configuration to re-import.\n";
 		$this->assertSame([1, $expected], $this->runCommand(['--import' => 'flows']));
@@ -210,7 +211,7 @@ class DescriptorListCommandGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testRealImportOutput(): void {
-		$this->descriptors->expects($this->once())->method('reimport')->with('procest', 'flows')
+		$this->descriptors->expects($this->once())->method('reimportShipped')->with(new ShippedRegister('procest', 'flows'))
 			->willReturn(self::realResult('settings-service', 'imported'));
 
 		$expected = "procest: register configuration v2.1.0 re-imported through SettingsService::forceImport.\n"
@@ -229,7 +230,7 @@ class DescriptorListCommandGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testFallbackFailedImportOutput(): void {
-		$this->descriptors->method('reimport')
+		$this->descriptors->method('reimportShipped')
 			->willReturn(self::realResult(AppRegisterImportRunner::PATH_OPENREGISTER, 'failed'));
 
 		$expected = "procest: register configuration v2.1.0 re-imported through SettingsService::forceImport.\n"
@@ -252,7 +253,7 @@ class DescriptorListCommandGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testFailedImportWithoutCountsOutput(): void {
-		$this->descriptors->method('reimport')->willReturn(['outcome' => 'failed', 'reason' => 'no such register']);
+		$this->descriptors->method('reimportShipped')->willReturn(['outcome' => 'failed', 'reason' => 'no such register']);
 
 		$this->assertSame([1, "no such register\n"], $this->runCommand(['--import' => 'x', '--app' => 'procest']));
 	}//end testFailedImportWithoutCountsOutput()
@@ -263,7 +264,7 @@ class DescriptorListCommandGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testSucceededImportWithoutCountsOutput(): void {
-		$this->descriptors->method('reimport')->willReturn(['outcome' => 'imported']);
+		$this->descriptors->method('reimportShipped')->willReturn(['outcome' => 'imported']);
 
 		$this->assertSame([0, ''], $this->runCommand(['--import' => 'x', '--app' => 'procest']));
 	}//end testSucceededImportWithoutCountsOutput()

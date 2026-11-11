@@ -21,6 +21,8 @@ namespace Unit\Service\Notification;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic;
 use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -28,6 +30,7 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
 
 /**
  * Resolves a fixed corpus of schema defaults, stored values, scopes and
@@ -152,7 +155,7 @@ final class NotificationPreferenceResolveGoldenTest extends TestCase {
 			if ($party === 'user') {
 				$key = $keys->configKey(schemaSlug: 'meldingen', notificationKey: 'created');
 				if ($scope !== null) {
-					$key = $keys->scopedConfigKey(scope: $scope, schemaSlug: 'meldingen', notificationKey: 'created');
+					$key = $keys->scopedKeyFor(address: new PreferenceAddress(schemaSlug: 'meldingen', notificationKey: 'created', scope: $scope));
 				}
 
 				$store['user|'.$key] = $raw;
@@ -160,7 +163,7 @@ final class NotificationPreferenceResolveGoldenTest extends TestCase {
 			}
 
 			$groupId = substr($party, 6);
-			$store['app|'.$keys->groupConfigKey(groupId: $groupId, schemaSlug: 'meldingen', notificationKey: 'created', scope: $scope)] = $raw;
+			$store['app|'.$keys->groupKeyFor(groupId: $groupId, address: new PreferenceAddress(schemaSlug: 'meldingen', notificationKey: 'created', scope: $scope))] = $raw;
 		}
 
 		$config = $this->createMock(IConfig::class);
@@ -190,7 +193,14 @@ final class NotificationPreferenceResolveGoldenTest extends TestCase {
 			userGroups: new UserGroupServices(groupManager: $groupManager, userManager: $userManager)
 		);
 
-		$out = $service->resolveEffective($schemaDefault, 'alice', 'meldingen', 'created', $scopes, $groupIds);
+		$out = $service->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: $schemaDefault,
+				userId: 'alice',
+				topic: new PreferenceTopic(schemaSlug: 'meldingen', notificationKey: 'created', scopes: $scopes),
+				groupIds: $groupIds
+			)
+		);
 
 		return json_decode((string)json_encode(['out' => $out, 'calls' => $this->calls]), true);
 	}//end runCase()

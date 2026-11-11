@@ -69,26 +69,6 @@ class UserLinkWriter {
 	/**
 	 * Write a user link, or refresh the one the user already holds in that role.
 	 *
-	 * @param string $objectUuid The object uuid.
-	 * @param int $registerId The register id.
-	 * @param int|null $schemaId The schema id.
-	 * @param string $userId The account.
-	 * @param string|null $role The role.
-	 *
-	 * @return ContactLink The link as stored.
-	 *
-	 * @throws Exception 404 when no account has the id, 401 when nobody is signed in.
-	 *
-	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
-	 */
-	public function write(string $objectUuid, int $registerId, ?int $schemaId, string $userId, ?string $role): ContactLink {
-		$request = new UserLinkRequest(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, userId: $userId);
-		return $this->writeLink(request: $request, role: $role);
-	}//end write()
-
-	/**
-	 * Write a user link, or refresh the one the user already holds in that role.
-	 *
 	 * @param UserLinkRequest $request The object and the account to link.
 	 * @param string|null     $role    The role.
 	 *
@@ -98,12 +78,12 @@ class UserLinkWriter {
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-link-on-an-object-is-a-user-or-a-contact-in-a-role-for-a-period
 	 */
-	public function writeLink(UserLinkRequest $request, ?string $role): ContactLink {
+	public function write(UserLinkRequest $request, ?string $role): ContactLink {
 		$user = $this->account(userId: $request->userId);
 		$linker = $this->linker();
 
 		$contactUid = ContactLink::USER_UID_PREFIX . $user->getUID();
-		$link = $this->links->findByObjectContactAndRole(objectUuid: $request->objectUuid, contactUid: $contactUid, role: $role);
+		$link = $this->links->findByObjectContactAndRole(ref: new PersonLinkRef(objectUuid: $request->objectUuid, contactUid: $contactUid, role: $role));
 		$isNew = ($link === null);
 		$link = ($link ?? $this->newLink(objectUuid: $request->objectUuid, contactUid: $contactUid));
 
@@ -114,7 +94,7 @@ class UserLinkWriter {
 		$this->stampAccount(link: $link, user: $user);
 
 		return $this->persist(link: $link, isNew: $isNew);
-	}//end writeLink()
+	}//end write()
 
 	/**
 	 * The account to link.

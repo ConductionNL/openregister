@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
@@ -90,14 +91,14 @@ final class IterateNodeTest extends TestCase {
 			return $items;
 		});
 
-		$out = $node->execute(
+		$out = $node->execute(new FlowNodeCall(
 			items: [],
 			config: [
 				'source' => ['id' => 'source', 'type' => 'openconnector.source-call'],
 				'body' => [['id' => 'body', 'type' => 'openregister.set-fields']],
 			],
 			context: []
-		);
+		));
 
 		$this->assertSame(expected: 4, actual: $sourceCalls, message: 'the source is asked once more than it produced, and the empty answer ends it');
 		$this->assertSame(expected: 3, actual: $bodyCalls, message: 'the body runs once per productive iteration and not on the empty one');
@@ -121,11 +122,11 @@ final class IterateNodeTest extends TestCase {
 			return $items;
 		});
 
-		$node->execute(
+		$node->execute(new FlowNodeCall(
 			items: [],
 			config: ['source' => ['id' => 'source'], 'body' => [['id' => 'body']]],
 			context: []
-		);
+		));
 
 		$this->assertSame(expected: [[0, true], [1, false], [2, false]], actual: $seen);
 	}
@@ -144,11 +145,11 @@ final class IterateNodeTest extends TestCase {
 		$this->expectException(exception: RuntimeException::class);
 		$this->expectExceptionMessageMatches(regularExpression: '/did not finish within 3 iterations/');
 
-		$node->execute(
+		$node->execute(new FlowNodeCall(
 			items: [],
 			config: ['source' => ['id' => 's'], 'body' => [['id' => 'b']], 'maxIterations' => 3],
 			context: []
-		);
+		));
 	}
 
 	/**
@@ -162,11 +163,11 @@ final class IterateNodeTest extends TestCase {
 			static fn (array $step, array $items, array $context): array => [FlowItems::item(json: ['i' => $context['iteration']['index']])]
 		);
 
-		$out = $node->execute(
+		$out = $node->execute(new FlowNodeCall(
 			items: [],
 			config: ['source' => ['id' => 's'], 'body' => [['id' => 'b']], 'maxIterations' => 4, 'onLimit' => 'stop'],
 			context: []
-		);
+		));
 
 		$this->assertCount(expectedCount: 4, haystack: $out, message: 'exactly maxIterations iterations ran, and none of them failed the run');
 	}
@@ -189,14 +190,14 @@ final class IterateNodeTest extends TestCase {
 			return $items;
 		});
 
-		$node->execute(
+		$node->execute(new FlowNodeCall(
 			items: [],
 			config: [
 				'source' => ['id' => 'source'],
 				'body' => [['id' => 'first'], ['id' => 'second'], ['id' => 'third']],
 			],
 			context: []
-		);
+		));
 
 		$this->assertSame(expected: ['first', 'second', 'third'], actual: $order);
 	}

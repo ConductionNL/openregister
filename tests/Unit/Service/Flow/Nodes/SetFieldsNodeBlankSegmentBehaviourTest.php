@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -50,11 +51,11 @@ class SetFieldsNodeBlankSegmentBehaviourTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessage('The path segment "{{stage}}" resolved to nothing; a field position is never empty.');
 
-		$this->node()->execute([FlowItems::item(json: ['stage' => '   '])], ['set' => ['stages.{{stage}}.status' => 'done']], []);
+		$this->node()->execute(new FlowNodeCall(items: [FlowItems::item(json: ['stage' => '   '])], config: ['set' => ['stages.{{stage}}.status' => 'done']], context: []));
 	}//end testAWhitespaceSegmentIsRefused()
 
 	public function testAPaddedSegmentNamesTheTrimmedField(): void {
-		$out = $this->node()->execute([FlowItems::item(json: ['stage' => ' build '])], ['set' => ['stages.{{stage}}.status' => 'done']], []);
+		$out = $this->node()->execute(new FlowNodeCall(items: [FlowItems::item(json: ['stage' => ' build '])], config: ['set' => ['stages.{{stage}}.status' => 'done']], context: []));
 
 		self::assertSame(['build' => ['status' => 'done']], $out[0][FlowItems::JSON]['stages']);
 	}//end testAPaddedSegmentNamesTheTrimmedField()

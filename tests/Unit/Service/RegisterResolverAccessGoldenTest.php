@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\ConfigLookup;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterResolverService;
 use OCA\OpenRegister\Service\RegisterSchemaMappers;
@@ -101,7 +102,7 @@ class RegisterResolverAccessGoldenTest extends TestCase {
 			->with('the-slug', true, false)
 			->willReturn($register);
 
-		$this->assertSame($register, $this->resolver->resolveRegister('app', 'x_register', null, 'org-caller'));
+		$this->assertSame($register, $this->resolver->lookupRegister(new ConfigLookup('app', 'x_register', null, 'org-caller')));
 	}//end testOverrideAllowsOwnOrUnownedRegister()
 
 	/**
@@ -113,7 +114,7 @@ class RegisterResolverAccessGoldenTest extends TestCase {
 			->with('the-slug', [], true, false)
 			->willReturn($schema);
 
-		$this->assertSame($schema, $this->resolver->resolveSchema('app', 'x_schema', null, 'org-caller'));
+		$this->assertSame($schema, $this->resolver->lookupSchema(new ConfigLookup('app', 'x_schema', null, 'org-caller')));
 	}//end testOverrideAllowsOwnOrUnownedSchema()
 
 	public function testOverrideRefusesForeignRegisterAndDoesNotCacheIt(): void {
@@ -123,7 +124,7 @@ class RegisterResolverAccessGoldenTest extends TestCase {
 
 		for ($attempt = 0; $attempt < 2; $attempt++) {
 			try {
-				$this->resolver->resolveRegister('app', 'x_register', null, 'org-caller');
+				$this->resolver->lookupRegister(new ConfigLookup('app', 'x_register', null, 'org-caller'));
 				$this->fail('A register of another organisation must be refused.');
 			} catch (RegisterNotFoundException $e) {
 				$this->assertSame('the-slug', $e->getResolvedValue());
@@ -141,7 +142,7 @@ class RegisterResolverAccessGoldenTest extends TestCase {
 
 		for ($attempt = 0; $attempt < 2; $attempt++) {
 			try {
-				$this->resolver->resolveSchema('app', 'x_schema', null, 'org-caller');
+				$this->resolver->lookupSchema(new ConfigLookup('app', 'x_schema', null, 'org-caller'));
 				$this->fail('A schema of another organisation must be refused.');
 			} catch (SchemaNotFoundException $e) {
 				$this->assertSame('the-slug', $e->getResolvedValue());
@@ -157,7 +158,7 @@ class RegisterResolverAccessGoldenTest extends TestCase {
 			->with('the-slug', true, true)
 			->willReturn($register);
 
-		$this->assertSame($register, $this->resolver->resolveRegister('app', 'x_register'));
+		$this->assertSame($register, $this->resolver->lookupRegister(new ConfigLookup('app', 'x_register')));
 	}//end testWithoutOverrideTheMapperScopesTheRegister()
 
 	public function testWithoutOverrideTheMapperScopesTheSchema(): void {
@@ -166,7 +167,7 @@ class RegisterResolverAccessGoldenTest extends TestCase {
 			->with('the-slug', [], true, true)
 			->willReturn($schema);
 
-		$this->assertSame($schema, $this->resolver->resolveSchema('app', 'x_schema'));
+		$this->assertSame($schema, $this->resolver->lookupSchema(new ConfigLookup('app', 'x_schema')));
 	}//end testWithoutOverrideTheMapperScopesTheSchema()
 
 	/**
@@ -190,7 +191,7 @@ class RegisterResolverAccessGoldenTest extends TestCase {
 		$this->registerMapper->method('find')->willThrowException($miss);
 
 		try {
-			$this->resolver->resolveRegister('app', 'x_register', null, $organisation);
+			$this->resolver->lookupRegister(new ConfigLookup('app', 'x_register', null, $organisation));
 			$this->fail('A mapper miss must surface as RegisterNotFoundException.');
 		} catch (RegisterNotFoundException $e) {
 			$this->assertSame($miss, $e->getPrevious());
@@ -205,7 +206,7 @@ class RegisterResolverAccessGoldenTest extends TestCase {
 		$this->schemaMapper->method('find')->willThrowException($miss);
 
 		try {
-			$this->resolver->resolveSchema('app', 'x_schema', null, $organisation);
+			$this->resolver->lookupSchema(new ConfigLookup('app', 'x_schema', null, $organisation));
 			$this->fail('A mapper miss must surface as SchemaNotFoundException.');
 		} catch (SchemaNotFoundException $e) {
 			$this->assertSame($miss, $e->getPrevious());
@@ -217,14 +218,14 @@ class RegisterResolverAccessGoldenTest extends TestCase {
 		$this->registerMapper->expects($this->exactly(3))->method('find')
 			->willReturnCallback(fn (): Register => $this->register(owner: null));
 
-		$a = $this->resolver->resolveRegister('app', 'x_register', null, 'org-a');
-		$b = $this->resolver->resolveRegister('app', 'x_register', null, 'org-b');
-		$scoped = $this->resolver->resolveRegister('app', 'x_register');
+		$a = $this->resolver->lookupRegister(new ConfigLookup('app', 'x_register', null, 'org-a'));
+		$b = $this->resolver->lookupRegister(new ConfigLookup('app', 'x_register', null, 'org-b'));
+		$scoped = $this->resolver->lookupRegister(new ConfigLookup('app', 'x_register'));
 
 		$this->assertNotSame($a, $b);
-		$this->assertSame($a, $this->resolver->resolveRegister('app', 'x_register', null, 'org-a'));
-		$this->assertSame($b, $this->resolver->resolveRegister('app', 'x_register', null, 'org-b'));
-		$this->assertSame($scoped, $this->resolver->resolveRegister('app', 'x_register'));
+		$this->assertSame($a, $this->resolver->lookupRegister(new ConfigLookup('app', 'x_register', null, 'org-a')));
+		$this->assertSame($b, $this->resolver->lookupRegister(new ConfigLookup('app', 'x_register', null, 'org-b')));
+		$this->assertSame($scoped, $this->resolver->lookupRegister(new ConfigLookup('app', 'x_register')));
 	}//end testTheCacheIsKeyedPerOrganisation()
 
 	public function testAFailingTenantLookupNeverFlushesTheCache(): void {
@@ -233,9 +234,9 @@ class RegisterResolverAccessGoldenTest extends TestCase {
 		$this->logger->expects($this->exactly(2))->method('debug');
 		$this->schemaMapper->expects($this->once())->method('find')->willReturn($this->schema(owner: null));
 
-		$first = $this->resolver->resolveSchema('app', 'x_schema');
+		$first = $this->resolver->lookupSchema(new ConfigLookup('app', 'x_schema'));
 
-		$this->assertSame($first, $this->resolver->resolveSchema('app', 'x_schema'));
+		$this->assertSame($first, $this->resolver->lookupSchema(new ConfigLookup('app', 'x_schema')));
 	}//end testAFailingTenantLookupNeverFlushesTheCache()
 
 	/**

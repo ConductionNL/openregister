@@ -11,7 +11,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
-use OCA\OpenRegister\Service\File\ExecutableContentDetector;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\SaveObject\FileInputReader;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyConfigs;
@@ -32,17 +31,12 @@ use Psr\Log\LoggerInterface;
 final class FilePropertyPartsTest extends TestCase {
 
 	/**
-	 * Every part is built, and the guard blocks the given extensions.
+	 * Every part is built, and the guard blocks executable extensions.
 	 *
 	 * @return void
 	 */
 	public function testBuildsEveryPart(): void {
-		$parts = new FilePropertyParts(
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(FileService::class),
-			new ExecutableContentDetector(),
-			['exe']
-		);
+		$parts = new FilePropertyParts($this->createMock(LoggerInterface::class), $this->createMock(FileService::class));
 
 		$this->assertInstanceOf(FileInputReader::class, $parts->reader);
 		$this->assertInstanceOf(FileUploadGuard::class, $parts->guard);

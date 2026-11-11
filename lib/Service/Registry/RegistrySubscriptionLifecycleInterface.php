@@ -71,10 +71,8 @@ interface RegistrySubscriptionLifecycleInterface {
 	 * Apply an inbound registry update (`registry-subscriptions` REQ 3) to
 	 * every object actively subscribed to `$registry`/`$identityValue`.
 	 *
-	 * @param string $registry The registry id posting the update (`brp`, `kvk`, ...).
-	 * @param string $identityValue The identity value the update is for.
-	 * @param array<string, mixed> $properties The changed properties the registry is offering.
-	 * @param string $eventReference The registry's own event reference for this change.
+	 * @param InboundUpdate $update The registry and identity value the update is for, the changed properties the
+	 *                              registry is offering and its own event reference for this change.
 	 *
 	 * @return array{matched: int, applied: array<int, string>, rejected: array<int, array{objectUuid: string, properties: array<int, string>}>}
 	 *         `matched` is how many active subscriptions exist for this
@@ -91,10 +89,5 @@ interface RegistrySubscriptionLifecycleInterface {
 	 *
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-inbound-registry-update-writes-owned-properties-only
 	 */
-	public function applyInboundUpdate(
-		string $registry,
-		string $identityValue,
-		array $properties,
-		string $eventReference,
-	): array;
+	public function applyInboundUpdate(InboundUpdate $update): array;
 }//end interface

@@ -89,31 +89,31 @@ class ServiceHoursClockGoldenTest extends TestCase {
 			foreach ($moments as $momentName => $moment) {
 				foreach ($hours as $amount) {
 					$actual["due / {$calName} / {$momentName} / {$amount}"] = self::capture(
-						fn () => $clock->due(from: new DateTimeImmutable($moment), hours: $amount, calendar: $calendar, windows: $calendar->getServiceHours())
+						fn () => $clock->frame(calendar: $calendar, windows: $calendar->getServiceHours())->due(from: new DateTimeImmutable($moment), hours: $amount)
 					);
 				}
 
 				foreach ($moments as $toName => $to) {
 					$actual["elapsed / {$calName} / {$momentName} -> {$toName}"] = self::capture(
-						fn () => $clock->elapsed(from: new DateTimeImmutable($moment), to: new DateTimeImmutable($to), calendar: $calendar, windows: $calendar->getServiceHours())
+						fn () => $clock->frame(calendar: $calendar, windows: $calendar->getServiceHours())->elapsed(from: new DateTimeImmutable($moment), to: new DateTimeImmutable($to))
 					);
 				}
 			}
 
 			$actual["elapsed / {$calName} / month"] = self::capture(
-				fn () => $clock->elapsed(from: new DateTimeImmutable('2026-12-01 00:00 UTC'), to: new DateTimeImmutable('2027-01-15 12:00 UTC'), calendar: $calendar, windows: $calendar->getServiceHours())
+				fn () => $clock->frame(calendar: $calendar, windows: $calendar->getServiceHours())->elapsed(from: new DateTimeImmutable('2026-12-01 00:00 UTC'), to: new DateTimeImmutable('2027-01-15 12:00 UTC'))
 			);
 			$actual["elapsed / {$calName} / too long"] = self::capture(
-				fn () => $clock->elapsed(from: new DateTimeImmutable('2020-01-01 UTC'), to: new DateTimeImmutable('2031-01-01 UTC'), calendar: $calendar, windows: $calendar->getServiceHours())
+				fn () => $clock->frame(calendar: $calendar, windows: $calendar->getServiceHours())->elapsed(from: new DateTimeImmutable('2020-01-01 UTC'), to: new DateTimeImmutable('2031-01-01 UTC'))
 			);
 			$actual["elapsed / {$calName} / no windows"] = self::capture(
-				fn () => $clock->elapsed(from: new DateTimeImmutable('2026-03-30 UTC'), to: new DateTimeImmutable('2026-04-30 UTC'), calendar: $calendar, windows: ServiceHours::none())
+				fn () => $clock->frame(calendar: $calendar, windows: ServiceHours::none())->elapsed(from: new DateTimeImmutable('2026-03-30 UTC'), to: new DateTimeImmutable('2026-04-30 UTC'))
 			);
 			$actual["due / {$calName} / never opens"] = self::capture(
-				fn () => $clock->due(from: new DateTimeImmutable('2026-03-30 UTC'), hours: 1.0, calendar: $calendar, windows: ServiceHours::none())
+				fn () => $clock->frame(calendar: $calendar, windows: ServiceHours::none())->due(from: new DateTimeImmutable('2026-03-30 UTC'), hours: 1.0)
 			);
 			$actual["due / {$calName} / beyond the bound"] = self::capture(
-				fn () => $clock->due(from: new DateTimeImmutable('2026-03-30 UTC'), hours: 100000.0, calendar: $calendar, windows: $calendar->getServiceHours())
+				fn () => $clock->frame(calendar: $calendar, windows: $calendar->getServiceHours())->due(from: new DateTimeImmutable('2026-03-30 UTC'), hours: 100000.0)
 			);
 			$actual["diagnostic / {$calName}"] = $clock->diagnostic(calendar: $calendar, windows: $calendar->getServiceHours());
 			$actual["diagnostic / {$calName} / none"] = $clock->diagnostic(calendar: $calendar, windows: ServiceHours::none());

@@ -42,14 +42,20 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Handoff;
 
 use DateTime;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\HandoffQueueEntry;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\HandoffExecutedEvent;
+use OCA\OpenRegister\Event\HandoffExecutedSource;
+use OCA\OpenRegister\Event\HandoffExecutedTarget;
 use OCA\OpenRegister\Exception\HandoffException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\WriteCause;
 use Symfony\Component\Uid\Uuid;
 
@@ -120,9 +126,7 @@ class HandoffService implements HandoffServiceInterface {
 	 * The object is loaded through `ObjectService::find()` under the caller's
 	 * RBAC (read guard, ADR-005).
 	 *
-	 * @param string $register The register slug or id.
-	 * @param string $schema The schema slug or id.
-	 * @param string $id The object id/uuid.
+	 * @param HandoffSourceRef $ref The register and schema (slug or id) and the object id/uuid.
 	 *
 	 * @return array<int, array<string, mixed>> One availability record per declared handoff.
 	 *
@@ -131,8 +135,8 @@ class HandoffService implements HandoffServiceInterface {
 	 * @spec openspec/changes/semantic-object-handoff-engine/specs/semantic-object-handoff/spec.md
 	 *   (Requirement: Handoff REST surface)
 	 */
-	public function listAvailability(string $register, string $schema, string $id): array {
-		return $this->availabilityOf(source: $this->loadSource(ref: new HandoffSourceRef(register: $register, schema: $schema, id: $id)));
+	public function listAvailability(HandoffSourceRef $ref): array {
+		return $this->availabilityOf(source: $this->loadSource(ref: $ref));
 	}//end listAvailability()
 
 	/**
@@ -253,14 +257,9 @@ class HandoffService implements HandoffServiceInterface {
 		bool $deferred = false,
 		?string $correlationId = null,
 	): array {
-		return $this->run(
-			request: new HandoffRequest(
-				source: new HandoffSourceRef(register: $register, schema: $schema, id: $id),
-				handoffId: $handoffId,
-				deferred: $deferred,
-				correlationId: ($correlationId ?? Uuid::v4()->toRfc4122())
-			)
-		);
+		$source = new HandoffSourceRef(register: $register, schema: $schema, id: $id);
+		$correlationId = ($correlationId ?? Uuid::v4()->toRfc4122());
+		return $this->run(request: new HandoffRequest(source: $source, handoffId: $handoffId, deferred: $deferred, correlationId: $correlationId));
 	}//end execute()
 
 	/**
@@ -282,8 +281,7 @@ class HandoffService implements HandoffServiceInterface {
 		$this->objects->permissionHandler->checkPermission(
 			schema: $plan->sourceSchema,
 			action: 'update',
-			objectOwner: $plan->source->getOwner(),
-			object: $plan->source
+			options: new PermissionCheckOptions(objectOwner: $plan->source->getOwner(), object: $plan->source)
 		);
 
 		// 3. Resolve the provider (complete-binding filter on the resolver result).
@@ -445,18 +443,24 @@ class HandoffService implements HandoffServiceInterface {
 		$source = $plan->source;
 		$this->requesters->eventDispatcher->dispatchTyped(
 			new HandoffExecutedEvent(
-				sourceApp: (string)($plan->sourceSchema->getApplication() ?? ''),
-				sourceRegister: (int)$source->getRegister(),
-				sourceSchema: (int)$source->getSchema(),
-				sourceObjectUuid: (string)$source->getUuid(),
-				subjectLabel: $source->getName(),
-				targetSemanticType: $plan->kindUri(),
-				targetRegister: (int)$target->getRegister(),
-				targetSchema: (int)$target->getSchema(),
-				targetObjectUuid: (string)$target->getUuid(),
-				handoffId: $plan->request->handoffId,
-				correlationId: $plan->request->correlationId,
-				deferred: $plan->request->deferred
+				source: new HandoffExecutedSource(
+					app: (string)($plan->sourceSchema->getApplication() ?? ''),
+					object: new ObjectRef(
+						register: (int)$source->getRegister(),
+						schema: (int)$source->getSchema(),
+						id: (string)$source->getUuid()
+					),
+					label: $source->getName()
+				),
+				target: new HandoffExecutedTarget(
+					semanticType: $plan->kindUri(),
+					object: new ObjectRef(
+						register: (int)$target->getRegister(),
+						schema: (int)$target->getSchema(),
+						id: (string)$target->getUuid()
+					)
+				),
+				request: $plan->request
 			)
 		);
 	}//end dispatchExecuted()
@@ -513,9 +517,17 @@ class HandoffService implements HandoffServiceInterface {
 	 *
 	 * @param HandoffQueueEntry $entry The parked entry.
 	 *
-	 * @return string `skipped` (still no provider), `drained` or `failed`.
+	 * @return string `skipped` (still no provider, or inside a system-operation scope), `drained` or `failed`.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::isActive is a process-scoped flag with no instance to inject.
 	 */
 	private function drainOutcome(HandoffQueueEntry $entry): string {
+		// Inside a system-operation scope every permission check passes, so the
+		// requester's own rights could not be re-evaluated: leave it parked.
+		if (SystemOperationContext::isActive() === true) {
+			return 'skipped';
+		}
+
 		// Cheap pre-check: still no provider → leave parked.
 		$this->providers->semanticTypeResolver->clearCache();
 		if ($this->resolveProvider(kindUri: $entry->getTargetKind(), consumingRegisterId: $entry->getSourceRegister()) === null) {
@@ -636,16 +648,18 @@ class HandoffService implements HandoffServiceInterface {
 
 		$queueEntry = $this->ledger->queueMapper->insert(entity: $queueEntry);
 
-		$this->ledger->auditTrailMapper->createAuditTrailEntry(
-			object: $source,
-			action: self::AUDIT_QUEUED,
-			context: [
-				'handoffId' => $handoffId,
-				'targetKind' => $kindUri,
-				'correlationId' => $correlationId,
-				'deferred' => true,
-				'parkedAt' => $queueEntry->getCreated()->format('c'),
-			]
+		$this->ledger->auditTrailMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $source,
+				action: self::AUDIT_QUEUED,
+				context: [
+					'handoffId' => $handoffId,
+					'targetKind' => $kindUri,
+					'correlationId' => $correlationId,
+					'deferred' => true,
+					'parkedAt' => $queueEntry->getCreated()->format('c'),
+				]
+			)
 		);
 
 		return [
@@ -706,9 +720,7 @@ class HandoffService implements HandoffServiceInterface {
 		}
 
 		return HandoffContractBindingValidator::isCompleteBinding(
-			kindUri: $kindUri,
-			binding: $binding,
-			properties: ($schema->getProperties() ?? [])
+			kind: new HandoffKindBinding(kindUri: $kindUri, fieldMap: ($binding[$kindUri] ?? null), properties: ($schema->getProperties() ?? []))
 		);
 	}//end hasCompleteBinding()
 
@@ -955,15 +967,19 @@ class HandoffService implements HandoffServiceInterface {
 			$context['drainedAt'] = (new DateTime())->format('c');
 		}
 
-		$this->ledger->auditTrailMapper->createAuditTrailEntry(
-			object: $source,
-			action: self::AUDIT_EXECUTED,
-			context: array_merge($context, ['direction' => 'handed-off-to', 'counterpart' => (string)$target->object->getUuid()])
+		$this->ledger->auditTrailMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $source,
+				action: self::AUDIT_EXECUTED,
+				context: array_merge($context, ['direction' => 'handed-off-to', 'counterpart' => (string)$target->object->getUuid()])
+			)
 		);
-		$this->ledger->auditTrailMapper->createAuditTrailEntry(
-			object: $target->object,
-			action: self::AUDIT_EXECUTED,
-			context: array_merge($context, ['direction' => 'originated-from', 'counterpart' => (string)$source->getUuid()])
+		$this->ledger->auditTrailMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $target->object,
+				action: self::AUDIT_EXECUTED,
+				context: array_merge($context, ['direction' => 'originated-from', 'counterpart' => (string)$source->getUuid()])
+			)
 		);
 
 	}//end writeAuditRows()
@@ -991,17 +1007,19 @@ class HandoffService implements HandoffServiceInterface {
 				_rbac: false,
 				_multitenancy: false
 			);
-			$this->ledger->auditTrailMapper->createAuditTrailEntry(
-				object: $source,
-				action: self::AUDIT_DEQUEUED,
-				context: [
-					'handoffId' => $entry->getHandoffId(),
-					'targetKind' => $entry->getTargetKind(),
-					'correlationId' => $entry->getCorrelationId(),
-					'deferred' => true,
-					'parkedAt' => $entry->getCreated()->format('c'),
-					'drainedAt' => ($entry->getExecutedAt()?->format('c') ?? (new DateTime())->format('c')),
-				]
+			$this->ledger->auditTrailMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $source,
+					action: self::AUDIT_DEQUEUED,
+					context: [
+						'handoffId' => $entry->getHandoffId(),
+						'targetKind' => $entry->getTargetKind(),
+						'correlationId' => $entry->getCorrelationId(),
+						'deferred' => true,
+						'parkedAt' => $entry->getCreated()->format('c'),
+						'drainedAt' => ($entry->getExecutedAt()?->format('c') ?? (new DateTime())->format('c')),
+					]
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->ledger->logger->warning(

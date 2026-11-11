@@ -25,7 +25,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
-use OCA\OpenRegister\Service\Object\ValidationMappers;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -62,12 +62,7 @@ class ValidationHandlerBySchemaGoldenTest extends TestCase {
 		);
 		$handler = new ValidationHandler(
 			validateHandler: $this->createMock(ValidateObject::class),
-			mappers: new ValidationMappers(
-				objectEntityMapper: $mapper,
-				registerMapper: $this->createMock(RegisterMapper::class),
-				schemaMapper: $this->createMock(SchemaMapper::class),
-				magicMapper: $mapper
-			),
+			catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper),
 			logger: $logger
 		);
 

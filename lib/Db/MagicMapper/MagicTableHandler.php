@@ -67,16 +67,14 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	/**
 	 * Constructor for MagicTableHandler
 	 *
-	 * @param IDBConnection $db Database connection for table operations
-	 * @param IAppConfig $appConfig App configuration for feature flags
-	 * @param LoggerInterface $logger Logger for debugging and error reporting
-	 * @param MagicMapperInterface $magicMapper Parent MagicMapper for callback access to helpers
+	 * @param MagicTableSql                  $sql             The connection, the table prefix and the logger
+	 * @param IAppConfig                     $appConfig       App configuration for feature flags
+	 * @param MagicMapperInterface           $magicMapper     Parent MagicMapper for callback access to helpers
 	 * @param MagicMetadataColumnHealer|null $metadataColumns Adds missing metadata columns on first use of a table
 	 */
 	public function __construct(
-		private readonly IDBConnection $db,
+		private readonly MagicTableSql $sql,
 		private readonly IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
 		private readonly MagicMapperInterface $magicMapper,
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
 	) {
@@ -84,27 +82,10 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 
 
 	/**
-	 * Ensure a specialized table exists for register+schema combination
+	 * Ensure the table of one register+schema target exists and is current.
 	 *
 	 * Creates the table if it doesn't exist, updates it if schema changed,
 	 * and optionally recreates it if force flag is set.
-	 *
-	 * @param Register $register The register context
-	 * @param Schema $schema The schema context
-	 * @param bool $force Force table recreation even if exists
-	 *
-	 * @return bool True if table exists/was created successfully
-	 *
-	 * @throws Exception If table creation/update fails
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows table recreation
-	 */
-	public function ensureTableForRegisterSchema(Register $register, Schema $schema, bool $force = false): bool {
-		return $this->ensureTarget(target: new MagicTableTarget(register: $register, schema: $schema), force: $force);
-	}//end ensureTableForRegisterSchema()
-
-	/**
-	 * Ensure the table of one register+schema target exists and is current.
 	 *
 	 * @param MagicTableTarget $target The register and schema of the table.
 	 * @param bool             $force  Force table recreation even if exists.
@@ -112,8 +93,12 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	 * @return bool True if table exists/was created successfully
 	 *
 	 * @throws Exception If table creation/update fails
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows table recreation
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
 	 */
-	private function ensureTarget(MagicTableTarget $target, bool $force): bool {
+	public function ensureTargetTable(MagicTableTarget $target, bool $force=false): bool {
 		$target->cacheKey = $this->magicMapper->getCacheKey(registerId: $target->register->getId(), schemaId: $target->schema->getId());
 
 		// Verified once per process, checked FIRST.
@@ -148,7 +133,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		} catch (Exception $e) {
 			throw $this->ensureFailure(target: $target, error: $e);
 		}
-	}//end ensureTarget()
+	}//end ensureTargetTable()
 
 	/**
 	 * Whether the table's columns were verified this process and its schema version is unchanged.
@@ -171,7 +156,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	 * @return void
 	 */
 	private function logEnsure(MagicTableTarget $target, bool $force): void {
-		$this->logger->info(
+		$this->sql->logger->info(
 			message: '[MagicTableHandler] Creating/updating table for register+schema',
 			context: [
 				'file' => __FILE__,
@@ -221,7 +206,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	 */
 	private function ensureFailure(MagicTableTarget $target, Exception $error): Exception {
 		$context = $target->logContext(file: __FILE__, line: __LINE__) + ['error' => $error->getMessage()];
-		$this->logger->error(message: '[MagicTableHandler] Failed to ensure table for register+schema', context: $context);
+		$this->sql->logger->error(message: '[MagicTableHandler] Failed to ensure table for register+schema', context: $context);
 
 		$regTitle = $target->register->getTitle();
 		$schTitle = $target->schema->getTitle();
@@ -308,7 +293,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		$retypeColumns = $this->magicMapper->findJsonbColumnsNeedingRetype(currentColumns: $current, requiredColumns: $required);
 		$relationRetype = $this->magicMapper->findRelationColumnsNeedingRetype(currentColumns: $current, requiredColumns: $required);
 		if (empty($relationRetype) === false) {
-			$this->magicMapper->migrateRelationColumnsToVarchar(tableName: $tableName, currentColumns: $current, requiredColumns: $required);
+			$this->magicMapper->migrateRelationColumnsToVarchar(tableName: $tableName, columns: new MagicColumnDrift(current: $current, required: $required));
 			$retypeColumns = array_merge($retypeColumns, $relationRetype);
 		}
 
@@ -326,7 +311,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	private function logForcedSync(string $tableName, array $drift): void {
 		$warnMsg = '[MagicTableHandler] Schema version unchanged';
 		$warnMsg .= ' but columns missing or need retype, forcing sync';
-		$this->logger->warning(
+		$this->sql->logger->warning(
 			message: $warnMsg,
 			context: ['file' => __FILE__, 'line' => __LINE__, 'tableName' => $tableName] + $drift
 		);
@@ -351,6 +336,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		// Ensure table name doesn't exceed maximum length (should be fine with numeric IDs).
 		if (strlen($tableName) > MagicMapper::MAX_TABLE_NAME_LENGTH) {
 			// This should rarely happen with numeric IDs, but handle it safely.
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 			$hash = substr(md5($registerId . '_' . $schemaId), 0, 8);
 			$tableName = MagicMapper::TABLE_PREFIX . $hash;
 		}
@@ -480,7 +466,10 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		$target->tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 		$target->cacheKey = $this->magicMapper->getCacheKey(registerId: $register->getId(), schemaId: $schema->getId());
 
-		$this->logger->info(message: '[MagicTableHandler] Syncing register+schema table', context: $target->logContext(file: __FILE__, line: __LINE__));
+		$this->sql->logger->info(
+			message: '[MagicTableHandler] Syncing register+schema table',
+			context: $target->logContext(file: __FILE__, line: __LINE__)
+		);
 
 		try {
 			return $this->syncTable(target: $target);
@@ -498,7 +487,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	 * @return Exception The same exception.
 	 */
 	private function loggedSyncFailure(MagicTableTarget $target, Exception $error): Exception {
-		$this->logger->error(
+		$this->sql->logger->error(
 			message: '[MagicTableHandler] Failed to update register+schema table',
 			context: [
 				'file' => __FILE__,
@@ -525,7 +514,10 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 			return $this->createMissingTable(target: $target);
 		}
 
-		$this->logger->info(message: '[MagicTableHandler] Table exists, updating structure', context: $target->logContext(file: __FILE__, line: __LINE__));
+		$this->sql->logger->info(
+			message: '[MagicTableHandler] Table exists, updating structure',
+			context: $target->logContext(file: __FILE__, line: __LINE__)
+		);
 
 		$result = $this->alterTable(tableName: $target->tableName, schema: $target->schema);
 		$this->magicMapper->updateTableIndexes(tableName: $target->tableName, register: $target->register, schema: $target->schema);
@@ -544,7 +536,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	 * @return void
 	 */
 	private function logSynced(MagicTableTarget $target, array $stats): void {
-		$this->logger->info(
+		$this->sql->logger->info(
 			message: '[MagicTableHandler] Successfully updated register+schema table',
 			context: [
 				'file' => __FILE__,
@@ -564,7 +556,10 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	 * @return array Statistics: every column was added.
 	 */
 	private function createMissingTable(MagicTableTarget $target): array {
-		$this->logger->info(message: '[MagicTableHandler] Table does not exist, creating it', context: $target->logContext(file: __FILE__, line: __LINE__));
+		$this->sql->logger->info(
+			message: '[MagicTableHandler] Table does not exist, creating it',
+			context: $target->logContext(file: __FILE__, line: __LINE__)
+		);
 
 		$this->magicMapper->createTableForRegisterSchema(register: $target->register, schema: $target->schema);
 		$columns = new TableSyncColumns(required: $this->magicMapper->buildTableColumnsFromSchema(schema: $target->schema));
@@ -637,7 +632,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		$cacheKey = $this->magicMapper->getCacheKey(registerId: $registerId, schemaId: $schemaId);
 		$this->magicMapper->invalidateTableCache(cacheKey: $cacheKey);
 
-		$this->logger->debug(
+		$this->sql->logger->debug(
 			message: '[MagicTableHandler] Cleared MagicMapper cache for register+schema',
 			context: [
 				'file' => __FILE__,
@@ -657,7 +652,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	private function clearAllCaches(): void {
 		MagicMapper::clearAllStaticCaches();
 
-		$this->logger->debug(message: '[MagicTableHandler] Cleared all MagicMapper caches', context: ['file' => __FILE__, 'line' => __LINE__]);
+		$this->sql->logger->debug(message: '[MagicTableHandler] Cleared all MagicMapper caches', context: ['file' => __FILE__, 'line' => __LINE__]);
 	}//end clearAllCaches()
 
 	/**
@@ -672,7 +667,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		try {
 			return $this->listRegisterSchemaTables();
 		} catch (Exception $e) {
-			$this->logger->error(
+			$this->sql->logger->error(
 				message: '[MagicTableHandler] Failed to get existing register+schema tables',
 				context: [
 					'file' => __FILE__,
@@ -695,7 +690,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 	private function listRegisterSchemaTables(): array {
 		$registerSchemaTables = $this->registerSchemaTablesIn(rows: $this->fetchMagicTableRows());
 
-		$this->logger->info(
+		$this->sql->logger->info(
 			message: '[MagicTableHandler] Found existing register+schema tables',
 			context: [
 				'file' => __FILE__,
@@ -718,7 +713,7 @@ class MagicTableHandler implements MagicTableHandlerInterface {
 		$searchPattern = self::DEFAULT_DB_PREFIX . MagicMapper::TABLE_PREFIX . '%';
 
 		$sql = "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE ?";
-		$stmt = $this->db->prepare($sql);
+		$stmt = $this->sql->db->prepare($sql);
 		$stmt->execute([$searchPattern]);
 		return $stmt->fetchAll();
 	}//end fetchMagicTableRows()

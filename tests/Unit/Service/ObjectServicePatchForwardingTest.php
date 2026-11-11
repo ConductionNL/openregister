@@ -31,13 +31,15 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * @covers \OCA\OpenRegister\Service\ObjectService
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
- * @uses   \OCA\OpenRegister\Service\Object\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses   \OCA\OpenRegister\Service\Object\PatchDataMerge
  */
 class ObjectServicePatchForwardingTest extends TestCase {
@@ -131,12 +133,14 @@ class ObjectServicePatchForwardingTest extends TestCase {
 		}
 
 		$service->patchObject(
-			objectId: $this->identifier,
-			data: ['title' => 'Beta'],
-			register: $this->register,
+			patch: new ObjectPatch(
+				objectId: $this->identifier,
+				data: ['title' => 'Beta'],
+				target: new ObjectFindTarget(register: $this->register, schema: null),
+				currentUser: $user
+			),
 			_rbac: $rbac,
-			_multitenancy: $multitenancy,
-			currentUser: $user
+			_multitenancy: $multitenancy
 		);
 
 		return $seen;

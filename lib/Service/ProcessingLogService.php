@@ -124,30 +124,6 @@ class ProcessingLogService {
 	 * Fail-soft: never throws. Buffers the entry; nothing is written to
 	 * the database until `flush()` runs.
 	 *
-	 * @param ObjectEntity $object The object being processed.
-	 * @param string $action `read` | `export`.
-	 * @param string|null $channel Access channel; defaults from the request shape.
-	 * @param string|null $actor Explicit actor (e.g. API client id) or null for the NC user.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
-	 */
-	public function logRead(
-		ObjectEntity $object,
-		string $action = 'read',
-		?string $channel = null,
-		?string $actor = null,
-	): void {
-		$this->recordRead(object: $object, read: new ProcessingRead(action: $action, channel: $channel, actor: $actor));
-	}//end logRead()
-
-	/**
-	 * Record a single object read/export if its schema opts in.
-	 *
-	 * Fail-soft: never throws. Buffers the entry; nothing is written to
-	 * the database until `flush()` runs.
-	 *
 	 * @param ObjectEntity   $object The object being processed.
 	 * @param ProcessingRead $read   The read: action, channel and actor.
 	 *
@@ -251,34 +227,6 @@ class ProcessingLogService {
 
 	/**
 	 * Record a single collapsed entry for a list/search result.
-	 *
-	 * A list response produces ONE entry carrying `objectCount` and the
-	 * query parameters — never one row per scanned object. When the result
-	 * set holds LIST_IDENTIFIER_LIMIT objects or fewer, the entry also
-	 * carries every object's uuid and the subject identifiers found.
-	 *
-	 * @param array<int, ObjectEntity> $objects The list result.
-	 * @param string $action `read` | `export`.
-	 * @param string|null $channel Access channel.
-	 * @param string|null $actor Explicit actor or null.
-	 * @param array<string, mixed> $query The query parameters of the list or search.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
-	 */
-	public function logReadList(
-		array $objects,
-		string $action = 'read',
-		?string $channel = null,
-		?string $actor = null,
-		array $query = [],
-	): void {
-		$this->recordReadList(objects: $objects, read: new ProcessingRead(action: $action, channel: $channel, actor: $actor, query: $query));
-	}//end logReadList()
-
-	/**
-	 * Record a single collapsed entry for a list/search result (see logReadList()).
 	 *
 	 * Fail-soft: never throws.
 	 *

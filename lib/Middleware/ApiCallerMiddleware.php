@@ -43,6 +43,8 @@ namespace OCA\OpenRegister\Middleware;
 
 use Exception;
 use OCA\OpenRegister\Middleware\Exception\CallerRefusedException;
+use OCA\OpenRegister\Middleware\Exception\CeilingBreach;
+use OCA\OpenRegister\Service\ApiCaller\ApiCallObservation;
 use OCA\OpenRegister\Service\ApiCaller\CallerPolicyInterface;
 use OCA\OpenRegister\Service\ApiCaller\CallerRateLimiterInterface;
 use OCP\AppFramework\Http\Response;
@@ -57,7 +59,7 @@ use OCA\OpenRegister\Middleware\Support\ApiCallerServices;
  * @package  OCA\OpenRegister\Middleware
  *
  * @SuppressWarnings(PHPMD.StaticAccess)
- * Reason: `CallerRefusedException::overLimit()` and `::wrongAddress()` are
+ * Reason: `CallerRefusedException::overCeiling()` and `::wrongAddress()` are
  *         named constructors, the same factory pattern phpmd's StaticAccess
  *         rule cannot tell apart from a hidden dependency.
  */
@@ -161,10 +163,8 @@ class ApiCallerMiddleware extends Middleware {
 			return;
 		}
 
-		$this->services->recorder->record(
-			path: $path,
-			method: $this->request->getMethod(),
-			apiVersion: $this->servedVersion,
+		$this->services->recorder->recordCall(
+			call: new ApiCallObservation(path: $path, method: $this->request->getMethod(), apiVersion: $this->servedVersion)
 		);
 
 	}//end recordServedCall()
@@ -250,11 +250,13 @@ class ApiCallerMiddleware extends Middleware {
 		}
 
 		$ceiling = $this->policy->limitFor(principal: $principal);
-		throw CallerRefusedException::overLimit(
-			limit: $outcome['limit'],
-			windowSeconds: (int)($ceiling['windowSeconds'] ?? 60),
-			resetAt: $outcome['resetAt'],
-			now: $now,
+		throw CallerRefusedException::overCeiling(
+			breach: new CeilingBreach(
+				limit: $outcome['limit'],
+				windowSeconds: (int)($ceiling['windowSeconds'] ?? 60),
+				resetAt: $outcome['resetAt'],
+				now: $now,
+			)
 		);
 
 	}//end refuseOverLimit()

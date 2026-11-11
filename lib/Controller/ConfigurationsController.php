@@ -24,15 +24,14 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ConfigurationsControllerServices;
+use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
-use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -49,11 +48,18 @@ use Symfony\Component\Uid\Uuid;
 class ConfigurationsController extends Controller {
 
 	/**
-	 * User ID for ownership tracking.
+	 * Source types whose configurations are local (isLocal = true).
 	 *
-	 * @var string|null User ID or null if not authenticated.
+	 * @var string[]
 	 */
-	private readonly ?string $userId;
+	private const LOCAL_SOURCE_TYPES = ['local', 'manual'];
+
+	/**
+	 * Source types whose configurations are external (isLocal = false).
+	 *
+	 * @var string[]
+	 */
+	private const REMOTE_SOURCE_TYPES = ['github', 'gitlab', 'url'];
 
 	/**
 	 * The configuration mapper instance
@@ -79,22 +85,17 @@ class ConfigurationsController extends Controller {
 	/**
 	 * Constructor for ConfigurationController.
 	 *
-	 * @param IRequest $request The request object
+	 * @param IRequest                         $request  The request object
 	 * @param ConfigurationsControllerServices $services The configurations controller services.
-	 * @param string|null $userId The current user ID
-	 * @param IGroupManager $groupManager Group manager for admin checks
 	 */
 	public function __construct(
 		IRequest $request,
 		ConfigurationsControllerServices $services,
-		?string $userId,
-		private readonly IGroupManager $groupManager,
 	) {
-		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->services = $services;
-		$this->configurationMapper = $services->configurationMapper;
-		$this->configurationService = $services->configurationService;
-		$this->userId = $userId;
+		$this->configurationMapper = $services->records->configurationMapper;
+		$this->configurationService = $services->records->configurationService;
 	}//end __construct()
 
 	/**
@@ -103,12 +104,7 @@ class ConfigurationsController extends Controller {
 	 * @return bool True if a user is signed in and belongs to the admin group.
 	 */
 	private function isCurrentUserAdmin(): bool {
-		$user = $this->services->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
+		return $this->services->session->isAdmin();
 	}//end isCurrentUserAdmin()
 
 	/**
@@ -187,10 +183,6 @@ class ConfigurationsController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::v4() is a standard utility pattern
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
 	 * @return JSONResponse JSON response with created configuration or error
 	 *
 	 * @psalm-return JSONResponse<201, \OCA\OpenRegister\Db\Configuration,
@@ -204,37 +196,7 @@ class ConfigurationsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
 		}
 
-		$data = $this->request->getParams();
-
-		// Remove internal parameters and data attribute.
-		foreach (array_keys($data) as $key) {
-			if (str_starts_with($key, '_') === true || $key === 'data') {
-				unset($data[$key]);
-			}
-		}
-
-		// Ensure we have a UUID.
-		if (isset($data['uuid']) === false) {
-			$data['uuid'] = Uuid::v4();
-		}
-
-		// Set default values for new local configurations.
-		// If sourceType is not provided, assume it's a local configuration.
-		if (isset($data['sourceType']) === false || $data['sourceType'] === null || $data['sourceType'] === '') {
-			$data['sourceType'] = 'local';
-		}
-
-		// Set isLocal based on sourceType (enforce consistency).
-		// Local configurations: sourceType === 'local' or 'manual' → isLocal = true.
-		// External configurations: sourceType === 'github', 'gitlab', or 'url' → isLocal = false.
-		if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
-			$data['isLocal'] = true;
-		} elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
-			$data['isLocal'] = false;
-		} elseif (isset($data['isLocal']) === false) {
-			// Fallback: if sourceType is something else and isLocal not set, default to true.
-			$data['isLocal'] = true;
-		}
+		$data = self::newConfigurationData(params: $this->request->getParams());
 
 		try {
 			return new JSONResponse(
@@ -245,6 +207,102 @@ class ConfigurationsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Failed to create configuration: ' . $e->getMessage()], statusCode: 400);
 		}
 	}//end create()
+
+	/**
+	 * The data a new configuration is created from: the request parameters
+	 * without internal keys, with a UUID, a sourceType and a matching isLocal.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is a standard utility pattern
+	 *
+	 * @return array<string, mixed> The configuration data.
+	 */
+	private static function newConfigurationData(array $params): array {
+		$data = self::withoutInternalParams(params: $params);
+
+		// Ensure we have a UUID.
+		if (isset($data['uuid']) === false) {
+			$data['uuid'] = Uuid::v4();
+		}
+
+		// Set default values for new local configurations.
+		// If sourceType is not provided, assume it's a local configuration.
+		if (self::hasNoSourceType(data: $data) === true) {
+			$data['sourceType'] = 'local';
+		}
+
+		return self::withNewIsLocal(data: $data);
+	}//end newConfigurationData()
+
+	/**
+	 * Whether the configuration data carries no usable sourceType.
+	 *
+	 * @param array<string, mixed> $data The configuration data.
+	 *
+	 * @return bool True when sourceType is missing, null or empty.
+	 */
+	private static function hasNoSourceType(array $data): bool {
+		return isset($data['sourceType']) === false || $data['sourceType'] === null || $data['sourceType'] === '';
+	}//end hasNoSourceType()
+
+	/**
+	 * Set isLocal on new configuration data from its sourceType (enforce consistency).
+	 *
+	 * Local configurations: sourceType === 'local' or 'manual' → isLocal = true.
+	 * External configurations: sourceType === 'github', 'gitlab', or 'url' → isLocal = false.
+	 * Fallback: if sourceType is something else and isLocal not set, default to true.
+	 *
+	 * @param array<string, mixed> $data The configuration data.
+	 *
+	 * @return array<string, mixed> The data with isLocal set.
+	 */
+	private static function withNewIsLocal(array $data): array {
+		$isLocal = self::isLocalForSourceType(sourceType: $data['sourceType']);
+		if ($isLocal !== null) {
+			$data['isLocal'] = $isLocal;
+		} elseif (isset($data['isLocal']) === false) {
+			$data['isLocal'] = true;
+		}
+
+		return $data;
+	}//end withNewIsLocal()
+
+	/**
+	 * Whether a sourceType is a local one, a remote one, or neither.
+	 *
+	 * @param mixed $sourceType The sourceType value.
+	 *
+	 * @return bool|null True for a local source, false for a remote one, null otherwise.
+	 */
+	private static function isLocalForSourceType(mixed $sourceType): ?bool {
+		if (in_array($sourceType, self::LOCAL_SOURCE_TYPES, true) === true) {
+			return true;
+		}
+
+		if (in_array($sourceType, self::REMOTE_SOURCE_TYPES, true) === true) {
+			return false;
+		}
+
+		return null;
+	}//end isLocalForSourceType()
+
+	/**
+	 * The request parameters without internal (`_`-prefixed) keys and the data attribute.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array<string, mixed> The remaining parameters.
+	 */
+	private static function withoutInternalParams(array $params): array {
+		foreach (array_keys($params) as $key) {
+			if (str_starts_with($key, '_') === true || $key === 'data') {
+				unset($params[$key]);
+			}
+		}
+
+		return $params;
+	}//end withoutInternalParams()
 
 	/**
 	 * Update an existing configuration
@@ -268,29 +326,7 @@ class ConfigurationsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
 		}
 
-		$data = $this->request->getParams();
-
-		// Remove internal parameters and data attribute.
-		foreach (array_keys($data) as $key) {
-			if (str_starts_with($key, '_') === true || $key === 'data') {
-				unset($data[$key]);
-			}
-		}
-
-		// Remove immutable fields to prevent tampering.
-		unset($data['id']);
-		unset($data['organisation']);
-		unset($data['owner']);
-		unset($data['created']);
-
-		// Enforce consistency between sourceType and isLocal.
-		if (($data['sourceType'] ?? null) !== null) {
-			if (in_array($data['sourceType'], ['local', 'manual'], true) === true) {
-				$data['isLocal'] = true;
-			} elseif (in_array($data['sourceType'], ['github', 'gitlab', 'url'], true) === true) {
-				$data['isLocal'] = false;
-			}
-		}
+		$data = self::updatedConfigurationData(params: $this->request->getParams());
 
 		try {
 			return new JSONResponse(
@@ -300,6 +336,34 @@ class ConfigurationsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Failed to update configuration: ' . $e->getMessage()], statusCode: 400);
 		}
 	}//end update()
+
+	/**
+	 * The data a configuration is updated with: the request parameters without
+	 * internal keys and immutable fields, with isLocal matching a known sourceType.
+	 *
+	 * @param array<string, mixed> $params The request parameters.
+	 *
+	 * @return array<string, mixed> The configuration data.
+	 */
+	private static function updatedConfigurationData(array $params): array {
+		$data = self::withoutInternalParams(params: $params);
+
+		// Remove immutable fields to prevent tampering.
+		unset($data['id']);
+		unset($data['organisation']);
+		unset($data['owner']);
+		unset($data['created']);
+
+		// Enforce consistency between sourceType and isLocal.
+		if (($data['sourceType'] ?? null) !== null) {
+			$isLocal = self::isLocalForSourceType(sourceType: $data['sourceType']);
+			if ($isLocal !== null) {
+				$data['isLocal'] = $isLocal;
+			}
+		}
+
+		return $data;
+	}//end updatedConfigurationData()
 
 	/**
 	 * Patch (partially update) a configuration.
@@ -381,79 +445,7 @@ class ConfigurationsController extends Controller {
 		}
 
 		try {
-			// Initialize uploadedFiles array.
-			$uploadedFiles = [];
-
-			// Get the uploaded file from the request if a single file has been uploaded.
-			$uploadedFile = $this->request->getUploadedFile(key: 'file');
-			if (empty($uploadedFile) === false) {
-				$uploadedFiles[] = $uploadedFile;
-			}
-
-			// Get the uploaded JSON data.
-			$params = $this->request->getParams();
-			$jsonData = $this->configurationService->getUploadedJson(data: $params, uploadedFiles: $uploadedFiles);
-			if ($jsonData instanceof JSONResponse) {
-				return $jsonData;
-			}
-
-			// Create and persist the Configuration entity from the JSON data.
-			// ImportHandler needs the entity for its tracking, and it has to be
-			// in the list afterwards, so it is built and inserted in one call.
-			//
-			// `created` and `updated` are NOT set here: the mapper stamps both
-			// on insert, so setting them was writing values it overwrote.
-			$configuration = $this->configurationMapper->createFromArray(
-				[
-					'title' => ($jsonData['info']['title'] ?? 'Imported Configuration'),
-					'description' => ($jsonData['info']['description'] ?? ''),
-					'version' => ($jsonData['info']['version'] ?? '1.0.0'),
-					'sourceType' => 'upload',
-					'app' => ($this->request->getParam('appId') ?? ($jsonData['x-openregister']['app'] ?? 'unknown')),
-					'owner' => ($this->request->getParam('owner') ?? $this->userId),
-					'registers' => [],
-					'schemas' => [],
-					'objects' => [],
-				]
-			);
-
-			// Import the data.
-			$force = $this->request->getParam('force') === 'true' || $this->request->getParam('force') === true;
-			$result = $this->configurationService->importFromJson(
-				data: $jsonData,
-				configuration: $configuration,
-				owner: $this->request->getParam('owner'),
-				appId: $this->request->getParam('appId'),
-				version: $this->request->getParam('version'),
-				force: $force
-			);
-
-			// Link the imported registers, schemas and objects to the configuration.
-			//
-			// `$result['objects']` IS NOT UNIFORMLY ENTITIES. ImportHandler
-			// appends an ObjectEntity in two places and a bare id in two others
-			// (`$result['objects'][] = $existingObject->getId()`), so a
-			// descriptor that carries seed objects reached
-			// `$obj->getId()` on an int and died with a TypeError. That is an
-			// `Error`, not an `Exception`, so the catch below did not see it
-			// either: the endpoint answered 500 with Nextcloud's HTML error page
-			// instead of the JSON it documents. Measured on stackiq's register,
-			// whose import was the only one of eighteen to fail this way.
-			$registerIds = self::idsOf(items: $result['registers']);
-			$schemaIds = self::idsOf(items: $result['schemas']);
-			$objectIds = self::idsOf(items: $result['objects']);
-
-			$configuration->setRegisters(array_values(array_unique($registerIds)));
-			$configuration->setSchemas(array_values(array_unique($schemaIds)));
-			$configuration->setObjects(array_values(array_unique($objectIds)));
-			$this->configurationMapper->update($configuration);
-
-			return new JSONResponse(
-				data: [
-					'message' => 'Import successful',
-					'imported' => $result,
-				]
-			);
+			return $this->runImport();
 		} catch (\Throwable $e) {
 			// Throwable, not Exception. A TypeError in this method is a bug in
 			// OpenRegister rather than bad input, and answering it with a 500
@@ -463,6 +455,127 @@ class ConfigurationsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Failed to import configuration: ' . $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end import()
+
+	/**
+	 * Read the uploaded descriptor, create its configuration, import it and link the result.
+	 *
+	 * @return JSONResponse The import result, or the error getUploadedJson() answered.
+	 */
+	private function runImport(): JSONResponse {
+		$jsonData = $this->uploadedImportJson();
+		if ($jsonData instanceof JSONResponse) {
+			return $jsonData;
+		}
+
+		$configuration = $this->createImportedConfiguration(jsonData: $jsonData);
+		$result = $this->importIntoConfiguration(jsonData: $jsonData, configuration: $configuration);
+		$this->linkImportedEntities(configuration: $configuration, result: $result);
+
+		return new JSONResponse(
+			data: [
+				'message' => 'Import successful',
+				'imported' => $result,
+			]
+		);
+	}//end runImport()
+
+	/**
+	 * The uploaded JSON descriptor, from a single uploaded file or the request body.
+	 *
+	 * @return array|JSONResponse The descriptor, or an error response.
+	 */
+	private function uploadedImportJson(): array|JSONResponse {
+		// Initialize uploadedFiles array.
+		$uploadedFiles = [];
+
+		// Get the uploaded file from the request if a single file has been uploaded.
+		$uploadedFile = $this->request->getUploadedFile(key: 'file');
+		if (empty($uploadedFile) === false) {
+			$uploadedFiles[] = $uploadedFile;
+		}
+
+		// Get the uploaded JSON data.
+		$params = $this->request->getParams();
+		return $this->configurationService->getUploadedJson(data: $params, uploadedFiles: $uploadedFiles);
+	}//end uploadedImportJson()
+
+	/**
+	 * Create and persist the Configuration entity from the JSON data.
+	 *
+	 * ImportHandler needs the entity for its tracking, and it has to be
+	 * in the list afterwards, so it is built and inserted in one call.
+	 *
+	 * `created` and `updated` are NOT set here: the mapper stamps both
+	 * on insert, so setting them was writing values it overwrote.
+	 *
+	 * @param array $jsonData The uploaded descriptor.
+	 *
+	 * @return Configuration The inserted configuration.
+	 */
+	private function createImportedConfiguration(array $jsonData): Configuration {
+		return $this->configurationMapper->createFromArray(
+			[
+				'title' => ($jsonData['info']['title'] ?? 'Imported Configuration'),
+				'description' => ($jsonData['info']['description'] ?? ''),
+				'version' => ($jsonData['info']['version'] ?? '1.0.0'),
+				'sourceType' => 'upload',
+				'app' => ($this->request->getParam('appId') ?? ($jsonData['x-openregister']['app'] ?? 'unknown')),
+				'owner' => ($this->request->getParam('owner') ?? $this->services->session->userSession->getUser()?->getUID()),
+				'registers' => [],
+				'schemas' => [],
+				'objects' => [],
+			]
+		);
+	}//end createImportedConfiguration()
+
+	/**
+	 * Import the descriptor into the configuration.
+	 *
+	 * @param array         $jsonData      The uploaded descriptor.
+	 * @param Configuration $configuration The configuration it is imported into.
+	 *
+	 * @return array The import result.
+	 */
+	private function importIntoConfiguration(array $jsonData, Configuration $configuration): array {
+		$force = $this->request->getParam('force') === 'true' || $this->request->getParam('force') === true;
+		return $this->configurationService->importFromJson(
+			data: $jsonData,
+			configuration: $configuration,
+			owner: $this->request->getParam('owner'),
+			appId: $this->request->getParam('appId'),
+			version: $this->request->getParam('version'),
+			force: $force
+		);
+	}//end importIntoConfiguration()
+
+	/**
+	 * Link the imported registers, schemas and objects to the configuration.
+	 *
+	 * `$result['objects']` IS NOT UNIFORMLY ENTITIES. ImportHandler
+	 * appends an ObjectEntity in two places and a bare id in two others
+	 * (`$result['objects'][] = $existingObject->getId()`), so a
+	 * descriptor that carries seed objects reached
+	 * `$obj->getId()` on an int and died with a TypeError. That is an
+	 * `Error`, not an `Exception`, so the catch in import() did not see it
+	 * either: the endpoint answered 500 with Nextcloud's HTML error page
+	 * instead of the JSON it documents. Measured on stackiq's register,
+	 * whose import was the only one of eighteen to fail this way.
+	 *
+	 * @param Configuration $configuration The imported configuration.
+	 * @param array         $result        The import result.
+	 *
+	 * @return void
+	 */
+	private function linkImportedEntities(Configuration $configuration, array $result): void {
+		$registerIds = self::idsOf(items: $result['registers']);
+		$schemaIds = self::idsOf(items: $result['schemas']);
+		$objectIds = self::idsOf(items: $result['objects']);
+
+		$configuration->setRegisters(array_values(array_unique($registerIds)));
+		$configuration->setSchemas(array_values(array_unique($schemaIds)));
+		$configuration->setObjects(array_values(array_unique($objectIds)));
+		$this->configurationMapper->update($configuration);
+	}//end linkImportedEntities()
 
 	/**
 	 * The ids of an import result list, whether it holds entities or ids.
@@ -480,16 +593,35 @@ class ConfigurationsController extends Controller {
 
 		$ids = [];
 		foreach ($items as $item) {
-			if (is_object($item) === true && method_exists($item, 'getId') === true) {
+			if (self::isEntityWithId(item: $item) === true) {
 				$ids[] = $item->getId();
-				continue;
-			}
-
-			if (is_int($item) === true || is_string($item) === true) {
+			} elseif (self::isBareId(item: $item) === true) {
 				$ids[] = $item;
 			}
 		}
 
 		return $ids;
 	}//end idsOf()
+
+	/**
+	 * Whether an import result item is an entity that carries its id.
+	 *
+	 * @param mixed $item The import result item.
+	 *
+	 * @return bool True for an object with a getId() method.
+	 */
+	private static function isEntityWithId(mixed $item): bool {
+		return is_object($item) === true && method_exists($item, 'getId') === true;
+	}//end isEntityWithId()
+
+	/**
+	 * Whether an import result item is a bare id.
+	 *
+	 * @param mixed $item The import result item.
+	 *
+	 * @return bool True for an int or string.
+	 */
+	private static function isBareId(mixed $item): bool {
+		return is_int($item) === true || is_string($item) === true;
+	}//end isBareId()
 }//end class

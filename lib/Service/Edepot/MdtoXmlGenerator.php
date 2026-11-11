@@ -379,17 +379,29 @@ class MdtoXmlGenerator {
 		$this->writer->begrip(parent: $element, name: 'eventType', begrip: new MdtoBegrip(label: $event['type'], list: MdtoEventMapper::EVENT_TYPE_LIST));
 		$this->writer->textsIfPresent(parent: $element, texts: ['eventTijd' => $event['time']]);
 		if ($event['actorName'] !== null) {
-			$this->writer->verwijzing(
-				parent: $element,
-				name: 'eventVerantwoordelijkeActor',
-				verwijzing: new MdtoVerwijzing(
-					naam: $event['actorName'],
-					kenmerk: $event['actorId'],
-					bron: $this->organisationIdentifier()
-				)
-			);
+			$this->addEventActor(element: $element, event: $event);
 		}
 	}//end addEvent()
+
+	/**
+	 * Name the actor responsible for an event.
+	 *
+	 * @param DOMElement           $element The event element.
+	 * @param array<string, mixed> $event   The event, with an actor name.
+	 *
+	 * @return void
+	 */
+	private function addEventActor(DOMElement $element, array $event): void {
+		$this->writer->verwijzing(
+			parent: $element,
+			name: 'eventVerantwoordelijkeActor',
+			verwijzing: new MdtoVerwijzing(
+				naam: $event['actorName'],
+				kenmerk: $event['actorId'],
+				bron: $this->organisationIdentifier()
+			)
+		);
+	}//end addEventActor()
 
 	/**
 	 * Add `waardering`, a `begripGegevens` from the closed Waarderingen list.
@@ -559,10 +571,7 @@ class MdtoXmlGenerator {
 	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-emit-mdto-aggregatieniveau-beperkinggebruik-and-dekkingintijd-from-their-declared-sources
 	 */
 	private function addUseRestriction(InformatieobjectRun $run): void {
-		$restriction = $this->sources->sourceReader->useRestriction(object: $run->object);
-		if ($restriction === null) {
-			$restriction = ['type' => self::USE_RESTRICTION_UNRECORDED, 'description' => null, 'startDate' => null];
-		}
+		$restriction = $this->useRestrictionOf(run: $run);
 
 		$element = $this->writer->element(parent: $run->root, name: 'beperkingGebruik');
 		$this->writer->begrip(
@@ -576,6 +585,18 @@ class MdtoXmlGenerator {
 			$this->writer->text(parent: $term, name: 'termijnStartdatumLooptijd', content: $restriction['startDate']);
 		}
 	}//end addUseRestriction()
+
+	/**
+	 * The object's use restriction, or the "unrecorded" one when none is recorded.
+	 *
+	 * @param InformatieobjectRun $run The information object being written.
+	 *
+	 * @return array{type: string, description: string|null, startDate: string|null} The restriction.
+	 */
+	private function useRestrictionOf(InformatieobjectRun $run): array {
+		return ($this->sources->sourceReader->useRestriction(object: $run->object)
+			?? ['type' => self::USE_RESTRICTION_UNRECORDED, 'description' => null, 'startDate' => null]);
+	}//end useRestrictionOf()
 
 
 	/**

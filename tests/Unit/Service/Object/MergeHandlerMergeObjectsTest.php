@@ -17,6 +17,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -344,7 +346,8 @@ class MergeHandlerMergeObjectsTest extends TestCase {
 			}
 		);
 		$service->method('addFile')->willReturnCallback(
-			function (...$args) use ($nodes): File {
+			function (FileTarget $target, FileUpload $upload) use ($nodes): File {
+				$args = [$target->object, $upload->fileName, $upload->content, $upload->share, $upload->tags, null, null, $target->registerId];
 				$this->calls[] = 'addFile '.json_encode([$args[0]->getUuid(), ...array_slice($args, 1)]);
 				if ($nodes[$args[1]][1] === 'copy fails') {
 					throw new Exception('copy failed');

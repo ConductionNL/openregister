@@ -100,32 +100,6 @@ class FlowDelegationCheck {
 	 * would teach the requester nothing except that their flow did not run. See
 	 * {@see FlowConsentParking}.
 	 *
-	 * @param string      $flowId     The flow being queued.
-	 * @param string      $trigger    What started the run.
-	 * @param string|null $declaredBy The principal who asserted the delegation.
-	 * @param string      $runAs      The identity the run would execute as.
-	 *
-	 * @return array{principal: string, actingAs: string, reason: string}|null
-	 *         Park instructions when consent is outstanding; null when the run
-	 *         may proceed.
-	 *
-	 * @throws DelegationRefused When the delegation was answered and the answer
-	 *                           was not yes, or when it cannot be established.
-	 *
-	 * @spec openspec/specs/delegation-grants/spec.md
-	 */
-	public function refuseIfRevoked(
-		string $flowId,
-		string $trigger,
-		?string $declaredBy,
-		string $runAs,
-	): ?array {
-		return $this->verify(run: new DelegatedRun(flowId: $flowId, trigger: $trigger, declaredBy: $declaredBy, runAs: $runAs));
-	}//end refuseIfRevoked()
-
-	/**
-	 * Refuse, park or admit a run by its delegation; see {@see self::refuseIfRevoked()}.
-	 *
 	 * @param DelegatedRun $run The flow, trigger, declaring principal and run identity.
 	 *
 	 * @return array{principal: string, actingAs: string, reason: string}|null
@@ -214,11 +188,7 @@ class FlowDelegationCheck {
 		try {
 			$resolved = $this->container->get(DelegationService::class);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[FlowDelegationCheck] Could not resolve the delegation service; refusing the run: '
-					. $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $run->flowId, 'runAs' => $run->runAs]
-			);
+			$this->logUnresolvable(run: $run, error: $e);
 
 			throw self::unreadable(run: $run, detail: 'The delegation store could not be reached, so the delegation is refused.');
 		}
@@ -229,6 +199,22 @@ class FlowDelegationCheck {
 
 		return $resolved;
 	}//end delegationService()
+
+	/**
+	 * Say that the delegation service could not be resolved, so the run is refused.
+	 *
+	 * @param DelegatedRun $run   The run being checked.
+	 * @param Throwable    $error Why it could not be resolved.
+	 *
+	 * @return void
+	 */
+	private function logUnresolvable(DelegatedRun $run, Throwable $error): void {
+		$this->logger->error(
+			message: '[FlowDelegationCheck] Could not resolve the delegation service; refusing the run: '
+				. $error->getMessage(),
+			context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $run->flowId, 'runAs' => $run->runAs]
+		);
+	}//end logUnresolvable()
 
 	/**
 	 * The fail-closed refusal for an unreachable delegation store.

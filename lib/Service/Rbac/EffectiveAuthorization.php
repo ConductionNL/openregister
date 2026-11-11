@@ -96,7 +96,7 @@ class EffectiveAuthorization {
 				}
 			}
 		} catch (\Throwable $e) {
-			// Fallback: no register authorization available.
+			// An unreadable register means no register authorization to fall back to.
 		}
 
 		return null;

@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\RollRule;
 use DateTimeZone;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
@@ -58,7 +59,7 @@ final class WorkingDayRollCharacterisationTest extends TestCase {
 
 		foreach ([SlaCalculatorInterface::ROLL_NEXT, SlaCalculatorInterface::ROLL_PREVIOUS] as $roll) {
 			try {
-				(new WorkingDayRoll())->apply($this->saturday(), $roll, $calendar);
+				(new WorkingDayRoll())->apply($this->saturday(), new RollRule(roll: $roll, calendar: $calendar));
 				$this->fail('a calendar with no working day cannot be rolled to');
 			} catch (FlowTimerValidationException $refused) {
 				$this->assertSame(
@@ -80,8 +81,8 @@ final class WorkingDayRollCharacterisationTest extends TestCase {
 		$calendar = WorkingCalendar::fromArray(definition: WorkingCalendarTest::nlNational());
 		$roll = new WorkingDayRoll();
 
-		$next = $roll->apply($this->saturday(), SlaCalculatorInterface::ROLL_NEXT, $calendar);
-		$previous = $roll->apply($this->saturday(), SlaCalculatorInterface::ROLL_PREVIOUS, $calendar);
+		$next = $roll->apply($this->saturday(), new RollRule(roll: SlaCalculatorInterface::ROLL_NEXT, calendar: $calendar));
+		$previous = $roll->apply($this->saturday(), new RollRule(roll: SlaCalculatorInterface::ROLL_PREVIOUS, calendar: $calendar));
 
 		// Easter Monday 6 April and Good Friday 3 April 2026 are declared.
 		$this->assertSame('2026-04-07 10:00', $next['at']->format('Y-m-d H:i'));

@@ -33,6 +33,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ExampleSet\DeckBoardRequest;
 
 /**
  * Golden pins for the Deck rows an example set removes.
@@ -139,8 +140,8 @@ class ExampleSetDeckStoreWritesGoldenTest extends TestCase {
 	public function testBoard(): void {
 		$store         = $this->store();
 		$this->answers = [7, false];
-		$this->assertSame(['id' => 7, 'created' => false], $store->board(owner: 'alice', title: 'Work', color: 'abcdef', groups: ['g1']));
-		$this->assertSame(['id' => 100, 'created' => true], $store->board(owner: 'alice', title: 'New', color: 'abcdef', groups: ['g1', 'g2']));
+		$this->assertSame(['id' => 7, 'created' => false], $store->board(board: new DeckBoardRequest(owner: 'alice', title: 'Work', color: 'abcdef', groups: ['g1'])));
+		$this->assertSame(['id' => 100, 'created' => true], $store->board(board: new DeckBoardRequest(owner: 'alice', title: 'New', color: 'abcdef', groups: ['g1', 'g2'])));
 
 		$find = static fn (string $title): array => [
 			'new', 'select(id)', 'from(deck_boards)', "where(owner = 'alice'/2)", "andWhere(title = '".$title."'/2)",

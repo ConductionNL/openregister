@@ -226,7 +226,7 @@ class ObjectRelationsControllerRouteAddressTest extends TestCase {
 	 */
 	public function testADeriveSavesIntoTheRouteRegisterAndSchema(): void {
 		$controller = $this->controller(params: ['object' => ['t' => 1]], readable: ['r/s/a']);
-		$this->relations->method('applyInheritance')->willReturn(['data' => ['t' => 1], 'inherited' => []]);
+		$this->relations->method('inherit')->willReturn(['data' => ['t' => 1], 'inherited' => []]);
 		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1], [], 'r', 's')
 			->willThrowException(new \Exception('refused'));
 

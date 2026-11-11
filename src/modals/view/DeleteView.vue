@@ -113,18 +113,28 @@ export default {
 					this.closeDialog()
 				}, 2000)
 			} catch (error) {
-				console.error('Error deleting view:', error)
-				this.success = false
-				this.error =
-					error.response?.data?.error
-					|| error.message
-					|| this.t(
-						'openregister',
-						'An error occurred while deleting the view',
-					)
+				this.showDeleteFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Log a failed delete and say why it failed.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showDeleteFailure(error) {
+			console.error('Error deleting view:', error)
+			this.success = false
+			this.error =
+				error.response?.data?.error
+				|| error.message
+				|| this.t(
+					'openregister',
+					'An error occurred while deleting the view',
+				)
 		},
 	},
 }

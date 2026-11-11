@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Registry;
 
 use DateTime;
 use DateTimeZone;
+use OCA\OpenRegister\Service\Registry\RegistryIdentity;
+use OCA\OpenRegister\Service\Registry\InboundUpdate;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegistrySubscription;
 use OCA\OpenRegister\Db\RegistrySubscriptionMapperInterface;
@@ -43,6 +45,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 
 /**
  * @covers \OCA\OpenRegister\Service\Registry\RegistrySubscriptionService
@@ -123,7 +126,8 @@ class RegistrySubscriptionStateTest extends TestCase {
 		$working = self::row('o-ok', RegistrySubscription::STATE_REQUESTED);
 		$this->mapper->method('findActiveByIdentity')->with('brp', '999990019')->willReturn([$failing, $working]);
 		$this->guard->method('evaluate')->willReturn(['allowed' => true, 'rejected' => []]);
-		$this->objects->method('patchObject')->willReturnCallback(static function (string $objectId): ObjectEntity {
+		$this->objects->method('patchObject')->willReturnCallback(static function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+			$objectId = $patch->objectId;
 			if ($objectId === 'o-fail') {
 				throw new RuntimeException('locked');
 			}
@@ -135,7 +139,7 @@ class RegistrySubscriptionStateTest extends TestCase {
 		$this->mapper->expects($this->once())->method('save')->with($working)->willReturnArgument(0);
 		$this->notifier->expects($this->once())->method('auditInboundUpdate');
 
-		$result = $this->service->applyInboundUpdate('brp', '999990019', ['address' => 'Straat 1', 'givenNames' => 'S'], 'evt-9');
+		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['address' => 'Straat 1', 'givenNames' => 'S'], 'evt-9'));
 
 		$this->assertSame(
 			['matched' => 2, 'applied' => ['o-ok'], 'rejected' => [['objectUuid' => 'o-fail', 'properties' => ['address', 'givenNames']]]],

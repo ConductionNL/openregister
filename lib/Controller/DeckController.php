@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\DeckControllerServices;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Service\DeckCardServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -96,10 +97,7 @@ class DeckController extends Controller {
 	 */
 	private function indexFor(ObjectRef $ref): JSONResponse {
 		if ($this->deckCardService->isDeckAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->deckMissing();
 		}
 
 		try {
@@ -145,42 +143,57 @@ class DeckController extends Controller {
 	 */
 	private function createFor(ObjectRef $ref): JSONResponse {
 		if ($this->deckCardService->isDeckAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->deckMissing();
 		}
 
 		try {
-			$object = $this->validateObject(ref: $ref);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$data = $this->request->getParams();
-
-			$link = $this->deckCardService->linkOrCreateCard(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				$data
-			);
-
-			return new JSONResponse($link, 201);
+			return $this->linkCardTo(ref: $ref);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		} catch (Exception $e) {
-			$code = $e->getCode();
-			if ($code === 409) {
-				return new JSONResponse(['error' => $e->getMessage()], 409);
-			}
-
-			if ($code === 404) {
-				return new JSONResponse(['error' => $e->getMessage()], 404);
-			}
-
-			return new JSONResponse(['error' => $e->getMessage()], 400);
-		}//end try
+			// A 409 (already linked) and a 404 keep their code; anything else is a bad request.
+			return LinkedSourceResponses::failure(exception: $e, passThrough: [409, 404]);
+		}
 	}//end createFor()
+
+	/**
+	 * Link or create a card on the object the route names, from the request body.
+	 *
+	 * @param ObjectRef $ref The register, schema and object the route names
+	 *
+	 * @return JSONResponse 201 with the link, or 404 for a null object
+	 *
+	 * @throws DoesNotExistException When no such object exists
+	 * @throws Exception When the card service refuses
+	 */
+	private function linkCardTo(ObjectRef $ref): JSONResponse {
+		$object = $this->validateObject(ref: $ref);
+		if ($object === null) {
+			return new JSONResponse(['error' => 'Object not found'], 404);
+		}
+
+		$data = $this->request->getParams();
+
+		$link = $this->deckCardService->linkOrCreateCard(
+			$object->getUuid(),
+			(int)$object->getRegister(),
+			$data
+		);
+
+		return new JSONResponse($link, 201);
+	}//end linkCardTo()
+
+	/**
+	 * The answer when the Deck app is not installed.
+	 *
+	 * @return JSONResponse 501
+	 */
+	private function deckMissing(): JSONResponse {
+		return new JSONResponse(
+			['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
+			501
+		);
+	}//end deckMissing()
 
 	/**
 	 * Find all objects linked to cards on a board.
@@ -201,10 +214,7 @@ class DeckController extends Controller {
 	 */
 	public function objects(string $boardId): JSONResponse {
 		if ($this->deckCardService->isDeckAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
+			return $this->deckMissing();
 		}
 
 		try {

@@ -34,6 +34,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorQuery;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\KeywordFusion;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 
 /**
  * Pins that storage, search and statistics are passed through unchanged.
@@ -202,7 +203,7 @@ final class VectorEmbeddingsDelegationGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['results' => [['id' => 'k1']]],
-			$this->service($settings)->hybridSearch(query: 'needle', keywordResults: $keyword, limit: 7, weights: $weights)
+			$this->service($settings)->hybridSearch(request: new HybridSearchRequest(query: 'needle', keywordResults: $keyword, limit: 7, weights: $weights))
 		);
 	}//end testHybridSearchEmbedsWithTheConfiguredProviderAndFuses()
 

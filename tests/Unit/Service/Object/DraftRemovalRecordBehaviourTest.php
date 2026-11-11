@@ -19,12 +19,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\RemovedDraft;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -68,15 +70,17 @@ class DraftRemovalRecordBehaviourTest extends TestCase {
 		$schema = new Schema();
 		$schema->setSlug('ticket');
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->expects($this->once())->method('createAuditTrailEntry')->with(
+		$audit->expects($this->once())->method('recordObjectEvent')->with(AuditTrailEvents::matching([
 			$this->identicalTo($draft),
 			'draft.removed',
 			['status' => 'draft', 'permanent' => true, 'job' => null, 'register' => 'service', 'schema' => 'ticket', 'owner' => 'erin'],
 			null,
 			null
-		)->willReturn(new AuditTrail());
+		]))->willReturn(new AuditTrail());
 
-		$this->assertTrue((new DraftRemovalRecord($audit, $this->createMock(LoggerInterface::class)))->write($draft, $register, $schema));
+		$this->assertTrue((new DraftRemovalRecord($audit, $this->createMock(LoggerInterface::class)))->write(
+			new RemovedDraft(draft: $draft, register: $register, schema: $schema)
+		));
 	}//end testOutsideAJobTheEntryCarriesTheFactsOnly()
 
 	/**
@@ -87,25 +91,25 @@ class DraftRemovalRecordBehaviourTest extends TestCase {
 	public function testInsideAJobTheEntryNamesTheJobAndTheScopeIsRestored(): void {
 		$actors = [];
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context, ?string $actorId, ?string $actorName) use (&$actors): AuditTrail {
 				$actors[] = [$context['job'], $actorId, $actorName, $context['register'], $context['schema']];
 				return new AuditTrail();
 			}
-		);
+		));
 		$record = new DraftRemovalRecord($audit, $this->createMock(LoggerInterface::class));
 		$draft = $this->draft();
 
 		$answer = DraftRemovalRecord::asJob(
 			'outer',
 			function () use ($record, $draft): string {
-				$record->write($draft, null, null);
-				DraftRemovalRecord::asJob('inner', fn (): bool => $record->write($draft, null, null));
-				$record->write($draft, null, null);
+				$record->write(new RemovedDraft(draft: $draft, register: null, schema: null));
+				DraftRemovalRecord::asJob('inner', fn (): bool => $record->write(new RemovedDraft(draft: $draft, register: null, schema: null)));
+				$record->write(new RemovedDraft(draft: $draft, register: null, schema: null));
 				return 'done';
 			}
 		);
-		$record->write($draft, null, null);
+		$record->write(new RemovedDraft(draft: $draft, register: null, schema: null));
 
 		$this->assertSame('done', $answer);
 		$this->assertSame(
@@ -127,12 +131,12 @@ class DraftRemovalRecordBehaviourTest extends TestCase {
 	public function testAThrowingJobEndsItsScope(): void {
 		$jobs = [];
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('createAuditTrailEntry')->willReturnCallback(
+		$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 			function (ObjectEntity $object, string $action, array $context) use (&$jobs): AuditTrail {
 				$jobs[] = $context['job'];
 				return new AuditTrail();
 			}
-		);
+		));
 		$record = new DraftRemovalRecord($audit, $this->createMock(LoggerInterface::class));
 		try {
 			DraftRemovalRecord::asJob('sweep', function (): void {
@@ -142,7 +146,7 @@ class DraftRemovalRecordBehaviourTest extends TestCase {
 			$this->assertSame('boom', $e->getMessage());
 		}
 
-		$record->write($this->draft(), null, null);
+		$record->write(new RemovedDraft(draft: $this->draft(), register: null, schema: null));
 
 		$this->assertSame([null], $jobs);
 	}//end testAThrowingJobEndsItsScope()
@@ -156,13 +160,13 @@ class DraftRemovalRecordBehaviourTest extends TestCase {
 		$draft = $this->draft();
 		$draft->setObject(['secret' => 'content']);
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
-		$audit->method('createAuditTrailEntry')->willThrowException(new RuntimeException('db down'));
+		$audit->method('recordObjectEvent')->willThrowException(new RuntimeException('db down'));
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('error')->with(
 			'[DraftRemovalRecord] A draft was removed and its audit-trail entry could not be written',
 			['status' => 'draft', 'permanent' => true, 'job' => null, 'register' => null, 'schema' => null, 'owner' => 'erin', 'uuid' => 'd-1', 'exception' => 'db down']
 		);
 
-		$this->assertFalse((new DraftRemovalRecord($audit, $logger))->write($draft, null, null));
+		$this->assertFalse((new DraftRemovalRecord($audit, $logger))->write(new RemovedDraft(draft: $draft, register: null, schema: null)));
 	}//end testAFailedEntryIsLoggedAndReported()
 }//end class

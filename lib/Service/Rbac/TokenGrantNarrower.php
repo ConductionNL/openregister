@@ -80,20 +80,19 @@ class TokenGrantNarrower {
 	 * Narrow a resolved block by the grant in force, if any.
 	 *
 	 * @param array<string, mixed>|null $authorization The resolved block.
-	 * @param TokenGrant|null           $grant         The grant in force, or null for a session user.
-	 * @param TokenGrantTarget          $target        The schema being resolved and its register.
-	 * @param DateTimeInterface|null    $now           The moment, for the expiry.
+	 * @param TokenGrantUse             $use           The grant in force (null for a session user), the schema being
+	 *                                                 resolved and its register, and the moment for the expiry.
 	 *
 	 * @return array<string, mixed>|null The block to evaluate.
 	 *
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
 	 */
-	public function narrow(array|null $authorization, TokenGrant|null $grant, TokenGrantTarget $target, DateTimeInterface|null $now = null): array|null {
-		if ($grant === null) {
+	public function narrow(array|null $authorization, TokenGrantUse $use): array|null {
+		if ($use->grant === null) {
 			return $this->withoutMarker(authorization: $authorization);
 		}
 
-		$run = new TokenNarrowing(grant: $grant, target: $target, now: ($now ?? new DateTimeImmutable()));
+		$run = new TokenNarrowing(grant: $use->grant, target: $use->target, now: ($use->now ?? new DateTimeImmutable()));
 
 		return $this->narrowed(authorization: $authorization, run: $run);
 	}//end narrow()
@@ -109,20 +108,12 @@ class TokenGrantNarrower {
 	private function narrowed(array|null $authorization, TokenNarrowing $run): array {
 		$permitted = $this->permittedVerbs(run: $run);
 
-		$block = [];
-		if (is_array($authorization) === true) {
-			$block = $authorization;
-		}
+		$block = ($authorization ?? []);
 
 		// The marker is written LAST and unconditionally, so a block that
 		// declared one of its own cannot claim a wider grant than the token
 		// actually holds.
-		$block[self::MARKER] = [
-			'verbs' => $permitted,
-			'tokenId' => $run->grant->tokenId,
-			'expired' => $run->grant->isExpired(now: $run->now),
-			'inScope' => $run->grant->covers(schemaSlug: $run->target->schemaSlug, registerSlug: $run->target->registerSlug),
-		];
+		$block[self::MARKER] = self::markerOf(run: $run, permitted: $permitted);
 
 		$block = $this->refuse(block: $block, verbs: array_diff($this->verbsIn(block: $authorization), $permitted));
 
@@ -135,6 +126,23 @@ class TokenGrantNarrower {
 
 		return $block;
 	}//end narrowed()
+
+	/**
+	 * The marker a narrowed block carries: the verbs the grant permits and whether it is in force.
+	 *
+	 * @param TokenNarrowing     $run       The grant, the schema and the moment.
+	 * @param array<int, string> $permitted The verbs the grant permits.
+	 *
+	 * @return array{verbs: array<int, string>, tokenId: string, expired: bool, inScope: bool} The marker.
+	 */
+	private static function markerOf(TokenNarrowing $run, array $permitted): array {
+		return [
+			'verbs' => $permitted,
+			'tokenId' => $run->grant->tokenId,
+			'expired' => $run->grant->isExpired(now: $run->now),
+			'inScope' => $run->grant->covers(schemaSlug: $run->target->schemaSlug, registerSlug: $run->target->registerSlug),
+		];
+	}//end markerOf()
 
 	/**
 	 * A block passed through without a token, minus any marker a schema declares.

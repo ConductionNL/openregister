@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -99,7 +100,7 @@ class LoopNodeBehaviourTest extends TestCase {
 		}
 
 		$node->validateConfig(['batchSize' => 1]);
-		$this->assertSame([], $node->execute([], ['batchSize' => 1], []));
+		$this->assertSame([], $node->execute(new FlowNodeCall(items: [], config: ['batchSize' => 1], context: [])));
 	}
 
 	/**
@@ -109,7 +110,7 @@ class LoopNodeBehaviourTest extends TestCase {
 	 */
 	public function testBatches(): void {
 		$items = array_map(static fn (int $i) => ['json' => ['n' => $i]], range(0, 4));
-		$out   = $this->node()->execute($items, ['batchSize' => 2], []);
+		$out   = $this->node()->execute(new FlowNodeCall(items: $items, config: ['batchSize' => 2], context: []));
 
 		$this->assertSame(
 			[
@@ -129,7 +130,7 @@ class LoopNodeBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testMissingSizeFallsBackToOne(): void {
-		$out = $this->node()->execute([['json' => ['n' => 1]], ['binary' => []]], ['batchSize' => 0], []);
+		$out = $this->node()->execute(new FlowNodeCall(items: [['json' => ['n' => 1]], ['binary' => []]], config: ['batchSize' => 0], context: []));
 		$this->assertSame([[['n' => 1]], [[]]], array_column(array_column($out, 'json'), 'items'));
 	}
 }

@@ -43,6 +43,7 @@ use OCP\Share\IShare;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Files\Service\File\UserShareGrant;
 
 class FileSharingHandlerGoldenTest extends TestCase {
 
@@ -123,7 +124,7 @@ class FileSharingHandlerGoldenTest extends TestCase {
 	// ---- Allowed. ----------------------------------------------------------
 
 	public function testAFolderIsSharedWithAnExistingUserByTheSystemAccount(): void {
-		$share = $this->handler()->shareFolderWithUser($this->folder(), 'anna', 1);
+		$share = $this->handler()->shareFolderWithUser(new UserShareGrant($this->folder(), 'anna', 1));
 
 		$this->assertNotNull($share);
 		$this->assertCount(1, $this->created);
@@ -139,7 +140,7 @@ class FileSharingHandlerGoldenTest extends TestCase {
 		$handler = $this->handler();
 		$this->shares->method('getSharesBy')->willReturn([]);
 
-		$handler->shareFileWithUser($this->createMock(File::class), 'anna', 17);
+		$handler->shareFileWithUser(new UserShareGrant($this->createMock(File::class), 'anna', 17));
 
 		$this->assertCount(1, $this->created);
 		$this->assertSame('anna', $this->set['setSharedWith']);
@@ -158,7 +159,7 @@ class FileSharingHandlerGoldenTest extends TestCase {
 	// ---- Refused. ----------------------------------------------------------
 
 	public function testAFolderIsNotSharedWithAUserThatDoesNotExist(): void {
-		$this->assertNull($this->handler(existingUsers: [])->shareFolderWithUser($this->folder(), 'ghost'));
+		$this->assertNull($this->handler(existingUsers: [])->shareFolderWithUser(new UserShareGrant($this->folder(), 'ghost')));
 		$this->assertSame([], $this->created);
 	}//end testAFolderIsNotSharedWithAUserThatDoesNotExist()
 
@@ -168,7 +169,7 @@ class FileSharingHandlerGoldenTest extends TestCase {
 		$existing->method('getSharedWith')->willReturn('anna');
 		$this->shares->method('getSharesBy')->willReturn([$existing]);
 
-		$handler->shareFileWithUser($this->createMock(File::class), 'anna');
+		$handler->shareFileWithUser(new UserShareGrant($this->createMock(File::class), 'anna'));
 
 		$this->assertSame([], $this->created);
 	}//end testAFileIsNotSharedTwiceWithTheSameUser()
