@@ -17,6 +17,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunOutcome;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -39,18 +40,20 @@ class ObjectActionAuditTest extends TestCase {
 	public function testTheEntryCarriesTheRunAsContextAndTheActingUser(): void {
 		$object = new ObjectEntity();
 		$trail  = $this->createMock(AuditTrailMapperInterface::class);
-		$trail->expects($this->once())->method('createAuditTrailEntry')->with(
-			$object,
-			ObjectActionAudit::ACTION_RUN,
-			[
-				'declaredAction' => 'sign',
-				'kind' => 'steps',
-				'run' => 'run-1',
-				'inputsDigest' => 'sha256:abc',
-				'changes' => [['step' => 's', 'kind' => 'write']],
-				'outcome' => 'completed',
-			],
-			'anna'
+		$trail->expects($this->once())->method('recordObjectEvent')->with(
+			AuditTrailEvents::matching([
+				$object,
+				ObjectActionAudit::ACTION_RUN,
+				[
+					'declaredAction' => 'sign',
+					'kind' => 'steps',
+					'run' => 'run-1',
+					'inputsDigest' => 'sha256:abc',
+					'changes' => [['step' => 's', 'kind' => 'write']],
+					'outcome' => 'completed',
+				],
+				'anna',
+			])
 		);
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->never())->method('error');
@@ -66,18 +69,20 @@ class ObjectActionAuditTest extends TestCase {
 	public function testATransitionHasNoRunAndMayHaveNoActor(): void {
 		$object = new ObjectEntity();
 		$trail  = $this->createMock(AuditTrailMapperInterface::class);
-		$trail->expects($this->once())->method('createAuditTrailEntry')->with(
-			$object,
-			ObjectActionAudit::ACTION_RUN,
-			[
-				'declaredAction' => 'finish',
-				'kind' => 'transition',
-				'run' => null,
-				'inputsDigest' => 'sha256:def',
-				'changes' => [],
-				'outcome' => 'completed',
-			],
-			null
+		$trail->expects($this->once())->method('recordObjectEvent')->with(
+			AuditTrailEvents::matching([
+				$object,
+				ObjectActionAudit::ACTION_RUN,
+				[
+					'declaredAction' => 'finish',
+					'kind' => 'transition',
+					'run' => null,
+					'inputsDigest' => 'sha256:def',
+					'changes' => [],
+					'outcome' => 'completed',
+				],
+				null,
+			])
 		);
 
 		(new ObjectActionAudit($trail, $this->createMock(LoggerInterface::class), $this->gate(null)))->record(
@@ -90,7 +95,7 @@ class ObjectActionAuditTest extends TestCase {
 
 	public function testAFailedWriteIsLoggedAndNeverThrown(): void {
 		$trail = $this->createMock(AuditTrailMapperInterface::class);
-		$trail->method('createAuditTrailEntry')->willThrowException(new RuntimeException('disk full'));
+		$trail->method('recordObjectEvent')->willThrowException(new RuntimeException('disk full'));
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('error')->with(
 			'[ObjectActionAudit] Could not write the audit entry for action "sign": disk full',

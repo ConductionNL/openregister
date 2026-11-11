@@ -36,12 +36,15 @@ declare(strict_types=1);
 namespace Unit\Service\Aggregation;
 
 use Doctrine\DBAL\Platforms\SqlitePlatform;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -69,6 +72,9 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * No `covers` metadata, deliberately; see AggregationRunnerNativeBucketTest and #2847.
@@ -396,14 +402,20 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		);
 
 		$rbac = new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$conditionMatcher,
-			$this->createMock(ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $conditionMatcher,
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(
 				objectScopeResolver: null,
 				objectGrantResolver: null,
 				denyResolver: new DenyResolver(new DenyEntryMatcher())
@@ -415,7 +427,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$magicMapper->method('organisationBoundaryWaivedByRbac')->willReturn($boundaryWaived);
 		$magicMapper->method('organisationlessRowsAdmittedByRbac')->willReturn($organisationlessAdmitted);
 		$magicMapper->method('rbacRowPredicateSql')->willReturnCallback(
-			static fn (Schema $s): ?string => $rbac->buildRbacRowPredicateSql(schema: $s, action: 'read')
+			static fn (Schema $s): ?string => $rbac->buildRbacRowPredicateSql((new RbacAccessCall(schema: $s))->forAction('read'))
 		);
 		$magicMapper->method('callerQualifiesForAction')->willReturnCallback(
 			static fn (Schema $s, string $action = 'read'): bool => $rbac->callerQualifiesForAction(schema: $s, action: $action)
@@ -423,7 +435,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		// The PHP fallback must not be what answers: an empty fallback would
 		// turn a broken native query into a plausible "no rows".
 		$magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (): array {
+			function (RegisterSchema $table, ListQuery $listing): array {
 				$this->fail('the native SQL path must answer; the fallback was reached');
 			}
 		);

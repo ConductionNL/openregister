@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+
 /**
  * The schema-run store the schema migration, revalidation and versioning services use: the job's find and save, plus the run listing and creation.
  *

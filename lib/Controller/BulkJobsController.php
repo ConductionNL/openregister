@@ -38,6 +38,8 @@ use OCA\OpenRegister\Controller\Support\BulkJobsControllerServices;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Db\BulkJobMember;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistryInterface;
 use OCA\OpenRegister\Service\BulkJob\BulkJobReversalInterface;
@@ -190,7 +192,7 @@ class BulkJobsController extends Controller {
 		// rather than an else so neither arm can fall into the other.
 		if ($wantsAll === true && $this->isAdmin() === true) {
 			return $this->jobList(
-				jobs: $this->jobMapper->findAllJobs(state: $state, limit: $limit, offset: $offset)
+				jobs: $this->jobMapper->findJobs(query: new ListQuery(limit: $limit, offset: $offset, filters: ['state' => $state]))
 			);
 		}
 
@@ -255,11 +257,13 @@ class BulkJobsController extends Controller {
 		$schema = $this->nullableInt(value: $this->request->getParam('schema'));
 
 		try {
-			$job = $this->service->create(
-				call: $this->service->actionCall(actionId: $action, parameters: $parameters),
-				selection: $this->service->selection(criteria: $selection, registerId: $register, schemaId: $schema),
-				actorUid: $uid,
-				justification: $justification
+			$job = $this->service->createFromRequest(
+				request: new BulkJobRequest(
+					call: $this->service->actionCall(actionId: $action, parameters: $parameters),
+					selection: $this->service->selection(criteria: $selection, registerId: $register, schemaId: $schema),
+					actorUid: $uid,
+					justification: $justification
+				)
 			);
 		} catch (BulkJobRefusedException $exception) {
 			return $this->refusal(exception: $exception);

@@ -499,4 +499,93 @@ class AccessLinkControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $this->controller->revoke(id: 1)->getStatus());
 	}
+	// ---- characterisation: exact upload/comment refusals and the throttle log. ----
+
+	private function uploadable(): void {
+		$this->links->method('resolve')->willReturn($this->link(capabilities: 'read,comment,upload'));
+		$this->links->method('passwordAccepted')->willReturn(true);
+		$this->reader->method('subjectObject')->willReturn($this->object());
+	}
+
+	public function testUploadRefusalsAnswerTheirExactBodies(): void {
+		$this->uploadable();
+		$this->acts->expects($this->never())->method('upload');
+		$this->links->expects($this->never())->method('recordUse');
+
+		$this->params = ['name' => 'a.txt', 'content' => ['not', 'text']];
+		$response = $this->controller->upload(anchor: 'a');
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['message' => 'An upload needs a name and content.']], [$response->getStatus(), $response->getData()]);
+
+		$this->params = ['name' => '   ', 'content' => 'x'];
+		$response = $this->controller->upload(anchor: 'a');
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['message' => 'An upload needs a name and content.']], [$response->getStatus(), $response->getData()]);
+
+		$this->params = ['name' => 'a.txt', 'content' => '%%%', 'encoding' => 'base64'];
+		$response = $this->controller->upload(anchor: 'a');
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['message' => 'The upload content is not valid base64.']], [$response->getStatus(), $response->getData()]);
+	}
+
+	public function testAFailedUploadIsLoggedAndRefusedWithoutRecordingUse(): void {
+		$this->uploadable();
+		$this->params = ['name' => ' a.txt ', 'content' => 'x'];
+		$this->acts->method('upload')->willThrowException(new \RuntimeException('disk full'));
+		$this->links->expects($this->never())->method('recordUse');
+		$this->logger->expects($this->once())->method('warning')->with('[AccessLinkController] A link upload failed: disk full');
+
+		$response = $this->controller->upload(anchor: 'a');
+
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['message' => 'The file could not be stored.']], [$response->getStatus(), $response->getData()]);
+	}
+
+	public function testAStoredUploadAnswersTheStoredFileAndRecordsTheTrimmedName(): void {
+		$this->uploadable();
+		$this->params = ['name' => ' a.txt ', 'content' => 'x', 'encoding' => 'plain'];
+		$this->acts->expects($this->once())->method('upload')
+			->with($this->anything(), new LinkFile(fileName: 'a.txt', content: 'x'))
+			->willReturn(['id' => 9]);
+		$this->links->expects($this->once())->method('recordUse')->with(
+			$this->anything(),
+			$this->callback(static fn (AccessLinkUse $use): bool => $use->context === ['fileName' => 'a.txt'])
+		);
+
+		$response = $this->controller->upload(anchor: 'a');
+
+		$this->assertSame([Http::STATUS_CREATED, ['id' => 9]], [$response->getStatus(), $response->getData()]);
+	}
+
+	public function testAnUploadForAGoneSubjectIsCountedAndAnswers404(): void {
+		$this->links->method('resolve')->willReturn($this->link(capabilities: 'read,upload'));
+		$this->links->method('passwordAccepted')->willReturn(true);
+		$this->reader->method('subjectObject')->willReturn(null);
+		$this->throttler->expects($this->once())->method('registerAttempt')
+			->with(AccessLinkController::THROTTLE_ACTION, '198.51.100.7');
+		$this->acts->expects($this->never())->method('upload');
+
+		$response = $this->controller->upload(anchor: 'a');
+
+		$this->assertSame([Http::STATUS_NOT_FOUND, ['message' => 'Not Found']], [$response->getStatus(), $response->getData()]);
+	}
+
+	public function testAFailingThrottlerIsLoggedAndTheRefusalStands(): void {
+		$this->links->method('resolve')->willReturn(null);
+		$this->throttler->method('registerAttempt')->willThrowException(new \RuntimeException('cache down'));
+		$this->logger->expects($this->once())->method('warning')
+			->with('AccessLinkController: registerAttempt failed: cache down');
+
+		$response = $this->controller->open(anchor: 'a');
+
+		$this->assertSame([Http::STATUS_NOT_FOUND, ['message' => 'Not Found']], [$response->getStatus(), $response->getData()]);
+	}
+
+	public function testAFailedCommentIsLoggedAndRefused(): void {
+		$this->uploadable();
+		$this->params = ['message' => 'hi'];
+		$this->acts->method('comment')->willThrowException(new \RuntimeException('locked'));
+		$this->links->expects($this->never())->method('recordUse');
+		$this->logger->expects($this->once())->method('warning')->with('[AccessLinkController] A link comment failed: locked');
+
+		$response = $this->controller->comment(anchor: 'a');
+
+		$this->assertSame([Http::STATUS_BAD_REQUEST, ['message' => 'The comment could not be saved.']], [$response->getStatus(), $response->getData()]);
+	}
 }

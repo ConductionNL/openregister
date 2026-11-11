@@ -22,10 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use DateTime;
 use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
 use OCA\OpenRegister\Db\AuditTrail\HardeningChange;
 use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
+use OCA\OpenRegister\Db\AuditTrail\RegisterAuditEvent;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
 use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
@@ -312,12 +314,9 @@ interface AuditTrailMapperInterface {
 	public function revertObject($identifier, $until = null, bool $overwriteVersion = false): ObjectEntity;
 
 	/**
-	 * Get statistics for audit trails with optional filtering
+	 * The number and total size of the audit trails in a scope.
 	 *
-	 * @param int|null $registerId The register ID (null for all registers)
-	 * @param int|null $schemaId The schema ID (null for all schemas)
-	 * @param array $exclude Array of register/schema combinations to exclude,
-	 *                       format: [['register' => id, 'schema' => id], ...]
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema (null for all) and the combinations to leave out.
 	 *
 	 * @return int[] Array containing total count and size of audit trails:
 	 *               - total: Total number of audit trails
@@ -325,7 +324,7 @@ interface AuditTrailMapperInterface {
 	 *
 	 * @psalm-return array{total: int, size: int}
 	 */
-	public function getStatistics(?int $registerId = null, ?int $schemaId = null, array $exclude = []): array;
+	public function statisticsTotals(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Updates an entity in the database
@@ -342,19 +341,16 @@ interface AuditTrailMapperInterface {
 	public function update(Entity $entity): AuditTrail;
 
 	/**
-	 * Get chart data for audit trail actions over time
+	 * Chart data for audit trail actions over time
 	 *
-	 * @param DateTime|null $from Start date for the chart data
-	 * @param DateTime|null $till End date for the chart data
-	 * @param int|null $registerId Optional register ID to filter by
-	 * @param int|null $schemaId Optional schema ID to filter by
+	 * @param AuditTrail\AuditStatisticsScope $scope The register and schema (null for all) and the `from`/`till` dates.
 	 *
 	 * @return ((int[]|string)[]|(int|string))[][]
 	 *
 	 * @psalm-return array{labels: list<array-key>,
 	 *     series: list<array{data: list<int>, name: string}>}
 	 */
-	public function getActionChartData(?\DateTime $from = null, ?\DateTime $till = null, ?int $registerId = null, ?int $schemaId = null): array;
+	public function actionChartData(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
 	 * Get detailed statistics for audit trails including action counts within timeframe
@@ -532,48 +528,13 @@ interface AuditTrailMapperInterface {
 	 * Get audit trail statistics grouped by schema for multiple schemas in a single query
 	 *
 	 * Returns per-schema statistics using GROUP BY instead of one query per schema.
-	 * This replaces N individual getStatistics() calls with 1 query.
+	 * This replaces N individual statisticsTotals() calls with 1 query.
 	 *
 	 * @param int[] $schemaIds Array of schema IDs to get statistics for
 	 *
 	 * @return array<int, array{total: int, size: int}> Map of schemaId => statistics array
 	 */
 	public function getStatisticsGroupedBySchema(array $schemaIds): array;
-
-	/**
-	 * Create a custom audit trail entry for archival operations, or for any
-	 * other caller that needs a non-CRUD action recorded with an explicit
-	 * actor.
-	 *
-	 * `$actorId`/`$actorName` exist for callers acting on behalf of a
-	 * non-human principal — e.g. `registry-subscriptions`' inbound update
-	 * endpoint, which authenticates as a connector's app-password account
-	 * but must audit the REGISTRY (`registry:brp`) as the actor, not
-	 * whichever Nextcloud account the app password happens to belong to.
-	 * Omit both to keep the previous session-derived behavior unchanged.
-	 *
-	 * @param ObjectEntity $object The object the entry relates to
-	 * @param string $action The archival action (e.g., archival.destroyed)
-	 * @param array $context Additional context data
-	 * @param string|null $actorId Explicit actor id, bypassing the session user. Null uses the session.
-	 * @param string|null $actorName Explicit actor display name, paired with $actorId.
-	 * @param string|null $ipAddress The calling address, for callers that have one and must record it.
-	 *
-	 * `$ipAddress` exists for a principal that is not a session at all: an
-	 * access link is opened by somebody with no account, and reconstructing a
-	 * wrong publication needs where it was opened from as much as when. Omit it
-	 * and the column is left exactly as before, so no existing caller changes.
-	 *
-	 * @return AuditTrail The created audit trail entry
-	 *
-	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess)
-	 */
-	public function createAuditTrailEntry(
-		ObjectEntity $object, string $action, array $context = [], ?string $actorId = null, ?string $actorName = null,
-		?string $ipAddress = null
-	): AuditTrail;
 
 	/**
 	 * Record a non-CRUD action on one object, with an explicit actor when one is named.
@@ -800,6 +761,23 @@ interface AuditTrailMapperInterface {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function recordExport(ExportOutcome $export): AuditTrail;
+
+	/**
+	 * Create one immutable, hash-chained audit record for a register-level event.
+	 *
+	 * For what happens to a register as a whole rather than to one of its objects, such
+	 * as a compliance export being requested. The row names the register and no object,
+	 * so it stays off every object's timeline, and it is chained and verified like any
+	 * other row.
+	 *
+	 * @param RegisterAuditEvent $event The register id; the action, namespaced as `<area>.<verb>`; the details,
+	 *                                  stored as the result summary; and the actor, the session user when unnamed.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	public function recordRegisterEvent(RegisterAuditEvent $event): AuditTrail;
 
 	/**
 	 * Create one immutable, hash-chained audit record for a slug backfill run.

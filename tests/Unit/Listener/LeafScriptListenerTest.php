@@ -27,7 +27,9 @@
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Listener\LeafScriptListener;
+use OCA\OpenRegister\Service\Integration\LeafAvailability;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
+use OCA\OpenRegister\Service\Integration\LeafIdentity;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCP\App\IAppManager;
 use OCP\IRequest;
@@ -118,11 +120,9 @@ class LeafScriptListenerTest extends TestCase {
 	 */
 	private function leaf(string $id, ?string $app, array $kinds = [LeafDescriptor::KIND_RENDER_SURFACE]): LeafDescriptor {
 		return new LeafDescriptor(
-			id: $id,
-			label: $id,
-			icon: 'FolderOutline',
+			identity: new LeafIdentity(id: $id, label: $id, icon: 'FolderOutline'),
 			kinds: $kinds,
-			requiredApp: $app,
+			availability: new LeafAvailability(requiredApp: $app),
 		);
 	}
 

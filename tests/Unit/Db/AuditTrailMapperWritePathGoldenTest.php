@@ -3,7 +3,7 @@
 /**
  * Golden record of the AuditTrailMapper write path: who a row names, what it holds, when an edit merges.
  *
- * Pins the rows createAuditTrailEntry(), recordToolInvocation(),
+ * Pins the rows recordObjectEvent(), recordToolInvocation(),
  * recordSharedMasterDataRefusal() and recordExport() write into the
  * migrated table, the merge decisions createAuditTrail() takes under an
  * aggregation window (every way an edit is refused a merge, and the merge
@@ -38,6 +38,8 @@ use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusalOptions;
 use OCA\OpenRegister\Db\AuditTrail\SharedMasterDataRefusal;
 use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
@@ -122,14 +124,14 @@ final class AuditTrailMapperWritePathGoldenTest extends TestCase {
 		};
 
 		return [
-			'archival no actor no session' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'archival.destroyed', ['k' => 'v']),
-			'archival no actor with session' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'archival.destroyed'),
-			'archival actor and name' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'registry.update', [], 'registry:brp', 'BRP'),
-			'archival actor without name' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'registry.update', [], 'registry:brp'),
-			'archival name without actor with session' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'x', [], null, 'Ignored'),
-			'archival ip trimmed' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'link.opened', [], 'link:1', null, ' 10.0.0.1 '),
-			'archival ip blank' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'link.opened', [], 'link:1', null, '   '),
-			'archival ip empty' => fn (AuditTrailMapper $m) => $m->createAuditTrailEntry($object(), 'link.opened', [], 'link:1', null, ''),
+			'archival no actor no session' => fn (AuditTrailMapper $m) => $m->recordObjectEvent(new ObjectAuditEvent($object(), 'archival.destroyed', ['k' => 'v'])),
+			'archival no actor with session' => fn (AuditTrailMapper $m) => $m->recordObjectEvent(new ObjectAuditEvent($object(), 'archival.destroyed')),
+			'archival actor and name' => fn (AuditTrailMapper $m) => $m->recordObjectEvent(new ObjectAuditEvent($object(), 'registry.update', [], new ObjectAuditEventOptions(new NamedActor('registry:brp', 'BRP')))),
+			'archival actor without name' => fn (AuditTrailMapper $m) => $m->recordObjectEvent(new ObjectAuditEvent($object(), 'registry.update', [], new ObjectAuditEventOptions(new NamedActor('registry:brp')))),
+			'archival name without actor with session' => fn (AuditTrailMapper $m) => $m->recordObjectEvent(new ObjectAuditEvent($object(), 'x', [], new ObjectAuditEventOptions(new NamedActor(null, 'Ignored')))),
+			'archival ip trimmed' => fn (AuditTrailMapper $m) => $m->recordObjectEvent(new ObjectAuditEvent($object(), 'link.opened', [], new ObjectAuditEventOptions(new NamedActor('link:1'), ' 10.0.0.1 '))),
+			'archival ip blank' => fn (AuditTrailMapper $m) => $m->recordObjectEvent(new ObjectAuditEvent($object(), 'link.opened', [], new ObjectAuditEventOptions(new NamedActor('link:1'), '   '))),
+			'archival ip empty' => fn (AuditTrailMapper $m) => $m->recordObjectEvent(new ObjectAuditEvent($object(), 'link.opened', [], new ObjectAuditEventOptions(new NamedActor('link:1'), ''))),
 			'tool dotted no session' => fn (AuditTrailMapper $m) => $m->recordToolInvocation(new ToolInvocation('keepiq.lead.search', 'd1', ['count' => 2])),
 			'tool undotted with session' => fn (AuditTrailMapper $m) => $m->recordToolInvocation(new ToolInvocation('search', 'd2', [], new AuditedObject(1, 2, 3, 'o-3'))),
 			'tool trailing dot with session' => fn (AuditTrailMapper $m) => $m->recordToolInvocation(new ToolInvocation('keepiq.', 'd3', ['isError' => true])),

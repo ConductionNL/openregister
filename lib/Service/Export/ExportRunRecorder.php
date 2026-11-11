@@ -46,7 +46,7 @@ namespace OCA\OpenRegister\Service\Export;
 use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
@@ -202,7 +202,8 @@ class ExportRunRecorder {
 		$now = $this->now();
 
 		$rows = [];
-		foreach ($this->mapper->findForActor(actor: $scopedTo, filters: $query->filters, limit: $query->limit, offset: $query->offset ?? 0) as $run) {
+		$page = new ListQuery(limit: $query->limit, offset: ($query->offset ?? 0), filters: $query->filters);
+		foreach ($this->mapper->listForActor(actor: $scopedTo, query: $page) as $run) {
 			$row = $run->jsonSerialize();
 			// An expired run is NAMED as expired rather than offered as a link
 			// to nothing. A missing file and a file nobody produced look the
@@ -290,21 +291,14 @@ class ExportRunRecorder {
 	 * @return void
 	 */
 	private function deleteFileOf(ExportRun $run): void {
-		$fileId = $run->getFileId();
-		$actor = $run->getActor();
-		if ($fileId === null || $actor === null || $actor === '') {
+		$actor = $this->fileOwnerOf(run: $run);
+		if ($actor === null) {
 			return;
 		}
 
 		try {
 			$folder = $this->rootFolder->getUserFolder($actor);
-			$nodes = $folder->getById($fileId);
-
-			foreach ($nodes as $node) {
-				if (($node instanceof Node) === true) {
-					$node->delete();
-				}
-			}
+			$this->deleteNodes(nodes: $folder->getById((int)$run->getFileId()));
 		} catch (Throwable $e) {
 			// A file the owner already deleted is not an error. Saying so here
 			// is what lets the sweep still mark the row, rather than leaving it
@@ -315,6 +309,38 @@ class ExportRunRecorder {
 			);
 		}
 	}//end deleteFileOf()
+
+	/**
+	 * The owner of a run's file, when the run still names a file and an owner.
+	 *
+	 * @param ExportRun $run The run.
+	 *
+	 * @return string|null The owner's uid, or null when there is nothing to delete.
+	 */
+	private function fileOwnerOf(ExportRun $run): ?string {
+		$fileId = $run->getFileId();
+		$actor = $run->getActor();
+		if ($fileId === null || $actor === null || $actor === '') {
+			return null;
+		}
+
+		return $actor;
+	}//end fileOwnerOf()
+
+	/**
+	 * Delete every node a file id resolved to.
+	 *
+	 * @param array<int, mixed> $nodes The nodes.
+	 *
+	 * @return void
+	 */
+	private function deleteNodes(array $nodes): void {
+		foreach ($nodes as $node) {
+			if (($node instanceof Node) === true) {
+				$node->delete();
+			}
+		}
+	}//end deleteNodes()
 
 	/**
 	 * The current moment, from the injected clock.

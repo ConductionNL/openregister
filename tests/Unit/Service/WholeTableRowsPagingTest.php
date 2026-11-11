@@ -28,9 +28,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
@@ -91,7 +93,8 @@ class WholeTableRowsPagingTest extends TestCase {
 		$offsets = [];
 		$pages = [self::objects(500), self::objects(500), self::objects(3)];
 		$this->mapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema, ?int $limit, ?int $offset, array $filters) use (&$offsets, &$pages): array {
+			function (RegisterSchema $table, ListQuery $listing) use (&$offsets, &$pages): array {
+				[$register, $schema, $limit, $offset, $filters] = [$table->register, $table->schema, $listing->limitOrNull(), $listing->offset, ($listing->filters === [] ? null : $listing->filters)];
 				$offsets[] = [$limit, $offset];
 				$this->assertSame(['_includeDeleted' => true, '_rbac' => false, '_multitenancy' => false], $filters);
 				return array_shift($pages);

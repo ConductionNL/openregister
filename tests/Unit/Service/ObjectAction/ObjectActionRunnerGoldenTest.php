@@ -27,6 +27,8 @@ use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionCall;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionAudit;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
@@ -44,6 +46,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -101,14 +104,16 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 		// The real ObjectActionAudit writes the entry, so the acting user is
 		// the one its gate reads: record() no longer takes a userId argument.
 		$this->trail = $this->createMock(AuditTrailMapperInterface::class);
-		$this->trail->method('createAuditTrailEntry')->willReturnCallback(
-			function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
-				$this->audited[] = array_combine(
-					['object', 'action', 'kind', 'run', 'inputsDigest', 'changes', 'outcome', 'userId'],
-					[$object, $context['declaredAction'], $context['kind'], $context['run'], $context['inputsDigest'], $context['changes'], $context['outcome'], $actorId]
-				);
-				return new AuditTrail();
-			}
+		$this->trail->method('recordObjectEvent')->willReturnCallback(
+			AuditTrailEvents::positional(
+				function (ObjectEntity $object, string $action, array $context, ?string $actorId): AuditTrail {
+					$this->audited[] = array_combine(
+						['object', 'action', 'kind', 'run', 'inputsDigest', 'changes', 'outcome', 'userId'],
+						[$object, $context['declaredAction'], $context['kind'], $context['run'], $context['inputsDigest'], $context['changes'], $context['outcome'], $actorId]
+					);
+					return new AuditTrail();
+				}
+			)
 		);
 		$this->transitions = $this->createMock(TransitionEngine::class);
 		$this->transitions->method('availableActions')->willReturn([['action' => 'reopen']]);
@@ -218,7 +223,7 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 	 * @return array The answer.
 	 */
 	private function invoke(string $key, array $inputs = [], ?ObjectEntity $object = null): array {
-		return $this->runner()->run(new ObjectActionTarget($object ?? $this->object(), $this->schema(), 'r', 'besluit'), $key, $inputs);
+		return $this->runner()->run(new ObjectActionTarget($object ?? $this->object(), $this->schema(), 'r', 'besluit'), new ObjectActionRequest($key, $inputs));
 	}//end invoke()
 
 	public function testRefusalsInOrderWithTheirExactAnswers(): void {
@@ -263,13 +268,13 @@ class ObjectActionRunnerGoldenTest extends TestCase {
 
 	public function testCheckPreviewsWithoutRunning(): void {
 		$this->flows->expects($this->never())->method('runForAction');
-		$checked = $this->runner()->check($this->object(), $this->schema(), 'publish', ['from' => 'today']);
+		$checked = $this->runner()->rehearse(new ObjectActionCall($this->object(), $this->schema(), 'publish'), ['from' => 'today']);
 
 		$this->assertNull($checked['refusal']);
 		$this->assertSame('publish', $checked['definition']->key);
 		$this->assertSame(['from' => 'today'], $checked['inputs']);
 
-		$refused = $this->runner()->check($this->object(), $this->schema(), 'nope', []);
+		$refused = $this->runner()->rehearse(new ObjectActionCall($this->object(), $this->schema(), 'nope'), []);
 		$this->assertSame(['refusal' => ['status' => 404, 'body' => ['error' => 'No action "nope" runs on this object.']], 'definition' => null, 'inputs' => []], $refused);
 	}//end testCheckPreviewsWithoutRunning()
 

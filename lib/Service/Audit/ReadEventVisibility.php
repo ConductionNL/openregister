@@ -98,6 +98,17 @@ class ReadEventVisibility {
 			return false;
 		}
 
+		return $this->isAdminOrReadEventReader(userId: $userId);
+	}//end maySeeReadEvents()
+
+	/**
+	 * Whether a user is an administrator or in a group that may see read events; a failing lookup refuses.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return bool True when the user may see read events.
+	 */
+	private function isAdminOrReadEventReader(string $userId): bool {
 		try {
 			if ($this->caller->groupManager->isAdmin($userId) === true) {
 				return true;
@@ -113,7 +124,7 @@ class ReadEventVisibility {
 		}
 
 		return false;
-	}//end maySeeReadEvents()
+	}//end isAdminOrReadEventReader()
 
 	/**
 	 * Whether an audit action is a read.

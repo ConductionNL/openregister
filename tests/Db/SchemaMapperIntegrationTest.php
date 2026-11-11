@@ -12,7 +12,7 @@
 
 namespace OCA\OpenRegister\Tests\Db;
 
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\TestCase;
@@ -791,11 +791,7 @@ class SchemaMapperIntegrationTest extends TestCase {
 	public function testFindExtendedByWithKnownUuidAndSlug(): void {
 		$schema = $this->createTestSchema();
 
-		$result = $this->mapper->findExtendedBy(
-			$schema->getId(),
-			$schema->getUuid(),
-			$schema->getSlug()
-		);
+		$result = $this->mapper->findExtendedBy($schema);
 		$this->assertIsArray($result);
 	}
 

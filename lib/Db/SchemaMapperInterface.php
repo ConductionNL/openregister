@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCP\AppFramework\Db\Entity;
 
@@ -487,9 +488,7 @@ interface SchemaMapperInterface {
 	 * Returns an array of schema UUIDs for schemas that reference the given schema
 	 * in their allOf, oneOf, or anyOf composition patterns.
 	 *
-	 * @param int|string $schemaIdentifier The ID, UUID, or slug of the schema.
-	 * @param string|null $knownUuid Pre-known UUID to avoid redundant lookups.
-	 * @param string|null $knownSlug Pre-known slug to avoid redundant lookups.
+	 * @param Schema|int|string $schema The schema, or its ID, UUID or slug to look it up by.
 	 *
 	 * @return array Array of schema UUIDs that compose with this schema
 	 *
@@ -498,7 +497,7 @@ interface SchemaMapperInterface {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Schema composition search requires many conditional checks
 	 */
-	public function findExtendedBy(int|string $schemaIdentifier, ?string $knownUuid = null, ?string $knownSlug = null): array;
+	public function findExtendedBy(Schema|int|string $schema): array;
 
 	/**
 	 * Find all schema extension relationships in a single query

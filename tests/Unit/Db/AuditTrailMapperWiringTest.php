@@ -32,6 +32,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\IRequest;
@@ -101,7 +102,7 @@ final class AuditTrailMapperWiringTest extends TestCase {
 	 * @return array{0: mixed, 1: mixed}
 	 */
 	private function writtenBy(string $uid): array {
-		$entry = $this->mapper(uid: $uid)->createAuditTrailEntry($this->object(), 'wiring.check');
+		$entry = $this->mapper(uid: $uid)->recordObjectEvent(new ObjectAuditEvent($this->object(), 'wiring.check'));
 		$rows = $this->database->connection()->fetchAllAssociative(
 			'SELECT user, user_name FROM openregister_audit_trails WHERE id = ?',
 			[$entry->getId()]

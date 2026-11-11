@@ -21,6 +21,7 @@ use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Party\PartyLinkRequest;
 use OCA\OpenRegister\Service\Party\PartyLinkWriter;
 use OCA\OpenRegister\Service\Party\PartyRoleRecords;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Service\PersonLinkEvents;
@@ -423,7 +424,7 @@ class PartyRoleServiceTest extends TestCase {
 			}
 		);
 
-		$removed = $this->service->removeParty(objectUuid: 'case-1', partyUuid: 'party-a', role: 'gemachtigde');
+		$removed = $this->service->removeParty(objectUuid: 'case-1', holding: new PartyHolding(partyUuid: 'party-a', role: 'gemachtigde'));
 
 		$this->assertSame(1, $removed);
 		$this->assertSame(['gemachtigde'], $deleted);
@@ -443,6 +444,6 @@ class PartyRoleServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(404);
 
-		$this->service->removeParty(objectUuid: 'case-1', partyUuid: 'party-a');
+		$this->service->removeParty(objectUuid: 'case-1', holding: new PartyHolding(partyUuid: 'party-a'));
 	}//end testRemovingAPartyThatIsNotThereIs404()
 }//end class

@@ -46,7 +46,7 @@ final class A05InterfaceBindingsTest extends TestCase {
 	private const LIB = __DIR__ . '/../../../lib';
 
 	/**
-	 * The lib/ files that still name SaveObjectInterface: they use more than one role.
+	 * The lib/ files that still name SaveObjectInterface: they use more than one role, or carry it to ObjectService.
 	 *
 	 * @var list<string>
 	 */
@@ -54,6 +54,7 @@ final class A05InterfaceBindingsTest extends TestCase {
 		'Service/ContractBindings.php',
 		'Service/Object/BulkSaveStores.php',
 		'Service/Object/CascadingHandler.php',
+		'Service/Object/Collaborators/ObjectSaveServices.php',
 		'Service/Object/SaveObject.php',
 		'Service/ObjectService.php',
 	];

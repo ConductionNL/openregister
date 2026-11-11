@@ -127,7 +127,7 @@ final class ScheduleManifest {
 	 * @return ScheduleDescriptor|string
 	 */
 	private static function checkCron(ScheduleDescriptor|string $result, ?CronScheduleEvaluator $cron): ScheduleDescriptor|string {
-		if (is_string($result) === true || $cron === null || $result->isCron() === false) {
+		if (self::skipsCronCheck(result: $result, cron: $cron) === true) {
 			return $result;
 		}
 
@@ -137,4 +137,19 @@ final class ScheduleManifest {
 
 		return sprintf('Schedule "%s" has an unparseable cron expression.', $result->id);
 	}//end checkCron()
+
+	/**
+	 * Whether a result passes through unchecked: a diagnostic, no evaluator, or an interval schedule.
+	 *
+	 * @param ScheduleDescriptor|string  $result A descriptor, or a diagnostic.
+	 * @param CronScheduleEvaluator|null $cron   Cron evaluator.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-assert-if-false ScheduleDescriptor    $result
+	 * @phpstan-assert-if-false CronScheduleEvaluator $cron
+	 */
+	private static function skipsCronCheck(ScheduleDescriptor|string $result, ?CronScheduleEvaluator $cron): bool {
+		return is_string($result) === true || $cron === null || $result->isCron() === false;
+	}//end skipsCronCheck()
 }//end class

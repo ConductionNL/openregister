@@ -33,6 +33,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ObjectAction;
 
+use OCA\OpenRegister\Db\AuditTrail\NamedActor;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use Psr\Log\LoggerInterface;
@@ -92,18 +95,20 @@ class ObjectActionAudit {
 		string $inputsDigest,
 	): void {
 		try {
-			$this->auditTrail->createAuditTrailEntry(
-				object: $object,
-				action: self::ACTION_RUN,
-				context: [
-					'declaredAction' => $definition->key,
-					'kind' => (string)$definition->kind,
-					'run' => $outcome->run,
-					'inputsDigest' => $inputsDigest,
-					'changes' => $outcome->changes,
-					'outcome' => $outcome->outcome,
-				],
-				actorId: $this->gate->userId()
+			$this->auditTrail->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: self::ACTION_RUN,
+					context: [
+						'declaredAction' => $definition->key,
+						'kind' => (string)$definition->kind,
+						'run' => $outcome->run,
+						'inputsDigest' => $inputsDigest,
+						'changes' => $outcome->changes,
+						'outcome' => $outcome->outcome,
+					],
+					options: new ObjectAuditEventOptions(actor: new NamedActor(id: $this->gate->userId()))
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

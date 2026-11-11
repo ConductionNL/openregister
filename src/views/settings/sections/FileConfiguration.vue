@@ -1692,42 +1692,20 @@ export default {
 		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testDolphinConnection() {
-			try {
-				this.dolphinConnectionTested = null
-
-				if (
-					!this.fileSettings.dolphinApiEndpoint
-					|| !this.fileSettings.dolphinApiKey
-				) {
-					this.showSaveMessage(
-						'Please provide both API endpoint and API key',
-						'error',
-					)
-					this.dolphinConnectionTested = 'error'
-					return
-				}
-
-				// Test connection via backend
-				const response = await this.settingsStore.testDolphinConnection({
-					apiEndpoint: this.fileSettings.dolphinApiEndpoint,
-					apiKey: this.fileSettings.dolphinApiKey,
-				})
-
-				if (response.success) {
-					this.showSaveMessage('Dolphin connection successful!', 'success')
-					this.dolphinConnectionTested = 'success'
-				} else {
-					this.showSaveMessage(
-						`Connection failed: ${response.error}`,
-						'error',
-					)
-					this.dolphinConnectionTested = 'error'
-				}
-			} catch (error) {
-				console.error('Failed to test Dolphin connection:', error)
-				this.showSaveMessage('Connection test failed', 'error')
-				this.dolphinConnectionTested = 'error'
-			}
+			this.dolphinConnectionTested = null
+			const { dolphinApiEndpoint, dolphinApiKey } = this.fileSettings
+			// Test connection via backend
+			this.dolphinConnectionTested =
+				dolphinApiEndpoint && dolphinApiKey
+					? await this.runConnectionTest('Dolphin', () =>
+							this.settingsStore.testDolphinConnection({
+								apiEndpoint: dolphinApiEndpoint,
+								apiKey: dolphinApiKey,
+							}),
+						)
+					: this.missingConnectionInput(
+							'Please provide both API endpoint and API key',
+						)
 		},
 
 		/**
@@ -1736,43 +1714,15 @@ export default {
 		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testPresidioConnection() {
-			try {
-				this.presidioConnectionTested = null
-				this.testingPresidio = true
-
-				if (!this.fileSettings.presidioApiEndpoint) {
-					this.showSaveMessage(
-						'Please provide the Presidio API endpoint',
-						'error',
+			this.presidioConnectionTested = null
+			this.testingPresidio = true
+			const apiEndpoint = this.fileSettings.presidioApiEndpoint
+			this.presidioConnectionTested = apiEndpoint
+				? await this.runConnectionTest('Presidio', () =>
+						this.settingsStore.testPresidioConnection({ apiEndpoint }),
 					)
-					this.presidioConnectionTested = 'error'
-					return
-				}
-
-				const response = await this.settingsStore.testPresidioConnection({
-					apiEndpoint: this.fileSettings.presidioApiEndpoint,
-				})
-
-				if (response.success) {
-					this.showSaveMessage(
-						'Presidio connection successful!',
-						'success',
-					)
-					this.presidioConnectionTested = 'success'
-				} else {
-					this.showSaveMessage(
-						`Connection failed: ${response.error}`,
-						'error',
-					)
-					this.presidioConnectionTested = 'error'
-				}
-			} catch (error) {
-				console.error('Failed to test Presidio connection:', error)
-				this.showSaveMessage('Connection test failed', 'error')
-				this.presidioConnectionTested = 'error'
-			} finally {
-				this.testingPresidio = false
-			}
+				: this.missingConnectionInput('Please provide the Presidio API endpoint')
+			this.testingPresidio = false
 		},
 
 		/**
@@ -1781,43 +1731,52 @@ export default {
 		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testOpenAnonymiserConnection() {
-			try {
-				this.openAnonymiserConnectionTested = null
-				this.testingOpenAnonymiser = true
-
-				if (!this.fileSettings.openAnonymiserApiEndpoint) {
-					this.showSaveMessage(
+			this.openAnonymiserConnectionTested = null
+			this.testingOpenAnonymiser = true
+			const apiEndpoint = this.fileSettings.openAnonymiserApiEndpoint
+			this.openAnonymiserConnectionTested = apiEndpoint
+				? await this.runConnectionTest('OpenAnonymiser', () =>
+						this.settingsStore.testOpenAnonymiserConnection({ apiEndpoint }),
+					)
+				: this.missingConnectionInput(
 						'Please provide the OpenAnonymiser API endpoint',
-						'error',
 					)
-					this.openAnonymiserConnectionTested = 'error'
-					return
-				}
+			this.testingOpenAnonymiser = false
+		},
 
-				const response =
-					await this.settingsStore.testOpenAnonymiserConnection({
-						apiEndpoint: this.fileSettings.openAnonymiserApiEndpoint,
-					})
+		/**
+		 * Say a connection test lacks input.
+		 *
+		 * @spec exclude UI plumbing — connection test message.
+		 * @param {string} message What is missing
+		 * @return {string} The test state: 'error'
+		 */
+		missingConnectionInput(message) {
+			this.showSaveMessage(message, 'error')
+			return 'error'
+		},
 
+		/**
+		 * Run one service's connection test and say how it went.
+		 *
+		 * @spec exclude UI plumbing — connection test message.
+		 * @param {string} service The service name shown in the messages
+		 * @param {() => Promise<object>} request The store call that tests it
+		 * @return {Promise<string>} The test state: 'success' or 'error'
+		 */
+		async runConnectionTest(service, request) {
+			try {
+				const response = await request()
 				if (response.success) {
-					this.showSaveMessage(
-						'OpenAnonymiser connection successful!',
-						'success',
-					)
-					this.openAnonymiserConnectionTested = 'success'
-				} else {
-					this.showSaveMessage(
-						`Connection failed: ${response.error}`,
-						'error',
-					)
-					this.openAnonymiserConnectionTested = 'error'
+					this.showSaveMessage(`${service} connection successful!`, 'success')
+					return 'success'
 				}
+				this.showSaveMessage(`Connection failed: ${response.error}`, 'error')
+				return 'error'
 			} catch (error) {
-				console.error('Failed to test OpenAnonymiser connection:', error)
+				console.error(`Failed to test ${service} connection:`, error)
 				this.showSaveMessage('Connection test failed', 'error')
-				this.openAnonymiserConnectionTested = 'error'
-			} finally {
-				this.testingOpenAnonymiser = false
+				return 'error'
 			}
 		},
 

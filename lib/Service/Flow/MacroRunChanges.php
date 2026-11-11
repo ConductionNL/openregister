@@ -109,11 +109,7 @@ final class MacroRunChanges {
 		}
 
 		$node = (string)($entry['transition'] ?? '');
-		$kind = (self::KINDS[(string)($entry['type'] ?? '')] ?? null);
-		if ($kind === null && isset($labels[$node]) === true) {
-			$kind = 'step';
-		}
-
+		$kind = self::kindOf(entry: $entry, labels: $labels);
 		if ($kind === null) {
 			return null;
 		}
@@ -123,4 +119,21 @@ final class MacroRunChanges {
 			'kind' => $kind,
 		];
 	}//end changeOf()
+
+	/**
+	 * What kind of change a completed entry is: its type's kind, or a labelled step, or none.
+	 *
+	 * @param array<string, mixed>  $entry  The completed history entry.
+	 * @param array<string, string> $labels Step labels by node.
+	 *
+	 * @return string|null The kind.
+	 */
+	private static function kindOf(array $entry, array $labels): ?string {
+		$kind = (self::KINDS[(string)($entry['type'] ?? '')] ?? null);
+		if ($kind === null && isset($labels[(string)($entry['transition'] ?? '')]) === true) {
+			return 'step';
+		}
+
+		return $kind;
+	}//end kindOf()
 }//end class

@@ -103,12 +103,7 @@ class DerivedGrantStore implements DerivedGrantStoreInterface, DerivedGrantLogin
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function rules(): array {
-		try {
-			$raw = $this->stores->appConfig->getValueString(app: self::APP_ID, key: self::RULES_KEY, default: '');
-		} catch (\Throwable $e) {
-			return [];
-		}
-
+		$raw = $this->storedRules();
 		if (trim($raw) === '') {
 			return [];
 		}
@@ -127,6 +122,19 @@ class DerivedGrantStore implements DerivedGrantStoreInterface, DerivedGrantLogin
 
 		return $decoded;
 	}//end rules()
+
+	/**
+	 * The stored rule set as written, or '' when it cannot be read.
+	 *
+	 * @return string The stored JSON, or ''.
+	 */
+	private function storedRules(): string {
+		try {
+			return $this->stores->appConfig->getValueString(app: self::APP_ID, key: self::RULES_KEY, default: '');
+		} catch (\Throwable $e) {
+			return '';
+		}
+	}//end storedRules()
 
 	/**
 	 * The grants one account currently holds by derivation.
@@ -228,30 +236,57 @@ class DerivedGrantStore implements DerivedGrantStoreInterface, DerivedGrantLogin
 	public function reapply(): array {
 		$accounts = $this->accountsWithClaims();
 
-		$changed = [];
-		$before = 0;
-		$after = 0;
-
+		$moves = [];
 		foreach ($accounts as $userId) {
-			$held = $this->grantsFor(userId: $userId);
-			$holds = $this->apply(userId: $userId, claims: $this->claimsFor(userId: $userId));
+			$moves[] = $this->reapplyFor(userId: $userId);
+		}
 
-			$before += count($held);
-			$after += count($holds);
+		return self::reapplySummary(accounts: $accounts, moves: $moves);
+	}//end reapply()
 
-			if (json_encode($held) !== json_encode($holds)) {
-				$changed[] = $userId;
+	/**
+	 * Re-run the derivation for one account: how many grants it held and holds, and whether they moved.
+	 *
+	 * @param string $userId The account.
+	 *
+	 * @return array{user: string, before: int, after: int, changed: bool} The move.
+	 */
+	private function reapplyFor(string $userId): array {
+		$held = $this->grantsFor(userId: $userId);
+		$holds = $this->apply(userId: $userId, claims: $this->claimsFor(userId: $userId));
+
+		return [
+			'user' => $userId,
+			'before' => count($held),
+			'after' => count($holds),
+			'changed' => (json_encode($held) !== json_encode($holds)),
+		];
+	}//end reapplyFor()
+
+	/**
+	 * What a re-run did, over every account's move.
+	 *
+	 * @param array<int, string>                                                   $accounts The accounts re-run.
+	 * @param array<int, array{user: string, before: int, after: int, changed: bool}> $moves    One move per account.
+	 *
+	 * @return array{users: integer, changed: integer, grantsBefore: integer, grantsAfter: integer, accounts: array<int, string>}
+	 */
+	private static function reapplySummary(array $accounts, array $moves): array {
+		$changed = [];
+		foreach ($moves as $move) {
+			if ($move['changed'] === true) {
+				$changed[] = $move['user'];
 			}
 		}
 
 		return [
 			'users' => count($accounts),
 			'changed' => count($changed),
-			'grantsBefore' => $before,
-			'grantsAfter' => $after,
+			'grantsBefore' => array_sum(array_column($moves, 'before')),
+			'grantsAfter' => array_sum(array_column($moves, 'after')),
 			'accounts' => $changed,
 		];
-	}//end reapply()
+	}//end reapplySummary()
 
 	/**
 	 * Every account that has claims stored.
@@ -264,21 +299,8 @@ class DerivedGrantStore implements DerivedGrantStoreInterface, DerivedGrantLogin
 	 * @return array<int, string> The account ids.
 	 */
 	private function accountsWithClaims(): array {
-		$accounts = [];
-
 		try {
-			$this->userManager->callForSeenUsers(
-				function (IUser $user) use (&$accounts): ?bool {
-					if ($this->claimsFor(userId: $user->getUID()) !== []) {
-						$accounts[] = $user->getUID();
-					}
-
-					// Null rather than false: the callback's return value is
-					// what stops the walk, and stopping it here would silently
-					// leave the rest of the accounts unre-derived.
-					return null;
-				}
-			);
+			return $this->walkAccountsWithClaims();
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[DerivedGrantStore] Could not walk the accounts to re-derive; reporting none',
@@ -286,9 +308,32 @@ class DerivedGrantStore implements DerivedGrantStoreInterface, DerivedGrantLogin
 			);
 			return [];
 		}
+	}//end accountsWithClaims()
+
+	/**
+	 * Walk the seen accounts and collect those with claims stored.
+	 *
+	 * @return array<int, string> The account ids, in walk order.
+	 *
+	 * @throws \Throwable Whatever the walk throws; the caller reports none.
+	 */
+	private function walkAccountsWithClaims(): array {
+		$accounts = [];
+		$this->userManager->callForSeenUsers(
+			function (IUser $user) use (&$accounts): ?bool {
+				if ($this->claimsFor(userId: $user->getUID()) !== []) {
+					$accounts[] = $user->getUID();
+				}
+
+				// Null rather than false: the callback's return value is
+				// what stops the walk, and stopping it here would silently
+				// leave the rest of the accounts unre-derived.
+				return null;
+			}
+		);
 
 		return $accounts;
-	}//end accountsWithClaims()
+	}//end walkAccountsWithClaims()
 
 	/**
 	 * A stored JSON list, or an empty one.

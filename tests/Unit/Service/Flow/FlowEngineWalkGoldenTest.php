@@ -60,6 +60,7 @@ use RuntimeException;
 use stdClass;
 use OCA\OpenRegister\Service\Flow\PlacesPruning;
 use OCA\OpenRegister\Service\Flow\FlowRunFrame;
+use Symfony\Component\Workflow\Transition;
 
 /**
  * A dispatcher whose behaviour per step id is configured by the case.
@@ -542,7 +543,9 @@ class FlowEngineWalkGoldenTest extends TestCase {
 			$trace(['exhaust', $id]);
 			$exhausted[$id] = true;
 		});
-		$walk->method('claim')->willReturnCallback(function (string $id, string $transition, array $places) use (&$refused, $refuse, $trace): ?array {
+		$walk->method('claim')->willReturnCallback(function (string $id, Transition $firing) use (&$refused, $refuse, $trace): ?array {
+			$transition = $firing->getName();
+			$places     = array_map('strval', array_merge($firing->getFroms(), $firing->getTos()));
 			$trace(['claim', $id, $transition, $places]);
 			if (in_array($transition, $refuse, true) === true) {
 				$refused[$id] = true;

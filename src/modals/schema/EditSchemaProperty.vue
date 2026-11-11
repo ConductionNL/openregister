@@ -897,6 +897,109 @@ import {
 	semanticRoleOptions,
 } from './schemaPropertyForm.js'
 
+/**
+ * The form's title, coded-value and semantic-role fields, with their options.
+ *
+ * @return {object} Fresh state
+ */
+function codedAndRoleState() {
+	return {
+		propertyTitle: '',
+		codedConfig: emptyCodedConfig(),
+		codedStoreOptions: codedStoreOptions(),
+		semanticRole: '',
+		semanticRoleOptions: semanticRoleOptions(),
+	}
+}
+
+/**
+ * The help texts and the concept tree a coded value picks from.
+ *
+ * @return {object} Fresh state
+ */
+function helpAndTreeState() {
+	return {
+		helpTextNl: '',
+		helpTextEn: '',
+		conceptTree: [],
+		treeLoading: false,
+		treeLoaded: false,
+		treeError: '',
+	}
+}
+
+/**
+ * Whether and how the property is offered as a search facet.
+ *
+ * @return {object} Fresh state
+ */
+function facetState() {
+	return {
+		facetableEnabled: true,
+		facetConfig: emptyFacetConfig(),
+		facetType: '',
+		facetInterval: 'month',
+		facetFormat: '',
+		facetUseDefaultRanges: true,
+		facetCustomRanges: [],
+	}
+}
+
+/**
+ * The computed value, authored in the JSON AST (computed-values-by-json-ast),
+ * its trial run and the operator catalogue it is written with.
+ *
+ * @return {object} Fresh state
+ */
+function calculationState() {
+	return {
+		calculationEnabled: false,
+		calculationType: 'string',
+		calculationExpression: '',
+		calculationSample: '{}',
+		calculationTrying: false,
+		calculationTrialValue: null,
+		calculationTrialError: '',
+		calculationDependencies: [],
+		operatorCatalogue: [],
+		operatorsLoading: false,
+	}
+}
+
+/**
+ * The property definition being edited and the type, item-type and format
+ * choices.
+ *
+ * @return {object} Fresh state
+ */
+function propertyTypeState() {
+	return {
+		properties: emptyPropertyDefinition(),
+		typeOptions: propertyTypeSelect(),
+		itemsTypeOptions: itemsTypeSelect(),
+		formatOptions: formatSelect(),
+	}
+}
+
+/**
+ * The save request's progress and outcome, and the register and schema
+ * picked for a relation.
+ *
+ * @return {object} Fresh state
+ */
+function requestState() {
+	return {
+		loading: false,
+		success: null,
+		error: false,
+		closeModalTimeout: null,
+		registerLoading: false,
+		schemaLoading: false,
+		selectedRegister: null,
+		selectedSchema: null,
+	}
+}
+
 export default {
 	name: 'EditSchemaProperty',
 	components: {
@@ -915,47 +1018,12 @@ export default {
 
 	data() {
 		return {
-			propertyTitle: '',
-			codedConfig: emptyCodedConfig(),
-			codedStoreOptions: codedStoreOptions(),
-			semanticRole: '',
-			semanticRoleOptions: semanticRoleOptions(),
-			helpTextNl: '',
-			helpTextEn: '',
-			conceptTree: [],
-			treeLoading: false,
-			treeLoaded: false,
-			treeError: '',
-			facetableEnabled: true,
-			facetConfig: emptyFacetConfig(),
-			facetType: '',
-			facetInterval: 'month',
-			facetFormat: '',
-			facetUseDefaultRanges: true,
-			facetCustomRanges: [],
-			// Computed value, authored in the JSON AST (computed-values-by-json-ast).
-			calculationEnabled: false,
-			calculationType: 'string',
-			calculationExpression: '',
-			calculationSample: '{}',
-			calculationTrying: false,
-			calculationTrialValue: null,
-			calculationTrialError: '',
-			calculationDependencies: [],
-			operatorCatalogue: [],
-			operatorsLoading: false,
-			properties: emptyPropertyDefinition(),
-			typeOptions: propertyTypeSelect(),
-			itemsTypeOptions: itemsTypeSelect(),
-			formatOptions: formatSelect(),
-			loading: false,
-			success: null,
-			error: false,
-			closeModalTimeout: null,
-			registerLoading: false,
-			schemaLoading: false,
-			selectedRegister: null,
-			selectedSchema: null,
+			...codedAndRoleState(),
+			...helpAndTreeState(),
+			...facetState(),
+			...calculationState(),
+			...propertyTypeState(),
+			...requestState(),
 		}
 	},
 

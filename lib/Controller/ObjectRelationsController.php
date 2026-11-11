@@ -674,7 +674,7 @@ class ObjectRelationsController extends Controller {
 	 * derivation and a split are the same act seen twice and a sub-case
 	 * started from a timeline entry is both. Writing the split row and then
 	 * mutating it into a derivation was two writes for one act, and left
-	 * recordDerivation() with no caller at all: a write capability nobody
+	 * recordDerived() with no caller at all: a write capability nobody
 	 * reaches is a capability nobody can exercise, which is the shape
 	 * gate-orphaned-write-capability exists to catch.
 	 *
@@ -899,8 +899,8 @@ class ObjectRelationsController extends Controller {
 	 */
 	private function treeOf(ObjectEntity $object, string $direction): array {
 		return $this->trees->tree(
-			root: $object,
 			query: new ObjectTreeQuery(
+				root: $object,
 				direction: $direction,
 				depth: $this->params->optionalDepth(),
 				fields: $this->params->csvParam(name: 'fields')

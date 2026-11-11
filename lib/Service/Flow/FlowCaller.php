@@ -133,9 +133,23 @@ class FlowCaller {
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
 	public function activeOrganisation(): ?string {
+		$uuid = $this->activeOrganisationUuid();
+		if ($uuid === null || $uuid === '') {
+			return null;
+		}
+
+		return (string)$uuid;
+	}//end activeOrganisation()
+
+	/**
+	 * The active organisation's uuid as text, or null when it cannot be resolved.
+	 *
+	 * @return string|null The uuid, possibly empty.
+	 */
+	private function activeOrganisationUuid(): ?string {
 		try {
 			$organisationService = $this->platform->container->get('OCA\OpenRegister\Service\OrganisationServiceInterface');
-			$uuid = $organisationService->getActiveOrganisation()?->getUuid();
+			return (string)$organisationService->getActiveOrganisation()?->getUuid();
 		} catch (Throwable $e) {
 			$this->platform->logger->debug(
 				message: '[FlowService] Could not resolve the active organisation: ' . $e->getMessage(),
@@ -143,12 +157,6 @@ class FlowCaller {
 			);
 			return null;
 		}
-
-		if ((string)$uuid === '') {
-			return null;
-		}
-
-		return (string)$uuid;
-	}//end activeOrganisation()
+	}//end activeOrganisationUuid()
 
 }//end class

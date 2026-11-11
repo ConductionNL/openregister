@@ -196,4 +196,27 @@ class ObjectSearchResultFormatterGoldenTest extends TestCase {
 		$this->assertSame('Nm', $entry['title']);
 		$this->assertSame('App', $entry['subline']);
 	}//end testClaimedPairIsRoundedAndKeepsItsDeepLink()
+
+	/**
+	 * The title is a string `title`, then a non-empty string `@self.name`,
+	 * then the uuid, then "Unknown Object".
+	 *
+	 * @return void
+	 */
+	public function testTitleFallsBackFromTitleToNameToUuidToUnknown(): void {
+		$this->deepLinkRegistry->method('resolveUrl')->willReturn(null);
+		$this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+		$this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+		$formatter = $this->formatter();
+
+		$titles = [
+			$formatter->format(['title' => 'T', '@self' => ['id' => 'u1', 'name' => 'Nm']], null)->jsonSerialize()['title'],
+			$formatter->format(['title' => 42, '@self' => ['id' => 'u1', 'name' => 'Nm']], null)->jsonSerialize()['title'],
+			$formatter->format(['@self' => ['id' => 'u1', 'name' => '']], null)->jsonSerialize()['title'],
+			$formatter->format(['@self' => ['id' => 'u1', 'name' => ['x']]], null)->jsonSerialize()['title'],
+			$formatter->format(['@self' => []], null)->jsonSerialize()['title'],
+		];
+
+		$this->assertSame(['T', 'Nm', 'u1', 'u1', 'Unknown Object'], $titles);
+	}//end testTitleFallsBackFromTitleToNameToUuidToUnknown()
 }//end class
