@@ -636,4 +636,22 @@ class SchemasDestroySafetyTest extends TestCase {
 		$this->assertNotSame(403, $this->controller->destroy(42)->getStatus());
 
 	}//end testAManagerMayStillDeleteASchemaWithoutObjects()
+
+	/**
+	 * A manager of the schema who is no administrator may not orphan its objects with force.
+	 */
+	public function testForceByAManagerWhoIsNoAdministratorIsRefusedWith403(): void {
+		$schema = $this->makeSchema(42, 'cow');
+		$schema->setAuthorization(['manage' => ['planners']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->objectMapper->method('getStatistics')->willReturn(['total' => 7]);
+		$this->isAdmin = false;
+		$this->userGroups = ['planners'];
+		$this->stubFlags(force: 'true');
+
+		$this->schemaMapper->expects($this->never())->method('delete');
+
+		$this->assertSame(403, $this->controller->destroy(42)->getStatus());
+
+	}//end testForceByAManagerWhoIsNoAdministratorIsRefusedWith403()
 }//end class
