@@ -80,6 +80,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * The permission handler and the condition matcher here are the REAL ones.
@@ -165,7 +168,7 @@ class ObjectServiceAppendOnlyHiddenRowTest extends TestCase {
 			$container
 		);
 
-		$this->objectService = new ObjectService(
+		$this->objectService = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->createMock(DeleteObject::class),
 			$this->createMock(GetObject::class),
@@ -204,7 +207,7 @@ class ObjectServiceAppendOnlyHiddenRowTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 
 		$this->objectService->setSchema($this->schema([]));
@@ -286,7 +289,15 @@ class ObjectServiceAppendOnlyHiddenRowTest extends TestCase {
 		$register = new Register();
 		$register->setId(10);
 		try {
-			$this->objectService->saveObject(object: ['title' => 'overwritten'], register: $register, schema: $this->schema($auth), uuid: 'uuid-b', _rbac: $rbac, _multitenancy: $multitenancy);
+			$this->objectService->saveObject(
+				object: ['title' => 'overwritten'],
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $register, schema: $this->schema($auth)),
+					uuid: 'uuid-b'
+				),
+				_rbac: $rbac,
+				_multitenancy: $multitenancy
+			);
 		} catch (AppendOnlyException $e) {
 			return '405 ' . $e->getMessage();
 		} catch (NotAuthorizedException $e) {

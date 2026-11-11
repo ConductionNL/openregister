@@ -23,10 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
-use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\RouterNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 
 /**
  * The steps that join, repeat, delegate and route items.
@@ -39,16 +35,12 @@ final readonly class RoutingFlowNodes {
 	/**
 	 * Bundle the nodes.
 	 *
-	 * @param MergeNodeInterface $merge The built-in "Merge" node.
-	 * @param LoopNodeInterface $loop The built-in "Loop over items" node.
-	 * @param SubFlowNodeInterface $subFlow The built-in "Run a flow" node.
-	 * @param RouterNodeInterface $router The built-in "Route items" node.
+	 * @param ItemLoopFlowNodes $itemLoop The steps that join branches and loop over items within a run.
+	 * @param HandOffFlowNodes  $handOff  The steps that hand items to another flow or route them down a path.
 	 */
 	public function __construct(
-		private MergeNodeInterface $merge,
-		private LoopNodeInterface $loop,
-		private SubFlowNodeInterface $subFlow,
-		private RouterNodeInterface $router,
+		private ItemLoopFlowNodes $itemLoop,
+		private HandOffFlowNodes $handOff,
 	) {
 	}//end __construct()
 
@@ -59,10 +51,8 @@ final readonly class RoutingFlowNodes {
 	 */
 	public function nodes(): array {
 		return [
-			$this->merge,
-			$this->loop,
-			$this->subFlow,
-			$this->router,
+			...$this->itemLoop->nodes(),
+			...$this->handOff->nodes(),
 		];
 
 	}//end nodes()

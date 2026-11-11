@@ -65,69 +65,109 @@ class CalendarEventTransformer {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function transform(ObjectEntity $object, CalendarDefinition $calendar): ?array {
-		$schema = $calendar->schema;
-		$calendarConfig = $calendar->config;
-		$objectData = $object->getObject();
-		$dtstartField = $calendarConfig['dtstart'] ?? null;
-
-		if ($dtstartField === null) {
+		if ($this->startValue(object: $object, calendar: $calendar) === null) {
 			return null;
 		}
 
-		$dtstartValue = $objectData[$dtstartField] ?? null;
-
-		if (empty($dtstartValue) === true) {
-			return null;
-		}
-
-		$schemaId = $schema->getId();
-		$objectUuid = $object->getUuid();
-		$uid = 'openregister-' . $schemaId . '-' . $objectUuid;
-		$calendarKey = 'openregister-schema-' . $schemaId;
-
-		// Determine allDay mode.
-		$allDay = $calendar->allDay();
-
-		// Build DTSTART.
-		$dtstart = $this->formatDateValue(value: $dtstartValue, allDay: $allDay);
-
-		// Build DTEND.
-		$dtend = $this->buildDtend(objectData: $objectData, calendar: $calendar);
-
-		// Interpolate title.
-		$summary = $this->interpolateTemplate(
-			template: $calendarConfig['titleTemplate'] ?? $objectUuid,
-			objectData: $objectData
-		);
-
-		// Build the VEVENT objects array.
-		$veventProperties = [
-			'UID' => [$uid, []],
-			'SUMMARY' => [$summary, []],
-			'DTSTART' => $dtstart,
-			'DTEND' => $dtend,
-			'STATUS' => [$this->resolveStatus(objectData: $objectData, calendarConfig: $calendarConfig), []],
-			'TRANSP' => ['TRANSPARENT', []],
-			'CATEGORIES' => [['OpenRegister', $schema->getTitle() ?? 'Schema'], []],
-		];
-
-		$veventProperties += $this->optionalProperties(objectData: $objectData, calendarConfig: $calendarConfig);
-
-		// URL to OpenRegister object.
-		$register = $object->getRegister();
-		$url = '/apps/openregister/objects/' . $register . '/' . $schemaId . '/' . $objectUuid;
-		$veventProperties['URL'] = [$url, []];
+		$calendarKey = 'openregister-schema-' . $calendar->schema->getId();
 
 		return [
-			'id' => $uid,
+			'id' => $this->eventUid(object: $object, calendar: $calendar),
 			'type' => 'VEVENT',
 			'calendar-key' => $calendarKey,
 			'calendar-uri' => $calendarKey,
 			'objects' => [
-				$veventProperties,
+				$this->veventProperties(object: $object, calendar: $calendar),
 			],
 		];
 	}//end transform()
+
+	/**
+	 * The object's start value, when the calendar declares a start field and the object fills it.
+	 *
+	 * @param ObjectEntity       $object   The object
+	 * @param CalendarDefinition $calendar The calendar the object appears on
+	 *
+	 * @return mixed The start value, or null when there is no (non-empty) start
+	 */
+	private function startValue(ObjectEntity $object, CalendarDefinition $calendar): mixed {
+		$dtstartField = $calendar->config['dtstart'] ?? null;
+		if ($dtstartField === null) {
+			return null;
+		}
+
+		$dtstartValue = $object->getObject()[$dtstartField] ?? null;
+		if (empty($dtstartValue) === true) {
+			return null;
+		}
+
+		return $dtstartValue;
+	}//end startValue()
+
+	/**
+	 * The stable event UID of an object on a schema calendar.
+	 *
+	 * @param ObjectEntity       $object   The object
+	 * @param CalendarDefinition $calendar The calendar the object appears on
+	 *
+	 * @return string The UID
+	 */
+	private function eventUid(ObjectEntity $object, CalendarDefinition $calendar): string {
+		return 'openregister-' . $calendar->schema->getId() . '-' . $object->getUuid();
+	}//end eventUid()
+
+	/**
+	 * The VEVENT properties of an object with a start value.
+	 *
+	 * @param ObjectEntity       $object   The object
+	 * @param CalendarDefinition $calendar The calendar the object appears on
+	 *
+	 * @return array<string, array> The properties, each as [value, parameters]
+	 */
+	private function veventProperties(ObjectEntity $object, CalendarDefinition $calendar): array {
+		$objectData = $object->getObject();
+		$veventProperties = [
+			'UID' => [$this->eventUid(object: $object, calendar: $calendar), []],
+			'SUMMARY' => [$this->summary(object: $object, calendar: $calendar), []],
+			'DTSTART' => $this->formatDateValue(value: $objectData[$calendar->config['dtstart']], allDay: $calendar->allDay()),
+			'DTEND' => $this->buildDtend(objectData: $objectData, calendar: $calendar),
+			'STATUS' => [$this->resolveStatus(objectData: $objectData, calendarConfig: $calendar->config), []],
+			'TRANSP' => ['TRANSPARENT', []],
+			'CATEGORIES' => [['OpenRegister', $calendar->schema->getTitle() ?? 'Schema'], []],
+		];
+
+		$veventProperties += $this->optionalProperties(objectData: $objectData, calendarConfig: $calendar->config);
+		$veventProperties['URL'] = [$this->objectUrl(object: $object, calendar: $calendar), []];
+
+		return $veventProperties;
+	}//end veventProperties()
+
+	/**
+	 * The event title: the calendar's title template filled from the object, or the object UUID.
+	 *
+	 * @param ObjectEntity       $object   The object
+	 * @param CalendarDefinition $calendar The calendar the object appears on
+	 *
+	 * @return string The title
+	 */
+	private function summary(ObjectEntity $object, CalendarDefinition $calendar): string {
+		return $this->interpolateTemplate(
+			template: $calendar->config['titleTemplate'] ?? $object->getUuid(),
+			objectData: $object->getObject()
+		);
+	}//end summary()
+
+	/**
+	 * The URL of the object in OpenRegister.
+	 *
+	 * @param ObjectEntity       $object   The object
+	 * @param CalendarDefinition $calendar The calendar the object appears on
+	 *
+	 * @return string The URL
+	 */
+	private function objectUrl(ObjectEntity $object, CalendarDefinition $calendar): string {
+		return '/apps/openregister/objects/' . $object->getRegister() . '/' . $calendar->schema->getId() . '/' . $object->getUuid();
+	}//end objectUrl()
 
 	/**
 	 * The optional DESCRIPTION and LOCATION properties, each present only when configured and non-empty.
@@ -192,21 +232,44 @@ class CalendarEventTransformer {
 		try {
 			$date = new DateTime($value);
 		} catch (Exception $e) {
-			// Malformed input: fall back to a safe placeholder so the
-			// VEVENT is still serialisable; consumers will treat it as
-			// a naive UTC value.
-			$fallback = new DateTime('@0');
-			if ($allDay === true) {
-				return [$fallback->format('Ymd'), ['VALUE' => 'DATE']];
-			}
-
-			return [$fallback->format('Ymd\THis\Z'), ['VALUE' => 'DATE-TIME']];
+			return $this->placeholderDate(allDay: $allDay);
 		}
 
 		if ($allDay === true) {
 			return [$date->format('Ymd'), ['VALUE' => 'DATE']];
 		}
 
+		return $this->dateTimeValue(date: $date, value: $value);
+	}//end formatDateValue()
+
+	/**
+	 * The placeholder for malformed date input.
+	 *
+	 * Malformed input falls back to a safe placeholder so the VEVENT is still
+	 * serialisable; consumers will treat it as a naive UTC value.
+	 *
+	 * @param bool $allDay Whether to emit a DATE rather than a DATE-TIME
+	 *
+	 * @return array [value, parameters] for the Unix epoch
+	 */
+	private function placeholderDate(bool $allDay): array {
+		$fallback = new DateTime('@0');
+		if ($allDay === true) {
+			return [$fallback->format('Ymd'), ['VALUE' => 'DATE']];
+		}
+
+		return [$fallback->format('Ymd\THis\Z'), ['VALUE' => 'DATE-TIME']];
+	}//end placeholderDate()
+
+	/**
+	 * Format a parsed moment as an iCalendar DATE-TIME, keeping its zone class.
+	 *
+	 * @param DateTime $date  The parsed moment
+	 * @param string   $value The source text, whose zone notation decides the form
+	 *
+	 * @return array [value, parameters]
+	 */
+	private function dateTimeValue(DateTime $date, string $value): array {
 		$sourceZone = $this->detectSourceTimezone(value: $value);
 
 		// Naive input or explicit UTC: emit `Z` form. For naive inputs we
@@ -221,14 +284,7 @@ class CalendarEventTransformer {
 		// with a TZID parameter so calendar clients can render the
 		// original wall-clock alongside the correct instant.
 		if ($sourceZone !== 'offset') {
-			$tzName = $date->getTimezone()->getName();
-			return [
-				$date->format('Ymd\THis'),
-				[
-					'VALUE' => 'DATE-TIME',
-					'TZID' => $tzName,
-				],
-			];
+			return $this->localTimeWithZone(date: $date);
 		}
 
 		// Non-UTC numeric offset: convert to the equivalent UTC instant
@@ -238,7 +294,25 @@ class CalendarEventTransformer {
 		$utcDate = clone $date;
 		$utcDate->setTimezone(new DateTimeZone('UTC'));
 		return [$utcDate->format('Ymd\THis\Z'), ['VALUE' => 'DATE-TIME']];
-	}//end formatDateValue()
+	}//end dateTimeValue()
+
+	/**
+	 * Format a moment as local wall-clock time with its named zone as TZID.
+	 *
+	 * @param DateTime $date The parsed moment in a named zone
+	 *
+	 * @return array [value, parameters]
+	 */
+	private function localTimeWithZone(DateTime $date): array {
+		$tzName = $date->getTimezone()->getName();
+		return [
+			$date->format('Ymd\THis'),
+			[
+				'VALUE' => 'DATE-TIME',
+				'TZID' => $tzName,
+			],
+		];
+	}//end localTimeWithZone()
 
 	/**
 	 * Detect what kind of timezone designator (if any) the source string carries
@@ -295,21 +369,49 @@ class CalendarEventTransformer {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	private function buildDtend(array $objectData, CalendarDefinition $calendar): array {
-		$calendarConfig = $calendar->config;
-		$dtstartValue = $objectData[$calendar->dtstartField()];
-		$allDay = $calendar->allDay();
-		// Check if dtend field is configured and has a value.
-		if (empty($calendarConfig['dtend']) === false) {
-			$dtendValue = $objectData[$calendarConfig['dtend']] ?? null;
-			if (empty($dtendValue) === false) {
-				return $this->formatDateValue(value: $dtendValue, allDay: $allDay);
-			}
+		$configured = $this->configuredDtend(objectData: $objectData, calendar: $calendar);
+		if ($configured !== null) {
+			return $configured;
 		}
 
-		// Compute default DTEND from DTSTART. We round-trip through the
-		// ISO-8601 representation so `formatDateValue()` re-detects the
-		// source timezone and emits a TZID-correct value (DTEND must
-		// not silently flip to UTC `Z` when DTSTART carried an offset).
+		return $this->defaultDtend(dtstartValue: $objectData[$calendar->dtstartField()], allDay: $calendar->allDay());
+	}//end buildDtend()
+
+	/**
+	 * DTEND from the calendar's end field, when it is configured and the object fills it.
+	 *
+	 * @param array              $objectData The object data
+	 * @param CalendarDefinition $calendar   The calendar the object appears on
+	 *
+	 * @return array|null [value, parameters], or null when there is no end value
+	 */
+	private function configuredDtend(array $objectData, CalendarDefinition $calendar): ?array {
+		$calendarConfig = $calendar->config;
+		if (empty($calendarConfig['dtend']) === true) {
+			return null;
+		}
+
+		$dtendValue = $objectData[$calendarConfig['dtend']] ?? null;
+		if (empty($dtendValue) === true) {
+			return null;
+		}
+
+		return $this->formatDateValue(value: $dtendValue, allDay: $calendar->allDay());
+	}//end configuredDtend()
+
+	/**
+	 * Default DTEND: one day after an all-day start, one hour after a timed start.
+	 *
+	 * We round-trip through the ISO-8601 representation so `formatDateValue()`
+	 * re-detects the source timezone and emits a TZID-correct value (DTEND must
+	 * not silently flip to UTC `Z` when DTSTART carried an offset).
+	 *
+	 * @param string $dtstartValue The start value
+	 * @param bool   $allDay       Whether the event is all-day
+	 *
+	 * @return array [value, parameters]
+	 */
+	private function defaultDtend(string $dtstartValue, bool $allDay): array {
 		try {
 			$date = new DateTime($dtstartValue);
 		} catch (Exception $e) {
@@ -330,7 +432,7 @@ class CalendarEventTransformer {
 		// `formatDateValue()` re-detects the same timezone class as the
 		// source value.
 		return $this->formatDateValue(value: $date->format('c'), allDay: $allDay);
-	}//end buildDtend()
+	}//end defaultDtend()
 
 	/**
 	 * Interpolate a template string with object data

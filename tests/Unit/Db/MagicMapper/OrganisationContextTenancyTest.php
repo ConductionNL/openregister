@@ -26,13 +26,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -63,6 +66,8 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
@@ -197,15 +202,21 @@ class OrganisationContextTenancyTest extends TestCase {
 		);
 
 		$this->rbac = new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$appConfig,
-			$conditionMatcher,
-			$container,
-			$logger
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $conditionMatcher,
+				container: $container,
+				logger: $logger
+			)
 		);
-		$this->organisations = new MagicOrganizationHandler($userSession, $groupManager, $appConfig, $container, $logger);
+		$this->organisations = new MagicOrganizationHandler(new MagicMapperIdentity($userSession, $groupManager, $this->createMock(IUserManager::class)), $appConfig, $container, $logger);
 		$this->db = $this->sqlite();
 	}//end setUp()
 
@@ -301,7 +312,7 @@ class OrganisationContextTenancyTest extends TestCase {
 		$rows = $this->inContext(
 			groups: $groups,
 			anonymous: $anonymous,
-			read: fn (): array => $this->uuids(qb: $this->searchHandler()->buildFilteredQuery(query: $query, schema: $this->schema(read: $read), tableName: 't')->select('t._uuid'))
+			read: fn (): array => $this->uuids(qb: $this->searchHandler()->buildFilteredQuery(query: $query, table: new MagicReadTable(schema: $this->schema(read: $read), tableName: 't'))->select('t._uuid'))
 		);
 
 		$this->assertInOrganisation(rows: $rows, read: $read, expected: $expected, query: $query, anonymous: $anonymous);
@@ -531,7 +542,7 @@ class OrganisationContextTenancyTest extends TestCase {
 		$db->method('getQueryBuilder')->willReturn($queryBuilder);
 		$db->method('getDatabasePlatform')->willReturn(new SqlitePlatform());
 
-		$conditions = $this->searchHandler(db: $db)->buildWhereConditionsSql(query: $query, schema: $schema);
+		$conditions = $this->searchHandler(db: $db)->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: $schema)));
 		$sql = 'SELECT _uuid FROM t';
 		if ($conditions !== []) {
 			$sql .= ' WHERE ' . implode(' AND ', $conditions);

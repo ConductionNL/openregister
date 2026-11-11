@@ -1,0 +1,218 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`AuditTrailIndex.exportFilteredAuditTrails exports with a broken answer 1`] = `
+[
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/audit-trails/export?format=csv&includeChanges=false&includeMetadata=false",
+  ],
+  [
+    "console",
+    "Error exporting audit trails:",
+    [Error: bad json],
+  ],
+  [
+    "error",
+    "Export failed: {error} {"error":"bad json"}",
+  ],
+]
+`;
+
+exports[`AuditTrailIndex.exportFilteredAuditTrails exports with a refusal with a reason 1`] = `
+[
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/audit-trails/export?format=csv&includeChanges=false&includeMetadata=false",
+  ],
+  [
+    "console",
+    "Error exporting audit trails:",
+    [Error: Too big],
+  ],
+  [
+    "error",
+    "Export failed: {error} {"error":"Too big"}",
+  ],
+]
+`;
+
+exports[`AuditTrailIndex.exportFilteredAuditTrails exports with a refusal without a reason 1`] = `
+[
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/audit-trails/export?format=csv&includeChanges=false&includeMetadata=false",
+  ],
+  [
+    "console",
+    "Error exporting audit trails:",
+    [Error: Export failed],
+  ],
+  [
+    "error",
+    "Export failed: {error} {"error":"Export failed"}",
+  ],
+]
+`;
+
+exports[`AuditTrailIndex.exportFilteredAuditTrails exports with defaults without filters 1`] = `
+[
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/audit-trails/export?format=csv&includeChanges=false&includeMetadata=false",
+  ],
+  [
+    "blob",
+    [
+      "a,b",
+    ],
+    {
+      "type": "text/csv",
+    },
+  ],
+  [
+    "createObjectURL",
+  ],
+  [
+    "append",
+    "A",
+    "blob:x",
+    "audit.csv",
+  ],
+  [
+    "click",
+  ],
+  [
+    "revoke",
+    "blob:x",
+  ],
+  [
+    "remove",
+    "A",
+  ],
+  [
+    "success",
+    "Export completed successfully",
+  ],
+]
+`;
+
+exports[`AuditTrailIndex.exportFilteredAuditTrails exports with given options with filters 1`] = `
+[
+  [
+    "fetch",
+    "/index.php/apps/openregister/api/audit-trails/export?format=json&includeChanges=true&includeMetadata=true&action=update&size=0&ok=false",
+  ],
+  [
+    "blob",
+    [
+      "a,b",
+    ],
+    {
+      "type": "text/csv",
+    },
+  ],
+  [
+    "createObjectURL",
+  ],
+  [
+    "append",
+    "A",
+    "blob:x",
+    "audit.csv",
+  ],
+  [
+    "click",
+  ],
+  [
+    "revoke",
+    "blob:x",
+  ],
+  [
+    "remove",
+    "A",
+  ],
+  [
+    "success",
+    "Export completed successfully",
+  ],
+]
+`;
+
+exports[`AuditTrailIndex.tableColumns lists the audit trail columns 1`] = `
+[
+  {
+    "key": "action",
+    "label": "Action",
+    "sortable": true,
+    "width": "100px",
+  },
+  {
+    "key": "created",
+    "label": "Timestamp",
+    "sortable": true,
+    "width": "180px",
+  },
+  {
+    "class": "cn-table-col--constrained",
+    "key": "object",
+    "label": "Object ID",
+    "sortable": true,
+  },
+  {
+    "class": "cn-table-col--constrained",
+    "key": "register",
+    "label": "Register ID",
+    "sortable": true,
+  },
+  {
+    "class": "cn-table-col--constrained",
+    "key": "userName",
+    "label": "User",
+    "sortable": true,
+  },
+  {
+    "class": "cn-table-col--constrained",
+    "key": "schema",
+    "label": "Schema ID",
+    "sortable": true,
+  },
+  {
+    "key": "size",
+    "label": "Size",
+    "width": "100px",
+  },
+]
+`;
+
+exports[`SearchTrailIndex.viewDetails falls back field by field 1`] = `
+"Search Term: N/A
+Timestamp: <when>
+Register: 1
+Schema: 2
+User: ann
+Results: 0
+Execution Time: <undefined>"
+`;
+
+exports[`SearchTrailIndex.viewDetails says N/A where nothing is known 1`] = `
+"Search Term: N/A
+Timestamp: <when>
+Register: N/A
+Schema: N/A
+User: N/A
+Results: 0
+Execution Time: <undefined>"
+`;
+
+exports[`SearchTrailIndex.viewDetails shows every field it has 1`] = `
+"Search Term: cats
+Timestamp: <when>
+Register: Pets
+Schema: Cat
+User: Ann
+Results: 4
+Execution Time: <12>
+Parameters: {
+  "limit": 5
+}"
+`;

@@ -34,6 +34,7 @@ use OCA\OpenRegister\Exception\PackSlugExistsException;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackImportResult;
 use OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator;
+use OCA\OpenRegister\Service\MigrationPack\PackRevision;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 
@@ -116,60 +117,92 @@ class MigrationPackService implements MigrationPackServiceInterface {
 	 * Create a migration pack from a definition document.
 	 *
 	 * A pack created under the slug of a deleted built-in pack is built-in
-	 * again, so its slug stays locked. Seeding a built-in pack (`$builtin`)
+	 * again, so its slug stays locked. Seeding a built-in pack (seedBuiltin())
 	 * takes its slug off the deleted list once the row is stored: the pack is
 	 * built-in again by its own flag.
 	 *
 	 * @param array<string, mixed> $definition The pack definition document (the JSON body).
-	 * @param string|null $ownerUid The creating admin's uid, or null for a system/built-in seed.
-	 * @param bool $builtin Whether to mark this row as a built-in reference pack.
+	 * @param string|null          $ownerUid   The creating admin's uid.
 	 *
 	 * @return MigrationPack
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $builtin only distinguishes admin-authored packs from the seeded reference pack.
 	 *
 	 * @throws InvalidPackDefinitionException When the definition is structurally invalid.
 	 * @throws PackSlugExistsException When its slug already exists.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
-	public function create(array $definition, ?string $ownerUid = null, bool $builtin = false): MigrationPack {
+	public function create(array $definition, ?string $ownerUid = null): MigrationPack {
+		$this->assertInsertable(definition: $definition);
+
+		$pack = $this->newPack(definition: $definition, ownerUid: $ownerUid);
+		$pack->setBuiltin($this->isDeletedBuiltinSlug(packSlug: $pack->getPackSlug()));
+
+		return $this->mapper->insert(entity: $pack);
+	}//end create()
+
+	/**
+	 * Seed a built-in reference pack (no owner).
+	 *
+	 * Takes the slug off the deleted-built-in list once the row is stored.
+	 *
+	 * @param array<string, mixed> $definition The pack definition document.
+	 *
+	 * @return MigrationPack
+	 *
+	 * @throws InvalidPackDefinitionException When the definition is structurally invalid.
+	 * @throws PackSlugExistsException When its slug already exists.
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 */
+	public function seedBuiltin(array $definition): MigrationPack {
+		$this->assertInsertable(definition: $definition);
+
+		$pack = $this->newPack(definition: $definition, ownerUid: null);
+		$pack->setBuiltin(true);
+
+		$stored = $this->mapper->insert(entity: $pack);
+
+		// After the insert, so a failed insert leaves the slug locked.
+		$this->forgetDeletedBuiltinSlug(packSlug: (string)$definition['id']);
+
+		return $stored;
+	}//end seedBuiltin()
+
+	/**
+	 * Refuse a definition that is invalid or whose slug is already taken.
+	 *
+	 * @param array<string, mixed> $definition The pack definition document.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidPackDefinitionException When the definition is structurally invalid.
+	 * @throws PackSlugExistsException When its slug already exists.
+	 */
+	private function assertInsertable(array $definition): void {
 		$this->validator->assertValid(definition: $definition);
 
 		$slug = (string)$definition['id'];
 		if ($this->slugExists(packSlug: $slug) === true) {
 			throw new PackSlugExistsException(packSlug: $slug);
 		}
-
-		$stored = $this->mapper->insert(
-			entity: $this->newPack(definition: $definition, ownerUid: $ownerUid, builtin: $builtin)
-		);
-
-		// After the insert, so a failed insert leaves the slug locked.
-		if ($builtin === true) {
-			$this->forgetDeletedBuiltinSlug(packSlug: $slug);
-		}
-
-		return $stored;
-	}//end create()
+	}//end assertInsertable()
 
 	/**
-	 * An unsaved pack row for a definition.
+	 * An unsaved pack row for a definition; the caller decides whether it is built-in.
 	 *
-	 * A pack under the slug of a deleted built-in pack is built-in again.
+	 * A seed is built-in; a pack an admin creates under the slug of a deleted
+	 * built-in pack is built-in again (see create()).
 	 *
 	 * @param array<string, mixed> $definition The validated pack definition document.
 	 * @param string|null          $ownerUid   The creating admin's uid, or null for a seed.
-	 * @param bool                 $builtin    Whether the caller seeds a built-in pack.
 	 *
 	 * @return MigrationPack The unsaved row.
 	 *
 	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-the-slug-of-a-built-in-pack-must-not-change
 	 */
-	private function newPack(array $definition, ?string $ownerUid, bool $builtin): MigrationPack {
+	private function newPack(array $definition, ?string $ownerUid): MigrationPack {
 		$pack = new MigrationPack();
 		$this->applyDefinition(pack: $pack, definition: $definition);
-		$pack->setBuiltin($builtin === true || $this->isDeletedBuiltinSlug(packSlug: $pack->getPackSlug()) === true);
 		$pack->setOwner($ownerUid);
 		$pack->setCreatedAt(new DateTime());
 		$pack->setUpdatedAt(new DateTime());
@@ -206,9 +239,8 @@ class MigrationPackService implements MigrationPackServiceInterface {
 	 * a Unix time, so the comparison does not depend on the offset the caller
 	 * wrote the time in.
 	 *
-	 * @param int $id The migration pack id.
-	 * @param array<string, mixed> $definition The replacement pack definition document.
-	 * @param int|null $expectedUpdatedAt The `updatedAt` the caller read, as a Unix time, or null for no check.
+	 * @param int          $id       The migration pack id.
+	 * @param PackRevision $revision The replacement definition and the `updatedAt` the caller read.
 	 *
 	 * @return MigrationPack
 	 *
@@ -220,24 +252,43 @@ class MigrationPackService implements MigrationPackServiceInterface {
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 */
-	public function update(int $id, array $definition, ?int $expectedUpdatedAt = null): MigrationPack {
+	public function revise(int $id, PackRevision $revision): MigrationPack {
+		$definition = $revision->definition;
 		$this->validator->assertValid(definition: $definition);
 
 		$pack = $this->mapper->find(id: $id);
-		$this->assertUnchangedSince(pack: $pack, id: $id, expectedUpdatedAt: $expectedUpdatedAt);
+		$this->assertUnchangedSince(pack: $pack, expectedUpdatedAt: $revision->expectedUpdatedAt);
 		$this->admitSlugChange(pack: $pack, slug: (string)$definition['id']);
 
 		$this->applyDefinition(pack: $pack, definition: $definition);
 		$pack->setUpdatedAt(new DateTime());
 
 		return $this->mapper->update(entity: $pack);
+	}//end revise()
+
+	/**
+	 * Overwrite an existing migration pack's definition, without a check on when it was saved.
+	 *
+	 * @param int                  $id         The migration pack id.
+	 * @param array<string, mixed> $definition The replacement pack definition document.
+	 *
+	 * @return MigrationPack
+	 *
+	 * @throws DoesNotExistException When no row matches.
+	 * @throws BuiltinPackSlugLockedException When the definition renames a built-in pack.
+	 * @throws InvalidPackDefinitionException When the definition is structurally invalid.
+	 * @throws PackSlugExistsException When its slug collides with a different pack.
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
+	 */
+	public function update(int $id, array $definition): MigrationPack {
+		return $this->revise(id: $id, revision: new PackRevision(definition: $definition));
 	}//end update()
 
 	/**
 	 * Refuse an update when the pack was saved at another time than the caller read.
 	 *
-	 * @param MigrationPack $pack              The stored pack.
-	 * @param int           $id                The id the caller asked for.
+	 * @param MigrationPack $pack              The stored pack (found by the id the caller asked for).
 	 * @param int|null      $expectedUpdatedAt The `updatedAt` the caller read, as a Unix time, or null for no check.
 	 *
 	 * @return void
@@ -246,12 +297,12 @@ class MigrationPackService implements MigrationPackServiceInterface {
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 */
-	private function assertUnchangedSince(MigrationPack $pack, int $id, ?int $expectedUpdatedAt): void {
+	private function assertUnchangedSince(MigrationPack $pack, ?int $expectedUpdatedAt): void {
 		if ($expectedUpdatedAt !== null
 			&& $pack->getUpdatedAt()?->getTimestamp() !== $expectedUpdatedAt
 		) {
 			throw new PackChangedException(
-				message: 'Migration pack ' . $id . ' was saved after ' . date(DATE_ATOM, $expectedUpdatedAt)
+				message: 'Migration pack ' . $pack->getId() . ' was saved after ' . date(DATE_ATOM, $expectedUpdatedAt)
 			);
 		}
 	}//end assertUnchangedSince()

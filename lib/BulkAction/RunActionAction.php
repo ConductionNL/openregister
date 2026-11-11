@@ -34,11 +34,12 @@ namespace OCA\OpenRegister\BulkAction;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Flow\MacroActionResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionCall;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunnerInterface;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
+use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Http;
-use OCP\IUser;
 
 /**
  * The bulk action that runs a declared object action per member.
@@ -53,14 +54,12 @@ class RunActionAction implements RunActionActionInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectActionRunnerInterface  $runner  The single-object run path.
-	 * @param MacroActionResolver $schemas Loads a member's schema.
-	 * @param ObjectOperationsInterface       $objects Runs the commit as the job's actor.
+	 * @param ObjectActionRunnerInterface $runner The single-object run path.
+	 * @param BulkObjectAccess            $access Loads a member's schema and runs the commit as the job's actor.
 	 */
 	public function __construct(
 		private readonly ObjectActionRunnerInterface $runner,
-		private readonly MacroActionResolver $schemas,
-		private readonly ObjectOperationsInterface $objects,
+		private readonly BulkObjectAccess $access,
 	) {
 	}//end __construct()
 
@@ -143,46 +142,84 @@ class RunActionAction implements RunActionActionInterface {
 	/**
 	 * Rehearse or run the action on one member.
 	 *
-	 * @param ObjectEntity         $object     The member.
-	 * @param array<string, mixed> $parameters `{action, inputs, register, schema}`.
-	 * @param bool                 $commit     False to rehearse, true to run.
-	 * @param IUser|null           $actor      The person who started the job.
+	 * @param BulkStep $step The member, the action and its inputs, preview or commit, and the actor.
 	 *
 	 * @return BulkActionResult The outcome.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The interface fixes the signature.
-	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
-	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
-		$schema = $this->schemas->loadSchema(schema: (string)$object->getSchema());
+	public function apply(BulkStep $step): BulkActionResult {
+		$schema = $this->schemaOf(object: $step->object);
 		if ($schema === null) {
 			return BulkActionResult::refused(rule: 'no-schema');
 		}
 
-		$key = (string)($parameters['action'] ?? '');
-		$inputs = (array)($parameters['inputs'] ?? []);
-
-		if ($commit === false) {
-			$checked = $this->runner->check(object: $object, schema: $schema, key: $key, given: $inputs);
-
-			return $this->resultOf(answer: ($checked['refusal'] ?? ['status' => Http::STATUS_OK, 'body' => []]));
+		if ($step->commit === false) {
+			return $this->preview(step: $step, schema: $schema);
 		}
 
-		$target = $this->runner->target(
-			object: $object,
-			schema: $schema,
-			register: (string)($parameters['register'] ?? $object->getRegister()),
-			schemaRef: (string)($parameters['schema'] ?? $object->getSchema())
-		);
-		$run    = fn (): array => $this->runner->run(target: $target, key: $key, given: $inputs);
+		return $this->run(step: $step, schema: $schema);
+	}//end apply()
 
-		if ($actor === null) {
+	/**
+	 * Ask the run's checks (action, right, `when`, inputs) and run nothing.
+	 *
+	 * @param BulkStep $step   The member, the action and its inputs.
+	 * @param Schema   $schema The member's schema.
+	 *
+	 * @return BulkActionResult Applied, or the refusal the run would give.
+	 */
+	private function preview(BulkStep $step, Schema $schema): BulkActionResult {
+		$checked = $this->runner->rehearse(
+			call: new ObjectActionCall(object: $step->object, schema: $schema, key: (string)($step->parameters['action'] ?? '')),
+			given: (array)($step->parameters['inputs'] ?? [])
+		);
+
+		return $this->resultOf(answer: ($checked['refusal'] ?? ['status' => Http::STATUS_OK, 'body' => []]));
+	}//end preview()
+
+	/**
+	 * Run the action on the member, as the person who started the job when there is one.
+	 *
+	 * @param BulkStep $step   The member, the action and its inputs, and the actor.
+	 * @param Schema   $schema The member's schema.
+	 *
+	 * @return BulkActionResult The member's outcome.
+	 */
+	private function run(BulkStep $step, Schema $schema): BulkActionResult {
+		$parameters = $step->parameters;
+		$target = new ObjectActionTarget(
+			object: $step->object,
+			schema: $schema,
+			register: (string)($parameters['register'] ?? $step->object->getRegister()),
+			schemaRef: (string)($parameters['schema'] ?? $step->object->getSchema())
+		);
+		$request = new ObjectActionRequest(key: (string)($parameters['action'] ?? ''), given: (array)($parameters['inputs'] ?? []));
+		$run     = fn (): array => $this->runner->run(target: $target, request: $request);
+		if ($step->actor === null) {
 			return $this->resultOf(answer: $run());
 		}
 
-		return $this->resultOf(answer: $this->objects->runAs($actor, $run));
-	}//end apply()
+		return $this->resultOf(answer: $this->access->objects->runAs($step->actor, $run));
+	}//end run()
+
+	/**
+	 * The member's schema, read the way the single-object run reads it.
+	 *
+	 * Read without RBAC or multitenancy: the declared action's own checks
+	 * decide who may run it. A schema that cannot be read is null.
+	 *
+	 * @param ObjectEntity $object The member.
+	 *
+	 * @return Schema|null The schema, or null.
+	 */
+	private function schemaOf(ObjectEntity $object): ?Schema {
+		try {
+			return $this->access->schemas->find((string)$object->getSchema(), _multitenancy: false, _rbac: false);
+		} catch (\Throwable) {
+			return null;
+		}
+	}//end schemaOf()
 
 	/**
 	 * The bulk outcome of a run's answer.

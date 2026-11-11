@@ -30,6 +30,7 @@ use OCA\OpenRegister\Search\BackgroundJob\SearchJobHandlesInterface;
 use OCA\OpenRegister\Db\JobRun;
 use OCA\OpenRegister\Db\JobRunFilter as RunQuery;
 use OCA\OpenRegister\Db\JobRunMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Exception\JobRunRefusedException;
 use Throwable;
 
@@ -83,8 +84,7 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	 * The run history, filtered by job, outcome and period.
 	 *
 	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
-	 * @param int          $limit  How many rows to return.
-	 * @param int          $offset Where to start.
+	 * @param ListQuery    $page   How many rows to return, and where to start.
 	 *
 	 * @return array<string, mixed> The rows, and how many there are.
 	 *
@@ -92,18 +92,31 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	 */
 	public function runs(
 		JobRunFilter $filter = new JobRunFilter(),
-		int $limit = JobRunMapperInterface::DEFAULT_LIMIT,
-		int $offset = 0,
+		ListQuery $page = new ListQuery(limit: JobRunMapperInterface::DEFAULT_LIMIT, offset: 0),
 	): array {
+		return $this->runPage(filter: $filter, page: $page);
+
+	}//end runs()
+
+	/**
+	 * One page of the run history (value-object form of runs()).
+	 *
+	 * @param JobRunFilter $filter The job, outcome and period to narrow to.
+	 * @param ListQuery    $page   The limit and offset of the page.
+	 *
+	 * @return array<string, mixed> The rows, and how many there are.
+	 */
+	private function runPage(JobRunFilter $filter, ListQuery $page): array {
 		$query = new RunQuery(jobClass: $filter->jobClass, outcome: $filter->outcome, since: $this->since(filter: $filter));
+		$rows  = $this->runs->findRecent(filter: $query, limit: $page->limit, offset: ($page->offset ?? 0));
 
 		return [
-			'results' => $this->serialised(rows: $this->runs->findRecent(filter: $query, limit: $limit, offset: $offset)),
+			'results' => $this->serialised(rows: $rows),
 			'total' => $this->runs->countRecent(jobClass: $query->jobClass, outcome: $query->outcome, since: $query->since),
 			'filters' => ['job' => $filter->jobClass, 'outcome' => $filter->outcome, 'windowHours' => $filter->windowHours],
 		];
 
-	}//end runs()
+	}//end runPage()
 
 	/**
 	 * Start a job by hand, once.
@@ -120,40 +133,9 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 	public function runNow(string $jobClass, string $actor): array {
 		$class = (self::MAINTENANCE_ACTIONS[$jobClass] ?? $jobClass);
 
-		if ($this->mayBeStarted(class: $class) === false) {
-			throw new JobRunRefusedException(
-				message: 'There is no job called "'.$jobClass.'" on this instance.',
-				reason: 'unknown-job'
-			);
-		}
-
-		$holding = $this->runs->findRunning(jobClass: $class);
-
-		if ($holding !== null) {
-			// D-2: naming the run is the difference between a refusal an
-			// administrator can act on and one they retry until it sticks.
-			throw new JobRunRefusedException(
-				message: 'This job is already running. It started at '
-					.((string)$holding->getStarted()?->format(DateTime::ATOM)).'.',
-				reason: 'already-running',
-				details: [
-					'runId' => $holding->getId(),
-					'startedAt' => $holding->getStarted()?->format(DateTime::ATOM),
-					'cause' => $holding->getCause(),
-					'actor' => $holding->getActor(),
-				]
-			);
-		}
-
-		$job = $this->resolve(class: $class);
-
-		$this->runNow->recorder->around(
-			jobClass: $class,
-			work: function () use ($job): void {
-				$job->start($this->runNow->jobList);
-			},
-			context: new JobRunContext(cause: JobRun::CAUSE_MANUAL, actor: $actor)
-		);
+		$this->refuseUnknownJob(jobClass: $jobClass, class: $class);
+		$this->refuseWhileRunning(class: $class);
+		$this->startByHand(class: $class, actor: $actor);
 
 		$started = $this->runs->findRecent(filter: new RunQuery(jobClass: $class), limit: 1);
 
@@ -164,6 +146,90 @@ class OperationsJobsService implements OperationsJobsServiceInterface {
 		];
 
 	}//end runNow()
+
+	/**
+	 * Refuse a job this instance does not have.
+	 *
+	 * @param string $jobClass The job class or slug as asked for, so the refusal names it.
+	 * @param string $class    The job class it resolves to.
+	 *
+	 * @return void
+	 *
+	 * @throws JobRunRefusedException When the job is unknown.
+	 */
+	private function refuseUnknownJob(string $jobClass, string $class): void {
+		if ($this->mayBeStarted(class: $class) === false) {
+			throw new JobRunRefusedException(
+				message: 'There is no job called "'.$jobClass.'" on this instance.',
+				reason: 'unknown-job'
+			);
+		}
+
+	}//end refuseUnknownJob()
+
+	/**
+	 * Refuse a job that is already running, naming the run that holds it.
+	 *
+	 * @param string $class The job class.
+	 *
+	 * @return void
+	 *
+	 * @throws JobRunRefusedException When a run of the job is still open.
+	 */
+	private function refuseWhileRunning(string $class): void {
+		$holding = $this->runs->findRunning(jobClass: $class);
+
+		if ($holding === null) {
+			return;
+		}
+
+		// D-2: naming the run is the difference between a refusal an
+		// administrator can act on and one they retry until it sticks.
+		throw new JobRunRefusedException(
+			message: 'This job is already running. It started at '
+				.((string)$holding->getStarted()?->format(DateTime::ATOM)).'.',
+			reason: 'already-running',
+			details: self::holdingRunDetails(holding: $holding)
+		);
+
+	}//end refuseWhileRunning()
+
+	/**
+	 * What a refusal tells about the run that is still open.
+	 *
+	 * @param JobRun $holding The open run.
+	 *
+	 * @return array<string, mixed> The run's id, start, cause and actor.
+	 */
+	private static function holdingRunDetails(JobRun $holding): array {
+		return [
+			'runId' => $holding->getId(),
+			'startedAt' => $holding->getStarted()?->format(DateTime::ATOM),
+			'cause' => $holding->getCause(),
+			'actor' => $holding->getActor(),
+		];
+
+	}//end holdingRunDetails()
+
+	/**
+	 * Start the job once, recorded as a manual run by this actor.
+	 *
+	 * @param string $class The job class.
+	 * @param string $actor The uid asking for it.
+	 *
+	 * @return void
+	 */
+	private function startByHand(string $class, string $actor): void {
+		$job = $this->resolve(class: $class);
+
+		$this->runNow->recorder->around(
+			start: new JobRunStart(jobClass: $class, context: new JobRunContext(cause: JobRun::CAUSE_MANUAL, actor: $actor)),
+			work: function () use ($job): void {
+				$job->start($this->runNow->jobList);
+			}
+		);
+
+	}//end startByHand()
 
 	/**
 	 * One job's schedule, with its last run and its next due time.

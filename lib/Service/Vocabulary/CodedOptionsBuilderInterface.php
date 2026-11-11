@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Vocabulary;
 
-use DateTimeInterface;
 
 /**
  * The methods of CodedOptionsBuilder that callers outside its component use.
@@ -38,20 +37,13 @@ interface CodedOptionsBuilderInterface {
 	 * picker stops offering a retired resultaattype the day it is retired.
 	 *
 	 * @param CodedPropertyDeclaration $declaration The property's declaration.
-	 * @param string $language The BCP-47 tag to read labels in.
-	 * @param string|null $context The context value in play, when the subset is bound.
-	 * @param DateTimeInterface|null $asOf The instant to judge windows at; now when null.
+	 * @param CodedOptionScope         $scope       The label language, the context value in play and the instant to judge windows at.
 	 *
 	 * @return array<int,array<string,mixed>> The options.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function options(
-		CodedPropertyDeclaration $declaration,
-		string $language = 'nl',
-		?string $context = null,
-		?DateTimeInterface $asOf = null,
-	): array;
+	public function options(CodedPropertyDeclaration $declaration, CodedOptionScope $scope=new CodedOptionScope()): array;
 
 	/**
 	 * The options for one declaration, as a tree.
@@ -62,16 +54,11 @@ interface CodedOptionsBuilderInterface {
 	 * having to name a root.
 	 *
 	 * @param CodedPropertyDeclaration $declaration The property's declaration.
-	 * @param string $language The BCP-47 tag to read labels in.
-	 * @param DateTimeInterface|null $asOf The instant to judge windows at; now when null.
+	 * @param CodedOptionScope         $scope       The label language and the instant to judge windows at; its context is not read.
 	 *
 	 * @return array<int,array<string,mixed>> The roots of the tree.
 	 *
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
-	public function tree(
-		CodedPropertyDeclaration $declaration,
-		string $language = 'nl',
-		?DateTimeInterface $asOf = null,
-	): array;
+	public function tree(CodedPropertyDeclaration $declaration, CodedOptionScope $scope=new CodedOptionScope()): array;
 }//end interface

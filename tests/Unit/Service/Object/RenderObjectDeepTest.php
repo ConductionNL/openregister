@@ -103,9 +103,7 @@ class RenderObjectDeepTest extends TestCase {
 		$this->handler = new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->objectMapper,
-					registerMapper: $this->registerMapper,
-					schemaMapper: $this->schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
 					objectCacheService: $this->objectCacheService
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -934,19 +932,6 @@ class RenderObjectDeepTest extends TestCase {
 	}
 
 	// ── preloadInverseRelationships tests ────────────────────────────────
-
-	/**
-	 * Test preloadInverseRelationships with empty entities does nothing.
-	 */
-	public function testPreloadInverseRelationshipsEmptyEntities(): void {
-		$this->invokePrivateMethod('preloadInverseRelationships', [
-			[],
-			['prop' => ['type' => 'array', 'items' => ['inversedBy' => 'x', '$ref' => '#/y']]],
-			['prop'],
-		]);
-
-		$this->assertTrue(true);
-	}
 
 	/**
 	 * Test preloadInverseRelationships with no matching extend returns early.

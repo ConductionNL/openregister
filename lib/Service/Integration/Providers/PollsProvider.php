@@ -43,7 +43,6 @@ use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IL10N;
-use OCP\IUserSession;
 use Throwable;
 
 class PollsProvider extends AbstractIntegrationProvider {
@@ -79,12 +78,10 @@ class PollsProvider extends AbstractIntegrationProvider {
 	 *
 	 * @param LeafProviderPlatform    $platform       The DB connection, app manager and localisation.
 	 * @param PollLinkMapperInterface $pollLinkMapper Poll-link mapper (Tier-2 link table).
-	 * @param IUserSession            $userSession    The current user's session.
 	 */
 	public function __construct(
 		LeafProviderPlatform $platform,
 		private PollLinkMapperInterface $pollLinkMapper,
-		private IUserSession $userSession,
 	) {
 		$this->db = $platform->db;
 		$this->appManager = $platform->appManager;

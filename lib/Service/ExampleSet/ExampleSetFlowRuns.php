@@ -243,10 +243,7 @@ class ExampleSetFlowRuns {
 	/**
 	 * Store the declared runs of a stored flow, in the flow's organisation.
 	 *
-	 * @param Flow                             $flow    The stored flow.
-	 * @param int|null                         $version The published version, or null for a draft.
-	 * @param array<int, array<string, mixed>> $runs    The filled runs.
-	 * @param callable(): string               $newUuid Makes a fresh uuid.
+	 * @param ExampleSetRunsWrite $write The stored flow, its version, the runs and the uuid source.
 	 *
 	 * @return array{runs?: array<string, string>, waitsOn?: array<string, string>} `runs` (run key to uuid) and
 	 *                                                                             `waitsOn` (waiting run uuid to step),
@@ -254,10 +251,10 @@ class ExampleSetFlowRuns {
 	 *
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
 	 */
-	public function write(Flow $flow, ?int $version, array $runs, callable $newUuid): array {
+	public function write(ExampleSetRunsWrite $write): array {
 		$entry = [];
-		foreach ($runs as $run) {
-			$entity = $this->entity(flow: $flow, version: $version, run: $run, uuid: (string) $newUuid());
+		foreach ($write->runs as $run) {
+			$entity = $this->entity(write: $write, run: $run);
 			$entry  = array_replace_recursive($entry, $this->insert(run: $run, entity: $entity));
 		}
 
@@ -291,22 +288,20 @@ class ExampleSetFlowRuns {
 	 * Put a task in the slot of the step its run waits on, and set the heartbeat. A task that names no run
 	 * changes nothing.
 	 *
-	 * @param string $runUuid  The waiting run, or ''.
-	 * @param string $nodeId   The step it waits on.
-	 * @param string $taskUuid The task it waits for.
+	 * @param ExampleSetRunSlot $slot The waiting run, its step and the task that fills it.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/example-set-task-waiting-run-and-claim/specs/example-sets/spec.md#requirement-a-fragments-flow-may-carry-a-run-that-waits-on-a-task
 	 */
-	public function fill(string $runUuid, string $nodeId, string $taskUuid): void {
-		if (trim($runUuid) === '') {
+	public function fill(ExampleSetRunSlot $slot): void {
+		if (trim($slot->runUuid) === '') {
 			return;
 		}
 
 		$mapper = $this->container->get(FlowRunMapperInterface::class);
-		$run    = $mapper->findByUuid(uuid: $runUuid);
-		$run->setContext($this->withTask(context: (array) $run->getContext(), slot: ['node' => $nodeId, 'task' => $taskUuid]));
+		$run    = $mapper->findByUuid(uuid: $slot->runUuid);
+		$run->setContext($this->withTask(context: (array) $run->getContext(), slot: ['node' => $slot->nodeId, 'task' => $slot->taskUuid]));
 		$run->setResumeAt((new DateTime())->modify('+'.self::HEARTBEAT_MINUTES.' minutes'));
 		$run->setUpdated(new DateTime());
 		$mapper->update($run);
@@ -335,33 +330,54 @@ class ExampleSetFlowRuns {
 	/**
 	 * One run of the flow on its subject, as declared.
 	 *
-	 * @param Flow                 $flow    The stored flow.
-	 * @param int|null             $version The published version, or null for a draft.
-	 * @param array<string, mixed> $run     The filled run fields.
-	 * @param string               $uuid    The run's uuid.
+	 * @param ExampleSetRunsWrite $write The stored flow, its version and the uuid source.
+	 * @param array<string, mixed> $run The declared run.
 	 *
 	 * @return FlowRun
 	 */
-	private function entity(Flow $flow, ?int $version, array $run, string $uuid): FlowRun {
-		$created = new DateTime((string) ($run['created'] ?? 'now'));
-
+	private function entity(ExampleSetRunsWrite $write, array $run): FlowRun {
 		$entity = new FlowRun();
-		$entity->setUuid($uuid);
-		$entity->setFlowId((string) $flow->getUuid());
-		$entity->setFlowVersion($version);
+		$entity->setUuid((string) ($write->newUuid)());
+		$entity->setFlowId((string) $write->flow->getUuid());
+		$entity->setFlowVersion($write->version);
 		$entity->setStatus((string) $run['status']);
-		$entity->setSubjectUuid((string) $run['subject']);
-		$entity->setSubjectRegister(($run['subjectRegister'] ?? null));
-		$entity->setSubjectSchema(($run['subjectSchema'] ?? null));
-		$entity->setTrigger((string) ($run['trigger'] ?? $flow->getTrigger() ?? 'manual'));
+		self::setSubject(entity: $entity, run: $run);
+		$entity->setTrigger((string) ($run['trigger'] ?? $write->flow->getTrigger() ?? 'manual'));
 		$entity->setTriggeredBy(($run['triggeredBy'] ?? null));
 		$entity->setError(($run['error'] ?? null));
-		$entity->setOrganisation($flow->getOrganisation());
-		$entity->setCreated($created);
-		$entity->setUpdated(new DateTime((string) ($run['updated'] ?? $created->format('c'))));
+		$entity->setOrganisation($write->flow->getOrganisation());
+		self::setMoments(entity: $entity, run: $run);
 
 		return $entity;
 	}//end entity()
+
+	/**
+	 * Date the run as declared: created then, updated then or else when created.
+	 *
+	 * @param FlowRun              $entity The run being built.
+	 * @param array<string, mixed> $run    The declared run.
+	 *
+	 * @return void
+	 */
+	private static function setMoments(FlowRun $entity, array $run): void {
+		$created = new DateTime((string) ($run['created'] ?? 'now'));
+		$entity->setCreated($created);
+		$entity->setUpdated(new DateTime((string) ($run['updated'] ?? $created->format('c'))));
+	}//end setMoments()
+
+	/**
+	 * Point the run at its declared subject.
+	 *
+	 * @param FlowRun              $entity The run being built.
+	 * @param array<string, mixed> $run    The declared run.
+	 *
+	 * @return void
+	 */
+	private static function setSubject(FlowRun $entity, array $run): void {
+		$entity->setSubjectUuid((string) $run['subject']);
+		$entity->setSubjectRegister(($run['subjectRegister'] ?? null));
+		$entity->setSubjectSchema(($run['subjectSchema'] ?? null));
+	}//end setSubject()
 
 	/**
 	 * Park a run on a step as the user-task step does: one token and one item there, the step's slot empty
@@ -381,14 +397,26 @@ class ExampleSetFlowRuns {
 		$run->setItems([$item]);
 		$run->setRunAs($actor);
 		$run->setResumeAt(null);
-		$run->setContext(
-			[
-				'runUuid'                    => $run->getUuid(),
-				'flowId'                     => $run->getFlowId(),
-				'triggeredBy'                => $actor,
-				'runAs'                      => $actor,
-				FlowResumeState::CONTEXT_KEY => [$node => []],
-			]
-		);
+		$run->setContext(self::parkedContext(run: $run, node: $node));
 	}//end park()
+
+	/**
+	 * The context of a run parked at a node, acting as whoever triggered it.
+	 *
+	 * @param FlowRun $run  The run.
+	 * @param string  $node The node it waits at.
+	 *
+	 * @return array<string, mixed> The context.
+	 */
+	private static function parkedContext(FlowRun $run, string $node): array {
+		$actor = $run->getTriggeredBy();
+
+		return [
+			'runUuid'                    => $run->getUuid(),
+			'flowId'                     => $run->getFlowId(),
+			'triggeredBy'                => $actor,
+			'runAs'                      => $actor,
+			FlowResumeState::CONTEXT_KEY => [$node => []],
+		];
+	}//end parkedContext()
 }//end class

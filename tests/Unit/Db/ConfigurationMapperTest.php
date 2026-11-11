@@ -5,6 +5,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -37,17 +38,13 @@ class ConfigurationMapperTest extends TestCase {
 		$this->mapper = new ConfigurationMapper(
 			$this->db,
 			new TenancyServices($this->organisationMapper, $this->userSession, $this->groupManager),
-			$this->eventDispatcher
+			new EntityEventPublisher(dispatcher: $this->eventDispatcher)
 		);
 	}
 
 	// -------------------------------------------------------------------------
 	// Construction
 	// -------------------------------------------------------------------------
-
-	public function testConstructorCreatesInstance(): void {
-		$this->assertInstanceOf(ConfigurationMapper::class, $this->mapper);
-	}
 
 	public function testGetTableNameReturnsCorrectValue(): void {
 		$this->assertStringContainsString('openregister_configurations', $this->mapper->getTableName());

@@ -23,7 +23,9 @@ use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookDispatchServices;
+use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Service\WebhookStores;
 use OCP\BackgroundJob\IJobList;
@@ -92,7 +94,13 @@ class WebhookServiceDeliverGoldenTest extends TestCase {
 			$webhook->setFiltersArray($case['filters']);
 		}
 
-		$result = $service->deliverWebhook($webhook, 'Golden\\Event', ['kind' => 'thing', 'id' => 5], $case['attempt'] ?? 1);
+		$result = $service->deliverWebhook(
+			new WebhookDelivery(
+				webhook: $webhook,
+				event: new WebhookEvent(name: 'Golden\\Event', payload: ['kind' => 'thing', 'id' => 5]),
+				attempt: $case['attempt'] ?? 1
+			)
+		);
 
 		$actual = ['result' => $result, 'calls' => $this->calls];
 		$json = (string)json_encode($actual, JSON_UNESCAPED_SLASHES);

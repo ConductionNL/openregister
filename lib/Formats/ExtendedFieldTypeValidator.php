@@ -79,33 +79,33 @@ class ExtendedFieldTypeValidator implements ExtendedFieldTypeValidatorInterface 
 	];
 
 	/**
-	 * Validate a `color` value against the property's declared format.
+	 * Validate a `color` value against the declared format of its property.
 	 *
 	 * The default format is `hex`. The `rgba` format requires exactly four
 	 * components inside the `rgba(...)` envelope. The `oklch` format validates
 	 * the `oklch(L C H)` syntax. Returns `null` on success or the exact 422
 	 * message mandated by REQ-EFT-005 on failure.
 	 *
-	 * @param mixed $value The colour value submitted by the client.
-	 * @param string|null $format The declared `format` annotation (null => hex).
-	 * @param string $propertyName The property name (for the error message).
+	 * @param mixed             $value    The colour value submitted by the client.
+	 * @param FormattedProperty $property The property name and its declared `format` (null => hex).
 	 *
 	 * @return string|null Null on success, or the exact 422 error message on failure.
 	 *
 	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-005
 	 */
-	public function validateColor(mixed $value, ?string $format, string $propertyName): ?string {
+	public function validateColorProperty(mixed $value, FormattedProperty $property): ?string {
+		$propertyName = $property->name;
 		if (is_string($value) === false) {
 			return "Property '{$propertyName}': color value must be a string";
 		}
 
-		$problem = $this->colorProblem(value: $value, format: strtolower((string)$format));
+		$problem = $this->colorProblem(value: $value, format: strtolower((string)$property->format));
 		if ($problem === null) {
 			return null;
 		}
 
 		return "Property '{$propertyName}' {$problem}";
-	}//end validateColor()
+	}//end validateColorProperty()
 
 	/**
 	 * What is wrong with a colour string under a lower-cased declared format.
@@ -205,31 +205,30 @@ class ExtendedFieldTypeValidator implements ExtendedFieldTypeValidatorInterface 
 	}//end validateRecurrence()
 
 	/**
-	 * Materialise the next N upcoming occurrences for a recurrence RRULE.
+	 * Materialise the next N upcoming occurrences of a recurrence window.
 	 *
-	 * Iterates the RRULE from `now` and collects up to `$count` ISO-8601
-	 * occurrence timestamps. `$count` is clamped to [1, MAX_OCCURRENCES]. The
-	 * RRULE string itself is never modified — callers preserve it for round-trip
-	 * integrity and attach the result under the `_occurrences` virtual field.
+	 * Iterates the RRULE from the window's start (now when absent) and collects
+	 * up to its count of ISO-8601 occurrence timestamps. The count is clamped to
+	 * [1, MAX_OCCURRENCES]. The RRULE string itself is never modified — callers
+	 * preserve it for round-trip integrity and attach the result under the
+	 * `_occurrences` virtual field.
 	 *
-	 * @param string $rrule The RFC 5545 RRULE string.
-	 * @param int $count The number of occurrences to emit.
-	 * @param DateTimeInterface|null $start The iteration start (defaults to now).
+	 * @param RecurrenceWindow $window The RRULE, the number of occurrences and the start.
 	 *
 	 * @return array<int, string> ISO-8601 occurrence timestamps, or empty on parse failure.
 	 *
 	 * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
 	 */
-	public function materialiseOccurrences(string $rrule, int $count, ?DateTimeInterface $start = null): array {
+	public function occurrencesIn(RecurrenceWindow $window): array {
 		try {
-			$iterator = new RRuleIterator($rrule, $start ?? new DateTimeImmutable('now'));
-			return $this->collectOccurrences(iterator: $iterator, count: $this->clampCount(count: $count));
+			$iterator = new RRuleIterator($window->rrule, $window->start ?? new DateTimeImmutable('now'));
+			return $this->collectOccurrences(iterator: $iterator, count: $this->clampCount(count: $window->count));
 		} catch (Throwable $e) {
 			// A value that fails to parse here would already have been rejected at
 			// write time; on read we degrade gracefully to no occurrences.
 			return [];
 		}
-	}//end materialiseOccurrences()
+	}//end occurrencesIn()
 
 	/**
 	 * Clamp a requested occurrence count: below 1 means the default, above the maximum means the maximum.

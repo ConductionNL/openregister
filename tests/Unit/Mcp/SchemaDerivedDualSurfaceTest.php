@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
@@ -366,12 +367,14 @@ class SchemaDerivedDualSurfaceTest extends TestCase {
 		// The facade invocation MUST hit the same audited invokeTool() path
 		// the JSON-RPC surface uses — exactly one audit record.
 		$this->auditTrailMapper->expects($this->once())
-			->method('createToolInvocationEntry')
+			->method('recordToolInvocation')
 			->with(
-				'pipelinq.lead.get',
-				$this->matchesRegularExpression('/^[a-f0-9]{64}$/'),
-				$this->callback(fn ($summary) => $summary['isError'] === false),
-				new AuditedObject(null, 1, null, 'uuid-9')
+				$this->callback(
+					fn (ToolInvocation $invocation) => $invocation->toolId === 'pipelinq.lead.get'
+						&& preg_match('/^[a-f0-9]{64}$/', $invocation->paramsDigest) === 1
+						&& $invocation->resultSummary['isError'] === false
+						&& $invocation->about == new AuditedObject(null, 1, null, 'uuid-9')
+				)
 			);
 
 		$facade = $this->buildFacade();

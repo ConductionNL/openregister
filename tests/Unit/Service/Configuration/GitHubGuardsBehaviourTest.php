@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Service\Configuration\DistinctKeyBudget;
 use OCA\OpenRegister\Service\Configuration\GitHubGuards;
 use OCA\OpenRegister\Service\Configuration\RateLimiterService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -88,7 +89,7 @@ class GitHubGuardsBehaviourTest extends TestCase
     {
         $this->session->method('getUser')->willReturn(null);
         $this->limiter->expects($this->never())->method('isOperational');
-        $this->limiter->expects($this->never())->method('consumeDistinctKeyBudget');
+        $this->limiter->expects($this->never())->method('consumeFromBudget');
 
         $this->assertNull($this->guards()->enforceGetRateLimit('k-1'));
     }//end testAnAnonymousCallerIsNotCounted()
@@ -100,8 +101,11 @@ class GitHubGuardsBehaviourTest extends TestCase
         $this->session->method('getUser')->willReturn($user);
         $this->limiter->method('isOperational')->willReturn(true);
         $this->limiter->expects($this->once())
-            ->method('consumeDistinctKeyBudget')
-            ->with('getmiss:alice', 'k-9', 10, $this->greaterThan(0))
+            ->method('consumeFromBudget')
+            ->with(
+                $this->callback(static fn (DistinctKeyBudget $budget): bool => $budget->bucketKey === 'getmiss:alice' && $budget->maxKeys === 10 && $budget->windowSeconds > 0),
+                'k-9'
+            )
             ->willReturn(42);
 
         $response = $this->guards()->enforceGetRateLimit('k-9');

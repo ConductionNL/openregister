@@ -126,3 +126,73 @@ describe('MergeObject.loadSourceData', () => {
 		}
 	}
 })
+
+describe('MergeObject merge choices (golden)', () => {
+	const SOURCE = { '@self': { id: 'src' }, id: 's', name: 'Source', city: 'Ede', empty: '', zero: 0, nested: { a: 1 }, onlySource: 'x' }
+	const TARGET = { '@self': { id: 'tgt' }, id: 't', name: 'Target', city: null, empty: '', zero: 0, nested: { b: 2 }, onlyTarget: false }
+
+	it('seeds the merge data, custom values and dropdown selections', () => {
+		const ctx = context()
+		objectStore.objectItem = SOURCE
+		ctx.selectedTargetObject = TARGET
+		ctx.initializeMergeData()
+		expect(
+			JSON.stringify({
+				mergedData: ctx.mergedData,
+				customValues: ctx.customValues,
+				propertySelections: ctx.propertySelections,
+			}),
+		).toMatchSnapshot()
+	})
+
+	it.each(['name', 'city', 'empty', 'zero', 'nested', 'onlySource', 'onlyTarget', 'absent'])(
+		'offers the options for %s',
+		(property) => {
+			const ctx = context()
+			objectStore.objectItem = SOURCE
+			ctx.selectedTargetObject = TARGET
+			expect(JSON.stringify(ctx.getMergeOptions(property))).toMatchSnapshot()
+		},
+	)
+
+	it.each([
+		['without a register', null, { id: 2 }, () => Promise.resolve({ json: async () => ({ results: [] }) })],
+		['finds candidates', { id: 1 }, { id: 2 }, () => Promise.resolve({ json: async () => ({ results: [{ '@self': { id: 'src' } }, { '@self': { id: 'other' } }] }) })],
+		['fails', { id: 1 }, { id: 2 }, () => Promise.reject(new Error('offline'))],
+	])('searches merge targets %s', async (name, register, schema, answer) => {
+		registerStore.registerItem = register
+		schemaStore.schemaItem = schema
+		global.fetch = jest.fn(answer)
+		jest.spyOn(console, 'error').mockImplementation(() => {})
+		const ctx = context()
+		objectStore.objectItem = SOURCE
+		ctx.searchTerm = 'a b'
+		ctx.availableObjects = ['stale']
+		await ctx.searchObjects()
+		expect({
+			fetched: global.fetch.mock.calls,
+			availableObjects: ctx.availableObjects,
+			loading: ctx.loading,
+		}).toMatchSnapshot()
+		console.error.mockRestore()
+	})
+})
+
+describe('MergeObject.getFileType (golden)', () => {
+	it.each([
+		[undefined, 'Unknown'],
+		['', 'Unknown'],
+		['report.PDF', 'PDF'],
+		['a.docx', 'Word'],
+		['sheet.xls', 'Excel'],
+		['deck.pptx', 'PowerPoint'],
+		['notes.txt', 'Text'],
+		['photo.JPEG', 'Image'],
+		['bundle.rar', 'Archive'],
+		['data.csv', 'CSV'],
+		['noextension', 'NOEXTENSION'],
+		['trailing.', 'Unknown'],
+	])('names %p as %p', (filename, label) => {
+		expect(MergeObject.methods.getFileType(filename)).toBe(label)
+	})
+})

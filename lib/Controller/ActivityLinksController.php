@@ -32,11 +32,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ActivityLinksControllerServices;
 use OCA\OpenRegister\Controller\Trait\ResolvesLinkedObjectTrait;
+use OCA\OpenRegister\Service\ActivityEntriesOptions;
+use OCA\OpenRegister\Service\ActivityFilter;
 use OCA\OpenRegister\Service\ActivityFilterServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -76,16 +80,14 @@ class ActivityLinksController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
 	 * @param IRequest $request HTTP request.
 	 * @param ActivityLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ActivityLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->filterService = $services->filterService;
 		$this->objectService = $services->objectService;
 		$this->visibility = $services->visibility;
@@ -113,12 +115,23 @@ class ActivityLinksController extends Controller {
 	 * @spec openspec/changes/timeline-entry-visibility/specs/integration-activity/spec.md
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * List filtered + paginated activity entries for an object: the body of index() for the object its route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexFor(ObjectRef $ref): JSONResponse {
 		if ($this->filterService->isActivityAvailable() === false) {
 			return $this->unavailable();
 		}
 
 		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
+			$object = $this->resolveLinkedObject(ref: new ObjectRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id));
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
@@ -129,14 +142,15 @@ class ActivityLinksController extends Controller {
 				requested: $this->nullableString(name: 'visibility')
 			);
 
-			$result = $this->filterService->getActivityEntries(
+			$entries = new ActivityFilter(
 				objectUuid: $object->getUuid(),
 				type: $this->nullableString(name: 'type'),
 				actor: $this->nullableString(name: 'actor'),
-				after: $this->nullableInt(name: 'after'),
-				limit: (int)$this->request->getParam('limit', 100),
-				cursor: $this->nullableInt(name: 'cursor'),
-				visibility: $filter
+				after: $this->nullableInt(name: 'after')
+			);
+			$result  = $this->filterService->getActivityEntries(
+				filter: $entries->withCursor(cursor: $this->nullableInt(name: 'cursor')),
+				options: new ActivityEntriesOptions(limit: (int)$this->request->getParam('limit', 100), visibility: $filter)
 			);
 
 			return new JSONResponse(
@@ -153,7 +167,7 @@ class ActivityLinksController extends Controller {
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
 		}//end try
-	}//end index()
+	}//end indexFor()
 
 	/**
 	 * Distinct activity types for the filter dropdown.
@@ -210,7 +224,7 @@ class ActivityLinksController extends Controller {
 		}
 
 		try {
-			$resolved = $this->validateObject(register: $parts[0], schema: $parts[1], id: $parts[2]);
+			$resolved = $this->resolveLinkedObject(ref: new ObjectRef(register: $parts[0], schema: $parts[1], id: $parts[2]));
 			if ($resolved === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}

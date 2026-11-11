@@ -24,7 +24,6 @@
 namespace OCA\OpenRegister\Exception;
 
 use Exception;
-use Throwable;
 
 /**
  * Exception thrown when transition input data violates the declared `inputs` allowlist.
@@ -37,30 +36,20 @@ use Throwable;
 class InvalidTransitionInputException extends Exception {
 
 	/**
-	 * The offending field names (unknown keys, or missing required inputs).
-	 *
-	 * @var array<int, string>
-	 */
-	private readonly array $fields;
-
-	/**
 	 * Constructor for InvalidTransitionInputException
 	 *
-	 * @param string $message Error message naming the offending field(s)
+	 * The exception code is always 0.
+	 *
+	 * @param string             $message Error message
 	 * @param array<int, string> $fields Offending field names
-	 * @param int $code Error code
-	 * @param Throwable|null $previous Previous exception
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $message = 'Invalid transition input data',
-		array $fields = [],
-		int $code = 0,
-		?Throwable $previous = null,
+		string $message='Invalid transition input data',
+		private readonly array $fields=[],
 	) {
-		$this->fields = $fields;
-		parent::__construct(message: $message, code: $code, previous: $previous);
+		parent::__construct(message: $message, code: 0);
 	}//end __construct()
 
 	/**

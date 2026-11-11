@@ -29,8 +29,8 @@ namespace OCA\OpenRegister\Service\Rules;
 
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
-use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
 
 /**
@@ -85,18 +85,14 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param RuleInventoryService $inventory Finds the rule as declared.
-	 * @param RuleCeilingService $ceiling Refuses a run above the rule's ceiling.
-	 * @param BulkJobService $jobs Creates and previews the background job.
-	 * @param ObjectOperationsInterface $objects Counts the selection before anything is written.
+	 * @param RuleTargets    $targets Finds the rule as declared and counts the selection before anything is written.
+	 * @param BulkJobService $jobs    Creates and previews the background job.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RuleInventoryService $inventory,
-		private readonly RuleCeilingService $ceiling,
+		private readonly RuleTargets $targets,
 		private readonly BulkJobService $jobs,
-		private readonly ObjectOperationsInterface $objects,
 	) {
 	}//end __construct()
 
@@ -107,12 +103,8 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 * state with a per-object outcome, which the operator then commits through
 	 * the bulk job surface, or does not.
 	 *
-	 * @param Schema $schema The schema the rule is declared on.
-	 * @param string $ruleId The derived rule id.
-	 * @param array<string, mixed> $selection Either `{"ids": [...]}` or `{"query": {...}}`.
-	 * @param string $actorUid The actor's uid.
-	 * @param string|null $justification The reason the operator typed.
-	 * @param int|null $registerId The register the selection lives in.
+	 * @param RuleReplayRequest   $request   The rule, who asks and why.
+	 * @param RuleReplaySelection $selection The objects, and the schema and register they are scoped to.
 	 *
 	 * @return array<string, mixed> The previewed job, or the refusal.
 	 *
@@ -120,17 +112,15 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function preview(Schema $schema, string $ruleId, array $selection, string $actorUid,
-		?string $justification = null, ?int $registerId = null): array {
-		$rule = $this->inventory->find(schema: $schema, ruleId: $ruleId);
+	public function previewReplay(RuleReplayRequest $request, RuleReplaySelection $selection): array {
+		$rule = $this->targets->rules->find(schema: $selection->schema, ruleId: $request->ruleId);
 		if ($rule === null) {
-			return $this->unknownRule(schema: $schema, ruleId: $ruleId);
+			return $this->unknownRule(schema: $selection->schema, ruleId: $request->ruleId);
 		}
 
-		$scoped = new RuleReplaySelection(schema: $schema, registerId: $registerId, criteria: $selection);
-
-		return $this->previewJob(run: new RuleReplayRun(rule: $rule, selection: $scoped, actorUid: $actorUid, justification: $justification));
-	}//end preview()
+		$run = new RuleReplayRun(rule: $rule, selection: $selection, actorUid: $request->actorUid, justification: $request->justification);
+		return $this->previewJob(run: $run);
+	}//end previewReplay()
 
 	/**
 	 * The refusal for a rule the schema does not declare.
@@ -185,7 +175,7 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 		// 🔴 BEFORE THE FIRST WRITE, AND BEFORE THE JOB EXISTS. D-4: a ceiling
 		// that stops half way leaves a partial mutation. Nothing below this line
 		// runs when the ceiling refuses, including the preview rows.
-		$this->ceiling->assert(rule: $rule, count: $count);
+		(new RuleCeilingService())->assert(rule: $rule, count: $count);
 		$job = $this->createJob(run: $run);
 
 		return ['ok' => true, 'committed' => false, 'ruleId' => $rule->getId(), 'maxObjects' => $rule->getMaxObjects()]
@@ -200,11 +190,13 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 * @return BulkJob The job.
 	 */
 	private function createJob(RuleReplayRun $run): BulkJob {
-		return $this->jobs->create(
-			call: $run->actionCall(),
-			selection: $run->selection->forBulkJob(),
-			actorUid: $run->actorUid,
-			justification: $run->justification
+		return $this->jobs->createFromRequest(
+			request: new BulkJobRequest(
+				call: $run->actionCall(),
+				selection: $run->selection->forBulkJob(),
+				actorUid: $run->actorUid,
+				justification: $run->justification
+			)
 		);
 	}//end createJob()
 
@@ -240,7 +232,7 @@ final class RuleReplayService implements RuleReplayServiceInterface {
 	 */
 	private function countQuery(array $query): ?int {
 		try {
-			return $this->objects->countSearchObjects(query: $query);
+			return $this->targets->objects->countSearchObjects(query: $query);
 		} catch (Throwable $failure) {
 			// A count that cannot be taken is not a count of zero. Answering
 			// null refuses the replay for want of a selection rather than

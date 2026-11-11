@@ -20,7 +20,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\TemplateRendering;
 use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Service\Notification\TemplateCatalogue;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -62,7 +64,7 @@ class NotificationTemplateRegistryEditsTest extends TestCase {
 			}
 		);
 
-		return new NotificationTemplateRegistry($config, $events, $shipped);
+		return new NotificationTemplateRegistry($config, new TemplateCatalogue($events, $shipped));
 
 	}//end registry()
 
@@ -74,14 +76,14 @@ class NotificationTemplateRegistryEditsTest extends TestCase {
 	public function testClearingAnEditRestoresTheShippedText(): void {
 		$registry = $this->registry();
 		$registry->edit('object_created', ['en' => ['subject' => 'Mine', 'body' => 'B']]);
-		$this->assertSame('Mine', $registry->render('object_created', 'en')['subject']);
+		$this->assertSame('Mine', $registry->renderFor(rendering: new TemplateRendering(event: 'object_created', locale: 'en'))['subject']);
 		$this->assertTrue($registry->hasEdit('object_created'));
 
 		$registry->edit('object_created', null);
 
 		$this->assertFalse($registry->hasEdit('object_created'));
 		$this->assertSame([], $this->values);
-		$this->assertSame('{{title}} was created', $registry->render('object_created', 'en')['subject']);
+		$this->assertSame('{{title}} was created', $registry->renderFor(rendering: new TemplateRendering(event: 'object_created', locale: 'en'))['subject']);
 
 	}//end testClearingAnEditRestoresTheShippedText()
 
@@ -127,7 +129,7 @@ class NotificationTemplateRegistryEditsTest extends TestCase {
 
 		$this->values['notif_tpl/object_created'] = '{broken';
 		$this->assertFalse($registry->hasEdit('object_created'));
-		$this->assertSame('{{title}} was created', $registry->render('object_created', 'en')['subject']);
+		$this->assertSame('{{title}} was created', $registry->renderFor(rendering: new TemplateRendering(event: 'object_created', locale: 'en'))['subject']);
 
 		$this->values['notif_tpl/object_created'] = '[]';
 		$this->assertFalse($registry->hasEdit('object_created'));
@@ -145,8 +147,8 @@ class NotificationTemplateRegistryEditsTest extends TestCase {
 			['e' => ['de' => ['subject' => 'Hallo {{who}}', 'body' => 'Text']]]
 		);
 
-		$this->assertSame(['subject' => 'Hallo Ada', 'body' => 'Text'], $registry->render('e', 'fr', ['who' => 'Ada']));
-		$this->assertSame(['subject' => 'Hallo {{who}}', 'body' => 'Text'], $registry->render('e', null));
+		$this->assertSame(['subject' => 'Hallo Ada', 'body' => 'Text'], $registry->renderFor(rendering: new TemplateRendering(event: 'e', locale: 'fr', variables: ['who' => 'Ada'])));
+		$this->assertSame(['subject' => 'Hallo {{who}}', 'body' => 'Text'], $registry->renderFor(rendering: new TemplateRendering(event: 'e', locale: null)));
 
 	}//end testAnyLocaleRendersWhenNeitherTheReadersNorTheDefaultExists()
 
@@ -158,7 +160,7 @@ class NotificationTemplateRegistryEditsTest extends TestCase {
 	public function testATemplateWithoutTextRendersNothing(): void {
 		$registry = $this->registry(['e' => ['group' => 't', 'variables' => []]], ['e' => ['de' => 'Hallo']]);
 
-		$this->assertNull($registry->render('e', 'de'));
+		$this->assertNull($registry->renderFor(rendering: new TemplateRendering(event: 'e', locale: 'de')));
 
 	}//end testATemplateWithoutTextRendersNothing()
 
@@ -210,8 +212,8 @@ class NotificationTemplateRegistryEditsTest extends TestCase {
 			$this->assertMatchesRegularExpression('/~[0-9a-f]{16}$/', $key);
 		}
 
-		$this->assertSame('1', $registry->render($long, 'en')['subject']);
-		$this->assertSame('2', $registry->render($other, 'en')['subject']);
+		$this->assertSame('1', $registry->renderFor(rendering: new TemplateRendering(event: $long, locale: 'en'))['subject']);
+		$this->assertSame('2', $registry->renderFor(rendering: new TemplateRendering(event: $other, locale: 'en'))['subject']);
 
 	}//end testALongEventNameGetsAHashedKeyWithinTheLimit()
 }//end class

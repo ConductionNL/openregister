@@ -222,6 +222,18 @@ final class FlowCommitWrite {
 		$carrier->setStatus(FlowRun::STATUS_COMPLETED);
 		$carrier->setUpdated($this->now);
 		$this->rows->streams->update($carrier);
+		$this->beginChildren(firing: $firing, carrier: $carrier);
+	}//end settleStreams()
+
+	/**
+	 * Begin one child stream per place the split takes, numbered from 1 under the carrier.
+	 *
+	 * @param FlowFiring $firing  The firing, its taken places and the child ids it records.
+	 * @param FlowStream $carrier The completed carrier stream.
+	 *
+	 * @return void
+	 */
+	private function beginChildren(FlowFiring $firing, FlowStream $carrier): void {
 		$index = 1;
 		foreach (array_values($firing->taken) as $to) {
 			$path = FlowStream::childPath(parentPath: (string)$carrier->getOrdinalPath(), index: $index);
@@ -235,7 +247,7 @@ final class FlowCommitWrite {
 			$this->beginChild(child: $child);
 			$index++;
 		}
-	}//end settleStreams()
+	}//end beginChildren()
 
 	/**
 	 * Continue the carrier onto the one taken place, or end it when none was taken.

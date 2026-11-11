@@ -79,19 +79,12 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 
 		$refusal = $this->refusal(slug: $slug, path: $path);
 		if ($refusal !== null) {
-			return $this->previewShape(applicable: false, reason: $refusal, entity: $entity, path: $path);
+			return $this->previewShape(entity: $entity, preview: ['applicable' => false, 'reason' => $refusal, 'path' => $path]);
 		}
 
-		$preview = $this->guard->previewReset(slug: $slug, live: $this->live(schema: $entity), path: $path);
+		$preview = $this->guard->previewPartReset(request: new ResetRequest(slug: $slug, live: $this->live(schema: $entity), path: $path));
 
-		return $this->previewShape(
-			applicable: $preview['applicable'],
-			reason: $preview['reason'],
-			entity: $entity,
-			path: $path,
-			from: $preview['from'],
-			to: $preview['to']
-		);
+		return $this->previewShape(entity: $entity, preview: (['path' => $path] + $preview));
 	}//end preview()
 
 	/**
@@ -111,26 +104,67 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 	public function reset(string|int $schema, string $path): array {
 		$path = trim($path);
 		$entity = $this->schemas->find(id: $schema, _rbac: false, _multitenancy: false);
-		$slug = (string)($entity->getSlug() ?? '');
+		$outcome = self::openOutcome(schema: $entity, path: $path);
 
-		$outcome = [
-			'applied' => false,
-			'reason' => '',
-			'schema' => $slug,
-			'schemaId' => $entity->getId(),
-			'path' => $path,
-			'from' => null,
-			'to' => null,
-		];
-
-		$refusal = $this->refusal(slug: $slug, path: $path);
+		$refusal = $this->refusal(slug: $outcome['schema'], path: $path);
 		if ($refusal !== null) {
 			$outcome['reason'] = $refusal;
 			return $outcome;
 		}
 
-		$live = $this->live(schema: $entity);
-		$result = $this->guard->resetToBaseline(slug: $slug, live: $live, path: $path, record: false);
+		return self::settled(outcome: $outcome, result: $this->resetPart(schema: $entity, path: $path));
+	}//end reset()
+
+	/**
+	 * The outcome of a reset that has not happened (yet).
+	 *
+	 * @param Schema $schema The schema.
+	 * @param string $path   The part, trimmed.
+	 *
+	 * @return array{applied: bool, reason: string, schema: string, schemaId: int|null, path: string, from: mixed, to: mixed}
+	 */
+	private static function openOutcome(Schema $schema, string $path): array {
+		return [
+			'applied' => false,
+			'reason' => '',
+			'schema' => (string)($schema->getSlug() ?? ''),
+			'schemaId' => $schema->getId(),
+			'path' => $path,
+			'from' => null,
+			'to' => null,
+		];
+	}//end openOutcome()
+
+	/**
+	 * Ask the guard to reset the part and, when it applies, write the schema and put it on the trail.
+	 *
+	 * @param Schema $schema The schema, written in place.
+	 * @param string $path   The part, trimmed.
+	 *
+	 * @return array{applied: bool, reason: string, from: mixed, to: mixed} The guard's answer.
+	 */
+	private function resetPart(Schema $schema, string $path): array {
+		$slug = (string)($schema->getSlug() ?? '');
+		$result = $this->guard->resetToBaseline(slug: $slug, live: $this->live(schema: $schema), path: $path, record: false);
+		if ($result['applied'] === true) {
+			$this->writePart(schema: $schema, leaf: new LeafReset(segments: explode(DescriptorParts::SEPARATOR, $path), to: $result['to']));
+			$this->schemas->update($schema);
+
+			$this->guard->recordPartReset(slug: $slug, reset: new PartReset(path: $path, from: $result['from'], to: $result['to']));
+		}
+
+		return $result;
+	}//end resetPart()
+
+	/**
+	 * The outcome once the guard answered: its from and to, and applied or its reason.
+	 *
+	 * @param array<string, mixed> $outcome The open outcome.
+	 * @param array<string, mixed> $result  The guard's answer.
+	 *
+	 * @return array{applied: bool, reason: string, schema: string, schemaId: int|null, path: string, from: mixed, to: mixed}
+	 */
+	private static function settled(array $outcome, array $result): array {
 		$outcome['from'] = $result['from'];
 		$outcome['to'] = $result['to'];
 		if ($result['applied'] === false) {
@@ -138,22 +172,9 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 			return $outcome;
 		}
 
-		$segments = explode(DescriptorParts::SEPARATOR, $path);
-		$top = array_shift($segments);
-		$value = $this->withLeaf(
-			tree: $live[$top],
-			segments: $segments,
-			value: $result['to'],
-			remove: ($result['to'] === null)
-		);
-		$this->writePart(schema: $entity, key: $top, value: $value);
-		$this->schemas->update($entity);
-
-		$this->guard->recordReset(slug: $slug, path: $path, from: $result['from'], to: $result['to']);
-
 		$outcome['applied'] = true;
 		return $outcome;
-	}//end reset()
+	}//end settled()
 
 	/**
 	 * Why a reset cannot even be asked for, or null.
@@ -202,91 +223,73 @@ class ShippedBaselineResetService implements ShippedBaselineResetServiceInterfac
 	/**
 	 * Replace or remove one leaf, leaving every sibling as it was stored.
 	 *
-	 * @param mixed              $tree     The stored top-level part.
-	 * @param array<int, string> $segments The path below it.
-	 * @param mixed              $value    The shipped value.
-	 * @param bool               $remove   True when the part was never shipped.
+	 * @param mixed     $tree The stored part the leaf's segments start in.
+	 * @param LeafReset $leaf The segments below the tree and the shipped value.
 	 *
-	 * @return mixed The part with the leaf replaced.
+	 * @return mixed The part with the leaf replaced, or removed when it was never shipped.
 	 */
-	private function withLeaf(mixed $tree, array $segments, mixed $value, bool $remove): mixed {
-		if ($segments === []) {
-			if ($remove === true) {
-				return [];
-			}
+	private function withLeaf(mixed $tree, LeafReset $leaf): mixed {
+		if ($leaf->segments === [] && $leaf->removes() === true) {
+			return [];
+		}
 
-			return $value;
+		if ($leaf->segments === []) {
+			return $leaf->to;
 		}
 
 		if (is_array($tree) === false) {
 			$tree = [];
 		}
 
-		$key = array_shift($segments);
-		if ($segments === [] && $remove === true) {
+		$key = $leaf->segments[0];
+		if (count($leaf->segments) === 1 && $leaf->removes() === true) {
 			unset($tree[$key]);
 			return $tree;
 		}
 
-		$tree[$key] = $this->withLeaf(tree: ($tree[$key] ?? []), segments: $segments, value: $value, remove: $remove);
+		$tree[$key] = $this->withLeaf(tree: ($tree[$key] ?? []), leaf: $leaf->below());
 		return $tree;
 	}//end withLeaf()
 
 	/**
-	 * Set one top-level part on the schema.
+	 * Set the top-level part a leaf reset falls in on the schema, with the leaf reset.
 	 *
-	 * @param Schema $schema The schema.
-	 * @param string $key    properties, required or authorization.
-	 * @param mixed  $value  The part.
+	 * @param Schema    $schema The schema, as stored.
+	 * @param LeafReset $leaf   The full path, top-level part first, and the shipped value.
 	 *
 	 * @return void
 	 */
-	private function writePart(Schema $schema, string $key, mixed $value): void {
+	private function writePart(Schema $schema, LeafReset $leaf): void {
+		$top = $leaf->segments[0];
+		$value = $this->withLeaf(tree: $this->live(schema: $schema)[$top], leaf: $leaf->below());
 		if (is_array($value) === false) {
 			$value = [];
 		}
 
-		if ($key === 'properties') {
-			$schema->setProperties($value);
-			return;
-		}
-
-		if ($key === 'required') {
-			$schema->setRequired($value);
-			return;
-		}
-
-		$schema->setAuthorization($value);
+		match ($top) {
+			'properties' => $schema->setProperties($value),
+			'required' => $schema->setRequired($value),
+			default => $schema->setAuthorization($value),
+		};
 	}//end writePart()
 
 	/**
 	 * The preview's shape.
 	 *
-	 * @param bool   $applicable Whether a reset would change anything.
-	 * @param string $reason     Why not, when not.
-	 * @param Schema $entity     The schema.
-	 * @param string $path       The part.
-	 * @param mixed  $from       The stored value.
-	 * @param mixed  $to         The shipped value.
+	 * @param Schema               $entity  The schema.
+	 * @param array<string, mixed> $preview The verdict: `applicable`, `reason`, `path`, and `from` / `to` when known.
 	 *
 	 * @return array{applicable: bool, reason: string, schema: string, schemaId: int|null, path: string, from: mixed, to: mixed}
 	 */
-	private function previewShape(
-		bool $applicable,
-		string $reason,
-		Schema $entity,
-		string $path,
-		mixed $from = null,
-		mixed $to = null
-	): array {
+	private function previewShape(Schema $entity, array $preview): array {
 		return [
-			'applicable' => $applicable,
-			'reason' => $reason,
+			'applicable' => $preview['applicable'],
+			'reason' => $preview['reason'],
 			'schema' => (string)($entity->getSlug() ?? ''),
 			'schemaId' => $entity->getId(),
-			'path' => $path,
-			'from' => $from,
-			'to' => $to,
+			'path' => $preview['path'],
+			'from' => ($preview['from'] ?? null),
+			'to' => ($preview['to'] ?? null),
 		];
 	}//end previewShape()
 }//end class

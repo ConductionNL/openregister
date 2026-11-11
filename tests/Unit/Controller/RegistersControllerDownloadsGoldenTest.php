@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Golden test for the downloads of RegistersController: export() and importTemplate().
@@ -268,25 +269,25 @@ class RegistersControllerDownloadsGoldenTest extends TestCase {
 	 */
 	private function exporter(array $case): ExportService {
 		$export = $this->createMock(ExportService::class);
-		$note   = function (string $method, array $args): void {
-			$user          = array_pop($args);
-			$this->calls[] = [$method, $args[1]?->getSlug(), $args[2] ?? 'no filters', $user?->getUID()];
+		$note   = function (string $method, ObjectExportRequest $request): void {
+			$filters       = str_starts_with($method, 'template') === true ? 'no filters' : $request->filters;
+			$this->calls[] = [$method, $request->schema?->getSlug(), $filters, $request->currentUser?->getUID()];
 		};
 		$export->method('exportToExcel')->willReturnCallback(
-			function (...$args) use ($note): Spreadsheet {
-				$note('excel', $args);
+			function (ObjectExportRequest $request) use ($note): Spreadsheet {
+				$note('excel', $request);
 				return new Spreadsheet();
 			}
 		);
 		$export->method('exportToCsv')->willReturnCallback(
-			function (...$args) use ($note): string {
-				$note('csv', $args);
+			function (ObjectExportRequest $request) use ($note): string {
+				$note('csv', $request);
 				return "a,b\n";
 			}
 		);
 		$export->method('exportToPdf')->willReturnCallback(
-			function (...$args) use ($note, $case): string {
-				$note('pdf', $args);
+			function (ObjectExportRequest $request) use ($note, $case): string {
+				$note('pdf', $request);
 				return match ($case['pdf'] ?? null) {
 					'large' => throw new ExportTooLargeException(6000, 5000),
 					'office' => throw new OfficeServerRequiredException(),
@@ -296,8 +297,8 @@ class RegistersControllerDownloadsGoldenTest extends TestCase {
 			}
 		);
 		$export->method('buildTemplateCsv')->willReturnCallback(
-			function (...$args) use ($note, $case): string {
-				$note('templateCsv', $args);
+			function (ObjectExportRequest $request) use ($note, $case): string {
+				$note('templateCsv', $request);
 				if (($case['templateFails'] ?? false) === true) {
 					throw new Exception('template broke');
 				}
@@ -306,8 +307,8 @@ class RegistersControllerDownloadsGoldenTest extends TestCase {
 			}
 		);
 		$export->method('buildTemplateSpreadsheet')->willReturnCallback(
-			function (...$args) use ($note): Spreadsheet {
-				$note('templateXlsx', $args);
+			function (ObjectExportRequest $request) use ($note): Spreadsheet {
+				$note('templateXlsx', $request);
 				return new Spreadsheet();
 			}
 		);

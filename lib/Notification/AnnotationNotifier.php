@@ -38,9 +38,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notification;
 
-use OCA\OpenRegister\Service\DeepLinkResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Notifications\Service\ObjectDeepLinks;
 use OCP\IL10N;
-use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
 use OCP\Notification\INotifier;
@@ -77,14 +77,12 @@ class AnnotationNotifier implements INotifier {
 	/**
 	 * Constructor.
 	 *
-	 * @param IFactory $factory L10N factory for localised subjects.
-	 * @param IURLGenerator $urlGenerator URL generator for the icon and action link.
-	 * @param DeepLinkResolverInterface|null $deepLinks The owning app's detail route per register and schema.
+	 * @param IFactory        $factory L10N factory for localised subjects.
+	 * @param ObjectDeepLinks $links   The URL generator for the icon and action link, and the owning app's detail route.
 	 */
 	public function __construct(
 		private readonly IFactory $factory,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly ?DeepLinkResolverInterface $deepLinks = null,
+		private readonly ObjectDeepLinks $links,
 	) {
 	}//end __construct()
 
@@ -246,11 +244,11 @@ class AnnotationNotifier implements INotifier {
 	private function iconUrl(array $params): string {
 		$originApp = (string)($params['originApp'] ?? 'openregister');
 		if ($originApp !== '' && $originApp !== 'openregister') {
-			return $this->urlGenerator->linkToRouteAbsolute('openregister.webPush.hexIcon', ['app' => $originApp]);
+			return $this->links->urls->linkToRouteAbsolute('openregister.webPush.hexIcon', ['app' => $originApp]);
 		}
 
-		return $this->urlGenerator->getAbsoluteURL(
-			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		return $this->links->urls->getAbsoluteURL(
+			$this->links->urls->imagePath(appName: 'openregister', file: 'app.svg')
 		);
 	}//end iconUrl()
 
@@ -354,7 +352,7 @@ class AnnotationNotifier implements INotifier {
 	private function actionUrl(array $action): string {
 		$url = (string)($action['url'] ?? '');
 		if (str_starts_with($url, '/') === true) {
-			return $this->urlGenerator->getAbsoluteURL($url);
+			return $this->links->urls->getAbsoluteURL($url);
 		}
 
 		return $url;
@@ -441,7 +439,7 @@ class AnnotationNotifier implements INotifier {
 			return null;
 		}
 
-		$owned = $this->resolveOwnedLink(registerId: $registerId, schemaId: $schemaId, objectUuid: $objectUuid);
+		$owned = $this->resolveOwnedLink(ref: new ObjectRef(register: $registerId, schema: $schemaId, id: $objectUuid));
 		if ($owned !== null) {
 			return $owned;
 		}
@@ -449,30 +447,28 @@ class AnnotationNotifier implements INotifier {
 		// OpenRegister runs in history mode: its object view is
 		// objects/{register}/{schema}/{uuid}. The old #/registers/... hash
 		// opened the dashboard (cloud check, 9 October 2026).
-		return $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page')
+		return $this->links->urls->linkToRouteAbsolute('openregister.dashboard.page')
 			. sprintf('objects/%s/%s/%s', rawurlencode($registerId), rawurlencode($schemaId), rawurlencode($objectUuid));
 	}//end buildObjectLink()
 
 	/**
 	 * The owning app's absolute detail link from the deep link registry, or null.
 	 *
-	 * @param string $registerId The register id.
-	 * @param string $schemaId The schema id.
-	 * @param string $objectUuid The object uuid.
+	 * @param ObjectRef $ref The register id, schema id and object uuid, as the notification carries them.
 	 *
 	 * @return string|null The absolute link, or null when no app claimed the schema.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
-	private function resolveOwnedLink(string $registerId, string $schemaId, string $objectUuid): ?string {
-		if ($this->deepLinks === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+	private function resolveOwnedLink(ObjectRef $ref): ?string {
+		if ($this->links->resolver === null || is_numeric($ref->register) === false || is_numeric($ref->schema) === false) {
 			return null;
 		}
 
-		$owned = $this->deepLinks->resolveUrl(
-			registerId: (int)$registerId,
-			schemaId: (int)$schemaId,
-			objectData: ['uuid' => $objectUuid, 'id' => $objectUuid]
+		$owned = $this->links->resolver->resolveUrl(
+			registerId: (int)$ref->register,
+			schemaId: (int)$ref->schema,
+			objectData: ['uuid' => $ref->id, 'id' => $ref->id]
 		);
 		if ($owned === null || $owned === '') {
 			return null;
@@ -482,7 +478,7 @@ class AnnotationNotifier implements INotifier {
 			return $owned;
 		}
 
-		return $this->urlGenerator->getAbsoluteURL($owned);
+		return $this->links->urls->getAbsoluteURL($owned);
 	}//end resolveOwnedLink()
 
 	/**

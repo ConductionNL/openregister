@@ -22,6 +22,7 @@
 
 namespace OCA\OpenRegister\Notifications\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -104,19 +105,16 @@ class MessageMapper extends QBMapper implements MessageMapperInterface {
 	 * Retrieves all messages for a specific conversation with pagination support.
 	 * Results are ordered by creation date ascending (oldest first) for chronological display.
 	 *
-	 * @param int $conversationId Conversation ID to filter messages by
-	 * @param int $limit Maximum number of results to return (default: 100)
-	 * @param int $offset Offset for pagination (default: 0)
+	 * @param int       $conversationId Conversation ID to filter messages by
+	 * @param ListQuery $page           The page: limit (default 100) and offset (default 0)
 	 *
 	 * @return Message[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Notifications\Db\Message>
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function findByConversation(
-		int $conversationId,
-		int $limit = 100,
-		int $offset = 0,
-	): array {
+	public function findByConversation(int $conversationId, ListQuery $page = new ListQuery(limit: 100)): array {
 		// Step 1: Get query builder instance.
 		$qb = $this->db->getQueryBuilder();
 
@@ -125,8 +123,8 @@ class MessageMapper extends QBMapper implements MessageMapperInterface {
 			->from($this->tableName)
 			->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)))
 			->orderBy('created', 'ASC')
-			->setMaxResults($limit)
-			->setFirstResult($offset);
+			->setMaxResults($page->limit)
+			->setFirstResult($page->offset ?? 0);
 
 		// Step 3: Execute query and return entities.
 		return $this->findEntities(query: $qb);

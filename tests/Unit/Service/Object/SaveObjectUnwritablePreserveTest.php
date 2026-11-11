@@ -18,6 +18,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
+use OCA\OpenRegister\Service\ProtectedCarryForward;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -28,7 +31,9 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
+use OCA\OpenRegister\Service\Object\BulkSafeguardRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -92,10 +97,8 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->createMock(MagicMapper::class),
-						unifiedObjectMapper: $this->createMock(MagicMapper::class),
-						schemaMapper: $this->schemaMapper,
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->schemaMapper, tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -180,7 +183,12 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 		$method = new ReflectionMethod(SaveObject::class, 'prepareObjectForUpdate');
 		$method->setAccessible(true);
 
-		return $method->invokeArgs($handler, [$existing, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, ['organisation' => 'org-a']), null])->getObject();
+		$preparation = new UpdatePreparation(
+			existingObject: $existing,
+			schema: $schema,
+			payload: new ObjectPayload(data: $data, selfData: ['organisation' => 'org-a'])
+		);
+		return $method->invokeArgs($handler, [$preparation])->getObject();
 	}//end prepareUpdate()
 
 	/**
@@ -232,23 +240,41 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 		$schema = $this->orgPinnedSchema();
 		$bulk = (new ReflectionClass(SaveObjects::class))->newInstanceWithoutConstructor();
 		$rules = new BulkRowRules(propertyRbac: $this->rbac);
-		(fn () => $this->rowRules = $rules)->call($bulk);
+		$checks = new BulkRowChecks(rowRules: $rules);
+		(fn () => $this->checks = $checks)->call($bulk);
 		$apply = new ReflectionMethod(SaveObjects::class, 'applyPropertyAuthorization');
 		$apply->setAccessible(true);
 
 		$forged = new ObjectEntity();
 		$forged->setOrganisation('org-b');
 		$forged->setObject(['title' => 'Offerte', 'restricted' => true, '_organisation' => 'org-a', '@self' => ['organisation' => 'org-a']]);
-		[$row, $refusal] = $apply->invoke($bulk, ['title' => 'Offerte v2'], $schema, $forged, false);
+		[$row, $refusal] = $apply->invoke($bulk, ['title' => 'Offerte v2'], self::updateOf(schema: $schema, existing: $forged));
 		$this->assertNull($refusal);
 		$this->assertTrue($row['restricted'] ?? null, 'an org-b row lost a property its caller may not update');
 
 		$own = new ObjectEntity();
 		$own->setOrganisation('org-a');
 		$own->setObject(['title' => 'Offerte', 'restricted' => true]);
-		[$row] = $apply->invoke($bulk, ['title' => 'Offerte v2'], $schema, $own, false);
+		[$row] = $apply->invoke($bulk, ['title' => 'Offerte v2'], self::updateOf(schema: $schema, existing: $own));
 		$this->assertArrayNotHasKey('restricted', $row, 'staff of the record\'s organisation clear it by leaving it out');
 	}//end testABulkRowDecidesTheCarryForwardOnTheRecord()
+
+	/**
+	 * A safeguard pass positioned on an update of a stored row.
+	 *
+	 * @param Schema       $schema   The row's schema.
+	 * @param ObjectEntity $existing The stored row.
+	 *
+	 * @return BulkSafeguardRun The pass.
+	 */
+	private static function updateOf(Schema $schema, ObjectEntity $existing): BulkSafeguardRun {
+		$run              = new BulkSafeguardRun(currentUser: null);
+		$run->rowSchema   = $schema;
+		$run->rowExisting = $existing;
+		$run->rowAction   = 'update';
+
+		return $run;
+	}//end updateOf()
 
 	/**
 	 * Staff of the record's own organisation still clear `restricted` by leaving it out.
@@ -295,11 +321,11 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 
 		$this->assertSame(
 			['restricted'],
-			$this->rbac->collectOmittedProtectedProperties(schema: $schema, incoming: ['title' => 'x'], stored: ['title' => 'x', 'restricted' => true])
+			$this->rbac->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: ['title' => 'x'], stored: ['title' => 'x', 'restricted' => true]))
 		);
 		$this->assertSame(
 			[],
-			$this->rbac->collectOmittedProtectedProperties(schema: $schema, incoming: ['title' => 'x', 'restricted' => true], stored: ['restricted' => true])
+			$this->rbac->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: ['title' => 'x', 'restricted' => true], stored: ['restricted' => true]))
 		);
 	}//end testTheHandlerNamesOnlyStoredPropertiesTheCallerMayNotUpdate()
 }//end class

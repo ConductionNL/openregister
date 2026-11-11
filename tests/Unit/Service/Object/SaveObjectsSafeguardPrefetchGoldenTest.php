@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveReporting;
 use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SafeguardBatchRun;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
@@ -142,11 +143,7 @@ class SaveObjectsSafeguardPrefetchGoldenTest extends TestCase {
 
 		$user    = ($case['user'] ?? 'bob');
 		$handler = new SaveObjects(
-			stores: new BulkSaveStores(
-				objectEntityMapper: $this->objectMapper(failingRegister: ($case['failingRegister'] ?? null)),
-				schemaMapper: $this->createMock(SchemaMapper::class),
-				registerMapper: $this->registerMapper(),
-				saveHandler: $this->createMock(SaveObject::class)
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper(), schemas: $this->createMock(SchemaMapper::class), tables: $this->objectMapper(failingRegister: ($case['failingRegister'] ?? null))), saveHandler: $this->createMock(SaveObject::class)
 			),
 			session: new BulkSaveSession(
 				userSession: $this->userSession(user: $user),
@@ -169,15 +166,14 @@ class SaveObjectsSafeguardPrefetchGoldenTest extends TestCase {
 		$schema->setId(7);
 		$schema->setSlug('schema-7');
 		$method = new ReflectionMethod(SaveObjects::class, 'applyBulkSafeguards');
-		$passed = $method->invokeArgs(
-			$handler,
-			[
-				$case['rows'],
-				new BulkBatchDefaults(null, $schema),
-				['rbac' => true, 'validation' => false, 'multitenancy' => ($case['multitenancy'] ?? true)],
-				&$result,
-			]
+		$batch  = new SafeguardBatchRun(
+			objects: $case['rows'],
+			defaults: new BulkBatchDefaults(null, $schema),
+			flags: ['rbac' => true, 'validation' => false, 'multitenancy' => ($case['multitenancy'] ?? true)],
+			result: $result
 		);
+		$passed = $method->invokeArgs($handler, [$batch]);
+		$result = $batch->result;
 
 		return ['passed' => $passed, 'result' => $result, 'calls' => $this->calls, 'log' => $logger->lines];
 	}//end runCase()

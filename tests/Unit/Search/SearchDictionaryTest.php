@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Search;
 
 use OCA\OpenRegister\Service\Search\SearchDictionary;
+use OCA\OpenRegister\Service\Search\SynonymCaps;
 use PHPUnit\Framework\TestCase;
 
 class SearchDictionaryTest extends TestCase {
@@ -42,7 +43,7 @@ class SearchDictionaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testATaughtWordIsSearchedAlongsideItsGroup(): void {
-		$expansion = $this->dictionary()->expand('omgevingsvergunning', 5, 20);
+		$expansion = $this->dictionary()->expand('omgevingsvergunning', new SynonymCaps(5, 20));
 
 		$this->assertTrue($expansion->changed());
 		$this->assertSame('(omgevingsvergunning OR bouwvergunning OR bouwaanvraag)', $expansion->term());
@@ -56,7 +57,7 @@ class SearchDictionaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUntaughtWordIsLeftAlone(): void {
-		$expansion = $this->dictionary()->expand('kapvergunning', 5, 20);
+		$expansion = $this->dictionary()->expand('kapvergunning', new SynonymCaps(5, 20));
 
 		$this->assertFalse($expansion->changed());
 		$this->assertSame('kapvergunning', $expansion->term());
@@ -69,7 +70,7 @@ class SearchDictionaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testAStopwordIsDroppedAndReported(): void {
-		$expansion = $this->dictionary()->expand('de bezwaar', 5, 20);
+		$expansion = $this->dictionary()->expand('de bezwaar', new SynonymCaps(5, 20));
 
 		$this->assertSame('(bezwaar OR beroep)', $expansion->term());
 		$this->assertSame(['de'], $expansion->jsonSerialize()['removedStopwords']);
@@ -85,7 +86,7 @@ class SearchDictionaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testATermOfOnlyStopwordsFallsBackToWhatWasTyped(): void {
-		$expansion = $this->dictionary()->expand('de een', 5, 20);
+		$expansion = $this->dictionary()->expand('de een', new SynonymCaps(5, 20));
 
 		$this->assertSame('de een', $expansion->term());
 		$this->assertFalse($expansion->changed());
@@ -99,7 +100,7 @@ class SearchDictionaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testThePerGroupCapBoundsOneWord(): void {
-		$expansion = $this->dictionary()->expand('omgevingsvergunning', 1, 20);
+		$expansion = $this->dictionary()->expand('omgevingsvergunning', new SynonymCaps(1, 20));
 
 		$this->assertSame('(omgevingsvergunning OR bouwvergunning)', $expansion->term());
 	}//end testThePerGroupCapBoundsOneWord()
@@ -110,7 +111,7 @@ class SearchDictionaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testThePerQueryCapBoundsTheWholeTerm(): void {
-		$expansion = $this->dictionary()->expand('omgevingsvergunning bezwaar', 5, 2);
+		$expansion = $this->dictionary()->expand('omgevingsvergunning bezwaar', new SynonymCaps(5, 2));
 
 		// The first word takes both of its synonyms and exhausts the budget, so
 		// the second is searched as typed rather than half-expanded.
@@ -125,7 +126,7 @@ class SearchDictionaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testAZeroCapStopsExpansionButNotStopwords(): void {
-		$expansion = $this->dictionary()->expand('de bezwaar', 0, 0);
+		$expansion = $this->dictionary()->expand('de bezwaar', new SynonymCaps(0, 0));
 
 		$this->assertSame('bezwaar', $expansion->term());
 		$this->assertSame([], $expansion->jsonSerialize()['added']);
@@ -146,7 +147,7 @@ class SearchDictionaryTest extends TestCase {
 		);
 
 		$this->assertTrue($dictionary->isEmpty());
-		$this->assertFalse($dictionary->expand('bezwaar', 5, 20)->changed());
+		$this->assertFalse($dictionary->expand('bezwaar', new SynonymCaps(5, 20))->changed());
 	}//end testAConceptWithNoAlternateLabelIsNotAGroup()
 
 	/**
@@ -156,7 +157,7 @@ class SearchDictionaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testMatchingIgnoresCase(): void {
-		$expansion = $this->dictionary()->expand('Bezwaar', 5, 20);
+		$expansion = $this->dictionary()->expand('Bezwaar', new SynonymCaps(5, 20));
 
 		$this->assertSame('(Bezwaar OR beroep)', $expansion->term());
 	}//end testMatchingIgnoresCase()
@@ -168,7 +169,7 @@ class SearchDictionaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnEmptyDictionaryChangesNothing(): void {
-		$expansion = SearchDictionary::empty()->expand('de omgevingsvergunning', 5, 20);
+		$expansion = SearchDictionary::empty()->expand('de omgevingsvergunning', new SynonymCaps(5, 20));
 
 		$this->assertSame('de omgevingsvergunning', $expansion->term());
 		$this->assertFalse($expansion->isReportable());
@@ -181,7 +182,7 @@ class SearchDictionaryTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheReportNamesTheOriginalAndWhatWasAdded(): void {
-		$report = $this->dictionary()->expand('de bezwaar', 5, 20)->jsonSerialize();
+		$report = $this->dictionary()->expand('de bezwaar', new SynonymCaps(5, 20))->jsonSerialize();
 
 		$this->assertSame('de bezwaar', $report['original']);
 		$this->assertSame('(bezwaar OR beroep)', $report['searched']);

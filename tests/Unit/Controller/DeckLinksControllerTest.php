@@ -31,6 +31,7 @@ use Exception;
 use OCA\OpenRegister\Controller\DeckLinksController;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\DeckPlacement;
 use OCA\OpenRegister\Service\DeckLinkService;
 use OCA\OpenRegister\Service\CardDraft;
 use OCA\OpenRegister\Service\LinkTarget;
@@ -331,7 +332,7 @@ class DeckLinksControllerTest extends TestCase {
 
 		$this->settingsService->expects($this->once())
 			->method('setDeckDefault')
-			->with('zaak', 7, 11);
+			->with('zaak', new DeckPlacement(boardId: 7, stackId: 11));
 
 		$response = $this->controller->setDefault('zaak');
 

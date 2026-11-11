@@ -18,6 +18,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Import;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
 use OCA\OpenRegister\Db\ImportPreviewRowMapper;
@@ -127,11 +129,11 @@ class ImportPreviewServiceSourceTest extends TestCase {
 		$this->schemaMapper   = $this->createMock(SchemaMapper::class);
 
 		$importService = $this->createMock(ImportService::class);
-		$importService->method('transformCsvRowToObject')->willReturnCallback(static fn (array $row): array => $row);
+		$importService->method('transformCsvRow')->willReturnCallback(static fn (array $row): array => $row);
 		$validator = $this->createMock(ObjectValidatorInterface::class);
 		$validator->method('validateObject')->willReturn(new ValidationResult(null));
 		$matchResolver = $this->createMock(MatchResolver::class);
-		$matchResolver->method('resolve')->willReturn([]);
+		$matchResolver->method('matchesOf')->willReturn([]);
 
 		$this->service = new ImportPreviewService(
 			new ImportPreviewStore($this->previewMapper, $rowMapper, new SourceRowReader(), new NullLogger()),
@@ -142,8 +144,7 @@ class ImportPreviewServiceSourceTest extends TestCase {
 				$importService
 			),
 			new ImportPreviewTargets(
-				$this->registerMapper,
-				$this->schemaMapper,
+				new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)),
 				$validator,
 				$this->createMock(ObjectOperationsInterface::class)
 			)

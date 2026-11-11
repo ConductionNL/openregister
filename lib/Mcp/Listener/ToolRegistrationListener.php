@@ -24,12 +24,7 @@ namespace OCA\OpenRegister\Mcp\Listener;
 
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
-use OCA\OpenRegister\Mcp\Tool\AgentTool;
-use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
 use OCA\OpenRegister\Mcp\Tool\McpProviderBridge;
-use OCA\OpenRegister\Mcp\Tool\ObjectsTool;
-use OCA\OpenRegister\Mcp\Tool\RegisterTool;
-use OCA\OpenRegister\Mcp\Tool\SchemaTool;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -47,41 +42,6 @@ use Psr\Log\LoggerInterface;
 class ToolRegistrationListener implements IEventListener {
 
 	/**
-	 * Register tool
-	 *
-	 * @var RegisterTool
-	 */
-	private RegisterTool $registerTool;
-
-	/**
-	 * Schema tool
-	 *
-	 * @var SchemaTool
-	 */
-	private SchemaTool $schemaTool;
-
-	/**
-	 * Objects tool
-	 *
-	 * @var ObjectsTool
-	 */
-	private ObjectsTool $objectsTool;
-
-	/**
-	 * Application tool
-	 *
-	 * @var ApplicationTool
-	 */
-	private ApplicationTool $applicationTool;
-
-	/**
-	 * Agent tool
-	 *
-	 * @var AgentTool
-	 */
-	private AgentTool $agentTool;
-
-	/**
 	 * Constructor
 	 *
 	 * @param BuiltinDataTools     $dataTools       The register, schema and objects tools.
@@ -92,16 +52,11 @@ class ToolRegistrationListener implements IEventListener {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		BuiltinDataTools $dataTools,
-		BuiltinPlatformTools $platformTools,
+		private readonly BuiltinDataTools $dataTools,
+		private readonly BuiltinPlatformTools $platformTools,
 		private readonly McpToolsService $mcpToolsService,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->registerTool = $dataTools->registerTool;
-		$this->schemaTool = $dataTools->schemaTool;
-		$this->objectsTool = $dataTools->objectsTool;
-		$this->applicationTool = $platformTools->applicationTool;
-		$this->agentTool = $platformTools->agentTool;
 	}//end __construct()
 
 	/**
@@ -132,10 +87,10 @@ class ToolRegistrationListener implements IEventListener {
 	private function registerBuiltinTools(ToolRegistrationEvent $event): void {
 		$event->registerTool(
 			id: 'openregister.register',
-			tool: $this->registerTool,
+			tool: $this->dataTools->registerTool,
 			metadata: [
-				'name' => $this->registerTool->getName(),
-				'description' => $this->registerTool->getDescription(),
+				'name' => $this->dataTools->registerTool->getName(),
+				'description' => $this->dataTools->registerTool->getDescription(),
 				'icon' => 'icon-category-office',
 				'app' => 'openregister',
 			]
@@ -143,10 +98,10 @@ class ToolRegistrationListener implements IEventListener {
 
 		$event->registerTool(
 			id: 'openregister.schema',
-			tool: $this->schemaTool,
+			tool: $this->dataTools->schemaTool,
 			metadata: [
-				'name' => $this->schemaTool->getName(),
-				'description' => $this->schemaTool->getDescription(),
+				'name' => $this->dataTools->schemaTool->getName(),
+				'description' => $this->dataTools->schemaTool->getDescription(),
 				'icon' => 'icon-category-customization',
 				'app' => 'openregister',
 			]
@@ -154,10 +109,10 @@ class ToolRegistrationListener implements IEventListener {
 
 		$event->registerTool(
 			id: 'openregister.objects',
-			tool: $this->objectsTool,
+			tool: $this->dataTools->objectsTool,
 			metadata: [
-				'name' => $this->objectsTool->getName(),
-				'description' => $this->objectsTool->getDescription(),
+				'name' => $this->dataTools->objectsTool->getName(),
+				'description' => $this->dataTools->objectsTool->getDescription(),
 				'icon' => 'icon-category-organization',
 				'app' => 'openregister',
 			]
@@ -165,10 +120,10 @@ class ToolRegistrationListener implements IEventListener {
 
 		$event->registerTool(
 			id: 'openregister.application',
-			tool: $this->applicationTool,
+			tool: $this->platformTools->applicationTool,
 			metadata: [
-				'name' => $this->applicationTool->getName(),
-				'description' => $this->applicationTool->getDescription(),
+				'name' => $this->platformTools->applicationTool->getName(),
+				'description' => $this->platformTools->applicationTool->getDescription(),
 				'icon' => 'icon-category-integration',
 				'app' => 'openregister',
 			]
@@ -176,10 +131,10 @@ class ToolRegistrationListener implements IEventListener {
 
 		$event->registerTool(
 			id: 'openregister.agent',
-			tool: $this->agentTool,
+			tool: $this->platformTools->agentTool,
 			metadata: [
-				'name' => $this->agentTool->getName(),
-				'description' => $this->agentTool->getDescription(),
+				'name' => $this->platformTools->agentTool->getName(),
+				'description' => $this->platformTools->agentTool->getDescription(),
 				'icon' => 'icon-category-monitoring',
 				'app' => 'openregister',
 			]
@@ -211,7 +166,7 @@ class ToolRegistrationListener implements IEventListener {
 			}
 
 			try {
-				$this->bridgeProviderDescriptors(event: $event, provider: $provider, appId: $appId);
+				$this->bridgeProviderDescriptors(event: $event, provider: $provider);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					'[ToolRegistrationListener] Failed to bridge MCP provider',
@@ -225,12 +180,12 @@ class ToolRegistrationListener implements IEventListener {
 	 * Iterate a single provider's tool descriptors and register each as a bridge.
 	 *
 	 * @param ToolRegistrationEvent $event The tool registration event.
-	 * @param object $provider The MCP tool provider.
-	 * @param string $appId The provider's app identifier.
+	 * @param object $provider The MCP tool provider; its getAppId() names the app.
 	 *
 	 * @return void
 	 */
-	private function bridgeProviderDescriptors(ToolRegistrationEvent $event, object $provider, string $appId): void {
+	private function bridgeProviderDescriptors(ToolRegistrationEvent $event, object $provider): void {
+		$appId = $provider->getAppId();
 		foreach ($provider->getTools() as $descriptor) {
 			$mcpId = (string)($descriptor['id'] ?? '');
 			if ($mcpId === '' || preg_match('/^[a-z0-9_]+(\.[a-zA-Z0-9_]+)+$/', $mcpId) === 0) {

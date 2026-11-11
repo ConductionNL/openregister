@@ -103,26 +103,57 @@ class OasRequestValidator implements OasRequestValidatorInterface {
 	 * @param array $errors The accumulator (mutated by reference).
 	 *
 	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Defensive guards against opis
-	 *                                               ValidationError shape variability
-	 *                                               across versions; each method_exists
-	 *                                               branch is one independent fallback.
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same: each fallback is one branch.
 	 */
 	private function collectErrors(mixed $error, array &$errors): void {
 		if (is_object($error) === false) {
 			return;
 		}
 
-		$path = '';
-		if (method_exists($error, 'data') === true) {
-			$data = $error->data();
-			if (is_object($data) === true && method_exists($data, 'fullPath') === true) {
-				$path = '/' . implode('/', (array)$data->fullPath());
+		$errors[] = [
+			'path' => self::errorPath(error: $error),
+			'message' => self::errorMessage(error: $error),
+		];
+
+		if (method_exists($error, 'subErrors') === true) {
+			foreach ((array)$error->subErrors() as $sub) {
+				$this->collectErrors(error: $sub, errors: $errors);
 			}
 		}
 
+	}//end collectErrors()
+
+	/**
+	 * The JSON pointer of the value an error is about, or the root when it names none.
+	 *
+	 * Each method_exists guard is a fallback against opis ValidationError shape
+	 * variability across versions.
+	 *
+	 * @param object $error The opis ValidationError or sub-error.
+	 *
+	 * @return string The path.
+	 */
+	private static function errorPath(object $error): string {
+		if (method_exists($error, 'data') === false) {
+			return '/';
+		}
+
+		$data = $error->data();
+		if (is_object($data) === true && method_exists($data, 'fullPath') === true) {
+			return '/' . implode('/', (array)$data->fullPath());
+		}
+
+		return '/';
+
+	}//end errorPath()
+
+	/**
+	 * What an error says is wrong, or a generic message when it says nothing.
+	 *
+	 * @param object $error The opis ValidationError or sub-error.
+	 *
+	 * @return string The message.
+	 */
+	private static function errorMessage(object $error): string {
 		$message = '';
 		if (method_exists($error, 'keyword') === true) {
 			$message = (string)$error->keyword();
@@ -136,28 +167,13 @@ class OasRequestValidator implements OasRequestValidatorInterface {
 			$message = (new ErrorFormatter())->formatErrorMessage(error: $error);
 		}
 
-		$errorPath = '/';
-		if ($path !== '') {
-			$errorPath = $path;
+		if ($message === '') {
+			return 'value does not validate';
 		}
 
-		$errorMessage = 'value does not validate';
-		if ($message !== '') {
-			$errorMessage = $message;
-		}
+		return $message;
 
-		$errors[] = [
-			'path' => $errorPath,
-			'message' => $errorMessage,
-		];
-
-		if (method_exists($error, 'subErrors') === true) {
-			foreach ((array)$error->subErrors() as $sub) {
-				$this->collectErrors(error: $sub, errors: $errors);
-			}
-		}
-
-	}//end collectErrors()
+	}//end errorMessage()
 
 	/**
 	 * Bind each `$dynamicRef: "#name"` to the `$dynamicAnchor` it names.
@@ -184,15 +200,14 @@ class OasRequestValidator implements OasRequestValidatorInterface {
 	 * @spec openspec/specs/oas-validation/spec.md#requirement-request-validation-against-oas-schema
 	 */
 	private function bindLocalDynamicRefs(array $schema): array {
-		$anchors = [];
-		$nestedIds = 0;
-		$this->collectDynamicAnchors(node: $schema, pointer: '', anchors: $anchors, nestedIds: $nestedIds);
-		if ($nestedIds > 0 || $anchors === []) {
+		$scan = new DynamicAnchorScan();
+		$scan->collect(node: $schema);
+		if ($scan->nestedIds > 0 || $scan->anchors === []) {
 			return $schema;
 		}
 
 		$targets = [];
-		foreach ($anchors as $name => $pointers) {
+		foreach ($scan->anchors as $name => $pointers) {
 			if (count($pointers) === 1) {
 				$targets['#' . $name] = '#' . $pointers[0];
 			}
@@ -200,35 +215,6 @@ class OasRequestValidator implements OasRequestValidatorInterface {
 
 		return $this->rewriteDynamicRefs(node: $schema, targets: $targets);
 	}//end bindLocalDynamicRefs()
-
-	/**
-	 * Record where each `$dynamicAnchor` is declared, and count nested `$id`s.
-	 *
-	 * @param mixed  $node      The schema node being walked.
-	 * @param string $pointer   The JSON pointer of that node ('' is the root).
-	 * @param array  $anchors   Anchor name => list of JSON pointers (by reference).
-	 * @param int    $nestedIds Number of `$id`s below the root (by reference).
-	 *
-	 * @return void
-	 */
-	private function collectDynamicAnchors(mixed $node, string $pointer, array &$anchors, int &$nestedIds): void {
-		if (is_array($node) === false) {
-			return;
-		}
-
-		if ($pointer !== '' && isset($node['$id']) === true) {
-			$nestedIds++;
-		}
-
-		if (isset($node['$dynamicAnchor']) === true && is_string($node['$dynamicAnchor']) === true) {
-			$anchors[$node['$dynamicAnchor']][] = $pointer;
-		}
-
-		foreach ($node as $key => $child) {
-			$segment = str_replace(['~', '/'], ['~0', '~1'], (string)$key);
-			$this->collectDynamicAnchors(node: $child, pointer: $pointer . '/' . $segment, anchors: $anchors, nestedIds: $nestedIds);
-		}
-	}//end collectDynamicAnchors()
 
 	/**
 	 * Replace `$dynamicRef` values that have a bound target with a plain `$ref`.

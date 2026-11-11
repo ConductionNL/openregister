@@ -64,10 +64,10 @@ class SeedVersionLedgerGoldenTest extends TestCase {
 		$this->assertSame('9', $ledger->shipped($longApp, 's'));
 		$this->assertNull($ledger->shipped('fresh', 'a'));
 
-		$ledger->record('app', '1:2:x', '1.0');
-		$ledger->record('broken', 'a', '1');
-		$ledger->record('app', '1:2:w', '3');
-		$ledger->record($longApp, 's', '9');
+		$ledger->recordVersions('app', ['1:2:x' => '1.0']);
+		$ledger->recordVersions('broken', ['a' => '1']);
+		$ledger->recordVersions('app', ['1:2:w' => '3']);
+		$ledger->recordVersions($longApp, ['s' => '9']);
 		$ledger->flush();
 		$ledger->flush();
 

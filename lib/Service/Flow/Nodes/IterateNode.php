@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -193,9 +194,8 @@ class IterateNode extends LogicNodeBase implements IFlowNode, IterateNodeInterfa
 	 * Later passes deliberately do NOT carry the previous pass's output: the
 	 * source is paging, not re-filtering what it just produced.
 	 *
-	 * @param integer $index The pass number.
-	 * @param array<int, mixed> $upstream The items that entered the loop.
-	 * @param array<string, mixed> $iteration The `{index, first}` descriptor.
+	 * @param array<int, mixed>    $upstream  The items that entered the loop.
+	 * @param array<string, mixed> $iteration The `{index, first}` descriptor; `index` is the pass number.
 	 *
 	 * @return array<int, mixed> The items the source runs against.
 	 *
@@ -206,8 +206,8 @@ class IterateNode extends LogicNodeBase implements IFlowNode, IterateNodeInterfa
 	 *
 	 * @spec openspec/changes/flow-sync-decomposition/specs/flow-iteration/spec.md
 	 */
-	private function seedFor(int $index, array $upstream, array $iteration): array {
-		if ($index > 0 || $upstream === []) {
+	private function seedFor(array $upstream, array $iteration): array {
+		if ($iteration['index'] > 0 || $upstream === []) {
 			return [FlowItems::item(json: ['iteration' => $iteration])];
 		}
 
@@ -308,9 +308,7 @@ class IterateNode extends LogicNodeBase implements IFlowNode, IterateNodeInterfa
 	 * the final page. That is what an author expects from "repeat until done",
 	 * and getting it wrong would silently discard all but the last batch.
 	 *
-	 * @param array $items The input items, passed to the first source call.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array Every item produced across all iterations.
 	 *
@@ -318,53 +316,95 @@ class IterateNode extends LogicNodeBase implements IFlowNode, IterateNodeInterfa
 	 *
 	 * @spec openspec/changes/flow-sync-decomposition/specs/flow-iteration/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
-		$dispatcher = $this->container->get(FlowStepDispatcher::class);
-		$source = (array)$config['source'];
-		$body = (array)$config['body'];
-		$max = (int)($config['maxIterations'] ?? self::DEFAULT_MAX_ITERATIONS);
-		$onLimit = (string)($config['onLimit'] ?? self::ON_LIMIT_FAIL);
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
+		$context = $call->context;
+		return $this->repeat(step: new NodeInvocation(items: $items, config: $config, context: $context));
+	}//end execute()
+
+	/**
+	 * Run the body once per batch, until the source runs dry; see {@see self::execute()}.
+	 *
+	 * @param NodeInvocation $step The input items, the step configuration and the run metadata.
+	 *
+	 * @return array Every item produced across all iterations.
+	 *
+	 * @throws RuntimeException When the loop overruns its declared limit.
+	 *
+	 * @spec openspec/changes/flow-sync-decomposition/specs/flow-iteration/spec.md
+	 */
+	private function repeat(NodeInvocation $step): array {
+		$run = new IterationRun(step: $step, dispatcher: $this->container->get(FlowStepDispatcher::class));
+		$max = (int)($step->config['maxIterations'] ?? self::DEFAULT_MAX_ITERATIONS);
 
 		$gathered = [];
-		$upstream = $items;
-
 		for ($index = 0; $index < $max; $index++) {
-			$scoped = $context;
-			$scoped['iteration'] = [
-				'index' => $index,
-				'first' => ($index === 0),
-			];
-
-			$seed = $this->seedFor(index: $index, upstream: $upstream, iteration: $scoped['iteration']);
-			$batch = $dispatcher->dispatch(step: $source, items: $seed, context: $scoped);
-
-			// The one termination rule. A source with nothing left returns
-			// nothing, which is exactly what a page past the end looks like —
-			// so pagination needs no second concept to express "done".
-			if (empty($batch) === true) {
+			$batch = $this->pass(run: $run, index: $index);
+			if ($batch === null) {
 				return $gathered;
 			}
 
-			foreach ($body as $step) {
-				$batch = $dispatcher->dispatch(step: $step, items: $batch, context: $scoped);
-			}
-
 			$gathered = array_merge($gathered, $batch);
-		}//end for
+		}
 
-		if ($onLimit === self::ON_LIMIT_STOP) {
+		if ((string)($step->config['onLimit'] ?? self::ON_LIMIT_FAIL) === self::ON_LIMIT_STOP) {
 			return $gathered;
 		}
 
-		throw new RuntimeException(
+		throw self::overrun(max: $max);
+	}//end repeat()
+
+	/**
+	 * One pass: the source produces a batch, the body runs over it.
+	 *
+	 * @param IterationRun $run   The repeat step's run.
+	 * @param int          $index The pass number.
+	 *
+	 * @return array|null The batch the body produced, or null when the source ran dry.
+	 *
+	 * @spec openspec/changes/flow-sync-decomposition/specs/flow-iteration/spec.md
+	 */
+	private function pass(IterationRun $run, int $index): ?array {
+		$scoped = $run->step->context;
+		$scoped['iteration'] = [
+			'index' => $index,
+			'first' => ($index === 0),
+		];
+
+		$seed  = $this->seedFor(upstream: $run->step->items, iteration: $scoped['iteration']);
+		$batch = $run->dispatcher->dispatch(step: $run->source(), items: $seed, context: $scoped);
+
+		// The one termination rule. A source with nothing left returns
+		// nothing, which is exactly what a page past the end looks like —
+		// so pagination needs no second concept to express "done".
+		if (empty($batch) === true) {
+			return null;
+		}
+
+		foreach ($run->body() as $step) {
+			$batch = $run->dispatcher->dispatch(step: $step, items: $batch, context: $scoped);
+		}
+
+		return $batch;
+	}//end pass()
+
+	/**
+	 * The failure of a loop that hit its limit while the source still produced.
+	 *
+	 * @param int $max The declared limit.
+	 *
+	 * @return RuntimeException The failure.
+	 */
+	private static function overrun(int $max): RuntimeException {
+		return new RuntimeException(
 			sprintf(
 				'Repeat step did not finish within %d iterations. Its source is still producing, '
 				. 'so either the limit is too low or the source never runs out.',
 				$max
 			)
 		);
-
-	}//end execute()
+	}//end overrun()
 
 	/**
 	 * What kind of step this is. Reshapes the item stream by running per item.

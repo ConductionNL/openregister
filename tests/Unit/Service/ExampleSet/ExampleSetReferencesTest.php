@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
@@ -116,8 +118,8 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 		$newTheme = $this->store->ids(register: 'pub', schema: 'theme')[0];
 		$this->assertNotSame($oldTheme, $newTheme);
 		$this->assertSame($publications, $this->store->ids(register: 'pub', schema: 'publication'), 'the publications are kept, not written twice');
-		$this->assertSame([$newTheme], $this->store->get(register: 'pub', schema: 'publication', id: $publications[0])['themes']);
-		$this->assertSame($newTheme, $this->store->get(register: 'pub', schema: 'publication', id: $publications[1])['theme']);
+		$this->assertSame([$newTheme], $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $publications[0]))['themes']);
+		$this->assertSame($newTheme, $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $publications[1]))['theme']);
 		$this->assertSame('refreshed', $report['changes']['alpha/pub-1#references']);
 		$this->assertSame('refreshed', $report['changes']['alpha/pub-2#references']);
 		$this->assertSame(
@@ -176,7 +178,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 
 		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 
-		$this->assertSame(['an-unrelated-id'], $this->store->get(register: 'pub', schema: 'publication', id: $publications[0])['themes']);
+		$this->assertSame(['an-unrelated-id'], $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $publications[0]))['themes']);
 		$this->assertSame($updates, $this->store->updates, 'nothing is written over the edit');
 		$this->assertArrayNotHasKey('alpha/pub-1#references', $report['changes']);
 		$this->assertArrayNotHasKey('alpha/pub-1#references', $this->record->read(set: 'demo')['changes']);
@@ -235,7 +237,7 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 			$this->store->rows['pub publication'][$pubId][$field] = $stale;
 			$report = $this->installer->install(plan: $plan, today: $this->today());
 			$this->assertSame('refreshed', $report['changes']['beta/pub-3#references'], $field);
-			$this->assertSame($themeId, $this->store->get(register: 'pub', schema: 'publication', id: $pubId)[$field]);
+			$this->assertSame($themeId, $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'publication', id: $pubId))[$field]);
 		}
 
 		$paths = array_column($this->record->read(set: 'demo')['changes']['beta/pub-3#references']['set'], 'path');

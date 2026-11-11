@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
+use OCP\IConfig;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnDrift;
 use OCA\OpenRegister\Db\MagicMapper\MagicNumberColumnSizes;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableAlterer;
@@ -75,7 +77,7 @@ class MagicTableAltererTest extends TestCase {
 			}
 		);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		return new MagicTableAlterer($db, $this->logger, new MagicNumberColumnSizes($db, 'oc_'));
+		return new MagicTableAlterer(new MagicTableSql($db, $this->createMock(IConfig::class), $this->logger), new MagicNumberColumnSizes($db, 'oc_'));
 	}//end alterer()
 
 	/**

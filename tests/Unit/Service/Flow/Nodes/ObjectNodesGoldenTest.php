@@ -86,13 +86,12 @@ final class ObjectNodesGoldenTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapperInterface::class);
 		$users = $this->createMock(IUserManager::class);
 		$nodes = [
-			new TransitionNode(engine: $this->createMock(TransitionEngine::class), l10n: $l10n, urls: $urls),
+			new TransitionNode(engine: $this->createMock(TransitionEngine::class), presentation: new FlowNodePresentation(l10n: $l10n, urls: $urls)),
 			new LinkObjectNode(objects: $objects, handoffs: $this->createMock(HandoffService::class), l10n: $l10n, urls: $urls),
 			new ObjectReadNode(
 				sources: new ObjectNodeSources(objects: $objects, registers: $registers, schemas: $schemas),
 				userManager: $users,
-				l10n: $l10n,
-				urls: $urls
+				presentation: new FlowNodePresentation(l10n: $l10n, urls: $urls)
 			),
 			new ObjectWriteNode(
 				stores: new ObjectWriteStores(objects: $objects, registers: $registers, schemas: $schemas),

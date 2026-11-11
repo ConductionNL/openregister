@@ -99,9 +99,8 @@ class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 		}
 
 		$this->blocks->assertNone(
-			findings: $this->registerFindings(
-				authorization: $register->getAuthorization(),
-				context: $subject,
+			findings: $this->findingsIn(
+				block: self::registerBlock(authorization: $register->getAuthorization(), context: $subject),
 				stored: $this->stored->registerAuthorization(id: $register->getId())
 			)
 		);
@@ -124,7 +123,7 @@ class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 			block: ['authorization' => $schema->getAuthorization(), 'context' => $name, 'columns' => $columns],
 			stored: $stored?->getAuthorization()
 		);
-		foreach ($this->stored->propertyBlocks(schema: $schema, stored: $stored, name: $name) as $block) {
+		foreach ($this->stored->propertyBlocks(save: new SchemaSave(schema: $schema, stored: $stored), name: $name) as $block) {
 			$block['columns'] = $columns;
 			$findings = array_merge($findings, $this->findingsIn(block: $block, stored: $block['stored']));
 		}
@@ -137,18 +136,44 @@ class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 	 *
 	 * @param array|null $authorization The block.
 	 * @param string     $context       What the block belongs to, for the message.
-	 * @param array|null $stored        The block as stored, when saving over one.
 	 *
 	 * @return array<int, string> The findings.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
-	public function registerFindings(?array $authorization, string $context, ?array $stored = null): array {
-		return $this->findingsIn(
-			block: ['authorization' => $authorization, 'context' => $context, 'columns' => new RuleColumns()],
-			stored: $stored
-		);
+	public function registerFindings(?array $authorization, string $context): array {
+		return $this->findingsIn(block: self::registerBlock(authorization: $authorization, context: $context), stored: null);
 	}//end registerFindings()
+
+	/**
+	 * A register's block, judged by the columns every register shares.
+	 *
+	 * @param array|null $authorization The block.
+	 * @param string     $context       What the block belongs to, for the message.
+	 *
+	 * @return array{authorization: ?array, context: string, columns: RuleColumns} The block and how to judge it.
+	 */
+	private static function registerBlock(?array $authorization, string $context): array {
+		return ['authorization' => $authorization, 'context' => $context, 'columns' => new RuleColumns()];
+	}//end registerBlock()
+
+	/**
+	 * The finding for a stored condition on a key that names nothing.
+	 *
+	 * @param array{label: string, principal: string, key: string} $condition The condition.
+	 * @param string                                                $context   Where the block sits.
+	 *
+	 * @return string The finding.
+	 */
+	private static function unknownKeyFinding(array $condition, string $context): string {
+		return sprintf(
+			'The %s rule for %s in %s has a condition on "%s", which names no property or record metadata, so it admits no row.',
+			$condition['label'],
+			$condition['principal'],
+			$context,
+			$condition['key']
+		);
+	}//end unknownKeyFinding()
 
 	/**
 	 * One sentence per condition of a block that its columns refuse and the stored block does not hold.
@@ -169,13 +194,7 @@ class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 				continue;
 			}
 
-			$findings[] = sprintf(
-				'The %s rule for %s in %s has a condition on "%s", which names no property or record metadata, so it admits no row.',
-				$condition['label'],
-				$condition['principal'],
-				$block['context'],
-				$condition['key']
-			);
+			$findings[] = self::unknownKeyFinding(condition: $condition, context: $block['context']);
 		}
 
 		return $findings;
@@ -190,21 +209,14 @@ class UnknownRuleKeyFindings implements UnknownRuleKeyFindingsInterface {
 	 */
 	private function conditions(?array $authorization): array {
 		$conditions = [];
-		foreach ($this->blocks->ruleLists(authorization: $authorization) as $label => $rules) {
-			foreach ($rules as $rule) {
-				if (is_array($rule) === false || is_array(($rule['match'] ?? null)) === false) {
-					continue;
-				}
-
-				$principal = $this->blocks->principalOf(rule: $rule);
-				foreach ($rule['match'] as $key => $value) {
-					$conditions[] = [
-						'label'       => (string)$label,
-						'principal'   => $principal,
-						'key'         => (string)$key,
-						'fingerprint' => $label.'|'.$principal.'|'.$key.'|'.json_encode($value),
-					];
-				}
+		foreach ($this->blocks->matchRules(authorization: $authorization) as $rule) {
+			foreach ($rule['match'] as $key => $value) {
+				$conditions[] = [
+					'label'       => (string)$rule['label'],
+					'principal'   => $rule['principal'],
+					'key'         => (string)$key,
+					'fingerprint' => $rule['label'].'|'.$rule['principal'].'|'.$key.'|'.json_encode($value),
+				];
 			}
 		}
 

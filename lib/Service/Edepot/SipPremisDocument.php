@@ -82,7 +82,7 @@ final class SipPremisDocument {
 		$event = $this->element(name: 'premis:event');
 		$this->premis->appendChild($event);
 		$event->appendChild(
-			$this->identifier(name: 'premis:eventIdentifier', prefix: 'premis:eventIdentifier', type: 'UUID', value: $transferId)
+			$this->identifier(name: 'premis:eventIdentifier', identifier: new PremisIdentifier(type: 'UUID', value: $transferId))
 		);
 		$event->appendChild($this->element(name: 'premis:eventType', text: 'creation'));
 		$event->appendChild($this->element(name: 'premis:eventDateTime', text: (new DateTime())->format('c')));
@@ -104,9 +104,7 @@ final class SipPremisDocument {
 		$premisObject->appendChild(
 			$this->identifier(
 				name: 'premis:objectIdentifier',
-				prefix: 'premis:objectIdentifier',
-				type: 'filepath',
-				value: SipLayout::contentPath(uuid: $uuid, file: $file)
+				identifier: new PremisIdentifier(type: 'filepath', value: SipLayout::contentPath(uuid: $uuid, file: $file))
 			)
 		);
 		$premisObject->appendChild($this->characteristics(file: $file));
@@ -124,19 +122,19 @@ final class SipPremisDocument {
 	/**
 	 * An identifier element with its type and value children.
 	 *
-	 * @param string $name   The element name.
-	 * @param string $prefix The children's name prefix (`...Type`, `...Value`).
-	 * @param string $type   The identifier type.
-	 * @param string $value  The identifier value.
+	 * The children are named after the element (`...Type`, `...Value`).
+	 *
+	 * @param string           $name       The element name.
+	 * @param PremisIdentifier $identifier The identifier type and value.
 	 *
 	 * @return DOMElement The element.
 	 */
-	private function identifier(string $name, string $prefix, string $type, string $value): DOMElement {
-		$identifier = $this->element(name: $name);
-		$identifier->appendChild($this->element(name: $prefix.'Type', text: $type));
-		$identifier->appendChild($this->element(name: $prefix.'Value', text: $value));
+	private function identifier(string $name, PremisIdentifier $identifier): DOMElement {
+		$element = $this->element(name: $name);
+		$element->appendChild($this->element(name: $name.'Type', text: $identifier->type));
+		$element->appendChild($this->element(name: $name.'Value', text: $identifier->value));
 
-		return $identifier;
+		return $element;
 	}//end identifier()
 
 	/**

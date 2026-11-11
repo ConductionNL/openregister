@@ -18,11 +18,11 @@ final class CacheSettingsControllerFactory {
 	/**
 	 * The constructor arguments of CacheSettingsController.
 	 *
-	 * @param mixed $appName Constructor argument.
+	 * @param mixed $appName Ignored: the controller uses Application::APP_ID.
 	 * @param IRequest $request Constructor argument.
 	 * @param AppSettingsInterface $settingsService Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
-	 * @param Factory $appDataFactory Constructor argument.
+	 * @param IAppDataFactory $appDataFactory Constructor argument.
 	 * @param IAppConfig $appConfig Constructor argument.
 	 *
 	 * @return array<int, mixed>
@@ -32,18 +32,17 @@ final class CacheSettingsControllerFactory {
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface $settingsService,
 		\Psr\Log\LoggerInterface $logger,
-		\OC\Files\AppData\Factory $appDataFactory,
+		\OCP\Files\AppData\IAppDataFactory $appDataFactory,
 		\OCP\IAppConfig $appConfig,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\CacheSettingsControllerServices(
 				settingsService: $settingsService,
 				logger: $logger,
 				appConfig: $appConfig,
+				appDataFactory: $appDataFactory,
 			),
-			$appDataFactory,
 		];
 	}//end args()
 

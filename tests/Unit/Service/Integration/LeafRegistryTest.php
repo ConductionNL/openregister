@@ -37,12 +37,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\LeafAvailability;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
+use OCA\OpenRegister\Service\Integration\LeafIdentity;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
+use OCA\OpenRegister\Service\Integration\LeafRendering;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
@@ -95,13 +99,13 @@ class _AppLocalNotesProvider extends AbstractIntegrationProvider {
 		return $this->enabled;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return ($this->store[$objectId] ?? []);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return ($this->store[$ref->id] ?? []);
 	}//end list()
 
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$note = ['id' => (string)(count(($this->store[$objectId] ?? [])) + 1), 'body' => ($payload['body'] ?? '')];
-		$this->store[$objectId][] = $note;
+	public function create(ObjectRef $ref, array $payload): array {
+		$note = ['id' => (string)(count(($this->store[$ref->id] ?? [])) + 1), 'body' => ($payload['body'] ?? '')];
+		$this->store[$ref->id][] = $note;
 		return $note;
 	}//end create()
 }//end class
@@ -136,7 +140,7 @@ class _ReadOnlyAppLocalProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [['id' => '1', 'body' => 'read-only item']];
 	}//end list()
 }//end class
@@ -171,7 +175,7 @@ class _BuiltinShapedProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
 		return [];
 	}//end list()
 }//end class
@@ -221,11 +225,9 @@ class LeafRegistryTest extends TestCase {
 				function (RegisterLeafProvidersEvent $event) {
 					$event->registerLeaf(
 						new LeafDescriptor(
-							id: 'acme-tab',
-							label: 'Tab',
-							icon: 'Cube',
+							identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
 							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-							requiredApp: 'acme'
+							availability: new LeafAvailability(requiredApp: 'acme'),
 						)
 					);
 				},
@@ -256,12 +258,10 @@ class LeafRegistryTest extends TestCase {
 				function (RegisterLeafProvidersEvent $event) {
 					$event->registerLeaf(
 						new LeafDescriptor(
-							id: 'acme-tab',
-							label: 'Tab',
-							icon: 'Cube',
+							identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
 							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-							requiredApp: 'acme',
-							loadStrategy: LeafDescriptor::LOADS_VIA_SHARED_ENTRY
+							availability: new LeafAvailability(requiredApp: 'acme'),
+							rendering: new LeafRendering(loadStrategy: LeafDescriptor::LOADS_VIA_SHARED_ENTRY),
 						)
 					);
 				},
@@ -288,12 +288,10 @@ class LeafRegistryTest extends TestCase {
 				function (RegisterLeafProvidersEvent $event) {
 					$event->registerLeaf(
 						new LeafDescriptor(
-							id: 'acme-tab',
-							label: 'Tab',
-							icon: 'Cube',
+							identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
 							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-							requiredApp: 'acme',
-							loadStrategy: LeafDescriptor::LOADS_VIA_OWN_SCRIPT
+							availability: new LeafAvailability(requiredApp: 'acme'),
+							rendering: new LeafRendering(loadStrategy: LeafDescriptor::LOADS_VIA_OWN_SCRIPT),
 						)
 					);
 				},
@@ -319,11 +317,9 @@ class LeafRegistryTest extends TestCase {
 				function (RegisterLeafProvidersEvent $event) {
 					$event->registerLeaf(
 						new LeafDescriptor(
-							id: 'acme-tab',
-							label: 'Tab',
-							icon: 'Cube',
+							identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'),
 							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-							requiredApp: 'acme'
+							availability: new LeafAvailability(requiredApp: 'acme'),
 						)
 					);
 				},
@@ -367,11 +363,9 @@ class LeafRegistryTest extends TestCase {
 				function (RegisterLeafProvidersEvent $event) {
 					$event->registerLeaf(
 						new LeafDescriptor(
-							id: 'acme-data',
-							label: 'Data',
-							icon: 'Cube',
+							identity: new LeafIdentity(id: 'acme-data', label: 'Data', icon: 'Cube'),
 							kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
-							requiredApp: 'acme'
+							availability: new LeafAvailability(requiredApp: 'acme'),
 						),
 						new _AppLocalNotesProvider()
 					);
@@ -403,11 +397,9 @@ class LeafRegistryTest extends TestCase {
 				function (RegisterLeafProvidersEvent $event) {
 					$event->registerLeaf(
 						new LeafDescriptor(
-							id: 'builtin-tab',
-							label: 'Tab',
-							icon: 'Cube',
+							identity: new LeafIdentity(id: 'builtin-tab', label: 'Tab', icon: 'Cube'),
 							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-							requiredApp: null
+							availability: new LeafAvailability(requiredApp: null),
 						)
 					);
 				},
@@ -457,7 +449,7 @@ class LeafRegistryTest extends TestCase {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
-					new LeafDescriptor(id: 'acme-tab', label: 'Tab', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
+					new LeafDescriptor(identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
 				);
 			},
 		]);
@@ -483,11 +475,9 @@ class LeafRegistryTest extends TestCase {
 				function (RegisterLeafProvidersEvent $event) use ($provider) {
 					$event->registerLeaf(
 						new LeafDescriptor(
-							id: 'acme-notes',
-							label: 'Notes',
-							icon: 'NoteText',
+							identity: new LeafIdentity(id: 'acme-notes', label: 'Notes', icon: 'NoteText'),
 							kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
-							requiredApp: 'acme'
+							availability: new LeafAvailability(requiredApp: 'acme'),
 						),
 						$provider
 					);
@@ -516,7 +506,7 @@ class LeafRegistryTest extends TestCase {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
-					new LeafDescriptor(id: 'good-leaf', label: 'Good', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
+					new LeafDescriptor(identity: new LeafIdentity(id: 'good-leaf', label: 'Good', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
 				);
 			},
 			function (RegisterLeafProvidersEvent $event) {
@@ -536,8 +526,8 @@ class LeafRegistryTest extends TestCase {
 	public function testEmptyKindsIsRejected(): void {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
-				$event->registerLeaf(new LeafDescriptor(id: 'no-kinds', label: 'X', icon: 'Cube', kinds: []));
-				$event->registerLeaf(new LeafDescriptor(id: 'ok', label: 'Ok', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'no-kinds', label: 'X', icon: 'Cube'), kinds: []));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'ok', label: 'Ok', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
 			},
 		]);
 
@@ -553,7 +543,7 @@ class LeafRegistryTest extends TestCase {
 	public function testUnknownKindIsRejected(): void {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
-				$event->registerLeaf(new LeafDescriptor(id: 'weird', label: 'X', icon: 'Cube', kinds: ['teleporter']));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'weird', label: 'X', icon: 'Cube'), kinds: ['teleporter']));
 			},
 		]);
 
@@ -572,12 +562,12 @@ class LeafRegistryTest extends TestCase {
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
 					new LeafDescriptor(
-						id: 'hermiq-agent',
-						label: 'Agent',
-						icon: 'Robot',
+						identity: new LeafIdentity(id: 'hermiq-agent', label: 'Agent', icon: 'Robot'),
 						kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-						surfaces: ['single-entity'],
-						renderMode: LeafDescriptor::RENDER_MODE_MOUNT
+						rendering: new LeafRendering(
+							surfaces: ['single-entity'],
+							renderMode: LeafDescriptor::RENDER_MODE_MOUNT,
+						),
 					)
 				);
 			},
@@ -599,15 +589,13 @@ class LeafRegistryTest extends TestCase {
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
 					new LeafDescriptor(
-						id: 'bad-mode',
-						label: 'X',
-						icon: 'Cube',
+						identity: new LeafIdentity(id: 'bad-mode', label: 'X', icon: 'Cube'),
 						kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-						renderMode: 'teleport'
+						rendering: new LeafRendering(renderMode: 'teleport'),
 					)
 				);
 				$event->registerLeaf(
-					new LeafDescriptor(id: 'ok', label: 'Ok', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
+					new LeafDescriptor(identity: new LeafIdentity(id: 'ok', label: 'Ok', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
 				);
 			},
 		]);
@@ -625,7 +613,7 @@ class LeafRegistryTest extends TestCase {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
-					new LeafDescriptor(id: 'acme-notes', label: 'Notes', icon: 'NoteText', kinds: [LeafDescriptor::KIND_DATA_PROVIDER])
+					new LeafDescriptor(identity: new LeafIdentity(id: 'acme-notes', label: 'Notes', icon: 'NoteText'), kinds: [LeafDescriptor::KIND_DATA_PROVIDER])
 					// No provider supplied.
 				);
 			},
@@ -643,7 +631,7 @@ class LeafRegistryTest extends TestCase {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
-					new LeafDescriptor(id: 'acme-tab', label: 'Tab', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
+					new LeafDescriptor(identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
 				);
 			},
 		]);
@@ -659,8 +647,8 @@ class LeafRegistryTest extends TestCase {
 	public function testDuplicateIdFirstWins(): void {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
-				$event->registerLeaf(new LeafDescriptor(id: 'dupe', label: 'First', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
-				$event->registerLeaf(new LeafDescriptor(id: 'dupe', label: 'Second', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'dupe', label: 'First', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'dupe', label: 'Second', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
 			},
 		]);
 
@@ -677,8 +665,8 @@ class LeafRegistryTest extends TestCase {
 	public function testNamespacedIdsDoNotCollide(): void {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
-				$event->registerLeaf(new LeafDescriptor(id: 'acme-agent', label: 'A', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
-				$event->registerLeaf(new LeafDescriptor(id: 'globex-agent', label: 'B', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'acme-agent', label: 'A', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'globex-agent', label: 'B', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
 			},
 		]);
 
@@ -696,7 +684,7 @@ class LeafRegistryTest extends TestCase {
 		$provider = new _AppLocalNotesProvider();
 		$provider->store['obj-1'] = [['id' => '1', 'body' => 'first note']];
 
-		$items = $provider->list('reg', 'schema', 'obj-1');
+		$items = $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1'));
 
 		$this->assertSame([['id' => '1', 'body' => 'first note']], $items);
 		// OpenRegister holds nothing: the only copy is the provider's own store.
@@ -710,7 +698,7 @@ class LeafRegistryTest extends TestCase {
 	 */
 	public function testAppLocalListEmptyWhenNoItems(): void {
 		$provider = new _AppLocalNotesProvider();
-		$this->assertSame([], $provider->list('reg', 'schema', 'obj-empty'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-empty')));
 	}//end testAppLocalListEmptyWhenNoItems()
 
 	/**
@@ -721,10 +709,10 @@ class LeafRegistryTest extends TestCase {
 	 */
 	public function testAppLocalCreatePersistsNoteInSiblingStore(): void {
 		$provider = new _AppLocalNotesProvider();
-		$created = $provider->create('reg', 'schema', 'obj-1', ['body' => 'hello']);
+		$created = $provider->create(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1'), ['body' => 'hello']);
 
 		$this->assertSame('hello', $created['body']);
-		$list = $provider->list('reg', 'schema', 'obj-1');
+		$list = $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1'));
 		$this->assertCount(1, $list);
 		$this->assertSame('hello', $list[0]['body']);
 	}//end testAppLocalCreatePersistsNoteInSiblingStore()
@@ -738,11 +726,11 @@ class LeafRegistryTest extends TestCase {
 		$provider = new _ReadOnlyAppLocalProvider();
 
 		// The read path is usable.
-		$this->assertCount(1, $provider->list('reg', 'schema', 'obj-1'));
+		$this->assertCount(1, $provider->list(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1')));
 
 		// The write path throws the exact not-implemented shape query-time uses.
 		$this->expectException(NotImplementedException::class);
-		$provider->create('reg', 'schema', 'obj-1', ['body' => 'nope']);
+		$provider->create(new ObjectRef(register: 'reg', schema: 'schema', id: 'obj-1'), ['body' => 'nope']);
 	}//end testReadOnlyAppLocalLeafRefusesWritesCleanly()
 
 	/**
@@ -759,12 +747,10 @@ class LeafRegistryTest extends TestCase {
 				function (RegisterLeafProvidersEvent $event) {
 					$event->registerLeaf(
 						new LeafDescriptor(
-							id: 'acme-notes',
-							label: 'Notes',
-							icon: 'NoteText',
+							identity: new LeafIdentity(id: 'acme-notes', label: 'Notes', icon: 'NoteText'),
 							kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
-							requiredApp: 'acme',
-							surfaces: ['detail-page']
+							availability: new LeafAvailability(requiredApp: 'acme'),
+							rendering: new LeafRendering(surfaces: ['detail-page']),
 						),
 						new _AppLocalNotesProvider()
 					);
@@ -795,12 +781,12 @@ class LeafRegistryTest extends TestCase {
 			function (RegisterLeafProvidersEvent $event) {
 				$event->registerLeaf(
 					new LeafDescriptor(
-						id: 'hermiq-agent',
-						label: 'Agent',
-						icon: 'Robot',
+						identity: new LeafIdentity(id: 'hermiq-agent', label: 'Agent', icon: 'Robot'),
 						kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
-						surfaces: ['single-entity'],
-						renderMode: LeafDescriptor::RENDER_MODE_MOUNT
+						rendering: new LeafRendering(
+							surfaces: ['single-entity'],
+							renderMode: LeafDescriptor::RENDER_MODE_MOUNT,
+						),
 					)
 				);
 			},
@@ -825,7 +811,7 @@ class LeafRegistryTest extends TestCase {
 			[
 				function (RegisterLeafProvidersEvent $event) {
 					$event->registerLeaf(
-						new LeafDescriptor(id: 'acme-tab', label: 'Tab', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE], requiredApp: 'acme')
+						new LeafDescriptor(identity: new LeafIdentity(id: 'acme-tab', label: 'Tab', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE], availability: new LeafAvailability(requiredApp: 'acme'))
 					);
 				},
 			],
@@ -845,7 +831,7 @@ class LeafRegistryTest extends TestCase {
 	public function testLeafWithoutRequiredAppIsAlwaysUsable(): void {
 		$registry = $this->makeRegistry([
 			function (RegisterLeafProvidersEvent $event) {
-				$event->registerLeaf(new LeafDescriptor(id: 'core-leaf', label: 'Core', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
+				$event->registerLeaf(new LeafDescriptor(identity: new LeafIdentity(id: 'core-leaf', label: 'Core', icon: 'Cube'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE]));
 			},
 		]);
 

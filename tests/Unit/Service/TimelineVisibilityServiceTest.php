@@ -34,11 +34,13 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Notifications\Service\NoteVisibilityMove;
 
 /**
  * TimelineVisibilityServiceTest.
@@ -229,6 +231,22 @@ class TimelineVisibilityServiceTest extends TestCase {
 		$this->assertSame([1, 3], array_column($internal, 'id'));
 	}
 
+	public function testFilterRowsReadsAnUndeclaredOrOddRowAsInternal(): void {
+		$rows = [
+			'not a row',
+			['id' => 1, 'visibility' => ['public']],
+			['id' => 2, 'visibility' => 'PUBLIC'],
+			['id' => 3, 'visibility' => null],
+			['id' => 4, 'visibility' => 7],
+		];
+
+		$this->assertSame([['id' => 2, 'visibility' => 'PUBLIC']], $this->service->filterRows($rows, 'Public'));
+		$this->assertSame(
+			['not a row', ['id' => 1, 'visibility' => ['public']], ['id' => 3, 'visibility' => null], ['id' => 4, 'visibility' => 7]],
+			$this->service->filterRows($rows, 'internal')
+		);
+	}
+
 	public function testFilterRowsWithoutAFilterReturnsEverything(): void {
 		$rows = [['id' => 1], ['id' => 2, 'visibility' => 'public']];
 
@@ -245,31 +263,31 @@ class TimelineVisibilityServiceTest extends TestCase {
 	public function testMakingANotePublicIsAudited(): void {
 		$object = $this->object();
 		$this->auditTrailMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with(
+			->method('recordObjectEvent')
+			->with(AuditTrailEvents::matching([
 				$object,
 				TimelineVisibilityService::AUDIT_ACTION,
 				['noteId' => 42, 'from' => 'internal', 'to' => 'public']
-			);
+			]));
 
-		$this->assertTrue($this->service->auditVisibilityChange($object, 42, 'internal', 'public'));
+		$this->assertTrue($this->service->auditNoteMove(object: $object, move: new NoteVisibilityMove(noteId: 42, from: 'internal', to: 'public')));
 	}
 
 	public function testAFlagThatDidNotMoveWritesNothing(): void {
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->assertFalse(
-			$this->service->auditVisibilityChange($this->object(), 42, 'internal', 'internal')
+			$this->service->auditNoteMove(object: $this->object(), move: new NoteVisibilityMove(noteId: 42, from: 'internal', to: 'internal'))
 		);
 	}
 
 	public function testALostAuditEntryIsLoggedRatherThanThrown(): void {
-		$this->auditTrailMapper->method('createAuditTrailEntry')
+		$this->auditTrailMapper->method('recordObjectEvent')
 			->willThrowException(new \RuntimeException('trail unavailable'));
 		$this->logger->expects($this->once())->method('error');
 
 		$this->assertFalse(
-			$this->service->auditVisibilityChange($this->object(), 42, 'internal', 'public')
+			$this->service->auditNoteMove(object: $this->object(), move: new NoteVisibilityMove(noteId: 42, from: 'internal', to: 'public'))
 		);
 	}
 }

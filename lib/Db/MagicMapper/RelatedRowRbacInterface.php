@@ -54,10 +54,7 @@ interface RelatedRowRbacInterface {
 	/**
 	 * Check if a user has permission to perform an action on a schema.
 	 *
-	 * @param Schema      $schema              Schema to check
-	 * @param string      $action              CRUD action to check
-	 * @param string|null $objectOwner         Optional object owner for ownership check
-	 * @param array|null  $objectData          Optional object data for conditional checks
+	 * @param RbacPermissionAsk $ask The schema, the action, and optionally the object owner and data
 	 *
 	 * @return bool True if user has permission
 	 *
@@ -65,19 +62,13 @@ interface RelatedRowRbacInterface {
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	public function hasPermission(
-		Schema $schema,
-		string $action,
-		?string $objectOwner = null,
-		?array $objectData = null,
-	): bool;
+	public function hasPermission(RbacPermissionAsk $ask): bool;
 
 	/**
 	 * Check if a user has permission to perform an action on one stored row.
 	 *
-	 * @param Schema       $schema Schema to check
-	 * @param string       $action CRUD action to check
-	 * @param ObjectEntity $row    The stored row: owner, match envelope, own `_authorization` and uuid
+	 * @param RbacPermissionAsk $ask The schema and the action; the row supplies every object fact
+	 * @param ObjectEntity      $row The stored row: owner, match envelope, own `_authorization` and uuid
 	 *
 	 * @return bool True if user has permission
 	 *
@@ -85,15 +76,13 @@ interface RelatedRowRbacInterface {
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
 	 */
-	public function hasRowPermission(Schema $schema, string $action, ObjectEntity $row): bool;
+	public function hasRowPermission(RbacPermissionAsk $ask, ObjectEntity $row): bool;
 
 	/**
 	 * The RBAC row predicate for rows carried under an alias in a subquery.
 	 *
-	 * @param Schema      $schema    The schema of the rows the subquery reads.
-	 * @param string      $alias     The alias those rows carry in the subquery.
-	 * @param string      $action    The CRUD action being filtered.
-	 * @param string|null $tableName The bare magic table of the aliased rows.
+	 * @param Schema      $schema The schema of the rows the subquery reads.
+	 * @param AliasedRows $rows   The alias, action and bare magic table of those rows.
 	 *
 	 * @return string A predicate, always non-empty, safe to AND into a WHERE.
 	 *
@@ -103,5 +92,5 @@ interface RelatedRowRbacInterface {
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function buildRbacPredicateForAlias(Schema $schema, string $alias, string $action = 'read', ?string $tableName = null): string;
+	public function buildRbacPredicateForAlias(Schema $schema, AliasedRows $rows): string;
 }//end interface

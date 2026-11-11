@@ -311,7 +311,7 @@ class MagicMapperPrepareObjectDataTest extends TestCase {
 		$warned->setValue(null, []);
 
 		$method = new ReflectionMethod(MagicMapper::class, 'prepareObjectDataForTable');
-		return $method->invoke($mapper, $data, $register, $schema);
+		return $method->invoke($mapper, $data, new \OCA\OpenRegister\Db\RegisterSchema($register, $schema));
 	}//end invokePrepare()
 
 	/**

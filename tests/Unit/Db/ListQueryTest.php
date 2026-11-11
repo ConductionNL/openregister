@@ -12,7 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Controller\Support\ObjectRequestParams;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -138,4 +138,78 @@ class ListQueryTest extends TestCase {
 			'page only'  => [['_page' => '4']],
 		];
 	}//end requests()
+
+	/**
+	 * unbounded() without arguments has no page size, filters or sort.
+	 *
+	 * @return void
+	 */
+	public function testUnboundedWithoutArguments(): void {
+		$query = ListQuery::unbounded();
+
+		$this->assertSame(ListQuery::UNBOUNDED, $query->limit);
+		$this->assertSame(PHP_INT_MAX, $query->limit);
+		$this->assertNull($query->offset);
+		$this->assertSame([], $query->filters);
+		$this->assertSame([], $query->sort);
+		$this->assertNull($query->search);
+		$this->assertTrue($query->isUnbounded());
+		$this->assertNull($query->limitOrNull());
+	}//end testUnboundedWithoutArguments()
+
+	/**
+	 * unbounded() keeps the filters and sort it is given.
+	 *
+	 * @return void
+	 */
+	public function testUnboundedKeepsFiltersAndSort(): void {
+		$query = ListQuery::unbounded(filters: ['status' => 'open'], sort: ['created' => 'DESC']);
+
+		$this->assertTrue($query->isUnbounded());
+		$this->assertSame(['status' => 'open'], $query->filters);
+		$this->assertSame(['created' => 'DESC'], $query->sort);
+		$this->assertNull($query->offset);
+		$this->assertNull($query->search);
+	}//end testUnboundedKeepsFiltersAndSort()
+
+	/**
+	 * A bounded listing is not unbounded and reads its own limit.
+	 *
+	 * @return void
+	 */
+	public function testBoundedListingReadsItsLimit(): void {
+		$default = new ListQuery();
+		$five    = new ListQuery(limit: 5);
+
+		$this->assertFalse($default->isUnbounded());
+		$this->assertSame(20, $default->limitOrNull());
+		$this->assertFalse($five->isUnbounded());
+		$this->assertSame(5, $five->limitOrNull());
+	}//end testBoundedListingReadsItsLimit()
+
+	/**
+	 * An unbounded listing starts on page 1, with or without an offset.
+	 *
+	 * @return void
+	 */
+	public function testUnboundedPageIsOne(): void {
+		$this->assertSame(1, ListQuery::unbounded()->page());
+		$this->assertSame(1, (new ListQuery(limit: ListQuery::UNBOUNDED, offset: 0))->page());
+		$this->assertSame(1, (new ListQuery(limit: ListQuery::UNBOUNDED, offset: 40))->page());
+	}//end testUnboundedPageIsOne()
+
+	/**
+	 * A request can never ask for an unbounded listing.
+	 *
+	 * @return void
+	 */
+	public function testFromParamsIsNeverUnbounded(): void {
+		$zero  = ListQuery::fromParams(['limit' => 0]);
+		$empty = ListQuery::fromParams([]);
+
+		$this->assertFalse($zero->isUnbounded());
+		$this->assertSame(0, $zero->limitOrNull());
+		$this->assertFalse($empty->isUnbounded());
+		$this->assertSame(20, $empty->limitOrNull());
+	}//end testFromParamsIsNeverUnbounded()
 }//end class

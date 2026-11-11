@@ -57,7 +57,7 @@ class ErasurePreviewControllerBehaviourTest extends TestCase {
 	private function controller(array $params = []): ErasurePreviewController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(static fn (string $key): mixed => $params[$key] ?? null);
-		return new ErasurePreviewController('openregister', $request, new ErasurePreviewControllerServices($this->previews, $this->store, $this->runner));
+		return new ErasurePreviewController($request, new ErasurePreviewControllerServices($this->previews, $this->store, $this->runner));
 	}
 
 	private function record(string $uuid, string $status = 'pending'): ErasurePreview {
@@ -79,7 +79,7 @@ class ErasurePreviewControllerBehaviourTest extends TestCase {
 	}
 
 	public function testCreateDefaultsToPseudonymiseWithoutTypeOrRequest(): void {
-		$this->previews->expects($this->once())->method('preview')->with('alice', null, 'pseudonymise')->willReturn(['objects' => 1]);
+		$this->previews->expects($this->once())->method('preview')->with(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery('alice'), 'pseudonymise')->willReturn(['objects' => 1]);
 		$this->store->expects($this->once())->method('record')->with(['objects' => 1], null)->willReturn($this->record('p1'));
 
 		$data = $this->controller(['subject' => ' alice ', 'type' => '  ', 'request' => ''])->create()->getData();
@@ -88,7 +88,7 @@ class ErasurePreviewControllerBehaviourTest extends TestCase {
 	}
 
 	public function testCreatePassesTypeModeAndRequestTrimmed(): void {
-		$this->previews->expects($this->once())->method('preview')->with('alice', 'email', 'delete')->willReturn([]);
+		$this->previews->expects($this->once())->method('preview')->with(new \OCA\OpenRegister\Service\Gdpr\SubjectQuery('alice', 'email'), 'delete')->willReturn([]);
 		$this->store->expects($this->once())->method('record')->with([], 'dsr-9')->willReturn($this->record('p2'));
 		$params = ['subject' => 'alice', 'type' => ' email ', 'eraseMode' => 'delete', 'request' => ' dsr-9 '];
 		$this->assertSame('p2', $this->controller($params)->create()->getData()['uuid']);

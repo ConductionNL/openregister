@@ -277,35 +277,62 @@ export default {
 		 * @return {Array<object>} The ActionMenu entries
 		 */
 		schemaActions(row) {
-			const managed = this.isManagedByExternalConfig(row)
-			const attached = row.stats?.objects?.total > 0
-			return [
-				editAction(
-					() => {
-						schemaStore.setSchemaItem(row)
-						navigationStore.setModal('editSchema')
-					},
-					{
-						disabled: managed,
-						title: managed
-							? 'Cannot edit: This schema is managed by external configuration '
-								+ (this.getManagingConfiguration(row)?.title || '')
-							: '',
-					},
-				),
-				deleteAction(
-					() => {
-						schemaStore.setSchemaItem(row)
-						navigationStore.setDialog('deleteSchema')
-					},
-					{
-						disabled: attached,
-						title: attached
-							? 'Cannot delete: objects are still attached'
-							: '',
-					},
-				),
-			]
+			return [this.schemaEditAction(row), this.schemaDeleteAction(row)]
+		},
+
+		/**
+		 * The edit entry, locked while an external configuration manages the schema.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} row The schema
+		 * @return {object} The ActionMenu entry
+		 */
+		schemaEditAction(row) {
+			const openEditor = () => {
+				schemaStore.setSchemaItem(row)
+				navigationStore.setModal('editSchema')
+			}
+			return editAction(openEditor, {
+				disabled: this.isManagedByExternalConfig(row),
+				title: this.editLockReason(row),
+			})
+		},
+
+		/**
+		 * Why the edit entry is locked: '' unless an external configuration
+		 * manages the schema.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} row The schema
+		 * @return {string} The reason
+		 */
+		editLockReason(row) {
+			if (!this.isManagedByExternalConfig(row)) {
+				return ''
+			}
+			return (
+				'Cannot edit: This schema is managed by external configuration '
+				+ (this.getManagingConfiguration(row)?.title || '')
+			)
+		},
+
+		/**
+		 * The delete entry, locked while objects are attached.
+		 *
+		 * @spec exclude Client-side menu composition.
+		 * @param {object} row The schema
+		 * @return {object} The ActionMenu entry
+		 */
+		schemaDeleteAction(row) {
+			const attached = this.hasObjects(row)
+			const confirmDelete = () => {
+				schemaStore.setSchemaItem(row)
+				navigationStore.setDialog('deleteSchema')
+			}
+			return deleteAction(confirmDelete, {
+				disabled: attached,
+				title: attached ? 'Cannot delete: objects are still attached' : '',
+			})
 		},
 
 		/**

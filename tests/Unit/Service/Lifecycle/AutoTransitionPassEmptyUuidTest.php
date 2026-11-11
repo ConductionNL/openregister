@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Lifecycle;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use PHPUnit\Framework\TestCase;
@@ -40,16 +41,16 @@ class AutoTransitionPassEmptyUuidTest extends TestCase {
 		$asked  = [];
 		$runner = $this->createMock(AutoTransitionRunner::class);
 		$runner->method('decide')->willReturnCallback(
-			static function (string $uuid) use (&$asked) {
-				$asked[] = $uuid;
+			static function (ObjectRef $ref) use (&$asked) {
+				$asked[] = $ref->id;
 				return null;
 			}
 		);
 
 		$pass = new AutoTransitionPass($runner, $this->createMock(LoggerInterface::class));
 		$pass->enter();
-		$pass->record('', 'crm', 'lead', ['status' => 'new']);
-		$pass->record('u-1', 'crm', 'lead', ['status' => 'new']);
+		$pass->record(new ObjectRef('crm', 'lead', ''), ['status' => 'new']);
+		$pass->record(new ObjectRef('crm', 'lead', 'u-1'), ['status' => 'new']);
 
 		$this->assertSame([], $pass->leave());
 		$this->assertSame(['u-1'], $asked);

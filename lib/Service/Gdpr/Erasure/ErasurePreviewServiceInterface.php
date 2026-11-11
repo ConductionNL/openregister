@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Gdpr\Erasure;
 
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 
 /**
  * The erasure preview the erasure endpoints build.
@@ -40,17 +41,16 @@ interface ErasurePreviewServiceInterface {
 	 * retention service — are called inside a catch that counts an unanswerable
 	 * question as PROTECTED (D-2).
 	 *
-	 * @param string      $subjectId Subject identifier value (email, bsn, …).
-	 * @param string|null $type      Optional GdprEntity type filter.
-	 * @param string      $eraseMode `pseudonymise` or `whole-object`.
+	 * @param SubjectQuery $subject   Subject identifier value (email, bsn, …) and optional GdprEntity type
+	 *                                filter; the match is always exact.
+	 * @param string       $eraseMode `pseudonymise` or `whole-object`.
 	 *
 	 * @return array<string, mixed> The preview: counts, items, protected, digest.
 	 *
 	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function preview(
-		string $subjectId,
-		?string $type = null,
+		SubjectQuery $subject,
 		string $eraseMode = DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE,
 	): array;
 }//end interface

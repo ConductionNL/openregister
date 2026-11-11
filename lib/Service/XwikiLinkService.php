@@ -48,9 +48,11 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Db\XwikiLinkMapperInterface;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCA\OpenRegister\Support\FleetAppId;
@@ -254,24 +256,6 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	/**
 	 * Create a new page in remote xWiki via OpenConnector and link it.
 	 *
-	 * @param LinkTarget $target The object to link to.
-	 * @param string $space Target xWiki space.
-	 * @param string $title New page title.
-	 *
-	 * @return XwikiLink The persisted link row.
-	 *
-	 * @throws Exception On missing user (401), empty title/space (400),
-	 *                   source unconfigured/upstream down (503).
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
-	 */
-	public function createAndLinkPage(LinkTarget $target, string $space, string $title): XwikiLink {
-		return $this->createAndLink(target: $target, draft: new XwikiPageDraft(space: $space, title: $title));
-	}//end createAndLinkPage()
-
-	/**
-	 * Create a new page in remote xWiki via OpenConnector and link it (see createAndLinkPage()).
-	 *
 	 * @param LinkTarget     $target The object to link to.
 	 * @param XwikiPageDraft $draft  The space and title of the new page.
 	 *
@@ -282,7 +266,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function createAndLink(LinkTarget $target, XwikiPageDraft $draft): XwikiLink {
+	public function createAndLinkPage(LinkTarget $target, XwikiPageDraft $draft): XwikiLink {
 		$uid   = $this->requireUid();
 		$draft = new XwikiPageDraft(space: trim($draft->space), title: trim($draft->title));
 		if ($draft->title === '') {
@@ -297,7 +281,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		$reference = $this->canonicalReference(info: $info, fallback: $draft->space . '.' . $draft->title);
 
 		return $this->persistLink(pending: new XwikiPendingLink(target: $target, reference: $reference, info: $info), uid: $uid);
-	}//end createAndLink()
+	}//end createAndLinkPage()
 
 	/**
 	 * Create the page in remote xWiki and return its normalised info, with the
@@ -316,7 +300,10 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 			// The OpenConnector source resolves `{ space, title }` to a new
 			// remote xWiki page and returns the normalised row.
 			$page = ['space' => $draft->space, 'title' => $draft->title];
-			$row  = $provider->create((string)$target->registerId, (string)$target->schemaId(), $target->objectUuid, $page);
+			$row  = $provider->create(
+				new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
+				$page
+			);
 		} catch (ProviderUnavailableException $e) {
 			throw $this->toServiceException(exception: $e);
 		} catch (Throwable $e) {
@@ -483,7 +470,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		try {
 			// Browse uses the same list() surface with empty OR context —
 			// the OpenConnector source returns the matching remote pages.
-			$rows = $provider->list('', '', '', $filters);
+			$rows = $provider->list(new ObjectRef(register: '', schema: '', id: ''), $filters);
 		} catch (ProviderUnavailableException $e) {
 			return ['cause' => $e->getCause(), 'results' => []];
 		} catch (Throwable $e) {
@@ -513,64 +500,37 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	}//end normaliseRows()
 
 	/**
-	 * Free-text search of the remote xWiki knowledge base — object-independent.
+	 * Free-text search of the remote xWiki knowledge base.
 	 *
-	 * This is the query-first surface a consuming app (e.g. a dashboard widget)
-	 * uses to find pages by free text, without an OR object context. It shares
-	 * the XwikiProvider browse path with {@see getAvailablePages()} but exposes
-	 * a paginated `{ results, total, limit, offset }` envelope and resolves the
-	 * xWiki base URL exclusively from the OpenConnector `xwiki` source (AD-4) —
-	 * the consumer never holds a direct xWiki URL.
+	 * @param ListQuery $query The search text, limit (clamped 1..100) and offset (clamped >= 0; none is 0).
 	 *
-	 * Read-only and null-safe: when no `xwiki` source is configured (or the
-	 * upstream is unreachable) it returns the unconfigured-source descriptor
-	 * `{ unavailable, cause, results: [], total: 0, limit, offset }` rather than
-	 * throwing, so the caller degrades to an empty/Configure state and never a
-	 * fatal (AD-23).
-	 *
-	 * @param string|null $query Free-text query (title/content). Null/empty
-	 *                           lists the most recent / available pages.
-	 * @param int $limit Max results (clamped 1..100).
-	 * @param int $offset Pagination offset (clamped >= 0).
-	 *
-	 * @return array<string,mixed> `{ results, total, limit, offset }` on
-	 *                             success, or `{ unavailable, cause, results,
-	 *                             total, limit, offset }` when the source is
-	 *                             unconfigured/down.
+	 * @return array<string,mixed> `{ results, total, limit, offset }`, or the unconfigured-source descriptor.
 	 *
 	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
-	public function searchPages(?string $query = null, int $limit = 25, int $offset = 0): array {
-		$limit  = max(1, min(100, $limit));
-		$offset = max(0, $offset);
+	public function searchPages(ListQuery $query): array {
+		$page = new ListQuery(limit: max(1, min(100, $query->limit)), offset: max(0, ($query->offset ?? 0)), search: $query->search);
 
 		// Object-independent browse/search: empty OR context.
-		$outcome = $this->browse(filters: $this->searchFilters(query: $query, limit: $limit, offset: $offset), caller: 'searchPages');
+		$outcome = $this->browse(filters: $this->searchFilters(page: $page), caller: 'searchPages');
 		if ($outcome['cause'] !== null) {
-			return $this->degraded(cause: $outcome['cause'], limit: $limit, offset: $offset);
+			return $this->degraded(cause: $outcome['cause'], page: $page);
 		}
 
-		return [
-			'results' => $outcome['results'],
-			'total' => count($outcome['results']),
-			'limit' => $limit,
-			'offset' => $offset,
-		];
+		return ['results' => $outcome['results'], 'total' => count($outcome['results']), 'limit' => $page->limit, 'offset' => $page->offset];
 	}//end searchPages()
 
 	/**
 	 * Provider list filters for a free-text search page.
 	 *
-	 * @param string|null $query  Free-text query; blank adds no search filter.
-	 * @param int         $limit  Clamped limit.
-	 * @param int         $offset Clamped offset.
+	 * @param ListQuery $page The clamped page; a blank search adds no search filter.
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function searchFilters(?string $query, int $limit, int $offset): array {
-		$filters = ['_limit' => $limit, '_page' => (int)(floor($offset / $limit) + 1)];
-		if ($query !== null && trim($query) !== '') {
-			$filters['_search'] = trim($query);
+	private function searchFilters(ListQuery $page): array {
+		$filters = ['_limit' => $page->limit, '_page' => (int)(floor($page->offset / $page->limit) + 1)];
+		if ($page->search !== null && trim($page->search) !== '') {
+			$filters['_search'] = trim($page->search);
 		}
 
 		return $filters;
@@ -581,16 +541,15 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	 * folded with the resolved limit/offset, so the search shape stays stable
 	 * across the success + degraded paths (AD-23).
 	 *
-	 * @param string $cause One of the ProviderUnavailableException CAUSE_* values.
-	 * @param int $limit Resolved limit.
-	 * @param int $offset Resolved offset.
+	 * @param string    $cause One of the ProviderUnavailableException CAUSE_* values.
+	 * @param ListQuery $page  The clamped limit and offset.
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function degraded(string $cause, int $limit, int $offset): array {
+	private function degraded(string $cause, ListQuery $page): array {
 		$state = $this->unavailableState(cause: $cause);
-		$state['limit'] = $limit;
-		$state['offset'] = $offset;
+		$state['limit'] = $page->limit;
+		$state['offset'] = $page->offset;
 
 		return $state;
 	}//end degraded()
@@ -611,7 +570,10 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	private function resolveRemotePage(string $pageReference, LinkTarget $target): array {
 		$provider = $this->requireProvider();
 		try {
-			$row = $provider->get((string)$target->registerId, (string)$target->schemaId(), $target->objectUuid, $pageReference);
+			$row = $provider->get(
+				new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
+				$pageReference
+			);
 		} catch (ProviderUnavailableException $e) {
 			throw $this->toServiceException(exception: $e);
 		} catch (Throwable $e) {
@@ -718,7 +680,7 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 		$register = (string)(int)$link->getRegisterId();
 		$schema   = (string)(int)($link->getSchemaId() ?? 0);
 		try {
-			return $provider->get($register, $schema, (string)$link->getObjectUuid(), (string)$link->getPageReference());
+			return $provider->get(new ObjectRef(register: $register, schema: $schema, id: (string)$link->getObjectUuid()), (string)$link->getPageReference());
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('XwikiLinkService::refreshLink fetch failed: ' . $e->getMessage());
 			return null;

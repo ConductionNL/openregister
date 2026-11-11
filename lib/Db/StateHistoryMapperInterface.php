@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Db\StateHistory\TrackedProperty;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -39,13 +40,12 @@ interface StateHistoryMapperInterface {
 	 * Idempotent: with no open interval it updates nothing, which is the
 	 * correct answer for the first transition an object ever makes.
 	 *
-	 * @param string            $objectUuid The object.
-	 * @param string            $property   The declared lifecycle property.
-	 * @param DateTimeInterface $leftAt     The moment it left.
+	 * @param TrackedProperty   $tracked The object and its declared lifecycle property.
+	 * @param DateTimeInterface $leftAt  The moment it left.
 	 *
 	 * @return int Rows closed.
 	 */
-	public function closeOpenInterval(string $objectUuid, string $property, DateTimeInterface $leftAt): int;
+	public function closeOpenInterval(TrackedProperty $tracked, DateTimeInterface $leftAt): int;
 
 	/**
 	 * The objects whose declared property ever held this value.
@@ -71,18 +71,13 @@ interface StateHistoryMapperInterface {
 	 * once at each side of the same moment.
 	 *
 	 * @param string            $property The declared lifecycle property.
-	 * @param DateTimeInterface $after    Start of the period, inclusive.
-	 * @param DateTimeInterface $before   End of the period, inclusive.
+	 * @param StateChangePeriod $period   The period, both ends inclusive.
 	 *
 	 * @return string[] Candidate object uuids.
 	 *
 	 * @psalm-return list<string>
 	 */
-	public function findObjectUuidsChangedBetween(
-		string $property,
-		DateTimeInterface $after,
-		DateTimeInterface $before,
-	): array;
+	public function findObjectUuidsChangedBetween(string $property, StateChangePeriod $period): array;
 
 	/**
 	 * Drop every interval of one object.

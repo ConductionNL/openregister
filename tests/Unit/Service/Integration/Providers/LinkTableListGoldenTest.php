@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Db;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\Providers;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
@@ -35,7 +36,9 @@ use OCP\IL10N;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning;
 use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
+use OCA\OpenRegister\Service\Integration\Providers\MarkerScan;
 
 /**
  * list() of the link-table providers.
@@ -85,18 +88,22 @@ class LinkTableListGoldenTest extends TestCase {
 			$mapper->method('findByObjectUuid')->willReturn($links);
 		}
 
-		$last = ($spec[3] === true ? new NullLogger() : null);
+		$args = [new LeafProviderPlatform($this->createMock(IDBConnection::class), $apps, $this->createMock(IL10N::class)), $mapper, null];
+		if ($spec[3] === true) {
+			$args = [new LeafMarkerScanning($this->createMock(IDBConnection::class), $apps, $this->createMock(IL10N::class), new NullLogger()), $mapper];
+		}
 		$builder = $this->getMockBuilder($class)
-			->setConstructorArgs([new LeafProviderPlatform($this->createMock(IDBConnection::class), $apps, $this->createMock(IL10N::class)), $mapper, $last])
-			->onlyMethods(method_exists($class, 'findByMarker') ? ['findByMarker'] : []);
+			->setConstructorArgs($args)
+			->onlyMethods(method_exists($class, 'scanMarker') ? ['scanMarker'] : []);
 		$provider = $builder->getMock();
-		if (method_exists($class, 'findByMarker') === false) {
+		if (method_exists($class, 'scanMarker') === false) {
 			return $provider;
 		}
 
-		$provider->method('findByMarker')->willReturnCallback(
-			function (...$args): array {
-				$this->markerCalls[] = array_map(static fn ($a) => is_object($a) ? 'object' : $a, $args);
+		// Recorded as connection, table, marker column, marker, extra columns, id column.
+		$provider->method('scanMarker')->willReturnCallback(
+			function (IDBConnection $db, MarkerScan $scan): array {
+				$this->markerCalls[] = ['object', $scan->table, $scan->markerColumn, $scan->marker, array_slice($scan->columns, 1), $scan->columns[0]];
 				return [['id' => 7, 'album_id' => 8, 'name' => 'N', 'slug' => 's', 'title' => 't', 'lat' => 1.5]];
 			}
 		);
@@ -137,7 +144,7 @@ class LinkTableListGoldenTest extends TestCase {
 			];
 			foreach ($scenarios as $label => [$installed, $links]) {
 				$this->markerCalls = [];
-				$rows = $this->provider($spec, $installed, $links)->list('r', 's', 'obj-1', ['q' => 1]);
+				$rows = $this->provider($spec, $installed, $links)->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'), ['q' => 1]);
 				$seen[$name.', '.$label] = ['rows' => $rows, 'marker' => $this->markerCalls];
 			}
 		}

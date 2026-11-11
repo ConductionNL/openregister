@@ -18,7 +18,6 @@ final class OperationsConsistencyControllerFactory {
 	/**
 	 * The constructor arguments of OperationsConsistencyController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ConsistencyCheckServiceInterface $check Constructor argument.
 	 * @param ConsistencyRepairServiceInterface $repair Constructor argument.
@@ -27,20 +26,18 @@ final class OperationsConsistencyControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface $check,
 		\OCA\OpenRegister\Service\Operations\ConsistencyRepairServiceInterface $repair,
 		\OCP\IUserSession $userSession,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\OperationsConsistencyControllerServices(
 				check: $check,
 				repair: $repair,
+				userSession: $userSession,
 			),
-			$userSession,
 		];
 	}
 

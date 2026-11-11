@@ -22,16 +22,23 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Controller\Support\ConfigurationAction;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ConfigurationControllerServices;
+use OCA\OpenRegister\Controller\Support\ConfigurationImport;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Controller\Support\GitHubPublishRun;
+use OCA\OpenRegister\Controller\Support\RepositoryCallFailure;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
+use OCA\OpenRegister\Service\Configuration\GitLabProjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\RepositorySearchPage;
 use OCA\OpenRegister\Service\ConfigurationServiceInterface;
 use OCA\OpenRegister\Service\NotificationServiceInterface;
 use OCA\OpenRegister\Service\Security\SafeFetchUrl;
@@ -41,6 +48,8 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileWrite;
 
 /**
  * Class ConfigurationController
@@ -166,16 +175,14 @@ class ConfigurationController extends Controller {
 	/**
 	 * Constructor
 	 *
-	 * @param string $appName The app name
 	 * @param IRequest $request The request object
 	 * @param ConfigurationControllerServices $services The configuration controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		ConfigurationControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->session = $services->session;
 
 		$this->configurationMapper = $services->mappers->configurationMapper;
@@ -252,37 +259,50 @@ class ConfigurationController extends Controller {
 		}
 
 		return $this->onConfiguration(
-			id: $id,
-			failure: 'fetch',
-			action: fn (Configuration $configuration): JSONResponse => new JSONResponse(data: $configuration, statusCode: 200),
-			failed: fn (): JSONResponse => new JSONResponse(data: ['error' => 'Failed to fetch configuration'], statusCode: 500)
+			target: new ConfigurationAction(id: $id, verb: 'fetch', failure: 'Failed to fetch configuration'),
+			action: fn (Configuration $configuration): JSONResponse => new JSONResponse(data: $configuration, statusCode: 200)
 		);
 	}//end show()
 
 	/**
 	 * Run an action on the configuration with an id: 404 when it does not
-	 * exist; any other failure is logged and answered by $failed.
+	 * exist; any other failure is logged and answered as the target says.
 	 *
-	 * @param int      $id      The configuration id
-	 * @param string   $failure The verb of the failure log ("Failed to <verb> configuration <id>")
-	 * @param callable $action  The action, given the configuration
-	 * @param callable $failed  The response to a failure, given the exception
+	 * @param ConfigurationAction $target The configuration and how a failure is reported
+	 * @param callable            $action The action, given the configuration
 	 *
 	 * @return JSONResponse The action's response, 404 or the failure response
 	 */
-	private function onConfiguration(int $id, string $failure, callable $action, callable $failed): JSONResponse {
+	private function onConfiguration(ConfigurationAction $target, callable $action): JSONResponse {
 		try {
-			return $action($this->configurationMapper->find($id));
+			return $action($this->configurationMapper->find($target->id));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Configuration not found'], statusCode: 404);
 		} catch (Exception $e) {
 			$this->logger->error(
-				message: "[ConfigurationController] Failed to {$failure} configuration {$id}: " . $e->getMessage(),
+				message: "[ConfigurationController] Failed to {$target->verb} configuration {$target->id}: " . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return $failed($e);
+			return $this->actionFailed(target: $target, exception: $e);
 		}
 	}//end onConfiguration()
+
+	/**
+	 * The 500 of a failed action on a configuration: its own message, or the
+	 * generic one with the message as log context.
+	 *
+	 * @param ConfigurationAction $target    The failed action
+	 * @param Exception           $exception The failure
+	 *
+	 * @return JSONResponse The 500
+	 */
+	private function actionFailed(ConfigurationAction $target, Exception $exception): JSONResponse {
+		if ($target->generic === true) {
+			return $this->errorResponse(e: $exception, context: $target->failure);
+		}
+
+		return new JSONResponse(data: ['error' => $target->failure], statusCode: 500);
+	}//end actionFailed()
 
 	/**
 	 * Enrich configuration details by fetching actual file contents
@@ -359,7 +379,7 @@ class ConfigurationController extends Controller {
 			return null;
 		}
 
-		return $this->githubHandler->enrichConfigurationDetails(owner: $meta['owner'], repo: $meta['repo'], path: $meta['path'], branch: $meta['branch']);
+		return $this->githubHandler->enrichConfigurationDetails(location: self::githubFile(meta: $meta));
 	}//end detailsFrom()
 
 	/**
@@ -448,10 +468,8 @@ class ConfigurationController extends Controller {
 		}
 
 		return $this->onConfiguration(
-			id: $id,
-			failure: 'update',
-			action: fn (Configuration $configuration): JSONResponse => $this->saveUpdate(configuration: $configuration),
-			failed: fn (Exception $e): JSONResponse => $this->errorResponse(e: $e, context: 'Failed to update configuration')
+			target: new ConfigurationAction(id: $id, verb: 'update', failure: 'Failed to update configuration', generic: true),
+			action: fn (Configuration $configuration): JSONResponse => $this->saveUpdate(configuration: $configuration)
 		);
 	}//end update()
 
@@ -516,10 +534,8 @@ class ConfigurationController extends Controller {
 		}
 
 		return $this->onConfiguration(
-			id: $id,
-			failure: 'delete',
-			action: fn (Configuration $configuration): JSONResponse => $this->deleteConfiguration(configuration: $configuration, id: $id),
-			failed: fn (): JSONResponse => new JSONResponse(data: ['error' => 'Failed to delete configuration'], statusCode: 500)
+			target: new ConfigurationAction(id: $id, verb: 'delete', failure: 'Failed to delete configuration'),
+			action: fn (Configuration $configuration): JSONResponse => $this->deleteConfiguration(configuration: $configuration, id: $id)
 		);
 	}//end destroy()
 
@@ -556,10 +572,8 @@ class ConfigurationController extends Controller {
 	 */
 	public function versionStatus(int $id): JSONResponse {
 		return $this->onConfiguration(
-			id: $id,
-			failure: 'check version for',
-			action: fn (Configuration $configuration): JSONResponse => $this->versionComparison(configuration: $configuration, id: $id),
-			failed: fn (): JSONResponse => new JSONResponse(data: ['error' => 'Failed to check version'], statusCode: 500)
+			target: new ConfigurationAction(id: $id, verb: 'check version for', failure: 'Failed to check version'),
+			action: fn (Configuration $configuration): JSONResponse => $this->versionComparison(configuration: $configuration, id: $id)
 		);
 	}//end versionStatus()
 
@@ -610,10 +624,8 @@ class ConfigurationController extends Controller {
 		}
 
 		return $this->onConfiguration(
-			id: $id,
-			failure: 'preview',
-			action: fn (Configuration $configuration): JSONResponse => $this->previewChanges(configuration: $configuration),
-			failed: fn (): JSONResponse => new JSONResponse(data: ['error' => 'Failed to preview configuration changes'], statusCode: 500)
+			target: new ConfigurationAction(id: $id, verb: 'preview', failure: 'Failed to preview configuration changes'),
+			action: fn (Configuration $configuration): JSONResponse => $this->previewChanges(configuration: $configuration)
 		);
 	}//end preview()
 
@@ -652,10 +664,8 @@ class ConfigurationController extends Controller {
 		}
 
 		return $this->onConfiguration(
-			id: $id,
-			failure: 'import',
-			action: fn (Configuration $configuration): JSONResponse => $this->importSelection(configuration: $configuration),
-			failed: fn (Exception $e): JSONResponse => $this->errorResponse(e: $e, context: 'Failed to import configuration')
+			target: new ConfigurationAction(id: $id, verb: 'import', failure: 'Failed to import configuration', generic: true),
+			action: fn (Configuration $configuration): JSONResponse => $this->importSelection(configuration: $configuration)
 		);
 	}//end import()
 
@@ -707,10 +717,8 @@ class ConfigurationController extends Controller {
 		}
 
 		return $this->onConfiguration(
-			id: $id,
-			failure: 'export',
-			action: fn (Configuration $configuration): JSONResponse => $this->exported(configuration: $configuration),
-			failed: fn (Exception $e): JSONResponse => $this->errorResponse(e: $e, context: 'Failed to export configuration')
+			target: new ConfigurationAction(id: $id, verb: 'export', failure: 'Failed to export configuration', generic: true),
+			action: fn (Configuration $configuration): JSONResponse => $this->exported(configuration: $configuration)
 		);
 	}//end export()
 
@@ -808,7 +816,7 @@ class ConfigurationController extends Controller {
 	 */
 	private function searchGitLab(mixed $search, int $page): array {
 		$this->logger->debug(message: '[ConfigurationController] About to call GitLab search service', context: ['file' => __FILE__, 'line' => __LINE__]);
-		$results = $this->gitlabHandler->searchConfigurations(search: $search, page: $page);
+		$results = $this->gitlabHandler->searchPage(search: $search, page: new RepositorySearchPage(page: $page, perPage: 30));
 		$this->logger->debug(
 			message: '[ConfigurationController] GitLab search completed',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
@@ -827,7 +835,7 @@ class ConfigurationController extends Controller {
 	 */
 	private function searchGitHub(mixed $search, int $page): array {
 		$this->logger->debug(message: '[ConfigurationController] About to call GitHub search service', context: ['file' => __FILE__, 'line' => __LINE__]);
-		$results = $this->githubHandler->searchConfigurations(search: $search, page: $page);
+		$results = $this->githubHandler->searchConfigurations(search: $search, page: new RepositorySearchPage(page: $page, perPage: 30));
 		$this->logger->debug(
 			message: '[ConfigurationController] GitHub search completed',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
@@ -865,13 +873,12 @@ class ConfigurationController extends Controller {
 	 * before the action runs; a failure is logged and answered with a
 	 * generic 500.
 	 *
-	 * @param string   $failure      The log message of a failure, without prefix and reason
-	 * @param string   $errorContext The context label of the 500
-	 * @param callable $action       The action, given the request parameters
+	 * @param RepositoryCallFailure $failure How a failure is logged and answered
+	 * @param callable              $action  The action, given the request parameters
 	 *
 	 * @return JSONResponse The action's response, the refusal or the 500
 	 */
-	private function asAdmin(string $failure, string $errorContext, callable $action): JSONResponse {
+	private function asAdmin(RepositoryCallFailure $failure, callable $action): JSONResponse {
 		if ($this->isCurrentUserAdmin() === false) {
 			return $this->adminRequired();
 		}
@@ -880,10 +887,10 @@ class ConfigurationController extends Controller {
 			return $action($this->request->getParams());
 		} catch (Exception $e) {
 			$this->logger->error(
-				message: '[ConfigurationController] ' . $failure . ': ' . $e->getMessage(),
+				message: '[ConfigurationController] ' . $failure->log . ': ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			return $this->errorResponse(e: $e, context: $errorContext);
+			return $this->errorResponse(e: $e, context: $failure->context);
 		}
 	}//end asAdmin()
 
@@ -905,8 +912,7 @@ class ConfigurationController extends Controller {
 		// instance-wide admin-configured GitHub/GitLab credential (matches the
 		// guard on this controller's create/update/import/publish siblings).
 		return $this->asAdmin(
-			failure: 'Failed to get GitHub branches',
-			errorContext: 'Failed to fetch branches',
+			failure: new RepositoryCallFailure(log: 'Failed to get GitHub branches', context: 'Failed to fetch branches'),
 			action: fn (array $data): JSONResponse => $this->gitHubBranches(data: $data)
 		);
 	}//end getGitHubBranches()
@@ -949,8 +955,7 @@ class ConfigurationController extends Controller {
 		// instance-wide admin-configured GitHub credential (matches the guard
 		// on this controller's create/update/import/publish siblings).
 		return $this->asAdmin(
-			failure: 'Failed to get GitHub repositories',
-			errorContext: 'Failed to fetch repositories',
+			failure: new RepositoryCallFailure(log: 'Failed to get GitHub repositories', context: 'Failed to fetch repositories'),
 			action: fn (array $data): JSONResponse => $this->gitHubRepositories(data: $data)
 		);
 	}//end getGitHubRepositories()
@@ -994,8 +999,7 @@ class ConfigurationController extends Controller {
 		// instance-wide admin-configured GitHub credential (matches the guard
 		// on this controller's create/update/import/publish siblings).
 		return $this->asAdmin(
-			failure: 'Failed to get GitHub configurations',
-			errorContext: 'Failed to fetch configurations',
+			failure: new RepositoryCallFailure(log: 'Failed to get GitHub configurations', context: 'Failed to fetch configurations'),
 			action: fn (array $data): JSONResponse => $this->gitHubConfigurations(data: $data)
 		);
 	}//end getGitHubConfigurations()
@@ -1019,7 +1023,7 @@ class ConfigurationController extends Controller {
 			message: '[ConfigurationController] Fetching GitHub configurations',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'owner' => $owner, 'repo' => $repo, 'branch' => $branch]
 		);
-		$files = $this->githubHandler->listConfigurationFiles(owner: $owner, repo: $repo, branch: $branch);
+		$files = $this->githubHandler->listConfigurationFiles(directory: new GitHubFileLocation(owner: $owner, repo: $repo, path: '', branch: $branch));
 
 		return new JSONResponse(data: ['files' => $files], statusCode: 200);
 	}//end gitHubConfigurations()
@@ -1042,8 +1046,7 @@ class ConfigurationController extends Controller {
 		// instance-wide admin-configured GitLab credential (matches the guard
 		// on this controller's create/update/import/publish siblings).
 		return $this->asAdmin(
-			failure: 'Failed to get GitLab branches',
-			errorContext: 'Failed to fetch branches',
+			failure: new RepositoryCallFailure(log: 'Failed to get GitLab branches', context: 'Failed to fetch branches'),
 			action: fn (array $data): JSONResponse => $this->gitLabBranches(data: $data)
 		);
 	}//end getGitLabBranches()
@@ -1089,8 +1092,7 @@ class ConfigurationController extends Controller {
 		// instance-wide admin-configured GitLab credential (matches the guard
 		// on this controller's create/update/import/publish siblings).
 		return $this->asAdmin(
-			failure: 'Failed to get GitLab configurations',
-			errorContext: 'Failed to fetch configurations',
+			failure: new RepositoryCallFailure(log: 'Failed to get GitLab configurations', context: 'Failed to fetch configurations'),
 			action: fn (array $data): JSONResponse => $this->gitLabConfigurations(data: $data)
 		);
 	}//end getGitLabConfigurations()
@@ -1117,7 +1119,8 @@ class ConfigurationController extends Controller {
 				'project_id' => $projectId, 'ref' => $ref]
 		);
 
-		return new JSONResponse(data: ['files' => $this->gitlabHandler->listConfigurationFiles(projectId: $projectId, ref: $ref)], statusCode: 200);
+		$files = $this->gitlabHandler->listConfigurationFiles(project: new GitLabProjectRef(projectId: $projectId, ref: $ref));
+		return new JSONResponse(data: ['files' => $files], statusCode: 200);
 	}//end gitLabConfigurations()
 
 	/**
@@ -1131,10 +1134,12 @@ class ConfigurationController extends Controller {
 	 */
 	private function fetchConfigFromGitHub(array $params): array {
 		$meta = $this->paramsWithDefaults(params: $params, defaults: ['owner' => '', 'repo' => '', 'path' => '', 'branch' => 'main']);
-		$this->requireNonEmpty(values: $meta, keys: ['owner', 'repo', 'path'], message: 'Owner, repo, and path parameters are required');
+		if ($this->anyEmpty(values: $meta, keys: ['owner', 'repo', 'path']) === true) {
+			throw new Exception('Owner, repo, and path parameters are required', 400);
+		}
 
 		return [
-			'configData' => $this->githubHandler->getFileContent(owner: $meta['owner'], repo: $meta['repo'], path: $meta['path'], branch: $meta['branch']),
+			'configData' => $this->githubHandler->getFileContent(location: self::githubFile(meta: $meta)),
 			'sourceUrl' => "https://github.com/{$meta['owner']}/{$meta['repo']}/blob/{$meta['branch']}/{$meta['path']}",
 			'metadata' => $meta,
 		];
@@ -1158,23 +1163,22 @@ class ConfigurationController extends Controller {
 	}//end paramsWithDefaults()
 
 	/**
-	 * Refuse values in which any of the given keys is empty.
+	 * Whether any of the given keys is empty in the values.
 	 *
-	 * @param array<string, mixed> $values  The values
-	 * @param array<string>        $keys    The keys that must not be empty
-	 * @param string               $message The message of the refusal
+	 * @param array<string, mixed> $values The values
+	 * @param array<string>        $keys   The keys that must not be empty
 	 *
-	 * @return void
-	 *
-	 * @throws Exception With code 400 when a key is empty
+	 * @return bool True when a key is empty
 	 */
-	private function requireNonEmpty(array $values, array $keys, string $message): void {
+	private function anyEmpty(array $values, array $keys): bool {
 		foreach ($keys as $key) {
 			if (empty($values[$key]) === true) {
-				throw new Exception($message, 400);
+				return true;
 			}
 		}
-	}//end requireNonEmpty()
+
+		return false;
+	}//end anyEmpty()
 
 	/**
 	 * Fetch configuration data from GitLab repository.
@@ -1187,10 +1191,12 @@ class ConfigurationController extends Controller {
 	 */
 	private function fetchConfigFromGitLab(array $params): array {
 		$meta = $this->paramsWithDefaults(params: $params, defaults: ['namespace' => '', 'project' => '', 'path' => '', 'ref' => 'main']);
-		$this->requireNonEmpty(values: $meta, keys: ['namespace', 'project', 'path'], message: 'Namespace, project, and path parameters are required');
+		if ($this->anyEmpty(values: $meta, keys: ['namespace', 'project', 'path']) === true) {
+			throw new Exception('Namespace, project, and path parameters are required', 400);
+		}
 
 		$projectId  = $this->gitlabHandler->getProjectByPath(namespace: $meta['namespace'], project: $meta['project'])['id'];
-		$configData = $this->gitlabHandler->getFileContent(projectId: $projectId, path: $meta['path'], ref: $meta['ref']);
+		$configData = $this->gitlabHandler->fileContent(project: new GitLabProjectRef(projectId: $projectId, ref: $meta['ref']), path: $meta['path']);
 		$webBase    = str_replace('/api/v4', '', $this->gitlabHandler->getApiBase());
 
 		return [
@@ -1280,9 +1286,8 @@ class ConfigurationController extends Controller {
 	 * @return JSONResponse JSON response with import result
 	 */
 	private function importFromSource(callable $fetchConfig, string $sourceType): JSONResponse {
-		$params = $this->request->getParams();
 		try {
-			return $this->importWith(fetchConfig: $fetchConfig, sourceType: $sourceType, params: $params);
+			return $this->importWith(fetchConfig: $fetchConfig, sourceType: $sourceType);
 		} catch (Exception $e) {
 			return $this->importFailure(exception: $e, sourceType: $sourceType);
 		}
@@ -1294,13 +1299,13 @@ class ConfigurationController extends Controller {
 	 *
 	 * @param callable $fetchConfig The source-specific fetch, given the request parameters
 	 * @param string   $sourceType  The source type
-	 * @param array    $params      The request parameters
 	 *
 	 * @return JSONResponse The 201 response or the 409 conflict
 	 *
 	 * @throws Exception When fetching or importing fails
 	 */
-	private function importWith(callable $fetchConfig, string $sourceType, array $params): JSONResponse {
+	private function importWith(callable $fetchConfig, string $sourceType): JSONResponse {
+		$params  = $this->request->getParams();
 		$context = ['file' => __FILE__, 'line' => __LINE__, 'fields' => array_keys($params)];
 		$this->logger->debug(message: "[ConfigurationController] Importing configuration from {$sourceType}", context: $context);
 
@@ -1313,9 +1318,8 @@ class ConfigurationController extends Controller {
 		}
 
 		$configuration = $this->insertImportedConfiguration(plan: $plan);
-		$result        = $this->runImport(configuration: $configuration, plan: $plan);
 
-		return $this->importedResponse(configuration: $configuration, result: $result, sourceType: $sourceType);
+		return $this->importedResponse(import: $this->runImport(configuration: $configuration, plan: $plan), sourceType: $sourceType);
 	}//end importWith()
 
 	/**
@@ -1340,23 +1344,18 @@ class ConfigurationController extends Controller {
 	/**
 	 * The 201 response of a finished import.
 	 *
-	 * @param Configuration $configuration The imported configuration
-	 * @param array         $result        The import result
-	 * @param string        $sourceType    The source type
+	 * @param ConfigurationImport $import     The finished import
+	 * @param string              $sourceType The source type
 	 *
 	 * @return JSONResponse The response
 	 */
-	private function importedResponse(Configuration $configuration, array $result, string $sourceType): JSONResponse {
+	private function importedResponse(ConfigurationImport $import, string $sourceType): JSONResponse {
 		return new JSONResponse(
 			data: [
 				'success' => true,
 				'message' => "Configuration imported successfully from {$sourceType}",
-				'configurationId' => $configuration->getId(),
-				'result' => [
-					'registersCount' => count($result['registers']),
-					'schemasCount' => count($result['schemas']),
-					'objectsCount' => count($result['objects']),
-				],
+				'configurationId' => $import->configuration->getId(),
+				'result' => $import->counts(),
 			],
 			statusCode: 201
 		);
@@ -1538,9 +1537,9 @@ class ConfigurationController extends Controller {
 	 * @param Configuration        $configuration The inserted configuration.
 	 * @param array<string, mixed> $plan          The import plan.
 	 *
-	 * @return array The import result with registers, schemas and objects.
+	 * @return ConfigurationImport The configuration with the import result (registers, schemas and objects).
 	 */
-	private function runImport(Configuration $configuration, array $plan): array {
+	private function runImport(Configuration $configuration, array $plan): ConfigurationImport {
 		$result = $this->configurationService->importFromJson(
 			data: $plan['configData'],
 			configuration: $configuration,
@@ -1551,7 +1550,7 @@ class ConfigurationController extends Controller {
 		);
 		$this->markImported(configuration: $configuration, plan: $plan);
 
-		return $result;
+		return new ConfigurationImport(configuration: $configuration, result: $result);
 	}//end runImport()
 
 	/**
@@ -1752,13 +1751,12 @@ class ConfigurationController extends Controller {
 		}
 
 		$this->logPublishingAttempt(id: $id, params: $params);
-		$jsonContent = $this->prepareConfigurationForGitHub(configuration: $configuration, params: $params);
-		$fileSha     = $this->getExistingFileSha(params: $params);
-		$result      = $this->publishConfigurationToGitHub(params: $params, content: $jsonContent, fileSha: $fileSha);
-		$this->updateConfigurationWithGitHubInfo(configuration: $configuration, params: $params);
-		$this->logPublishingSuccess(configuration: $configuration, params: $params, result: $result);
+		$run    = new GitHubPublishRun(configuration: $configuration, params: $params);
+		$result = $this->publishConfigurationToGitHub(run: $run, content: $this->prepareConfigurationForGitHub(run: $run));
+		$this->updateConfigurationWithGitHubInfo(run: $run);
+		$this->logPublishingSuccess(run: $run, result: $result);
 
-		return $this->buildPublishSuccessResponse(configuration: $configuration, params: $params, result: $result);
+		return $this->buildPublishSuccessResponse(run: $run, result: $result);
 	}//end publish()
 
 	/**
@@ -1859,13 +1857,13 @@ class ConfigurationController extends Controller {
 	 *
 	 * Exports configuration and adds GitHub metadata.
 	 *
-	 * @param Configuration $configuration Configuration entity.
-	 * @param array<string, string> $params Publishing parameters.
+	 * @param GitHubPublishRun $run The publish.
 	 *
 	 * @return false|string JSON content ready for GitHub.
 	 */
-	private function prepareConfigurationForGitHub(Configuration $configuration, array $params): string|false {
-		$configData = $this->configurationService->exportConfig(input: $configuration, includeObjects: false);
+	private function prepareConfigurationForGitHub(GitHubPublishRun $run): string|false {
+		$params     = $run->params;
+		$configData = $this->configurationService->exportConfig(input: $run->configuration, includeObjects: false);
 
 		// Drop the local source information; add the OpenRegister version and the GitHub location.
 		$metadata = $configData['x-openregister'] ?? [];
@@ -1888,7 +1886,7 @@ class ConfigurationController extends Controller {
 	 */
 	private function getExistingFileSha(array $params): ?string {
 		try {
-			return $this->githubHandler->getFileSha(owner: $params['owner'], repo: $params['repo'], path: $params['path'], branch: $params['branch']);
+			return $this->githubHandler->getFileSha(location: self::githubFile(meta: $params));
 		} catch (Exception $e) {
 			// File doesn't exist, which is fine for new files.
 			$this->logger->debug(
@@ -1904,36 +1902,47 @@ class ConfigurationController extends Controller {
 	 *
 	 * Calls GitHub handler to publish/update the configuration file.
 	 *
-	 * @param array<string, string> $params Publishing parameters.
-	 * @param string $content JSON content to publish.
-	 * @param string|null $fileSha Existing file SHA for updates.
+	 * Updates the existing file (by its SHA) or creates it.
+	 *
+	 * @param GitHubPublishRun $run     The publish.
+	 * @param string           $content JSON content to publish.
 	 *
 	 * @return array Result from GitHub API with commit info.
 	 */
-	private function publishConfigurationToGitHub(array $params, string $content, ?string $fileSha): array {
+	private function publishConfigurationToGitHub(GitHubPublishRun $run, string $content): array {
+		$params  = $run->params;
+		$fileSha = $this->getExistingFileSha(params: $params);
+
 		return $this->githubHandler->publishConfiguration(
-			owner: $params['owner'],
-			repo: $params['repo'],
-			path: $params['path'],
-			branch: $params['branch'],
-			content: $content,
-			commitMessage: $params['commitMessage'],
-			fileSha: $fileSha
+			location: self::githubFile(meta: $params),
+			write: new GitHubFileWrite(content: $content, commitMessage: $params['commitMessage'], fileSha: $fileSha)
 		);
 	}//end publishConfigurationToGitHub()
+
+	/**
+	 * The GitHub file named by a request's owner, repo, path and branch.
+	 *
+	 * @param array{owner: string, repo: string, path: string, branch: string} $meta The request fields.
+	 *
+	 * @return GitHubFileLocation
+	 */
+	private static function githubFile(array $meta): GitHubFileLocation {
+		return new GitHubFileLocation(owner: $meta['owner'], repo: $meta['repo'], path: $meta['path'], branch: $meta['branch']);
+	}//end githubFile()
 
 	/**
 	 * Update configuration with GitHub information
 	 *
 	 * Updates local configuration entity with GitHub publishing details.
 	 *
-	 * @param Configuration $configuration Configuration entity.
-	 * @param array<string, string> $params Publishing parameters.
+	 * @param GitHubPublishRun $run The publish.
 	 *
 	 * @return void
 	 */
-	private function updateConfigurationWithGitHubInfo(Configuration $configuration, array $params): void {
-		$githubRepo = "{$params['owner']}/{$params['repo']}";
+	private function updateConfigurationWithGitHubInfo(GitHubPublishRun $run): void {
+		$configuration = $run->configuration;
+		$params        = $run->params;
+		$githubRepo    = "{$params['owner']}/{$params['repo']}";
 		$sourceUrl = "https://github.com/{$githubRepo}/blob/{$params['branch']}/{$params['path']}";
 
 		$configuration->setGithubRepo($githubRepo);
@@ -1949,15 +1958,15 @@ class ConfigurationController extends Controller {
 	 *
 	 * Logs successful GitHub publishing operation.
 	 *
-	 * @param Configuration $configuration Configuration entity.
-	 * @param array<string, string> $params Publishing parameters.
+	 * @param GitHubPublishRun $run The publish.
 	 * @param array<string, mixed> $result GitHub API result.
 	 *
 	 * @return void
 	 */
-	private function logPublishingSuccess(Configuration $configuration, array $params, array $result): void {
+	private function logPublishingSuccess(GitHubPublishRun $run, array $result): void {
+		$params = $run->params;
 		$this->logger->debug(
-			message: "[ConfigurationController] Successfully published configuration {$configuration->getTitle()} to GitHub",
+			message: "[ConfigurationController] Successfully published configuration {$run->configuration->getTitle()} to GitHub",
 			context: ['file' => __FILE__, 'line' => __LINE__, 'owner' => $params['owner'], 'repo' => $params['repo'],
 				'branch' => $params['branch'], 'path' => $params['path'], 'file_url' => $result['file_url'] ?? null]
 		);
@@ -1968,20 +1977,20 @@ class ConfigurationController extends Controller {
 	 *
 	 * Creates success response including GitHub URLs and indexing notes.
 	 *
-	 * @param Configuration $configuration Configuration entity.
-	 * @param array<string, string> $params Publishing parameters.
+	 * @param GitHubPublishRun $run The publish.
 	 * @param array<string, mixed> $result GitHub API result.
 	 *
 	 * @return JSONResponse JSON response with publish success data
 	 */
-	private function buildPublishSuccessResponse(Configuration $configuration, array $params, array $result): JSONResponse {
+	private function buildPublishSuccessResponse(GitHubPublishRun $run, array $result): JSONResponse {
+		$params        = $run->params;
 		$defaultBranch = $this->getRepositoryDefaultBranch(params: $params);
 
 		return new JSONResponse(
 			data: [
 				'success' => true,
 				'message' => $this->publishMessage(defaultBranch: $defaultBranch, branch: $params['branch']),
-				'configurationId' => $configuration->getId(),
+				'configurationId' => $run->configuration->getId(),
 				'commit_sha' => $result['commit_sha'], 'commit_url' => $result['commit_url'], 'file_url' => $result['file_url'],
 				'branch' => $params['branch'],
 				'default_branch' => $defaultBranch,

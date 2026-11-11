@@ -35,6 +35,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -48,6 +51,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
@@ -253,7 +257,7 @@ class CredentialControllerOrganisationTest extends TestCase {
 	 */
 	private function stubSaveObject(string $uuid): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object) use ($uuid): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($uuid): ObjectEntity {
 				$this->savedObject = $object;
 				$entity = new ObjectEntity();
 				$entity->setUuid($uuid);
@@ -291,13 +295,19 @@ class CredentialControllerOrganisationTest extends TestCase {
 		// behaviour under test (the D4 admin gate, the persisted property bag, the vault
 		// scope) is unchanged — only the seam the call travels through moved.
 		$broker = new CredentialBrokerService(
-			$this->objectService,
-			$this->store,
-			$catalogue,
-			$session,
-			$this->createMock(IClientService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->orgService
+			sources: new CredentialSources(
+				objectService: $this->objectService,
+				credentialStore: $this->store,
+				catalogue: $catalogue
+			),
+			principals: new CredentialPrincipals(
+				userSession: $session,
+				organisationService: $this->orgService
+			),
+			outbound: new CredentialOutbound(
+				clientService: $this->createMock(IClientService::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		return CredentialControllerFactory::create(

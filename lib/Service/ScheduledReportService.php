@@ -37,8 +37,10 @@ use OCA\OpenRegister\Notifications\Db\ScheduledReport;
 use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Kernel\Contracts\ReportCaller;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportUpdate;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRunContent;
@@ -56,6 +58,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Service for managing and executing scheduled report exports.
@@ -337,10 +340,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	/**
 	 * Update an existing scheduled report. Only the owner or an admin may update.
 	 *
-	 * @param int $id The scheduled report id.
-	 * @param array<string,mixed> $data Fields to update (same shape as create()).
-	 * @param string $callerUid The calling user's uid.
-	 * @param bool $callerIsAdmin Whether the caller is a Nextcloud administrator.
+	 * @param ScheduledReportUpdate $update The report id, the fields to update and who asks.
 	 *
 	 * @return ScheduledReport
 	 *
@@ -350,10 +350,27 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function update(int $id, array $data, string $callerUid, bool $callerIsAdmin): ScheduledReport {
-		$report = $this->mapper->find(id: $id);
-		$this->assertOwnerOrAdmin(report: $report, callerUid: $callerUid, callerIsAdmin: $callerIsAdmin);
+	public function applyUpdate(ScheduledReportUpdate $update): ScheduledReport {
+		$report = $this->mapper->find(id: $update->id);
+		$this->assertMayAccess(report: $report, caller: $update->caller);
 
+		$this->applyFields(report: $report, data: $update->data);
+		$report->setUpdatedAt(new DateTime());
+
+		return $this->mapper->update(entity: $report);
+	}//end applyUpdate()
+
+	/**
+	 * Merge the update payload over the stored report, validate it and set the fields.
+	 *
+	 * @param ScheduledReport     $report The stored report.
+	 * @param array<string,mixed> $data   The update payload.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When validation fails.
+	 */
+	private function applyFields(ScheduledReport $report, array $data): void {
 		// Merge with existing values so a partial update doesn't blow away
 		// fields the caller didn't send.
 		$merged = $this->mergedPayload(report: $report, data: $data);
@@ -380,11 +397,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 		if (array_key_exists('enabled', $data) === true) {
 			$report->setEnabled((bool)$data['enabled']);
 		}
-
-		$report->setUpdatedAt(new DateTime());
-
-		return $this->mapper->update(entity: $report);
-	}//end update()
+	}//end applyFields()
 
 	/**
 	 * The stored report's fields overlaid with the ones the update sends.
@@ -432,9 +445,8 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	/**
 	 * Delete a scheduled report. Only the owner or an admin may delete.
 	 *
-	 * @param int $id The scheduled report id.
-	 * @param string $callerUid The calling user's uid.
-	 * @param bool $callerIsAdmin Whether the caller is a Nextcloud administrator.
+	 * @param int          $id     The scheduled report id.
+	 * @param ReportCaller $caller Who asks.
 	 *
 	 * @return void
 	 *
@@ -443,18 +455,17 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function delete(int $id, string $callerUid, bool $callerIsAdmin): void {
+	public function deleteAs(int $id, ReportCaller $caller): void {
 		$report = $this->mapper->find(id: $id);
-		$this->assertOwnerOrAdmin(report: $report, callerUid: $callerUid, callerIsAdmin: $callerIsAdmin);
+		$this->assertMayAccess(report: $report, caller: $caller);
 		$this->mapper->delete(entity: $report);
-	}//end delete()
+	}//end deleteAs()
 
 	/**
 	 * Assert the caller owns the report or is an admin.
 	 *
 	 * @param ScheduledReportInterface $report The report.
-	 * @param string $callerUid The calling user's uid.
-	 * @param bool $callerIsAdmin Whether the caller is an admin.
+	 * @param ReportCaller             $caller Who asks.
 	 *
 	 * @return void
 	 *
@@ -462,17 +473,17 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function assertOwnerOrAdmin(ScheduledReportInterface $report, string $callerUid, bool $callerIsAdmin): void {
-		if ($callerIsAdmin === true) {
+	public function assertMayAccess(ScheduledReportInterface $report, ReportCaller $caller): void {
+		if ($caller->isAdmin === true) {
 			return;
 		}
 
-		if ($report->getOwner() === $callerUid) {
+		if ($report->getOwner() === $caller->uid) {
 			return;
 		}
 
 		throw new RuntimeException('You do not have permission to access this scheduled report.');
-	}//end assertOwnerOrAdmin()
+	}//end assertMayAccess()
 
 	/**
 	 * Validate a create/update payload. Register/schema existence is checked
@@ -975,18 +986,16 @@ class ScheduledReportService implements ScheduledReportsInterface {
 			$schema = $this->schemaMapper->find($report->getSchemaId(), _rbac: false, _multitenancy: false);
 		}
 
-		$filters = $report->getFiltersArray();
+		$query = new ScheduledReportExportQuery(register: $register, schema: $schema, filters: $report->getFiltersArray(), owner: $owner);
 
 		switch ($report->getFormat()) {
 			case 'csv':
-				$bytes = $this->exportService->exportToCsv(register: $register, schema: $schema, filters: $filters, currentUser: $owner);
+				$bytes = $this->exportService->exportToCsv(request: $this->exportRequest(query: $query));
 				return ['bytes' => $bytes, 'rowCount' => $this->countCsvRows(csv: $bytes)];
 			case 'pdf':
-				return $this->exportPdf(
-					query: new ScheduledReportExportQuery(register: $register, schema: $schema, filters: $filters, owner: $owner)
-				);
+				return $this->exportPdf(query: $query);
 			default:
-				$spreadsheet = $this->exportService->exportToExcel(register: $register, schema: $schema, filters: $filters, currentUser: $owner);
+				$spreadsheet = $this->exportService->exportToExcel(request: $this->exportRequest(query: $query));
 				return [
 					'bytes' => $this->spreadsheetToXlsxBytes(spreadsheet: $spreadsheet),
 					'rowCount' => $this->countSpreadsheetRows(spreadsheet: $spreadsheet),
@@ -1061,6 +1070,22 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	}//end countSpreadsheetRows()
 
 	/**
+	 * The export-service request for a scheduled report's export.
+	 *
+	 * @param ScheduledReportExportQuery $query What to export, and as whom.
+	 *
+	 * @return ObjectExportRequest
+	 */
+	private function exportRequest(ScheduledReportExportQuery $query): ObjectExportRequest {
+		return new ObjectExportRequest(
+			register: $query->register,
+			schema: $query->schema,
+			filters: $query->filters,
+			currentUser: $query->owner,
+		);
+	}//end exportRequest()
+
+	/**
 	 * Render a pdf export, with a best-effort row count for the email body.
 	 *
 	 * @param ScheduledReportExportQuery $query What to export, and as whom.
@@ -1070,12 +1095,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * @throws ExportTooLargeException When the pdf row cap is exceeded.
 	 */
 	private function exportPdf(ScheduledReportExportQuery $query): array {
-		$bytes = $this->exportService->exportToPdf(
-			register: $query->register,
-			schema: $query->schema,
-			filters: $query->filters,
-			currentUser: $query->owner
-		);
+		$bytes = $this->exportService->exportToPdf(request: $this->exportRequest(query: $query));
 
 		return ['bytes' => $bytes, 'rowCount' => $this->bestEffortRowCount(query: $query)];
 	}//end exportPdf()
@@ -1091,12 +1111,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 */
 	private function bestEffortRowCount(ScheduledReportExportQuery $query): int {
 		try {
-			$spreadsheet = $this->exportService->exportToExcel(
-				register: $query->register,
-				schema: $query->schema,
-				filters: $query->filters,
-				currentUser: $query->owner
-			);
+			$spreadsheet = $this->exportService->exportToExcel(request: $this->exportRequest(query: $query));
 			return $this->countSpreadsheetRows(spreadsheet: $spreadsheet);
 		} catch (\Throwable $e) {
 			$this->logger->debug(

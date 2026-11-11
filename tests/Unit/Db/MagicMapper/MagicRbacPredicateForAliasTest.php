@@ -32,8 +32,10 @@ declare(strict_types=1);
 
 namespace Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -47,6 +49,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * `buildRbacPredicateForAlias()`.
@@ -90,14 +95,20 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
 		return new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(ConditionMatcher::class),
-			$this->createMock(ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->createMock(ConditionMatcher::class),
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(
 				objectScopeResolver: null,
 				objectGrantResolver: null,
 				denyResolver: new DenyResolver(new DenyEntryMatcher())
@@ -132,7 +143,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 	public function testEveryColumnIsQualifiedWithTheAlias(): void {
 		$predicate = $this->handlerFor('alice')->buildRbacPredicateForAlias(
 			schema: $this->schemaWith([]),
-			alias: 'r0'
+			rows: new AliasedRows(alias: 'r0')
 		);
 
 		$this->assertStringContainsString('r0._owner', $predicate);
@@ -153,7 +164,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 	public function testTheAliasIsTheOneAskedFor(): void {
 		$predicate = $this->handlerFor('alice')->buildRbacPredicateForAlias(
 			schema: $this->schemaWith([]),
-			alias: 'related7'
+			rows: new AliasedRows(alias: 'related7')
 		);
 
 		$this->assertStringContainsString('related7._owner', $predicate);
@@ -172,7 +183,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 	public function testDenyAllIsSaidOutLoudRatherThanLeftEmpty(): void {
 		$predicate = $this->handlerFor(null)->buildRbacPredicateForAlias(
 			schema: $this->schemaWith(['read' => ['editors']]),
-			alias: 'r0'
+			rows: new AliasedRows(alias: 'r0')
 		);
 
 		$this->assertSame('FALSE', $predicate);
@@ -187,7 +198,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 	public function testAnAdminBypassIsATruePredicate(): void {
 		$predicate = $this->handlerFor('root', ['admin'])->buildRbacPredicateForAlias(
 			schema: $this->schemaWith(['read' => ['editors']]),
-			alias: 'r0'
+			rows: new AliasedRows(alias: 'r0')
 		);
 
 		$this->assertSame('TRUE', $predicate);
@@ -213,7 +224,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 		foreach ($callers as [$userId, $groups]) {
 			$predicate = $this->handlerFor($userId, $groups)->buildRbacPredicateForAlias(
 				schema: $this->schemaWith(['read' => ['editors']]),
-				alias: 'r0'
+				rows: new AliasedRows(alias: 'r0')
 			);
 
 			$this->assertNotSame('', trim($predicate), 'Empty for ' . var_export($userId, true));
@@ -233,7 +244,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 
 		$this->handlerFor('alice')->buildRbacPredicateForAlias(
 			schema: $this->schemaWith([]),
-			alias: 'r0; DROP TABLE x --'
+			rows: new AliasedRows(alias: 'r0; DROP TABLE x --')
 		);
 	}//end testANonIdentifierAliasIsRefused()
 
@@ -247,10 +258,7 @@ class MagicRbacPredicateForAliasTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheUnionCallersStillGetUnqualifiedColumns(): void {
-		$result = $this->handlerFor('alice')->buildRbacConditionsSql(
-			schema: $this->schemaWith([]),
-			action: 'read'
-		);
+		$result = $this->handlerFor('alice')->buildRbacConditionsSql((new RbacAccessCall(schema: $this->schemaWith([])))->forAction('read'));
 
 		$joined = implode(' ', $result['conditions']);
 
