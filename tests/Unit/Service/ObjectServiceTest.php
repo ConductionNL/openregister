@@ -44,6 +44,8 @@ use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
@@ -81,6 +83,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -1692,13 +1695,8 @@ class ObjectServiceTest extends TestCase {
 			->expects($this->once())
 			->method('findSilent')
 			->with(
-				'test-uuid',
-				$this->anything(),
-				$this->anything(),
-				['owner'],
-				true,
-				false,
-				false
+				new ObjectFindRequest(id: 'test-uuid', extend: ['owner'], files: true, rbac: false, multitenancy: false, audit: false),
+				$this->anything()
 			)
 			->willReturn($entity);
 
@@ -1727,8 +1725,8 @@ class ObjectServiceTest extends TestCase {
 
 		$handlerScope = null;
 		$this->getHandler->method('findSilent')->willReturnCallback(
-			function ($id, $register = null, $schema = null, ...$rest) use ($entity, &$handlerScope): ObjectEntity {
-				$handlerScope = ['register' => $register, 'schema' => $schema];
+			function (ObjectFindRequest $request, ReadScope $scope) use ($entity, &$handlerScope): ObjectEntity {
+				$handlerScope = ['register' => $scope->register, 'schema' => $scope->schema];
 				return $entity;
 			}
 		);
@@ -2494,7 +2492,7 @@ class ObjectServiceTest extends TestCase {
 			});
 
 		try {
-			$this->service->patchObject('42', ['title' => 'Updated Title']);
+			$this->service->patchObject(patch: new ObjectPatch(objectId: '42', data: ['title' => 'Updated Title']));
 		} catch (\Throwable $e) {
 			// Expected — deep pipeline.
 		}
@@ -2872,9 +2870,9 @@ class ObjectServiceTest extends TestCase {
 		$callCount = 0;
 		$calls = [];
 		$this->getHandler->method('find')->willReturnCallback(
-			function (...$args) use (&$callCount, &$calls, $object): ObjectEntity {
+			function (ObjectFindRequest $request, ReadScope $scope) use (&$callCount, &$calls, $object): ObjectEntity {
 				$callCount++;
-				$calls[] = $args;
+				$calls[] = [$request->id, $scope->register, $scope->schema];
 				if ($callCount === 1) {
 					throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found in magic table');
 				}
@@ -2900,7 +2898,7 @@ class ObjectServiceTest extends TestCase {
 		$this->assertSame(3, $callCount, 'a repeated uuid lookup must not re-run the cross-table fallback');
 
 		// …and that call is scoped to the resolved true context, not unscoped.
-		// GetObject::find positional args: [0]=id, [1]=register, [2]=schema.
+		// Recorded per call: [0]=id, [1]=register, [2]=schema.
 		$this->assertSame($trueRegister, $calls[2][1], 'cache hit must target the resolved register');
 		$this->assertSame($trueSchema, $calls[2][2], 'cache hit must target the resolved schema');
 	}
