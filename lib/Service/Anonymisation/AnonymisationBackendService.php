@@ -555,6 +555,9 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	/**
 	 * Ask the Presidio endpoint for its health.
 	 *
+	 * Follows the instance's outbound rules: a Presidio on a local or private
+	 * address answers only when the administrator set `allow_local_remote_servers`.
+	 *
 	 * @param string $endpoint The configured endpoint, trimmed and non-empty.
 	 *
 	 * @return IResponse The health answer.
@@ -567,7 +570,6 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 			[
 				'timeout' => 10,
 				'connect_timeout' => 5,
-				'nextcloud' => ['allow_local_address' => true],
 			]
 		);
 	}//end requestPresidioHealth()

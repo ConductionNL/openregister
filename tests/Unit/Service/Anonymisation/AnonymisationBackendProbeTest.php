@@ -75,7 +75,7 @@ class AnonymisationBackendProbeTest extends TestCase {
 	}//end testPresidioWithoutEndpointIsNotConfigured()
 
 	/**
-	 * A 2xx health answer is reachable, with the measured latency; the URL and options are fixed.
+	 * A 2xx health answer is reachable, with the measured latency; the URL and options are fixed, and the probe asks for no exemption from the local-address rule.
 	 *
 	 * @return void
 	 */
@@ -87,7 +87,6 @@ class AnonymisationBackendProbeTest extends TestCase {
 			[
 				'timeout' => 10,
 				'connect_timeout' => 5,
-				'nextcloud' => ['allow_local_address' => true],
 			]
 		)->willReturn($this->response(204));
 		$this->clientService->method('newClient')->willReturn($client);
