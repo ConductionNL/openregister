@@ -150,7 +150,7 @@ class ObjectsControllerJsonLdTest extends TestCase {
 		$schema->setSlug('persoon');
 		$schema->setProperties(['title' => ['type' => 'string']]);
 
-		// resolveRegisterSchemaIds() reuses the entities already resolved by
+		// resolveRegisterSchemaRef() reuses the entities already resolved by
 		// ObjectService::setRegister()/setSchema().
 		$this->objectService->method('getCurrentRegisterEntity')->willReturn($register);
 		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schema);

@@ -649,7 +649,7 @@
         "error": "UnexpectedValueException: The path segment \"{{dotted}}\" resolved to \"x.y\", which contains a dot. A rendered segment names one field and cannot introduce nesting."
     },
     "execute: keyed items": {
-        "error": "TypeError: OCA\\OpenRegister\\Service\\Flow\\FlowItems::item(): Argument #3 ($fromItemIndex) must be of type ?int, string given"
+        "error": "TypeError: OCA\\OpenRegister\\Service\\Flow\\FlowItemOptions::__construct(): Argument #2 ($fromItemIndex) must be of type ?int, string given"
     },
     "execute: all operations": [
         {

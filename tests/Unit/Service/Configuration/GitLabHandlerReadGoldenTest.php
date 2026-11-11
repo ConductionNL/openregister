@@ -26,7 +26,10 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use OCA\OpenRegister\Service\Configuration\GitLabApiClient;
+use OCA\OpenRegister\Service\Configuration\GitLabApiSettings;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabProjectRef;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -77,9 +80,9 @@ class GitLabHandlerReadGoldenTest extends TestCase {
 			'file' => ['getFileContent', [12, 'dir/good.openregister.json', 'dev'], 'ok', 'tok', ''],
 			'file-invalid' => ['getFileContent', [12, 'bad.openregister.json'], 'ok', '', ''],
 			'file-connect' => ['getFileContent', [12, 'good.json'], 'connect', 'tok', ''],
-			'list' => ['listConfigurationFiles', [12, 'dev', 'lib'], 'ok', 'tok', ''],
-			'list-defaults' => ['listConfigurationFiles', [12], 'ok', '', ''],
-			'list-403' => ['listConfigurationFiles', [12], '403', 'tok', ''],
+			'list' => ['listConfigurationFiles', [new GitLabProjectRef(12, 'dev'), 'lib'], 'ok', 'tok', ''],
+			'list-defaults' => ['listConfigurationFiles', [new GitLabProjectRef(12, 'main')], 'ok', '', ''],
+			'list-403' => ['listConfigurationFiles', [new GitLabProjectRef(12, 'main')], '403', 'tok', ''],
 			'project' => ['getProjectByPath', ['my group', 'app'], 'ok', 'tok', ''],
 			'project-404' => ['getProjectByPath', ['org', 'app'], '404', 'tok', ''],
 		];
@@ -179,7 +182,8 @@ class GitLabHandlerReadGoldenTest extends TestCase {
 			);
 		}
 
-		$handler = new GitLabHandler(clientService: $clientService, appConfig: $appConfig, config: $config, logger: $logger);
+		$api = new GitLabApiClient(clientService: $clientService, settings: new GitLabApiSettings(appConfig: $appConfig, config: $config));
+		$handler = new GitLabHandler(api: $api, logger: $logger);
 
 		try {
 			$out = ['returned' => $handler->$method(...$arguments)];

@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
+use DateMalformedStringException;
 use DateTimeImmutable;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 
@@ -49,7 +50,13 @@ final class MomentShift {
 	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public static function by(DateTimeImmutable $moment, string $modifier): DateTimeImmutable {
-		$shifted = $moment->modify($modifier);
+		// Since PHP 8.3 an unparseable modifier throws instead of returning false.
+		try {
+			$shifted = $moment->modify($modifier);
+		} catch (DateMalformedStringException $e) {
+			throw new FlowTimerValidationException(message: sprintf("Date modifier '%s' is not parseable.", $modifier), previous: $e);
+		}
+
 		if ($shifted === false) {
 			throw new FlowTimerValidationException(message: sprintf("Date modifier '%s' is not parseable.", $modifier));
 		}

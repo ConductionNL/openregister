@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -168,11 +169,10 @@ class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 		);
 
 		$matcher = new ConditionMatcher(
-			$userSession,
+			new ConditionUserResolvers($userSession, $groupManager),
 			$this->createMock(ContainerInterface::class),
 			new OperatorEvaluator(new NullLogger()),
-			new NullLogger(),
-			$groupManager
+			new NullLogger()
 		);
 
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);

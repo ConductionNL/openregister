@@ -72,12 +72,18 @@ class SearchTrailRecorderTest extends TestCase
 
     public function testSearchModeRecordsATerm(): void
     {
-        $this->assertNotNull($this->recorded('_search', ['_search' => 'term']));
+        $entry = $this->recorded('_search', ['_search' => 'term']);
+
+        $this->assertNotNull($entry);
+        $this->assertSame(['_search' => 'term'], $entry[0]);
     }
 
     public function testAllModeRecordsWithoutATerm(): void
     {
-        $this->assertNotNull($this->recorded('all', []));
+        $entry = $this->recorded('all', []);
+
+        $this->assertNotNull($entry);
+        $this->assertSame([], $entry[0]);
     }
 
     public function testTheEntryCarriesCountsAndTheIndexSource(): void

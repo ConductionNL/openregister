@@ -1,0 +1,5 @@
+{
+	"_comment": "Floor for npm run test:newman-route-ratchet: appinfo/routes.php routes with at least one request in a CI-run Newman collection (tests/integration, minus `@newman exclude`). Raise it in the PR that adds coverage; lowering it needs a reason in that PR.",
+	"routes": 1087,
+	"covered": 156
+}

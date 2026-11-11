@@ -28,7 +28,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent NULL open": {
+    "findRecent open": {
         "result": [
             4,
             9
@@ -78,7 +78,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent NULL since": {
+    "findRecent since": {
         "result": [
             4,
             9
@@ -131,7 +131,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent NULL until": {
+    "findRecent until": {
         "result": [
             4,
             9
@@ -187,7 +187,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent NULL both": {
+    "findRecent both": {
         "result": [
             4,
             9
@@ -234,21 +234,6 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent '' open": {
-        "result": [
-            4,
-            9
-        ],
-        "queries": [
-            "#1 select(*)",
-            "#1 from(openregister_rule_runs, NULL)",
-            "#1 orderBy(created, DESC)",
-            "#1 addOrderBy(id, DESC)",
-            "#1 setMaxResults(50)",
-            "#1 setFirstResult(0)",
-            "#1 executeQuery()"
-        ]
-    },
     "findByRule '' since": {
         "result": [
             4,
@@ -284,24 +269,6 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent '' since": {
-        "result": [
-            4,
-            9
-        ],
-        "queries": [
-            "#1 select(*)",
-            "#1 from(openregister_rule_runs, NULL)",
-            "#1 orderBy(created, DESC)",
-            "#1 addOrderBy(id, DESC)",
-            "#1 setMaxResults(50)",
-            "#1 setFirstResult(0)",
-            "#1 param :p1 = DateTime, datetime",
-            "#1 expr.gte(created, :p1, NULL)",
-            "#1 andWhere(gte(created, :p1, NULL))",
-            "#1 executeQuery()"
-        ]
-    },
     "findByRule '' until": {
         "result": [
             4,
@@ -334,21 +301,6 @@
             "#1 param :p2 = DateTime, datetime",
             "#1 expr.lte(created, :p2, NULL)",
             "#1 andWhere(lte(created, :p2, NULL))",
-            "#1 executeQuery()"
-        ]
-    },
-    "findRecent '' until": {
-        "result": [
-            4,
-            9
-        ],
-        "queries": [
-            "#1 select(*)",
-            "#1 from(openregister_rule_runs, NULL)",
-            "#1 orderBy(created, DESC)",
-            "#1 addOrderBy(id, DESC)",
-            "#1 setMaxResults(50)",
-            "#1 setFirstResult(0)",
             "#1 executeQuery()"
         ]
     },
@@ -393,24 +345,6 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent '' both": {
-        "result": [
-            4,
-            9
-        ],
-        "queries": [
-            "#1 select(*)",
-            "#1 from(openregister_rule_runs, NULL)",
-            "#1 orderBy(created, DESC)",
-            "#1 addOrderBy(id, DESC)",
-            "#1 setMaxResults(50)",
-            "#1 setFirstResult(0)",
-            "#1 param :p1 = DateTime, datetime",
-            "#1 expr.gte(created, :p1, NULL)",
-            "#1 andWhere(gte(created, :p1, NULL))",
-            "#1 executeQuery()"
-        ]
-    },
     "findByRule 'pass' open": {
         "result": [
             4,
@@ -443,24 +377,6 @@
             "#1 param :p2 = pass, 2",
             "#1 expr.eq(verdict, :p2, NULL)",
             "#1 andWhere(eq(verdict, :p2, NULL))",
-            "#1 executeQuery()"
-        ]
-    },
-    "findRecent 'pass' open": {
-        "result": [
-            4,
-            9
-        ],
-        "queries": [
-            "#1 select(*)",
-            "#1 from(openregister_rule_runs, NULL)",
-            "#1 orderBy(created, DESC)",
-            "#1 addOrderBy(id, DESC)",
-            "#1 setMaxResults(50)",
-            "#1 setFirstResult(0)",
-            "#1 param :p1 = pass, 2",
-            "#1 expr.eq(verdict, :p1, NULL)",
-            "#1 andWhere(eq(verdict, :p1, NULL))",
             "#1 executeQuery()"
         ]
     },
@@ -505,27 +421,6 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent 'pass' since": {
-        "result": [
-            4,
-            9
-        ],
-        "queries": [
-            "#1 select(*)",
-            "#1 from(openregister_rule_runs, NULL)",
-            "#1 orderBy(created, DESC)",
-            "#1 addOrderBy(id, DESC)",
-            "#1 setMaxResults(50)",
-            "#1 setFirstResult(0)",
-            "#1 param :p1 = pass, 2",
-            "#1 expr.eq(verdict, :p1, NULL)",
-            "#1 andWhere(eq(verdict, :p1, NULL))",
-            "#1 param :p2 = DateTime, datetime",
-            "#1 expr.gte(created, :p2, NULL)",
-            "#1 andWhere(gte(created, :p2, NULL))",
-            "#1 executeQuery()"
-        ]
-    },
     "findByRule 'pass' until": {
         "result": [
             4,
@@ -564,24 +459,6 @@
             "#1 param :p3 = DateTime, datetime",
             "#1 expr.lte(created, :p3, NULL)",
             "#1 andWhere(lte(created, :p3, NULL))",
-            "#1 executeQuery()"
-        ]
-    },
-    "findRecent 'pass' until": {
-        "result": [
-            4,
-            9
-        ],
-        "queries": [
-            "#1 select(*)",
-            "#1 from(openregister_rule_runs, NULL)",
-            "#1 orderBy(created, DESC)",
-            "#1 addOrderBy(id, DESC)",
-            "#1 setMaxResults(50)",
-            "#1 setFirstResult(0)",
-            "#1 param :p1 = pass, 2",
-            "#1 expr.eq(verdict, :p1, NULL)",
-            "#1 andWhere(eq(verdict, :p1, NULL))",
             "#1 executeQuery()"
         ]
     },
@@ -632,27 +509,6 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent 'pass' both": {
-        "result": [
-            4,
-            9
-        ],
-        "queries": [
-            "#1 select(*)",
-            "#1 from(openregister_rule_runs, NULL)",
-            "#1 orderBy(created, DESC)",
-            "#1 addOrderBy(id, DESC)",
-            "#1 setMaxResults(50)",
-            "#1 setFirstResult(0)",
-            "#1 param :p1 = pass, 2",
-            "#1 expr.eq(verdict, :p1, NULL)",
-            "#1 andWhere(eq(verdict, :p1, NULL))",
-            "#1 param :p2 = DateTime, datetime",
-            "#1 expr.gte(created, :p2, NULL)",
-            "#1 andWhere(gte(created, :p2, NULL))",
-            "#1 executeQuery()"
-        ]
-    },
     "findByRule paging 0 -5": {
         "result": [
             4,
@@ -671,7 +527,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent paging 0 -5": {
+    "findRecent paging 0": {
         "result": [
             4,
             9
@@ -704,7 +560,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent paging 1 0": {
+    "findRecent paging 1": {
         "result": [
             4,
             9
@@ -737,7 +593,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent paging 50 10": {
+    "findRecent paging 50": {
         "result": [
             4,
             9
@@ -748,7 +604,7 @@
             "#1 orderBy(created, DESC)",
             "#1 addOrderBy(id, DESC)",
             "#1 setMaxResults(50)",
-            "#1 setFirstResult(10)",
+            "#1 setFirstResult(0)",
             "#1 executeQuery()"
         ]
     },
@@ -770,7 +626,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent paging 501 3": {
+    "findRecent paging 501": {
         "result": [
             4,
             9
@@ -781,7 +637,7 @@
             "#1 orderBy(created, DESC)",
             "#1 addOrderBy(id, DESC)",
             "#1 setMaxResults(500)",
-            "#1 setFirstResult(3)",
+            "#1 setFirstResult(0)",
             "#1 executeQuery()"
         ]
     },
@@ -803,7 +659,7 @@
             "#1 executeQuery()"
         ]
     },
-    "findRecent paging -2 7": {
+    "findRecent paging -2": {
         "result": [
             4,
             9
@@ -814,7 +670,7 @@
             "#1 orderBy(created, DESC)",
             "#1 addOrderBy(id, DESC)",
             "#1 setMaxResults(1)",
-            "#1 setFirstResult(7)",
+            "#1 setFirstResult(0)",
             "#1 executeQuery()"
         ]
     }

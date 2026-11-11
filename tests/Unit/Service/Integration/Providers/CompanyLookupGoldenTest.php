@@ -26,8 +26,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\CompanySearch;
+use OCA\OpenRegister\Service\Integration\Providers\ConnectorRouting;
 use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCP\App\IAppManager;
@@ -66,8 +69,11 @@ final class CompanyLookupGoldenTest extends TestCase {
 	private function deps(array|\Throwable $answer): array {
 		$router = $this->createMock(ExternalIntegrationRouter::class);
 		$router->method('call')->willReturnCallback(
-			function ($provider, string $method, string $path, array $options) use ($answer): array {
-				$this->calls[] = [$method . ' ' . $path, $options];
+			function ($provider, UpstreamRequest $request) use ($answer): array {
+				$method  = $request->method;
+				$path    = $request->path;
+				$options = $request->options;
+$this->calls[] = [$method . ' ' . $path, $options];
 				if ($answer instanceof \Throwable) {
 					throw $answer;
 				}
@@ -83,9 +89,7 @@ final class CompanyLookupGoldenTest extends TestCase {
 		);
 
 		return [
-			'router' => $router,
-			'appManager' => $this->createMock(IAppManager::class),
-			'l10n' => $this->createMock(IL10N::class),
+			'routing' => new ConnectorRouting(router: $router, appManager: $this->createMock(IAppManager::class), l10n: $this->createMock(IL10N::class)),
 			'logger' => $logger,
 		];
 	}//end deps()
@@ -124,7 +128,7 @@ final class CompanyLookupGoldenTest extends TestCase {
 
 	#[DataProvider('kvkListCases')]
 	public function testKvkListAsks(array $filters, array $query): void {
-		$this->kvk()->list('', '', '', $filters);
+		$this->kvk()->list(new ObjectRef(register: '', schema: '', id: ''), $filters);
 
 		$this->assertSame([['GET zoeken', $this->options($query)]], $this->calls);
 	}//end testKvkListAsks()
@@ -143,7 +147,7 @@ final class CompanyLookupGoldenTest extends TestCase {
 
 	#[DataProvider('openCorporatesListCases')]
 	public function testOpenCorporatesListAsks(array $filters, array $query): void {
-		$this->openCorporates()->list('', '', '', $filters);
+		$this->openCorporates()->list(new ObjectRef(register: '', schema: '', id: ''), $filters);
 
 		$this->assertSame([['GET companies/search', $this->options($query)]], $this->calls);
 	}//end testOpenCorporatesListAsks()
@@ -160,7 +164,7 @@ final class CompanyLookupGoldenTest extends TestCase {
 
 	#[DataProvider('kvkRowCases')]
 	public function testKvkRows(array $answer, array $rows): void {
-		$this->assertSame($rows, $this->kvk($answer)->list('', '', '', []));
+		$this->assertSame($rows, $this->kvk($answer)->list(new ObjectRef(register: '', schema: '', id: ''), []));
 	}//end testKvkRows()
 
 	public static function openCorporatesRowCases(): array {
@@ -177,7 +181,7 @@ final class CompanyLookupGoldenTest extends TestCase {
 
 	#[DataProvider('openCorporatesRowCases')]
 	public function testOpenCorporatesRows(array $answer, array $rows): void {
-		$this->assertSame($rows, $this->openCorporates($answer)->list('', '', '', []));
+		$this->assertSame($rows, $this->openCorporates($answer)->list(new ObjectRef(register: '', schema: '', id: ''), []));
 	}//end testOpenCorporatesRows()
 
 	public function testKvkLookupAsksByNumber(): void {

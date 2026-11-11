@@ -7,6 +7,9 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Mcp\Tool\RegisterTool;
+use OCA\OpenRegister\Mcp\Tool\UpdateRegisterCommand;
+use OCA\OpenRegister\Mcp\Tool\CreateRegisterCommand;
+use OCA\OpenRegister\Mcp\Tool\ToolCallTrail;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -25,8 +28,7 @@ class RegisterToolTest extends TestCase {
 		$this->registerService = $this->createMock(RegisterService::class);
 
 		$this->tool = new RegisterTool(
-			$this->userSession,
-			$this->logger,
+			new ToolCallTrail($this->userSession, $this->logger),
 			$this->registerService
 		);
 
@@ -101,7 +103,7 @@ class RegisterToolTest extends TestCase {
 	public function testExecuteFunctionNoUserContext(): void {
 		$noUserSession = $this->createMock(IUserSession::class);
 		$noUserSession->method('getUser')->willReturn(null);
-		$tool = new RegisterTool($noUserSession, $this->logger, $this->registerService);
+		$tool = new RegisterTool(new ToolCallTrail($noUserSession, $this->logger), $this->registerService);
 
 		$result = $tool->executeFunction('list_registers', []);
 		$this->assertFalse($result['success']);
@@ -186,7 +188,7 @@ class RegisterToolTest extends TestCase {
 		$reg = $this->createRegisterEntity(1, 'new-uuid', 'New Reg', 'Desc', 'new-reg');
 		$this->registerService->method('createFromArray')->willReturn($reg);
 
-		$result = $this->tool->createRegister('New Reg', 'Desc', 'new-reg');
+		$result = $this->tool->createRegister(new CreateRegisterCommand('New Reg', 'Desc', 'new-reg'));
 		$this->assertTrue($result['success']);
 		$this->assertSame('new-uuid', $result['data']['uuid']);
 		$this->assertStringContainsString('created', $result['message']);
@@ -204,7 +206,7 @@ class RegisterToolTest extends TestCase {
 			}))
 			->willReturn($reg);
 
-		$this->tool->createRegister('Title');
+		$this->tool->createRegister(new CreateRegisterCommand('Title'));
 	}
 
 	public function testCreateRegisterWithSlug(): void {
@@ -217,7 +219,7 @@ class RegisterToolTest extends TestCase {
 			}))
 			->willReturn($reg);
 
-		$this->tool->createRegister('Title', '', 'my-slug');
+		$this->tool->createRegister(new CreateRegisterCommand('Title', '', 'my-slug'));
 	}
 
 	public function testCreateRegisterException(): void {
@@ -237,7 +239,7 @@ class RegisterToolTest extends TestCase {
 		$reg = $this->createRegisterEntity(1, 'uuid', 'Updated', 'New Desc', 'slug');
 		$this->registerService->method('updateFromArray')->willReturn($reg);
 
-		$result = $this->tool->updateRegister('1', 'Updated', 'New Desc');
+		$result = $this->tool->updateRegister(new UpdateRegisterCommand('1', 'Updated', 'New Desc'));
 		$this->assertTrue($result['success']);
 		$this->assertStringContainsString('updated', $result['message']);
 	}
@@ -252,13 +254,13 @@ class RegisterToolTest extends TestCase {
 			}))
 			->willReturn($reg);
 
-		$this->tool->updateRegister('1', 'Title');
+		$this->tool->updateRegister(new UpdateRegisterCommand('1', 'Title'));
 	}
 
 	public function testUpdateRegisterNoData(): void {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('No update data provided');
-		$this->tool->updateRegister('1');
+		$this->tool->updateRegister(new UpdateRegisterCommand('1'));
 	}
 
 	public function testUpdateRegisterNoDataViaExecuteFunction(): void {
@@ -305,7 +307,7 @@ class RegisterToolTest extends TestCase {
 	public function testExecuteFunctionWithExplicitUserId(): void {
 		$noUserSession = $this->createMock(IUserSession::class);
 		$noUserSession->method('getUser')->willReturn(null);
-		$tool = new RegisterTool($noUserSession, $this->logger, $this->registerService);
+		$tool = new RegisterTool(new ToolCallTrail($noUserSession, $this->logger), $this->registerService);
 
 		$this->registerService->method('findAll')->willReturn([]);
 

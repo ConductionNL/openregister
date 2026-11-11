@@ -7,7 +7,7 @@
  * single batch and re-enqueues itself while work remains, so very large
  * populations are processed incrementally with a resumable cursor that
  * survives a worker restart. Revalidation runs delegate to
- * {@see \OCA\OpenRegister\Service\Schema\SchemaRevalidationService};
+ * {@see \OCA\OpenRegister\Service\Schema\SchemaRevalidatorInterface};
  * migration runs to {@see \OCA\OpenRegister\Service\Schema\SchemaMigrationService}.
  *
  * @category BackgroundJob
@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\Db\SchemaRun;
 use OCA\OpenRegister\Db\SchemaRunStoreInterface;
 use OCA\OpenRegister\Service\Schema\SchemaBatchMigratorInterface;
-use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
+use OCA\OpenRegister\Service\Schema\SchemaRevalidatorInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\BackgroundJob\QueuedJob;
@@ -53,9 +53,9 @@ class SchemaRunJob extends QueuedJob {
 	/**
 	 * Revalidation engine.
 	 *
-	 * @var SchemaRevalidationService
+	 * @var SchemaRevalidatorInterface
 	 */
-	private readonly SchemaRevalidationService $revalidationService;
+	private readonly SchemaRevalidatorInterface $revalidationService;
 
 	/**
 	 * Migration engine.

@@ -97,7 +97,6 @@ class TaskNotesControllerA24GoldenTest extends TestCase {
 		$request->method('getParams')->willReturn($params);
 
 		return TaskNotesControllerFactory::create(
-			appName: 'openregister',
 			request: $request,
 			tasks: $this->tasks,
 			authorization: $this->authorization,

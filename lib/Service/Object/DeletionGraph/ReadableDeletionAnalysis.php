@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service\Object\DeletionGraph;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 
 /**
  * Redacts the objects of a deletion analysis that the caller cannot read.
@@ -72,6 +73,28 @@ final class ReadableDeletionAnalysis {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function analysisFor(DeletionAnalysis $analysis): DeletionAnalysis {
+		$this->readEveryEntry(analysis: $analysis);
+
+		return new DeletionAnalysis(
+			deletable: $analysis->deletable,
+			effects: new DeletionEffects(
+				cascadeTargets: $this->redactEntries(entries: $analysis->cascadeTargets),
+				nullifyTargets: $this->redactEntries(entries: $analysis->nullifyTargets),
+				defaultTargets: $this->redactEntries(entries: $analysis->defaultTargets)
+			),
+			blockers: $this->redactEntries(entries: $analysis->blockers),
+			chainPaths: array_map(fn ($chain) => $this->redactChain(chain: $chain), $analysis->chainPaths)
+		);
+	}//end analysisFor()
+
+	/**
+	 * Ask, for every object the analysis names, whether the caller may read it.
+	 *
+	 * @param DeletionAnalysis $analysis The analysis.
+	 *
+	 * @return void
+	 */
+	private function readEveryEntry(DeletionAnalysis $analysis): void {
 		$entries = array_merge($analysis->cascadeTargets, $analysis->nullifyTargets, $analysis->defaultTargets, $analysis->blockers);
 		foreach ($entries as $entry) {
 			$uuid = (string) ($entry['objectUuid'] ?? '');
@@ -79,16 +102,7 @@ final class ReadableDeletionAnalysis {
 				$this->callerReads(uuid: $uuid);
 			}
 		}
-
-		return new DeletionAnalysis(
-			deletable: $analysis->deletable,
-			cascadeTargets: $this->redactEntries(entries: $analysis->cascadeTargets),
-			nullifyTargets: $this->redactEntries(entries: $analysis->nullifyTargets),
-			defaultTargets: $this->redactEntries(entries: $analysis->defaultTargets),
-			blockers: $this->redactEntries(entries: $analysis->blockers),
-			chainPaths: array_map(fn ($chain) => $this->redactChain(chain: $chain), $analysis->chainPaths)
-		);
-	}//end analysisFor()
+	}//end readEveryEntry()
 
 	/**
 	 * The entries the caller reads, then one counting entry per schema for the rest.

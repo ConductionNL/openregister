@@ -32,7 +32,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Db;
 
 use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\FlowRunListing;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunViewer;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 
@@ -110,12 +112,8 @@ class FlowRunVisibilityIntegrationTest extends TestCase {
 	 */
 	private function visibleFlowIds(?string $uid, array $owned = []): array {
 		$runs = $this->mapper->findAllRuns(
-			flowId: null,
-			status: null,
-			limit: 200,
-			offset: 0,
-			requesterUid: $uid,
-			ownedFlowIds: $owned
+			listing: new FlowRunListing(limit: 200, offset: 0),
+			viewer: new FlowRunViewer(requesterUid: $uid, ownedFlowIds: $owned)
 		);
 
 		$ids = [];

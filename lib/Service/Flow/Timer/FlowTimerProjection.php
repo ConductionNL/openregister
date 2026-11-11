@@ -26,6 +26,7 @@ use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -120,7 +121,7 @@ final class FlowTimerProjection {
 	private function earliestOpenDeadlines(string $subjectUuid): array {
 		$earliest = [FlowTimer::PURPOSE_DUE => null, FlowTimer::PURPOSE_EXPIRY => null];
 		$states = [FlowTimer::STATE_ARMED, FlowTimer::STATE_SUSPENDED];
-		foreach ($this->timers->findBySubject(subjectType: 'task', subjectUuid: $subjectUuid, states: $states) as $candidate) {
+		foreach ($this->timers->findBySubject(subject: new TimerSubject(type: 'task', uuid: $subjectUuid), states: $states) as $candidate) {
 			$purpose = (string)$candidate->getPurpose();
 			$fireAt = $candidate->getFireAt();
 			if ($fireAt !== null && array_key_exists($purpose, $earliest) === true) {

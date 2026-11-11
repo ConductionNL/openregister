@@ -29,9 +29,9 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
@@ -74,35 +74,19 @@ class UrnService implements UrnServiceInterface {
 	private const URN_REGEX = '/^urn:([a-zA-Z0-9][a-zA-Z0-9-]{1,31}):(.+)$/i';
 
 	/**
-	 * The register mapper.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * The schema mapper.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param RegisterSchemaMappers $mappers The register and schema mappers.
+	 * @param SchemaCatalogInterface $catalog The register and schema mappers.
 	 * @param IURLGenerator $urlGenerator The URL generator.
 	 * @param IAppConfig $appConfig The app configuration.
 	 * @param LoggerInterface $logger The logger.
 	 */
 	public function __construct(
-		RegisterSchemaMappers $mappers,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->registerMapper = $mappers->registerMapper;
-		$this->schemaMapper = $mappers->schemaMapper;
 	}//end __construct()
 
 	/**
@@ -132,7 +116,7 @@ class UrnService implements UrnServiceInterface {
 			return null;
 		}
 
-		return $this->build(registerSlug: $registerSlug, schemaSlug: $schemaSlug, uuid: $uuid);
+		return $this->buildFor(ref: new ObjectRef(register: $registerSlug, schema: $schemaSlug, id: $uuid));
 	}//end buildForObject()
 
 	/**
@@ -151,15 +135,28 @@ class UrnService implements UrnServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-1
 	 */
 	public function build(string $registerSlug, string $schemaSlug, string $uuid): string {
+		return $this->buildFor(ref: new ObjectRef(register: $registerSlug, schema: $schemaSlug, id: $uuid));
+	}//end build()
+
+	/**
+	 * Build a URN from the register slug, schema slug and uuid of an object.
+	 *
+	 * @param ObjectRef $ref The register slug, schema slug and object UUID.
+	 *
+	 * @return string The URN.
+	 *
+	 * @spec openspec/specs/urn-resource-addressing/spec.md
+	 */
+	public function buildFor(ObjectRef $ref): string {
 		return sprintf(
 			'urn:%s:%s:%s:%s:%s',
 			self::DEFAULT_NID,
 			$this->getInstanceSlug(),
-			strtolower($registerSlug),
-			strtolower($schemaSlug),
-			strtolower($uuid)
+			strtolower((string)$ref->register),
+			strtolower((string)$ref->schema),
+			strtolower($ref->id)
 		);
-	}//end build()
+	}//end buildFor()
 
 	/**
 	 * Parse a URN string into its components.
@@ -344,7 +341,7 @@ class UrnService implements UrnServiceInterface {
 			return null;
 		}
 
-		return $this->build(registerSlug: $slugs['register'], schemaSlug: $slugs['schema'], uuid: $matches[3]);
+		return $this->buildFor(ref: new ObjectRef(register: $slugs['register'], schema: $slugs['schema'], id: $matches[3]));
 	}//end urnFromRefs()
 
 	/**
@@ -480,7 +477,7 @@ class UrnService implements UrnServiceInterface {
 	private function findRegister(string $ref): ?Register {
 		return $this->quietly(
 			failure: sprintf('register lookup failed for "%s"', $ref),
-			lookup: fn (): Register => $this->registerMapper->find($ref, _rbac: false, _multitenancy: false)
+			lookup: fn (): Register => $this->catalog->registers()->find($ref, _rbac: false, _multitenancy: false)
 		);
 	}//end findRegister()
 
@@ -494,7 +491,7 @@ class UrnService implements UrnServiceInterface {
 	private function findSchema(string $ref): ?Schema {
 		return $this->quietly(
 			failure: sprintf('schema lookup failed for "%s"', $ref),
-			lookup: fn (): Schema => $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false)
+			lookup: fn (): Schema => $this->catalog->schemas()->find($ref, _rbac: false, _multitenancy: false)
 		);
 	}//end findSchema()
 

@@ -35,7 +35,7 @@ use OCA\OpenRegister\Listener\SchemaFlowImportListenerInterface;
 use OCA\OpenRegister\Listener\UniqueConstraintListener;
 use OCA\OpenRegister\Listener\UniqueConstraintListenerInterface;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
-use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListenerInterface;
+use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
 use OCA\OpenRegister\Mcp\McpRegistrar;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;

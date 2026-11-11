@@ -29,10 +29,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Calendar;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
-use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
+use OCA\OpenRegister\Service\Calendar\AttendeeResponse;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -86,19 +86,20 @@ class AppointmentAttendeeServiceTest extends TestCase {
 		$this->objects->method('find')->willReturn($this->object());
 		$this->captureSaves();
 
-		$responses = $this->service->recordResponse(
-			objectUuid: 'object-uuid',
-			attendee: 'ana@example.org',
-			status: 'accepted',
-			respondedBy: 'ana',
-			respondedAt: new DateTime('2026-09-14T10:00:00+02:00')
+		$responses = $this->service->recordAttendeeResponse(
+			response: new AttendeeResponse(
+				objectUuid: 'object-uuid',
+				attendee: 'ana@example.org',
+				status: 'accepted',
+				respondedBy: 'ana'
+			)
 		);
 
 		$this->assertCount(1, $responses);
 		$this->assertSame('ana@example.org', $responses[0]['attendee']);
 		$this->assertSame(AppointmentAttendeeService::STATUS_ACCEPTED, $responses[0]['status']);
 		$this->assertSame('ana', $responses[0]['respondedBy']);
-		$this->assertSame('2026-09-14T10:00:00+02:00', $responses[0]['respondedAt']);
+		$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/', $responses[0]['respondedAt']);
 
 		$this->assertNotNull($this->saved);
 		$this->assertSame($responses, $this->saved[AppointmentAttendeeService::RESPONSES_PROPERTY]);
@@ -115,11 +116,13 @@ class AppointmentAttendeeServiceTest extends TestCase {
 		);
 		$this->captureSaves();
 
-		$responses = $this->service->recordResponse(
-			objectUuid: 'object-uuid',
-			attendee: 'chris@example.org',
-			status: 'DECLINED',
-			respondedBy: 'chris'
+		$responses = $this->service->recordAttendeeResponse(
+			response: new AttendeeResponse(
+				objectUuid: 'object-uuid',
+				attendee: 'chris@example.org',
+				status: 'DECLINED',
+				respondedBy: 'chris'
+			)
 		);
 
 		$this->assertCount(3, $responses);
@@ -136,10 +139,12 @@ class AppointmentAttendeeServiceTest extends TestCase {
 		);
 		$this->captureSaves();
 
-		$responses = $this->service->recordResponse(
-			objectUuid: 'object-uuid',
-			attendee: 'ana@example.org',
-			status: 'DECLINED'
+		$responses = $this->service->recordAttendeeResponse(
+			response: new AttendeeResponse(
+				objectUuid: 'object-uuid',
+				attendee: 'ana@example.org',
+				status: 'DECLINED'
+			)
 		);
 
 		$this->assertCount(1, $responses);
@@ -152,13 +157,21 @@ class AppointmentAttendeeServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/is not an attendee answer/');
 
-		$this->service->recordResponse(objectUuid: 'object-uuid', attendee: 'ana@example.org', status: 'MAYBE');
+		$this->service->recordAttendeeResponse(
+			response: new AttendeeResponse(
+				objectUuid: 'object-uuid',
+				attendee: 'ana@example.org',
+				status: 'MAYBE'
+			)
+		);
 	}
 
 	public function testAnAnswerWithNoAttendeeIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->service->recordResponse(objectUuid: 'object-uuid', attendee: '  ', status: 'ACCEPTED');
+		$this->service->recordAttendeeResponse(
+			response: new AttendeeResponse(objectUuid: 'object-uuid', attendee: '  ', status: 'ACCEPTED')
+		);
 	}
 
 	public function testAnUnknownObjectIsRefused(): void {
@@ -166,7 +179,13 @@ class AppointmentAttendeeServiceTest extends TestCase {
 
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->service->recordResponse(objectUuid: 'missing', attendee: 'ana@example.org', status: 'ACCEPTED');
+		$this->service->recordAttendeeResponse(
+			response: new AttendeeResponse(
+				objectUuid: 'missing',
+				attendee: 'ana@example.org',
+				status: 'ACCEPTED'
+			)
+		);
 	}
 
 	public function testMalformedStoredEntriesAreIgnoredOnRead(): void {

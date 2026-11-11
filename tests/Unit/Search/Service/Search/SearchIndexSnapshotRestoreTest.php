@@ -109,11 +109,7 @@ class SearchIndexSnapshotRestoreTest extends TestCase {
 		$config->method('getSystemValue')->willReturn('oc_');
 
 		$maintenance = new SearchIndexMaintenance(
-			stores: new \OCA\OpenRegister\Search\Service\Search\SearchIndexStores(
-				$db,
-				$this->createMock(RegisterMapperInterface::class),
-				$this->createMock(MagicMapperInterface::class)
-			),
+			stores: new \OCA\OpenRegister\Search\Service\Search\SearchIndexStores($db, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapperInterface::class), schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->createMock(MagicMapperInterface::class))),
 			appConfig: $this->createMock(IAppConfig::class),
 			config: $config,
 			logger: new NullLogger()

@@ -274,7 +274,7 @@ class OoxmlPackage {
 	 * @return list<string>|null The new segments, or null when `..` climbs above the root.
 	 */
 	private function applySegment(array $segments, string $segment): ?array {
-		if ($segment === '' || $segment === '.') {
+		if (self::isSameDirectory(segment: $segment) === true) {
 			return $segments;
 		}
 
@@ -290,6 +290,17 @@ class OoxmlPackage {
 		array_pop($segments);
 		return $segments;
 	}//end applySegment()
+
+	/**
+	 * Whether a path segment stays in the same directory: empty or `.`.
+	 *
+	 * @param string $segment The segment.
+	 *
+	 * @return bool
+	 */
+	private static function isSameDirectory(string $segment): bool {
+		return ($segment === '' || $segment === '.');
+	}//end isSameDirectory()
 
 	/**
 	 * The folder of a part path, '' for a part at the package root.

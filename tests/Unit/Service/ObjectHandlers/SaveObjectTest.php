@@ -179,28 +179,46 @@ class SaveObjectTest extends TestCase {
 
 		// Create SaveObject instance.
 		$this->saveObject = new SaveObject(
-			objectEntityMapper: $this->objectEntityMapper,
-			unifiedObjectMapper: $this->unifiedObjectMapper,
-			metaHydrationHandler: $this->metaHydrationHandler,
-			filePropertyHandler: $this->filePropertyHandler,
-			linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
-			userSession: $this->userSession,
-			auditTrailMapper: $this->auditTrailMapper,
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
-			urlGenerator: $this->urlGenerator,
-			organisationService: $this->organisationService,
-			cacheHandler: $this->cacheHandler,
-			settingsService: $this->settingsService,
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectEntityMapper),
+						unifiedObjectMapper: $this->unifiedObjectMapper
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->auditTrailMapper,
+						settingsService: $this->settingsService,
+						tmloService: $this->createMock(TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->cacheHandler
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->metaHydrationHandler,
+						filePropertyHandler: $this->filePropertyHandler,
+						linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $translationHandler,
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $this->userSession,
+					urlGenerator: $this->urlGenerator,
+					logger: $this->logger
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->organisationService
+				)
+			),
 			propertyRbacHandler: $this->propertyRbacHandler,
-			computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
-			translationHandler: $translationHandler,
-			translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			logger: $this->logger,
-			tmloService: $this->createMock(TmloService::class),
-			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
 			permissionHandler: $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class),
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 	}
 
@@ -920,6 +938,8 @@ class SaveObjectTest extends TestCase {
 
 		// Should still return an ObjectEntity, with the invalid ref stored as-is.
 		$this->assertInstanceOf(ObjectEntity::class, $result);
+		$this->assertSame(['name' => 'Invalid Child'], $result->getObject()['invalid']);
+		$this->assertSame('Parent Object', $result->getObject()['name']);
 	}
 
 	/**
@@ -1174,6 +1194,8 @@ class SaveObjectTest extends TestCase {
 		);
 
 		$this->assertIsArray($relations, 'scanForRelations should return an array.');
+		// Plain strings that are no references yield no relations.
+		$this->assertSame([], $relations);
 	}
 
 }

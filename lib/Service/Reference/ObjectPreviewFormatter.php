@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Reference;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -124,55 +125,6 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	];
 
 	/**
-	 * The URL generator service
-	 *
-	 * @var IURLGenerator
-	 */
-	private readonly IURLGenerator $urlGenerator;
-
-	/**
-	 * The localization service
-	 *
-	 * @var IL10N
-	 */
-	private readonly IL10N $l10n;
-
-	/**
-	 * The object service for fetching objects
-	 *
-	 * @var ObjectOperationsInterface
-	 */
-	private readonly ObjectOperationsInterface $objectService;
-
-	/**
-	 * Deep link registry for consuming-app URL resolution
-	 *
-	 * @var DeepLinkRegistryService
-	 */
-	private readonly DeepLinkRegistryService $deepLinkRegistry;
-
-	/**
-	 * Schema mapper for resolving schema names
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemaMapper;
-
-	/**
-	 * Register mapper for resolving register names
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registerMapper;
-
-	/**
-	 * Logger for debugging
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor for ObjectPreviewFormatter.
 	 *
 	 * @param IURLGenerator $urlGenerator The URL generator
@@ -185,18 +137,11 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d1
 	 */
 	public function __construct(
-		IURLGenerator $urlGenerator,
-		IL10N $l10n,
-		ObjectPreviewSources $sources,
-		LoggerInterface $logger,
+		private readonly IURLGenerator $urlGenerator,
+		private readonly IL10N $l10n,
+		private readonly ObjectPreviewSources $sources,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->urlGenerator = $urlGenerator;
-		$this->l10n = $l10n;
-		$this->objectService = $sources->objectService;
-		$this->deepLinkRegistry = $sources->deepLinkRegistry;
-		$this->schemaMapper = $sources->schemaMapper;
-		$this->registerMapper = $sources->registerMapper;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -245,31 +190,35 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	 * sync. Used by the cache-invalidation hook (design.md D4) to invalidate
 	 * every URL shape a cached preview of this object might be keyed under.
 	 *
-	 * @param int $registerId The register database ID
-	 * @param int $schemaId The schema database ID
-	 * @param string $uuid The object UUID
+	 * @param ObjectRef $ref The register and schema database ids and the object UUID.
 	 *
 	 * @return string[] Every canonical URL for this object, one per pattern
 	 *
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d4
 	 */
-	public function buildCanonicalUrls(int $registerId, int $schemaId, string $uuid): array {
+	public function buildCanonicalUrls(ObjectRef $ref): array {
+		return $this->canonicalUrls(
+			placeholders: ['{registerId}' => (string)$ref->register, '{schemaId}' => (string)$ref->schema, '{uuid}' => $ref->id]
+		);
+	}//end buildCanonicalUrls()
+
+	/**
+	 * Every canonical URL shape with its placeholders filled in.
+	 *
+	 * @param array<string, string> $placeholders The register id, schema id and uuid, keyed by placeholder.
+	 *
+	 * @return array<int, string>
+	 */
+	private function canonicalUrls(array $placeholders): array {
 		$baseUrl = $this->baseUrl();
 
 		$urls = [];
 		foreach (self::PATTERNS as $pattern) {
-			$urls[] = $baseUrl . strtr(
-				$pattern['pathTemplate'],
-				[
-					'{registerId}' => (string)$registerId,
-					'{schemaId}' => (string)$schemaId,
-					'{uuid}' => $uuid,
-				]
-			);
+			$urls[] = $baseUrl . strtr($pattern['pathTemplate'], $placeholders);
 		}
 
 		return $urls;
-	}//end buildCanonicalUrls()
+	}//end canonicalUrls()
 
 	/**
 	 * Resolve the cache prefix for a reference URL: parse-and-collapse, or
@@ -319,7 +268,7 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 
 		try {
 			// Fetch the object using ObjectService.
-			$object = WriteCause::asLookup(fn () => $this->objectService->find(
+			$object = WriteCause::asLookup(fn () => $this->sources->objectService->find(
 				id: $parsed['uuid'],
 				register: $parsed['registerId'],
 				schema: $parsed['schemaId']
@@ -329,7 +278,10 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 				return null;
 			}
 
-			return $this->composeReference(referenceText: $referenceText, parsed: $parsed, objectData: $object->jsonSerialize());
+			return $this->composeReference(
+				referenceText: $referenceText,
+				richData: $this->richData(parsed: $parsed, objectData: $object->jsonSerialize())
+			);
 		} catch (\Exception $exception) {
 			// Catch all exceptions including authorization errors.
 			// Return null to prevent metadata leakage on RBAC failures.
@@ -345,57 +297,50 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	}//end buildReference()
 
 	/**
-	 * Build the reference for a found object from its serialised data.
+	 * Build the reference for a found object from its rich data.
 	 *
-	 * @param string                                              $referenceText The original URL.
-	 * @param array{registerId: int, schemaId: int, uuid: string} $parsed        The parsed reference.
-	 * @param array<string, mixed>                                $objectData    The serialised object.
+	 * @param string               $referenceText The original URL.
+	 * @param array<string, mixed> $richData      The `openregister-object` rich object; see richData().
 	 *
 	 * @return IReference
 	 */
-	private function composeReference(string $referenceText, array $parsed, array $objectData): IReference {
-		$registerId = $parsed['registerId'];
-		$schemaId = $parsed['schemaId'];
-		$uuid = $parsed['uuid'];
-
-		// No `?? []`: `jsonSerialize()` always emits `@self`, so the
-		// fallback was unreachable and phpstan says so.
-		$selfData = $objectData['@self'];
-
-		$title = $this->extractTitle(objectData: $objectData, selfData: $selfData);
-		$description = $this->extractDescription(objectData: $objectData);
-		$schemaTitle = $this->resolveSchemaName(schemaId: $schemaId);
-		$registerTitle = $this->resolveRegisterName(registerId: $registerId);
-		$objectUrl = $this->resolveObjectUrl(parsed: $parsed, selfData: $selfData);
-		$iconUrl = $this->resolveDeepLinkOrDefaultIconUrl(registerId: $registerId, schemaId: $schemaId);
-		$properties = $this->extractPreviewProperties(objectData: $objectData);
-
-		// Get updated timestamp. The metadata lives in `@self` and nowhere
-		// else — the old top-level fallback read a key the serialised shape
-		// does not have, so it could only ever yield ''.
-		$updated = $selfData['updated'] ?? '';
-
-		$richData = [
-			'id' => $uuid,
-			'title' => $title,
-			'description' => $description,
-			'schema' => ['id' => $schemaId, 'title' => $schemaTitle],
-			'register' => ['id' => $registerId, 'title' => $registerTitle],
-			'url' => $objectUrl,
-			'icon_url' => $iconUrl,
-			'updated' => $updated,
-			'properties' => $properties,
-		];
-
+	private function composeReference(string $referenceText, array $richData): IReference {
 		$reference = new Reference($referenceText);
-		$reference->setTitle($title);
-		$reference->setDescription($description);
-		$reference->setImageUrl($iconUrl);
-		$reference->setUrl($objectUrl);
+		$reference->setTitle($richData['title']);
+		$reference->setDescription($richData['description']);
+		$reference->setImageUrl($richData['icon_url']);
+		$reference->setUrl($richData['url']);
 		$reference->setRichObject('openregister-object', $richData);
 
 		return $reference;
 	}//end composeReference()
+
+	/**
+	 * The `openregister-object` rich object of a found object, from its serialised data.
+	 *
+	 * The metadata lives in `@self` and nowhere else: `jsonSerialize()` always emits it, so it
+	 * is read without a fallback, and `updated` is read from it alone.
+	 *
+	 * @param array{registerId: int, schemaId: int, uuid: string} $parsed     The parsed reference.
+	 * @param array<string, mixed>                                $objectData The serialised object.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function richData(array $parsed, array $objectData): array {
+		$selfData = $objectData['@self'];
+
+		return [
+			'id' => $parsed['uuid'],
+			'title' => $this->extractTitle(objectData: $objectData, selfData: $selfData),
+			'description' => $this->extractDescription(objectData: $objectData),
+			'schema' => ['id' => $parsed['schemaId'], 'title' => $this->resolveSchemaName(schemaId: $parsed['schemaId'])],
+			'register' => ['id' => $parsed['registerId'], 'title' => $this->resolveRegisterName(registerId: $parsed['registerId'])],
+			'url' => $this->resolveObjectUrl(parsed: $parsed, selfData: $selfData),
+			'icon_url' => $this->resolveDeepLinkOrDefaultIconUrl(registerId: $parsed['registerId'], schemaId: $parsed['schemaId']),
+			'updated' => $selfData['updated'] ?? '',
+			'properties' => $this->extractPreviewProperties(objectData: $objectData),
+		];
+	}//end richData()
 
 	/**
 	 * The absolute object URL: the registered deep link, else the show route.
@@ -420,7 +365,7 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 			['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
 		);
 
-		$objectUrl = $this->deepLinkRegistry->resolveUrl(
+		$objectUrl = $this->sources->deepLinkRegistry->resolveUrl(
 			registerId: $registerId,
 			schemaId: $schemaId,
 			objectData: $flatData
@@ -447,13 +392,20 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	 */
 	public function resolveSchemaName(int $schemaId): string {
 		try {
-			$schema = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
+			$schema = $this->sources->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false);
 			$title = $schema->getTitle();
 			if ($title !== null && $title !== '') {
 				return $title;
 			}
 		} catch (\Exception $e) {
 			// Fall through to default.
+			$this->logger->debug(
+				message: '[ObjectPreviewFormatter] Schema name not resolved',
+				context: [
+					'schemaId' => $schemaId,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $this->l10n->t('Unknown Schema');
@@ -470,13 +422,20 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	 */
 	public function resolveRegisterName(int $registerId): string {
 		try {
-			$register = $this->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
+			$register = $this->sources->registerMapper->find($registerId, _multitenancy: false, _rbac: false);
 			$title = $register->getTitle();
 			if ($title !== null && $title !== '') {
 				return $title;
 			}
 		} catch (\Exception $e) {
 			// Fall through to default.
+			$this->logger->debug(
+				message: '[ObjectPreviewFormatter] Register name not resolved',
+				context: [
+					'registerId' => $registerId,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return $this->l10n->t('Unknown Register');
@@ -497,12 +456,19 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	 */
 	public function resolveSchemaIconName(int $schemaId): ?string {
 		try {
-			$icon = $this->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false)->getIcon();
+			$icon = $this->sources->schemaMapper->find($schemaId, _multitenancy: false, _rbac: false)->getIcon();
 			if ($icon !== null && $icon !== '') {
 				return $icon;
 			}
 		} catch (\Exception $e) {
 			// Fall through to null.
+			$this->logger->debug(
+				message: '[ObjectPreviewFormatter] Schema icon not resolved',
+				context: [
+					'schemaId' => $schemaId,
+					'exception' => $e->getMessage(),
+				]
+			);
 		}
 
 		return null;
@@ -551,7 +517,7 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d1
 	 */
 	public function resolveDeepLinkOrDefaultIconUrl(int $registerId, int $schemaId): string {
-		$iconUrl = $this->deepLinkRegistry->resolveIcon(
+		$iconUrl = $this->sources->deepLinkRegistry->resolveIcon(
 			registerId: $registerId,
 			schemaId: $schemaId
 		);

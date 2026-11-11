@@ -36,6 +36,7 @@ use OCP\ICacheFactory;
 use OCP\IConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
 
 /**
  * Runs getBranches(), getFileContent(), listConfigurationFiles(),
@@ -191,7 +192,7 @@ class GitHubHandlerReadGoldenTest extends TestCase {
 		);
 
 		try {
-			$out = ['returned' => $handler->$method(...$arguments)];
+			$out = ['returned' => $handler->$method(...self::contractArguments(method: $method, arguments: $arguments))];
 		} catch (\Throwable $e) {
 			$out = ['threw' => get_class($e), 'message' => $e->getMessage()];
 		}
@@ -346,4 +347,24 @@ class GitHubHandlerReadGoldenTest extends TestCase {
 			'description' => 'An app', 'default_branch' => 'dev', 'html_url' => 'https://github.com/org/app',
 		];
 	}//end apiBody()
+
+	/**
+	 * The recorded positional arguments in the shape the client contract takes.
+	 *
+	 * @param string            $method    The handler method.
+	 * @param array<int, mixed> $arguments The recorded arguments.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private static function contractArguments(string $method, array $arguments): array {
+		return match ($method) {
+			'getFileContent', 'enrichConfigurationDetails' => [
+				new GitHubFileLocation(owner: $arguments[0], repo: $arguments[1], path: $arguments[2], branch: ($arguments[3] ?? 'main')),
+			],
+			'listConfigurationFiles' => [
+				new GitHubFileLocation(owner: $arguments[0], repo: $arguments[1], path: ($arguments[3] ?? ''), branch: ($arguments[2] ?? 'main')),
+			],
+			default => $arguments,
+		};
+	}//end contractArguments()
 }//end class

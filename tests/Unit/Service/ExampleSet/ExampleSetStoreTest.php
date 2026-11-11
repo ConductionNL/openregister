@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetStore;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -36,6 +37,10 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\ExampleSet\ObjectCheck;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
@@ -56,8 +61,8 @@ class ExampleSetStoreTest extends TestCase {
 
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->expects($this->once())
-			->method('validateObjectWithPlannedUsers')
-			->with(['assignee' => 'daan.verbeek'], 42, $this->anything(), ['daan.verbeek'])
+			->method('validateWithPlannedAccounts')
+			->with(['assignee' => 'daan.verbeek'], new \OCA\OpenRegister\Service\Object\PlannedAccountsCheck(schema: 42, plannedUsers: ['daan.verbeek']))
 			->willReturn(new ValidationResult(null));
 		$validator->expects($this->never())->method('validateObject');
 
@@ -69,7 +74,7 @@ class ExampleSetStoreTest extends TestCase {
 
 		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
 
-		$this->assertSame([], $store->validate(register: 'crm', schema: 'ticket', data: ['assignee' => 'daan.verbeek'], plannedUsers: ['daan.verbeek']));
+		$this->assertSame([], $store->refusalsFor(table: new RegisterSchemaRef(register: 'crm', schema: 'ticket'), check: new ObjectCheck(object: ['assignee' => 'daan.verbeek'], plannedUsers: ['daan.verbeek'])));
 	}
 
 	/**
@@ -124,10 +129,10 @@ class ExampleSetStoreTest extends TestCase {
 		$objects->method('find')->willReturn($row);
 		$objects->expects($this->once())
 			->method('deleteObject')
-			->with('case-1', 'dossiq', 'case', false, false, true)
+			->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'case-1' && $deletion->target->register == 'dossiq' && $deletion->target->schema == 'case'), false, false, true)
 			->willReturn(true);
 
-		$this->assertSame('', $this->storeOver(objects: $objects)->deleteRecorded(register: 'dossiq', schema: 'case', id: 'case-1'));
+		$this->assertSame('', $this->storeOver(objects: $objects)->deleteRecorded(ref: new ObjectRef(register: 'dossiq', schema: 'case', id: 'case-1')));
 	}
 
 	/**
@@ -140,7 +145,7 @@ class ExampleSetStoreTest extends TestCase {
 		$objects->method('find')->willReturn($row);
 		$objects->expects($this->never())->method('deleteObject');
 
-		$this->assertSame('it is under an active legal hold', $this->storeOver(objects: $objects)->deleteRecorded(register: 'dossiq', schema: 'case', id: 'case-1'));
+		$this->assertSame('it is under an active legal hold', $this->storeOver(objects: $objects)->deleteRecorded(ref: new ObjectRef(register: 'dossiq', schema: 'case', id: 'case-1')));
 	}
 
 	/**
@@ -159,8 +164,8 @@ class ExampleSetStoreTest extends TestCase {
 		$objects->method('deleteObject')->willThrowException(new \RuntimeException('a relation still points here'));
 		$store = $this->storeOver(objects: $objects);
 
-		$this->assertSame('a relation still points here', $store->deleteRecorded(register: 'pipelinq', schema: 'ticket', id: 'ticket-1'));
-		$this->assertSame('', $store->deleteRecorded(register: 'pipelinq', schema: 'ticket', id: 'gone'));
+		$this->assertSame('a relation still points here', $store->deleteRecorded(ref: new ObjectRef(register: 'pipelinq', schema: 'ticket', id: 'ticket-1')));
+		$this->assertSame('', $store->deleteRecorded(ref: new ObjectRef(register: 'pipelinq', schema: 'ticket', id: 'gone')));
 	}
 
 	/**
@@ -173,7 +178,7 @@ class ExampleSetStoreTest extends TestCase {
 		$objects->method('find')->willThrowException(new \RuntimeException('db down'));
 		$objects->expects($this->never())->method('deleteObject');
 
-		$why = $this->storeOver(objects: $objects)->deleteRecorded(register: 'pipelinq', schema: 'ticket', id: 'ticket-1');
+		$why = $this->storeOver(objects: $objects)->deleteRecorded(ref: new ObjectRef(register: 'pipelinq', schema: 'ticket', id: 'ticket-1'));
 
 		$this->assertNotSame('', $why);
 		$this->assertStringContainsString('db down', $why);
@@ -195,10 +200,10 @@ class ExampleSetStoreTest extends TestCase {
 		});
 		$store = $this->storeOver(objects: $objects);
 
-		$this->assertSame(['row' => null, 'error' => ''], $store->read(register: 'r', schema: 's', id: 'absent'));
-		$this->assertSame(['row' => null, 'error' => ''], $store->read(register: 'r', schema: 's', id: 'null'));
-		$this->assertSame(['row' => null, 'error' => 'db down'], $store->read(register: 'r', schema: 's', id: 'broken'));
-		$this->assertNull($store->get(register: 'r', schema: 's', id: 'broken'));
+		$this->assertSame(['row' => null, 'error' => ''], $store->readRow(ref: new ObjectRef(register: 'r', schema: 's', id: 'absent')));
+		$this->assertSame(['row' => null, 'error' => ''], $store->readRow(ref: new ObjectRef(register: 'r', schema: 's', id: 'null')));
+		$this->assertSame(['row' => null, 'error' => 'db down'], $store->readRow(ref: new ObjectRef(register: 'r', schema: 's', id: 'broken')));
+		$this->assertNull($store->row(ref: new ObjectRef(register: 'r', schema: 's', id: 'broken')));
 	}
 
 	/**
@@ -229,7 +234,7 @@ class ExampleSetStoreTest extends TestCase {
 		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
 
 		$this->assertSame('case-1', $store->create(register: 'dossiq', schema: 'case', data: ['title' => 'Zaak'])['id']);
-		$this->assertSame('', $store->update(register: 'dossiq', schema: 'case', id: 'case-1', data: ['status' => 'requested']));
+		$this->assertSame('', $store->update(ref: new ObjectRef(register: 'dossiq', schema: 'case', id: 'case-1'), data: ['status' => 'requested']));
 
 		$this->assertSame([['system' => true, 'declared' => false], ['system' => true, 'declared' => true]], $seen);
 		$this->assertFalse($actions->writesDeclaredState(uuid: 'case-1'), 'released after the write');
@@ -278,8 +283,8 @@ class ExampleSetStoreTest extends TestCase {
 		)->willReturn($saved);
 		$system    = [];
 		$ownership = $this->createMock(ObjectOwnershipService::class);
-		$ownership->method('reassignMany')->willReturnCallback(
-			static function (array $identifiers, string $newOwner) use (&$system): array {
+		$ownership->method('reassign')->willReturnCallback(
+			static function (array $identifiers, OwnershipReassignment $reassignment) use (&$system): array {
 				$system[] = SystemOperationContext::isActive();
 				return ['failed' => ($identifiers === ['gone'] ? [['identifier' => 'gone', 'reason' => 'not found']] : [])];
 			}

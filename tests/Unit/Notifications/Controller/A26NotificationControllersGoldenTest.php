@@ -27,14 +27,21 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Controller;
 
 use DateTimeInterface;
 use InvalidArgumentException;
+use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCA\OpenRegister\Notifications\Controller\NotificationBroadcastController;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationBroadcastControllerServices;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationDeliveryWindowControllerServices;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationGroupPreferencesControllerServices;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationPreferencesControllerServices;
+use OCA\OpenRegister\Notifications\Controller\Support\NotificationTemplatesControllerServices;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationSubscriptionsControllerServices;
 use OCA\OpenRegister\Notifications\Controller\NotificationDeliveryWindowController;
 use OCA\OpenRegister\Notifications\Controller\NotificationGroupPreferencesController;
@@ -56,9 +63,11 @@ use OCP\IUserSession;
 use OCP\Group\ISubAdmin;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionNamedType;
 use RuntimeException;
+use OCA\OpenRegister\Notifications\Db\SubscriptionKey;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Controller\NotificationBroadcastController
@@ -191,19 +200,23 @@ class A26NotificationControllersGoldenTest extends TestCase {
 		$groups = $this->groupManager(admin: $admin, member: $member);
 		$subAdmin = $this->recording(class: ISubAdmin::class, returns: ['isSubAdminOfGroup' => $subadmin]);
 		return match ($name) {
-			'prefs'     => new NotificationPreferencesController('openregister', $request, $this->preferences(), $session),
+			'prefs'     => new NotificationPreferencesController($request, new NotificationPreferencesControllerServices($this->preferences(), $session)),
 			'group'     => new NotificationGroupPreferencesController(
 				$request,
 				new NotificationGroupPreferencesControllerServices($this->preferences(), $this->schemas(), $session),
 				$groups,
 				$subAdmin
 			),
-			'broadcast' => new NotificationBroadcastController($request, $this->broadcasts(), $groups, $session),
-			'templates' => new NotificationTemplatesController($request, $this->templates(), $groups, $session),
+			'broadcast' => new NotificationBroadcastController($request, new NotificationBroadcastControllerServices($this->broadcasts(), $this->controllerSession(session: $session, groups: $groups))),
+			'templates' => new NotificationTemplatesController($request, new NotificationTemplatesControllerServices($this->templates(), $this->controllerSession(session: $session, groups: $groups))),
 			'subs'      => $this->subscriptions(request: $request, session: $session),
-			'window'    => new NotificationDeliveryWindowController('openregister', $request, $this->window(), $session),
+			'window'    => new NotificationDeliveryWindowController($request, new NotificationDeliveryWindowControllerServices($this->window(), $session)),
 		};
 	}//end controller()
+
+	private function controllerSession(IUserSession $session, IGroupManager $groups): ControllerSession {
+		return new ControllerSession($session, $groups, $this->createMock(LoggerInterface::class));
+	}//end controllerSession()
 
 	private function groupManager(bool $admin, bool $member): IGroupManager {
 		$group = $this->recording(class: IGroup::class, returns: ['inGroup' => $member, 'getGID' => 'staff']);
@@ -221,8 +234,8 @@ class A26NotificationControllersGoldenTest extends TestCase {
 			class: NotificationPreferencesInterface::class,
 			returns: [
 				'getEffectiveForUser' => [['schema' => 'case', 'enabled' => true]],
-				'getOverride'         => ['enabled' => false],
-				'getGroupDefault'     => static fn (string $groupId, string $schemaSlug, string $notificationKey): ?array => $notificationKey === 'quiet' ? null : ['channels' => ['email']],
+				'overrideAt'          => ['enabled' => false],
+				'groupDefaultAt'      => static fn (string $groupId, PreferenceAddress $address): ?array => $address->notificationKey === 'quiet' ? null : ['channels' => ['email']],
 			]
 		);
 	}//end preferences()
@@ -275,17 +288,19 @@ class A26NotificationControllersGoldenTest extends TestCase {
 		$entity->method('jsonSerialize')->willReturn(['id' => 1]);
 		$mapper = $this->createMock(NotificationSubscriptionMapper::class);
 		$mapper->method('findByUser')->willReturnCallback(fn (string $userId): array => $this->log(call: 'mapper::findByUser', args: [$userId], result: [$entity]));
-		$mapper->method('subscribe')->willReturnCallback(
-			function (string $userId, ?int $registerId, ?int $schemaId) use ($entity): NotificationSubscription {
-				$this->log(call: 'mapper::subscribe', args: [$userId, $registerId, $schemaId], result: null);
-				if ($registerId === null && $schemaId === null) {
+		$mapper->method('subscribeTo')->willReturnCallback(
+			function (SubscriptionKey $key) use ($entity): NotificationSubscription {
+				$this->log(call: 'mapper::subscribe', args: [$key->userId, $key->registerId, $key->schemaId], result: null);
+				if ($key->registerId === null && $key->schemaId === null) {
 					throw new InvalidArgumentException('needs a scope');
 				}
 
 				return $entity;
 			}
 		);
-		$mapper->method('unsubscribe')->willReturnCallback(fn (string $userId, ?int $registerId, ?int $schemaId): bool => $this->log(call: 'mapper::unsubscribe', args: [$userId, $registerId, $schemaId], result: true));
+		$mapper->method('unsubscribeFrom')->willReturnCallback(
+			fn (SubscriptionKey $key): bool => $this->log(call: 'mapper::unsubscribe', args: [$key->userId, $key->registerId, $key->schemaId], result: true)
+		);
 		$register = new Register();
 		$schema = new Schema();
 		$registers = $this->recording(
@@ -296,7 +311,7 @@ class A26NotificationControllersGoldenTest extends TestCase {
 			class: SchemaMapperInterface::class,
 			returns: ['find' => static fn (int|string $id): Schema => (int) $id === 404 ? throw new RuntimeException('gone') : $schema]
 		);
-		return new NotificationSubscriptionsController($request, new NotificationSubscriptionsControllerServices($mapper, $registers, $schemas), $session);
+		return new NotificationSubscriptionsController($request, new NotificationSubscriptionsControllerServices($mapper, $registers, $schemas, $session));
 	}//end subscriptions()
 
 	private function window(): NotificationDeliveryWindowService {
@@ -384,6 +399,10 @@ class A26NotificationControllersGoldenTest extends TestCase {
 
 		if ($value instanceof IGroup === true) {
 			return 'IGroup';
+		}
+
+		if ($value instanceof PreferenceAddress === true || $value instanceof PreferenceWrite === true) {
+			return $this->plain(value: get_object_vars($value));
 		}
 
 		if (is_object($value) === true) {

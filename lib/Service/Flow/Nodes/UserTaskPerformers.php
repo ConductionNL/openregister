@@ -34,7 +34,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Event\AgentRunDispatch;
+use OCA\OpenRegister\Event\AgentRunInstruction;
 use OCA\OpenRegister\Event\AgentRunRequestedEvent;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Flow\Principal\AgentPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
@@ -49,20 +52,33 @@ use UnexpectedValueException;
 class UserTaskPerformers {
 
 	/**
+	 * Resolves a reference to who it currently means.
+	 *
+	 * @var PrincipalResolverRegistry|null
+	 */
+	private readonly ?PrincipalResolverRegistry $principals;
+
+	/**
+	 * Where an agent's turn is asked for.
+	 *
+	 * @var IEventDispatcher|null
+	 */
+	private readonly ?IEventDispatcher $events;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param UserTaskConfig                 $config     Reads the step's performer fields.
-	 * @param PrincipalResolverRegistry|null $principals Resolves a reference to who it currently means.
-	 * @param IEventDispatcher|null          $events     Where an agent's turn is asked for.
+	 * @param UserTaskConfig $config Reads the step's performer fields.
+	 * @param UserTaskHooks  $hooks  The principal resolvers and the event dispatcher an agent's turn is asked on.
 	 *
 	 * @spec openspec/changes/flow-typed-principals/specs/flow-typed-principals/spec.md
 	 */
 	public function __construct(
 		private readonly UserTaskConfig $config,
-		private readonly ?PrincipalResolverRegistry $principals = null,
-		private readonly ?IEventDispatcher $events = null,
+		UserTaskHooks $hooks=new UserTaskHooks(),
 	) {
-
+		$this->principals = $hooks->principals;
+		$this->events     = $hooks->events;
 	}//end __construct()
 
 	/**
@@ -165,19 +181,25 @@ class UserTaskPerformers {
 
 		$this->events->dispatchTyped(
 			new AgentRunRequestedEvent(
-				subjectUuid: (string)$task->getUuid(),
-				subjectRegister: trim((string)($config['subjectRegister'] ?? '')),
-				subjectSchema: trim((string)($config['subjectSchema'] ?? '')),
-				agent: $agent->id,
-				skill: ($config['skill'] ?? null),
-				// A person gets fields to fill in; an agent gets a prompt. An
-				// agent asked nothing at all cannot know what the step wanted,
-				// so the title stands in rather than an empty string.
-				prompt: trim((string)($config['prompt'] ?? ($config['title'] ?? ''))),
-				resultField: trim((string)($config['outcomeKey'] ?? '')),
-				requiresApproval: (bool)($config['requiresApproval'] ?? false),
-				mode: trim((string)($config['mode'] ?? 'task')),
-				flowName: trim((string)($context['flowName'] ?? ''))
+				subject: new ObjectRef(
+					register: trim((string)($config['subjectRegister'] ?? '')),
+					schema: trim((string)($config['subjectSchema'] ?? '')),
+					id: (string)$task->getUuid()
+				),
+				instruction: new AgentRunInstruction(
+					agent: $agent->id,
+					skill: ($config['skill'] ?? null),
+					// A person gets fields to fill in; an agent gets a prompt. An
+					// agent asked nothing at all cannot know what the step wanted,
+					// so the title stands in rather than an empty string.
+					prompt: trim((string)($config['prompt'] ?? ($config['title'] ?? ''))),
+					resultField: trim((string)($config['outcomeKey'] ?? ''))
+				),
+				dispatch: new AgentRunDispatch(
+					requiresApproval: (bool)($config['requiresApproval'] ?? false),
+					mode: trim((string)($config['mode'] ?? 'task')),
+					flowName: trim((string)($context['flowName'] ?? ''))
+				)
 			)
 		);
 

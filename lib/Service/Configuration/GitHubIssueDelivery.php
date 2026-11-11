@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Configuration;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubIssueSubmission;
+
 /**
  * Where the issue goes, who submits it, and whether the server PAT carries it.
  *

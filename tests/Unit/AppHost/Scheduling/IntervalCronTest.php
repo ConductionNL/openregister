@@ -18,6 +18,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost\Scheduling;
 
 use OCA\OpenRegister\AppHost\Scheduling\IntervalCron;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleCadence;
+use OCA\OpenRegister\AppHost\Scheduling\ScheduleCall;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleDescriptor;
 use PHPUnit\Framework\TestCase;
 
@@ -78,13 +80,13 @@ class IntervalCronTest extends TestCase {
 	}
 
 	public function testADeclaredCronIsUsedAsIs(): void {
-		$schedule = new ScheduleDescriptor('s', null, '0 6 * * 1-5', 'a');
+		$schedule = new ScheduleDescriptor('s', new ScheduleCadence(null, '0 6 * * 1-5'), new ScheduleCall('a'));
 
 		$this->assertSame('0 6 * * 1-5', $schedule->cronExpression());
 	}
 
 	public function testAnIntervalScheduleAnswersWithItsCron(): void {
-		$schedule = new ScheduleDescriptor('s', 86400, null, 'a');
+		$schedule = new ScheduleDescriptor('s', new ScheduleCadence(86400, null), new ScheduleCall('a'));
 
 		$this->assertSame('0 0 * * *', $schedule->cronExpression());
 	}

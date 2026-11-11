@@ -36,12 +36,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Container\ContainerInterface;
@@ -83,43 +83,17 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 	private array $found = [];
 
 	/**
-	 * The registers.
-	 *
-	 * @var RegisterMapperInterface
-	 */
-	private readonly RegisterMapperInterface $registers;
-
-	/**
-	 * The schemas.
-	 *
-	 * @var SchemaMapperInterface
-	 */
-	private readonly SchemaMapperInterface $schemas;
-
-	/**
-	 * Finds the referring objects.
-	 *
-	 * @var MagicMapperInterface
-	 */
-	private readonly MagicMapperInterface $rows;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param ReferencedCalculationStores $stores    The register, schema and row stores the referenced-calculation refresher reads.
-	 * @param ContainerInterface          $container Hands out the object service on first use.
-	 * @param LoggerInterface             $logger    The logger.
-	 * @param SchemaTypeConverter         $types     Restores the stored form of `type: string` values the read decoded.
+	 * @param SchemaCatalogInterface $catalog   The registers, the schemas and the rows that find the referring objects.
+	 * @param ContainerInterface     $container Hands out the object service on first use.
+	 * @param LoggerInterface        $logger    The logger.
 	 */
 	public function __construct(
-		ReferencedCalculationStores $stores,
+		private readonly SchemaCatalogInterface $catalog,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
-		private readonly SchemaTypeConverter $types=new SchemaTypeConverter(),
 	) {
-		$this->registers = $stores->registers;
-		$this->schemas = $stores->schemas;
-		$this->rows = $stores->rows;
 	}//end __construct()
 
 	/**
@@ -134,32 +108,93 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 	 */
 	public function refresh(ObjectEntity $updated, ?ObjectEntity $old): int {
 		$uuid = (string) $updated->getUuid();
-		if ($uuid === '' || self::$depth >= self::MAX_DEPTH) {
+		if ($this->mayRefresh(uuid: $uuid) === false) {
 			return 0;
 		}
 
-		try {
-			$target   = $this->schemas->find(id: (string) $updated->getSchema(), _rbac: false, _multitenancy: false);
-			$register = $this->registers->find(id: (string) $updated->getRegister(), _rbac: false, _multitenancy: false);
-		} catch (Throwable) {
+		$table = $this->tableOf(object: $updated);
+		if ($table === null) {
 			return 0;
 		}
 
 		// The guard: nothing is read or written unless a materialised `@ref`
 		// in this register reads a field of this schema that changed.
-		$read    = $this->readFields(dependents: $this->dependentsOf(register: $register, target: $target));
-		$changed = array_values(array_intersect($read, $this->changedFields(new: ($updated->getObject() ?? []), old: $old?->getObject())));
+		$changed = array_values(array_intersect($this->fieldsReadFrom(table: $table), $this->fieldsChangedBy(updated: $updated, old: $old)));
 		if ($changed === []) {
 			return 0;
 		}
 
+		return $this->refreshOneLevelDeeper(table: $table, change: new ReferencedChange(uuid: $uuid, changed: $changed));
+	}//end refresh()
+
+	/**
+	 * Whether an object can start a refresh: it has a uuid and the nesting limit is not reached.
+	 *
+	 * @param string $uuid The updated object's uuid.
+	 *
+	 * @return bool
+	 */
+	private function mayRefresh(string $uuid): bool {
+		return $uuid !== '' && self::$depth < self::MAX_DEPTH;
+	}//end mayRefresh()
+
+	/**
+	 * The register and schema an object lives in, or null when either does not resolve.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return RegisterSchema|null
+	 */
+	private function tableOf(ObjectEntity $object): ?RegisterSchema {
+		try {
+			$target   = $this->catalog->schemas()->find(id: (string) $object->getSchema(), _rbac: false, _multitenancy: false);
+			$register = $this->catalog->registers()->find(id: (string) $object->getRegister(), _rbac: false, _multitenancy: false);
+		} catch (Throwable) {
+			return null;
+		}
+
+		return new RegisterSchema(register: $register, schema: $target);
+	}//end tableOf()
+
+	/**
+	 * Every field of the table's schema that a dependent in its register reads.
+	 *
+	 * @param RegisterSchema $table The updated object's register and schema.
+	 *
+	 * @return array<int, string>
+	 */
+	private function fieldsReadFrom(RegisterSchema $table): array {
+		return $this->readFields(dependents: $this->dependentsOf(register: $table->register, target: $table->schema));
+	}//end fieldsReadFrom()
+
+	/**
+	 * The fields a save changed; every field when the previous state is unknown.
+	 *
+	 * @param ObjectEntity      $updated The object as saved.
+	 * @param ObjectEntity|null $old     The object before the save, or null.
+	 *
+	 * @return array<int, string>
+	 */
+	private function fieldsChangedBy(ObjectEntity $updated, ?ObjectEntity $old): array {
+		return $this->changedFields(new: ($updated->getObject() ?? []), old: $old?->getObject());
+	}//end fieldsChangedBy()
+
+	/**
+	 * Refresh the dependents one nesting level deeper, so a chain of refreshes stops at MAX_DEPTH.
+	 *
+	 * @param RegisterSchema   $table  The updated object's register and schema.
+	 * @param ReferencedChange $change The updated object's uuid and the fields that changed.
+	 *
+	 * @return integer The number of objects re-saved.
+	 */
+	private function refreshOneLevelDeeper(RegisterSchema $table, ReferencedChange $change): int {
 		self::$depth++;
 		try {
-			return $this->refreshIn(register: $register, target: $target, uuid: $uuid, changed: $changed);
+			return $this->refreshIn(table: $table, change: $change);
 		} finally {
 			self::$depth--;
 		}
-	}//end refresh()
+	}//end refreshOneLevelDeeper()
 
 	/**
 	 * Every field of the target schema some dependent reads.
@@ -180,21 +215,20 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 	/**
 	 * Re-save, per schema of the register, the objects that point at the updated object and read a changed field.
 	 *
-	 * @param Register           $register The register.
-	 * @param Schema             $target   The updated object's schema.
-	 * @param string             $uuid     The updated object's uuid.
-	 * @param array<int, string> $changed  The fields that changed.
+	 * @param RegisterSchema   $table  The updated object's register and schema.
+	 * @param ReferencedChange $change The updated object's uuid and the fields that changed.
 	 *
 	 * @return integer The number of objects re-saved.
 	 */
-	private function refreshIn(Register $register, Schema $target, string $uuid, array $changed): int {
+	private function refreshIn(RegisterSchema $table, ReferencedChange $change): int {
 		$saved = 0;
-		foreach ($this->dependentsOf(register: $register, target: $target) as $dependent) {
-			if (array_intersect($dependent['reads'], $changed) === []) {
+		foreach ($this->dependentsOf(register: $table->register, target: $table->schema) as $dependent) {
+			if (array_intersect($dependent['reads'], $change->changed) === []) {
 				continue;
 			}
 
-			$saved += $this->resave(register: $register, schema: $dependent['schema'], field: $dependent['field'], uuid: $uuid);
+			$referrers = new RegisterSchema(register: $table->register, schema: $dependent['schema']);
+			$saved    += $this->resave(table: $referrers, pointer: new ReferencePointer(field: $dependent['field'], uuid: $change->uuid));
 		}
 
 		return $saved;
@@ -217,7 +251,7 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 		$dependents = [];
 		foreach ($register->getSchemas() as $schemaId) {
 			try {
-				$schema = $this->schemas->find(id: $schemaId, _rbac: false, _multitenancy: false);
+				$schema = $this->catalog->schemas()->find(id: $schemaId, _rbac: false, _multitenancy: false);
 			} catch (Throwable) {
 				continue;
 			}
@@ -242,8 +276,8 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 	 * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
 	 */
 	public function dependencies(Schema $schema, Schema $target): array {
-		$references = (($schema->getConfiguration() ?? [])['x-openregister-references'] ?? []);
-		if (is_array($references) === false || $references === []) {
+		$references = self::listOrEmpty(value: (($schema->getConfiguration() ?? [])['x-openregister-references'] ?? []));
+		if ($references === []) {
 			return [];
 		}
 
@@ -251,18 +285,59 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 		$found = [];
 		foreach ($references as $name => $spec) {
 			$field = $this->pointingField(spec: $spec, target: $target);
-			if ($field === null) {
-				continue;
-			}
-
-			preg_match_all('/"@ref\.'.preg_quote((string) $name, '/').'\.([A-Za-z0-9_]+)/', $text, $matches);
-			if ($matches[1] !== []) {
-				$found[$field] = array_values(array_unique([...($found[$field] ?? []), ...$matches[1]]));
+			if ($field !== null) {
+				$found = self::withFieldReads(found: $found, reads: [$field => self::refReads(name: (string) $name, text: $text)]);
 			}
 		}
 
 		return $found;
 	}//end dependencies()
+
+	/**
+	 * The target fields an encoded expression text reads through one reference, as `@ref.<name>.<field>`.
+	 *
+	 * @param string $name The reference name.
+	 * @param string $text The JSON-encoded materialised expressions.
+	 *
+	 * @return array<int, string> The fields read, in order of appearance.
+	 */
+	private static function refReads(string $name, string $text): array {
+		preg_match_all('/"@ref\.'.preg_quote($name, '/').'\.([A-Za-z0-9_]+)/', $text, $matches);
+		return $matches[1];
+	}//end refReads()
+
+	/**
+	 * Merge fields read, by pointing field, into the found map; a field with no reads adds nothing.
+	 *
+	 * @param array<string, array<int, string>> $found The reads found so far.
+	 * @param array<string, array<int, string>> $reads The pointing field => the target fields it reads.
+	 *
+	 * @return array<string, array<int, string>> The merged map, each list distinct.
+	 */
+	private static function withFieldReads(array $found, array $reads): array {
+		foreach ($reads as $field => $read) {
+			if ($read !== []) {
+				$found[$field] = array_values(array_unique([...($found[$field] ?? []), ...$read]));
+			}
+		}
+
+		return $found;
+	}//end withFieldReads()
+
+	/**
+	 * A configured value when it is an array, else an empty list.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return array<mixed>
+	 */
+	private static function listOrEmpty(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end listOrEmpty()
 
 	/**
 	 * The expressions of a schema's enabled materialised calculations.
@@ -272,25 +347,29 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 	 * @return array<int, mixed>
 	 */
 	private function materialisedExpressions(Schema $schema): array {
-		$annotation = (($schema->getConfiguration() ?? [])['x-openregister-calculations'] ?? []);
-		if (is_array($annotation) === false) {
-			$annotation = [];
-		}
-
-		$properties = ($schema->getProperties() ?? []);
-		if (is_array($properties) === false) {
-			$properties = [];
-		}
+		$annotation = self::listOrEmpty(value: (($schema->getConfiguration() ?? [])['x-openregister-calculations'] ?? []));
+		$properties = self::listOrEmpty(value: ($schema->getProperties() ?? []));
 
 		$expressions = [];
 		foreach ((new PropertyCalculations())->merge(annotation: $annotation, properties: $properties) as $spec) {
-			if (is_array($spec) === true && ($spec['materialise'] ?? false) === true && ($spec['enabled'] ?? true) !== false) {
+			if (self::isEnabledMaterialised(spec: $spec) === true) {
 				$expressions[] = ($spec['expression'] ?? null);
 			}
 		}
 
 		return $expressions;
 	}//end materialisedExpressions()
+
+	/**
+	 * Whether a calculation declaration is materialised and not disabled.
+	 *
+	 * @param mixed $spec The calculation declaration.
+	 *
+	 * @return bool
+	 */
+	private static function isEnabledMaterialised(mixed $spec): bool {
+		return is_array($spec) === true && ($spec['materialise'] ?? false) === true && ($spec['enabled'] ?? true) !== false;
+	}//end isEnabledMaterialised()
 
 	/**
 	 * The field a declared reference follows to the target schema, null when it does not point there.
@@ -301,7 +380,7 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 	 * @return string|null
 	 */
 	private function pointingField(mixed $spec, Schema $target): ?string {
-		if (is_array($spec) === false || ($spec['mode'] ?? '') !== 'relatedObject' || is_string($spec['field'] ?? null) === false) {
+		if (self::isRelatedObjectReference(spec: $spec) === false) {
 			return null;
 		}
 
@@ -314,55 +393,110 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 	}//end pointingField()
 
 	/**
+	 * Whether a reference declaration follows a related object through a named field.
+	 *
+	 * @param mixed $spec The reference declaration.
+	 *
+	 * @return bool
+	 */
+	private static function isRelatedObjectReference(mixed $spec): bool {
+		return is_array($spec) === true && ($spec['mode'] ?? '') === 'relatedObject' && is_string($spec['field'] ?? null) === true;
+	}//end isRelatedObjectReference()
+
+	/**
 	 * Re-save the objects of a schema whose field points at the updated object.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The pointing schema.
-	 * @param string   $field    The pointing field.
-	 * @param string   $uuid     The updated object's uuid.
+	 * @param RegisterSchema   $table   The register and the pointing schema.
+	 * @param ReferencePointer $pointer The pointing field and the updated object's uuid.
 	 *
 	 * @return integer The number of objects re-saved.
 	 */
-	private function resave(Register $register, Schema $schema, string $field, string $uuid): int {
-		try {
-			$rows = $this->rows->findAllInRegisterSchemaTable(register: $register, schema: $schema, limit: self::SYNC_LIMIT, filters: [$field => $uuid]);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[ReferencedCalculationRefresher] referrers could not be read',
-				['schema' => $schema->getSlug(), 'reason' => $e->getMessage()]
-			);
+	private function resave(RegisterSchema $table, ReferencePointer $pointer): int {
+		$rows = $this->referrersOf(table: $table, pointer: $pointer);
+		if ($rows === null) {
 			return 0;
 		}
 
 		if (count($rows) >= self::SYNC_LIMIT) {
 			$this->logger->warning(
-				'[ReferencedCalculationRefresher] more objects point at '.$uuid
+				'[ReferencedCalculationRefresher] more objects point at '.$pointer->uuid
 					.' than one save refreshes; run occ openregister:rematerialise-calculations for the rest',
-				['register' => $register->getSlug(), 'schema' => $schema->getSlug()]
+				['register' => $table->register->getSlug(), 'schema' => $table->schema->getSlug()]
 			);
 		}
 
-		$service = $this->container->get(ObjectOperationsInterface::class);
-		$saved   = 0;
+		return $this->resaveRows(schema: $table->schema, rows: $rows);
+	}//end resave()
+
+	/**
+	 * The objects of a schema whose field points at the updated object, at most SYNC_LIMIT of them.
+	 *
+	 * @param RegisterSchema   $table   The register and the pointing schema.
+	 * @param ReferencePointer $pointer The pointing field and the updated object's uuid.
+	 *
+	 * @return array<int, ObjectEntity>|null The referring objects, or null when they could not be read.
+	 */
+	private function referrersOf(RegisterSchema $table, ReferencePointer $pointer): ?array {
+		try {
+			return $this->catalog->tables()->findAllInRegisterSchemaTable(
+				table: $table,
+				listing: new ListQuery(limit: self::SYNC_LIMIT, filters: $pointer->filters())
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'[ReferencedCalculationRefresher] referrers could not be read',
+				['schema' => $table->schema->getSlug(), 'reason' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end referrersOf()
+
+	/**
+	 * Re-save referring objects as the system, each in its stored form; a failed save is logged and not counted.
+	 *
+	 * @param Schema                   $schema The referring objects' schema.
+	 * @param array<int, ObjectEntity> $rows   The referring objects.
+	 *
+	 * @return integer The number of objects re-saved.
+	 */
+	private function resaveRows(Schema $schema, array $rows): int {
+		$saved = 0;
 		foreach ($rows as $row) {
-			try {
-				// The read decodes JSON held in a `type: string` property; hand it back as stored.
-				$service->saveObject(
-					object: $this->types->restoreStringTypedValues(data: ($row->getObject() ?? []), properties: ($schema->getProperties() ?? [])),
-					register: $row->getRegister(),
-					schema: $row->getSchema(),
-					uuid: $row->getUuid(),
-					_rbac: false,
-					_multitenancy: false
-				);
+			if ($this->resaveRow(schema: $schema, row: $row) === true) {
 				$saved++;
-			} catch (Throwable $e) {
-				$this->logger->warning('[ReferencedCalculationRefresher] re-save failed', ['uuid' => $row->getUuid(), 'reason' => $e->getMessage()]);
 			}
 		}
 
 		return $saved;
-	}//end resave()
+	}//end resaveRows()
+
+	/**
+	 * Re-save one referring object as the system, in its stored form.
+	 *
+	 * @param Schema       $schema The referring object's schema.
+	 * @param ObjectEntity $row    The referring object.
+	 *
+	 * @return boolean True when it was saved, false when the save failed (logged).
+	 */
+	private function resaveRow(Schema $schema, ObjectEntity $row): bool {
+		$service = $this->container->get(ObjectOperationsInterface::class);
+		try {
+			// The read decodes JSON held in a `type: string` property; hand it back as stored.
+			$service->saveObject(
+				object: (new SchemaTypeConverter())->restoreStringTypedValues(data: ($row->getObject() ?? []), properties: ($schema->getProperties() ?? [])),
+				register: $row->getRegister(),
+				schema: $row->getSchema(),
+				uuid: $row->getUuid(),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning('[ReferencedCalculationRefresher] re-save failed', ['uuid' => $row->getUuid(), 'reason' => $e->getMessage()]);
+			return false;
+		}
+
+		return true;
+	}//end resaveRow()
 
 	/**
 	 * The top-level fields whose value differs between the old and the new data.

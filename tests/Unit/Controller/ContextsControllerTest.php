@@ -22,9 +22,11 @@ namespace Unit\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\ContextsController;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ContextsControllerFactory;
@@ -58,10 +60,8 @@ class ContextsControllerTest extends TestCase {
 		$contextService = new JsonLdContextService($urlGenerator);
 
 		$this->controller = ContextsControllerFactory::create(
-			'openregister',
 			$this->request,
-			$this->registerMapper,
-			$this->schemaMapper,
+			new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->createMock(MagicMapperInterface::class)),
 			$contextService
 		);
 	}

@@ -39,6 +39,32 @@ ensureIntegrationRegistry()
 const MOUNT_SELECTOR = '#openregister-integrations'
 
 /**
+ * The umbrella widget grid app, with `t` and `n` installed.
+ *
+ * @return {object} The app, not yet mounted
+ */
+function createUmbrellaApp() {
+	// Vue 3: a plain options object handed to createApp() replaces
+	// Vue.extend(); `h` is imported from 'vue' rather than injected into
+	// render(), and props pass FLAT (no `props:` wrapper).
+	const app = createApp({
+		name: 'IntegrationDashboardUmbrella',
+		components: { CnIntegrationWidgetGrid },
+		render() {
+			return h(CnIntegrationWidgetGrid, { surface: 'user-dashboard' })
+		},
+	})
+
+	// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL — one call in main.js gave `t`/`n` to
+	// every Vue instance on the page, including the ones this entry bundle
+	// mounts. Vue 3's `app.mixin()` is scoped to a single app instance, so each
+	// entry now has to install it for itself or `this.t(...)` is undefined in
+	// anything it renders.
+	app.mixin({ methods: { t, n } })
+	return app
+}
+
+/**
  * Mount the umbrella Vue app once the DOM is ready and the NC
  * dashboard has rendered the tile container. The tile may not exist
  * yet when this script loads, so we retry on DOMContentLoaded and
@@ -57,23 +83,7 @@ function mountUmbrella() {
 	}
 	el.dataset.openregisterMounted = '1'
 
-	// Vue 3: a plain options object handed to createApp() replaces
-	// Vue.extend(); `h` is imported from 'vue' rather than injected into
-	// render(), and props pass FLAT (no `props:` wrapper).
-	const app = createApp({
-		name: 'IntegrationDashboardUmbrella',
-		components: { CnIntegrationWidgetGrid },
-		render() {
-			return h(CnIntegrationWidgetGrid, { surface: 'user-dashboard' })
-		},
-	})
-
-	// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL — one call in main.js gave `t`/`n` to
-	// every Vue instance on the page, including the ones this entry bundle
-	// mounts. Vue 3's `app.mixin()` is scoped to a single app instance, so each
-	// entry now has to install it for itself or `this.t(...)` is undefined in
-	// anything it renders.
-	app.mixin({ methods: { t, n } })
+	const app = createUmbrellaApp()
 
 	const target = document.createElement('div')
 	el.appendChild(target)

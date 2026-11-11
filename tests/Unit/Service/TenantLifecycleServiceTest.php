@@ -53,9 +53,17 @@ class TenantLifecycleServiceTest extends TestCase {
 	 * @dataProvider validTransitionsProvider
 	 */
 	public function testValidTransitions(string $from, string $to): void {
-		// Should not throw.
-		$this->service->validateTransition($from, $to);
-		$this->assertTrue(true);
+		// Each allowed pair must not be refused, and must be what the service
+		// itself offers as a next state from $from.
+		$refusal = null;
+		try {
+			$this->service->validateTransition($from, $to);
+		} catch (\Exception $e) {
+			$refusal = $e->getMessage();
+		}
+
+		$this->assertNull($refusal, "The transition {$from} -> {$to} was refused.");
+		$this->assertContains($to, $this->service->getValidTransitions($from));
 	}
 
 	public static function validTransitionsProvider(): array {

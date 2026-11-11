@@ -26,6 +26,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
+use OCA\OpenRegister\Db\OutcomeFilter;
 
 /**
  * Create, run and steer bulk jobs over a selection of objects.
@@ -63,15 +64,34 @@ interface BulkJobServiceInterface {
 	public function getUndoCeiling(): int;
 
 	/**
-	 * Create a job, rehearse it, and write nothing.
+	 * The action a job runs: its id and its parameters.
 	 *
-	 * @param string $actionId The action to run.
+	 * @param string               $actionId   The action to run.
 	 * @param array<string, mixed> $parameters The action's parameters.
-	 * @param array<string, mixed> $selection Either `{"ids": [...]}` or `{"query": {...}}`.
-	 * @param string|null $justification The reason the operator typed.
-	 * @param string $actorUid The actor's uid.
-	 * @param int|null $registerId The register the selection lives in.
-	 * @param int|null $schemaId The schema the selection lives in.
+	 *
+	 * @return BulkJobActionCall The call.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	public function actionCall(string $actionId, array $parameters): BulkJobActionCall;
+
+	/**
+	 * The objects a job runs on: the criteria, and the register and schema they live in.
+	 *
+	 * @param array<string, mixed> $criteria   Either `{"ids": [...]}` or `{"query": {...}}`.
+	 * @param int|null             $registerId The register the selection lives in.
+	 * @param int|null             $schemaId   The schema the selection lives in.
+	 *
+	 * @return BulkJobSelection The selection.
+	 *
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
+	 */
+	public function selection(array $criteria, ?int $registerId, ?int $schemaId): BulkJobSelection;
+
+	/**
+	 * Create a job from what the operator asked for, rehearse it, and write nothing.
+	 *
+	 * @param BulkJobRequest $request The action, the selection, the actor and the reason.
 	 *
 	 * @return BulkJob The previewed job.
 	 *
@@ -81,15 +101,7 @@ interface BulkJobServiceInterface {
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function create(
-		string $actionId,
-		array $parameters,
-		array $selection,
-		?string $justification,
-		string $actorUid,
-		?int $registerId = null,
-		?int $schemaId = null
-	): BulkJob;
+	public function createFromRequest(BulkJobRequest $request): BulkJob;
 
 	/**
 	 * Commit a previewed job: re-resolve, report the delta, queue the work.
@@ -184,13 +196,11 @@ interface BulkJobServiceInterface {
 	 * A page of a job's per-object outcomes.
 	 *
 	 * @param BulkJob $job The job.
-	 * @param string|null $outcome Optional outcome filter.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
+	 * @param OutcomeFilter|null $filter The outcome to keep (any when null) and the page; the first 100 when null.
 	 *
 	 * @return BulkJobMember[] The members.
 	 *
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
-	public function members(BulkJob $job, ?string $outcome = null, int $limit = 100, int $offset = 0): array;
+	public function members(BulkJob $job, ?OutcomeFilter $filter=null): array;
 }//end interface

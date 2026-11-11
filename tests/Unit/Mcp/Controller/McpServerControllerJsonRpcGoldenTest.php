@@ -134,7 +134,7 @@ class McpServerControllerJsonRpcGoldenTest extends TestCase {
 			platform: new McpServerPlatform(logger: $this->logger(), userSession: $this->session(scenario: $scenario)),
 		);
 
-		return new McpServerController(appName: 'openregister', request: $request, services: $services);
+		return new McpServerController(request: $request, services: $services);
 	}//end controller()
 
 	/**
@@ -237,13 +237,13 @@ class McpServerControllerJsonRpcGoldenTest extends TestCase {
 		$scope->method('bind')->willReturnCallback(function (string $sessionId, string $agentUuid): void {
 			$this->calls[] = ['bind', $sessionId, $agentUuid];
 		});
-		$scope->method('filterListing')->willReturnCallback(function (string $sessionId, string $userId, array $listing): array {
-			$this->calls[] = ['filterListing', $sessionId, $userId, $listing];
+		$scope->method('filterListing')->willReturnCallback(function (\OCA\OpenRegister\Service\Mcp\McpSessionCaller $caller, array $listing): array {
+			$this->calls[] = ['filterListing', $caller->sessionId, $caller->userId, $listing];
 			return ['tools' => [$listing['tools'][0]]];
 		});
 		$scope->method('assertMayCall')->willReturnCallback(
-			function (string $sessionId, string $userId, string $name, array $arguments) use ($scenario): void {
-				$this->calls[] = ['assertMayCall', $sessionId, $userId, $name, $arguments];
+			function (\OCA\OpenRegister\Service\Mcp\McpSessionCaller $caller, \OCA\OpenRegister\Service\Mcp\ToolCall $call) use ($scenario): void {
+				$this->calls[] = ['assertMayCall', $caller->sessionId, $caller->userId, $call->name, $call->arguments];
 				if (($scenario['callRefused'] ?? false) === true) {
 					throw new InvalidArgumentException('grant does not cover it');
 				}

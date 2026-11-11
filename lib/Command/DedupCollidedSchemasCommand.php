@@ -61,6 +61,32 @@ use Throwable;
  */
 class DedupCollidedSchemasCommand extends Command {
 	/**
+	 * Clone a schema row except its identity columns, under a new uuid and owning app.
+	 */
+	private const CLONE_SCHEMA_SQL = 'INSERT INTO *PREFIX*openregister_schemas
+             (uuid, title, slug, description, version, summary, required, properties,
+              application, organisation, owner, created, updated)
+             SELECT :uuid, title, slug, description, version, summary, required, properties,
+                    :app, organisation, owner, NOW(), NOW()
+               FROM *PREFIX*openregister_schemas WHERE id = :sid';
+
+	/**
+	 * Replace the shared schema id with the clone's in one register's schemas array.
+	 *
+	 * Every parameter is CAST explicitly: Postgres cannot infer the type of a
+	 * bare placeholder inside to_jsonb() and fails with "could not determine
+	 * polymorphic type because input has type unknown".
+	 */
+	private const REPOINT_REGISTER_SQL = 'UPDATE *PREFIX*openregister_registers
+                SET schemas = (
+                    SELECT jsonb_agg(
+                        CASE WHEN elem::text IN (CAST(:sidTxt AS text), CAST(:sidQuoted AS text))
+                             THEN to_jsonb(CAST(:newIdTxt AS text))
+                             ELSE elem END)
+                      FROM jsonb_array_elements(schemas::jsonb) AS elem)
+              WHERE id = :rid';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
@@ -193,31 +219,19 @@ class DedupCollidedSchemasCommand extends Command {
 	/**
 	 * Clone a schema row, repoint the register at the clone, and move its table.
 	 *
-	 * @param int $schemaId Shared schema id.
-	 * @param int $registerId Register that must stop sharing.
-	 * @param string $registerApp Application owning that register.
+	 * @param array<string, mixed> $row The collision row of the register that must stop sharing
+	 *                                  (schema_id, register_id, register_app).
 	 *
 	 * @return int The new schema id.
 	 */
-	private function splitOne(int $schemaId, int $registerId, ?string $registerApp): int {
-		$newUuid = sprintf(
-			'%s-%s',
-			substr(bin2hex(random_bytes(8)), 0, 8),
-			substr(bin2hex(random_bytes(12)), 0, 24)
-		);
-
+	private function splitOne(array $row): int {
 		// All three steps are one unit: an earlier revision let the clone
 		// INSERT commit while the repoint UPDATE failed on a type error,
 		// leaving orphaned schema rows referenced by nobody. Either the
 		// register ends up owning a clone, or nothing changes.
 		$this->db->beginTransaction();
 		try {
-			$newId = $this->splitOneLocked(
-				schemaId: $schemaId,
-				registerId: $registerId,
-				registerApp: $registerApp,
-				newUuid: $newUuid
-			);
+			$newId = $this->splitOneLocked(row: $row);
 			$this->db->commit();
 		} catch (Throwable $e) {
 			$this->db->rollBack();
@@ -230,71 +244,95 @@ class DedupCollidedSchemasCommand extends Command {
 	/**
 	 * Perform the split inside an open transaction.
 	 *
-	 * @param int $schemaId Shared schema id.
-	 * @param int $registerId Register that must stop sharing.
-	 * @param string|null $registerApp Application owning that register.
-	 * @param string $newUuid Uuid for the clone.
+	 * @param array<string, mixed> $row The collision row of the register that must stop sharing.
 	 *
 	 * @return int The new schema id.
 	 */
-	private function splitOneLocked(int $schemaId, int $registerId, ?string $registerApp, string $newUuid): int {
-		// 1. Clone every column except the identity ones.
-		$this->db->executeStatement(
-			'INSERT INTO *PREFIX*openregister_schemas
-             (uuid, title, slug, description, version, summary, required, properties,
-              application, organisation, owner, created, updated)
-             SELECT :uuid, title, slug, description, version, summary, required, properties,
-                    :app, organisation, owner, NOW(), NOW()
-               FROM *PREFIX*openregister_schemas WHERE id = :sid',
-			['uuid' => $newUuid, 'app' => $registerApp, 'sid' => $schemaId]
+	private function splitOneLocked(array $row): int {
+		$newId = $this->cloneSchema(row: $row);
+		$this->repointRegister(row: $row, newId: $newId);
+		$this->moveTable(row: $row, newId: $newId);
+
+		return $newId;
+	}//end splitOneLocked()
+
+	/**
+	 * Clone every column of the shared schema except the identity ones, owned by the register's app.
+	 *
+	 * @param array<string, mixed> $row The collision row of the register that must stop sharing.
+	 *
+	 * @return int The new schema id.
+	 */
+	private function cloneSchema(array $row): int {
+		$newUuid = sprintf(
+			'%s-%s',
+			substr(bin2hex(random_bytes(8)), 0, 8),
+			substr(bin2hex(random_bytes(12)), 0, 24)
 		);
 
-		$newId = (int)$this->db->lastInsertId('*PREFIX*openregister_schemas');
-
-		// 2. Repoint the register: replace the shared id with the clone, in
-		// whichever shape (string or number) the array happens to use.
 		$this->db->executeStatement(
-			// Every parameter is CAST explicitly: Postgres cannot infer the
-			// type of a bare placeholder inside to_jsonb() and fails with
-			// "could not determine polymorphic type because input has type
-			// unknown".
-			'UPDATE *PREFIX*openregister_registers
-                SET schemas = (
-                    SELECT jsonb_agg(
-                        CASE WHEN elem::text IN (CAST(:sidTxt AS text), CAST(:sidQuoted AS text))
-                             THEN to_jsonb(CAST(:newIdTxt AS text))
-                             ELSE elem END)
-                      FROM jsonb_array_elements(schemas::jsonb) AS elem)
-              WHERE id = :rid',
+			self::CLONE_SCHEMA_SQL,
+			['uuid' => $newUuid, 'app' => $row['register_app'], 'sid' => (int)$row['schema_id']]
+		);
+
+		return (int)$this->db->lastInsertId('*PREFIX*openregister_schemas');
+	}//end cloneSchema()
+
+	/**
+	 * Repoint the register: replace the shared id with the clone, in whichever
+	 * shape (string or number) the array happens to use.
+	 *
+	 * @param array<string, mixed> $row   The collision row of the register that must stop sharing.
+	 * @param int                  $newId The clone's schema id.
+	 *
+	 * @return void
+	 */
+	private function repointRegister(array $row, int $newId): void {
+		$schemaId = (int)$row['schema_id'];
+		$this->db->executeStatement(
+			self::REPOINT_REGISTER_SQL,
 			[
 				'sidTxt' => (string)$schemaId,
 				'sidQuoted' => '"' . $schemaId . '"',
 				'newIdTxt' => (string)$newId,
-				'rid' => $registerId,
+				'rid' => (int)$row['register_id'],
 			]
 		);
+	}//end repointRegister()
 
-		// 3. Object storage is already per register+schema, so the rows only
-		// need the table to follow the new schema id — no row migration.
+	/**
+	 * Rename the register's magic table to the clone's id and restamp its rows.
+	 *
+	 * Object storage is already per register+schema, so the rows only need the
+	 * table to follow the new schema id — no row migration.
+	 *
+	 * @param array<string, mixed> $row   The collision row of the register that must stop sharing.
+	 * @param int                  $newId The clone's schema id.
+	 *
+	 * @return void
+	 */
+	private function moveTable(array $row, int $newId): void {
+		$schemaId = (int)$row['schema_id'];
+		$registerId = (int)$row['register_id'];
 		$old = 'openregister_table_' . $registerId . '_' . $schemaId;
 		$new = '*PREFIX*openregister_table_' . $registerId . '_' . $newId;
-		if ($this->db->tableExists($old) === true) {
-			$this->db->executeStatement(sprintf('ALTER TABLE *PREFIX*%s RENAME TO %s', $old, $new));
-
-			// The rename alone is NOT enough: every row still carries the OLD
-			// schema id in its `_schema` column, so anything filtering by
-			// schema (queries, exports, RBAC scoping) would miss them or
-			// attribute them to the register that kept the original. Verified
-			// on the larpingapp split — 139 rows sat at `_schema = 21` inside
-			// `openregister_table_8_5440` until this ran.
-			$this->db->executeStatement(
-				sprintf('UPDATE %s SET _schema = :new WHERE _schema = :old', $new),
-				['new' => (string)$newId, 'old' => (string)$schemaId]
-			);
+		if ($this->db->tableExists($old) === false) {
+			return;
 		}
 
-		return $newId;
-	}//end splitOneLocked()
+		$this->db->executeStatement(sprintf('ALTER TABLE *PREFIX*%s RENAME TO %s', $old, $new));
+
+		// The rename alone is NOT enough: every row still carries the OLD
+		// schema id in its `_schema` column, so anything filtering by
+		// schema (queries, exports, RBAC scoping) would miss them or
+		// attribute them to the register that kept the original. Verified
+		// on the larpingapp split — 139 rows sat at `_schema = 21` inside
+		// `openregister_table_8_5440` until this ran.
+		$this->db->executeStatement(
+			sprintf('UPDATE %s SET _schema = :new WHERE _schema = :old', $new),
+			['new' => (string)$newId, 'old' => (string)$schemaId]
+		);
+	}//end moveTable()
 
 	/**
 	 * Execute the command.
@@ -322,14 +360,15 @@ class DedupCollidedSchemasCommand extends Command {
 			$output->writeln('<comment>DRY RUN</comment> — pass --apply to write. Nothing has been changed.');
 		}
 
+		$run = new SchemaDedupRun(output: $output, apply: $apply);
 		$tally = ['split' => 0, 'failed' => 0];
-		foreach ($groups as $schemaId => $group) {
-			$outcome = $this->splitGroup(schemaId: (int)$schemaId, group: $group, apply: $apply, output: $output);
+		foreach ($groups as $group) {
+			$outcome = $this->splitGroup(group: $group, run: $run);
 			$tally['split'] += $outcome['split'];
 			$tally['failed'] += $outcome['failed'];
 		}
 
-		$output->writeln(self::summaryLine(apply: $apply, split: $tally['split'], failed: $tally['failed']));
+		$output->writeln($run->summaryLine(tally: $tally));
 
 		if ($tally['failed'] === 0) {
 			return 0;
@@ -357,17 +396,16 @@ class DedupCollidedSchemasCommand extends Command {
 	/**
 	 * Report one shared schema and split it off every register but its owner.
 	 *
-	 * @param int                                $schemaId The shared schema id.
-	 * @param array<int, array<string, mixed>>   $group    Its collision rows.
-	 * @param bool                               $apply    Whether to write.
-	 * @param OutputInterface                    $output   Console output stream.
+	 * @param array<int, array<string, mixed>> $group The collision rows of one shared schema.
+	 * @param SchemaDedupRun                   $run   Whether to write, and the console output stream.
 	 *
 	 * @return array{split: int, failed: int} The tally for this schema.
 	 */
-	private function splitGroup(int $schemaId, array $group, bool $apply, OutputInterface $output): array {
+	private function splitGroup(array $group, SchemaDedupRun $run): array {
 		$tally = ['split' => 0, 'failed' => 0];
+		$schemaId = (int)$group[0]['schema_id'];
 		$owner = $this->pickOwner(group: $group);
-		$output->writeln(
+		$run->output->writeln(
 			sprintf(
 				"\nschema #%d <info>%s</info> (application=%s) — owner: register #%s %s",
 				$schemaId,
@@ -383,7 +421,7 @@ class DedupCollidedSchemasCommand extends Command {
 				continue;
 			}
 
-			$tally[$this->splitRow(schemaId: $schemaId, row: $row, apply: $apply, output: $output)]++;
+			$tally[$this->splitRow(row: $row, run: $run)]++;
 		}
 
 		return $tally;
@@ -392,25 +430,20 @@ class DedupCollidedSchemasCommand extends Command {
 	/**
 	 * Split the schema off one register, or report that it would be.
 	 *
-	 * @param int                  $schemaId The shared schema id.
-	 * @param array<string, mixed> $row      The register's collision row.
-	 * @param bool                 $apply    Whether to write.
-	 * @param OutputInterface      $output   Console output stream.
+	 * @param array<string, mixed> $row The register's collision row.
+	 * @param SchemaDedupRun       $run Whether to write, and the console output stream.
 	 *
 	 * @return string 'split' or 'failed'.
 	 */
-	private function splitRow(int $schemaId, array $row, bool $apply, OutputInterface $output): string {
-		if ($apply === false) {
+	private function splitRow(array $row, SchemaDedupRun $run): string {
+		$output = $run->output;
+		if ($run->apply === false) {
 			$output->writeln(sprintf('    would split -> register #%s %s', $row['register_id'], $row['register_slug']));
 			return 'split';
 		}
 
 		try {
-			$newId = $this->splitOne(
-				schemaId: $schemaId,
-				registerId: (int)$row['register_id'],
-				registerApp: $row['register_app']
-			);
+			$newId = $this->splitOne(row: $row);
 			$output->writeln(
 				sprintf('    <info>split</info> -> register #%s %s now owns schema #%d', $row['register_id'], $row['register_slug'], $newId)
 			);
@@ -420,22 +453,4 @@ class DedupCollidedSchemasCommand extends Command {
 			return 'failed';
 		}
 	}//end splitRow()
-
-	/**
-	 * The closing summary line.
-	 *
-	 * @param bool $apply  Whether the run wrote.
-	 * @param int  $split  Pairs split, or that would be.
-	 * @param int  $failed Failed splits.
-	 *
-	 * @return string The line to print.
-	 */
-	private static function summaryLine(bool $apply, int $split, int $failed): string {
-		$verb = 'Would split';
-		if ($apply === true) {
-			$verb = 'Split';
-		}
-
-		return sprintf("\n%s %d register/schema pair(s); %d failure(s).", $verb, $split, $failed);
-	}//end summaryLine()
 }//end class

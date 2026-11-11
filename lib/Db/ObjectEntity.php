@@ -29,7 +29,7 @@ use Exception;
 use JsonSerializable;
 use OC\Files\Node\File;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
-use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
+use OCA\OpenRegister\Db\ObjectEntity\ObjectEntityFieldTypes;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
@@ -1126,48 +1126,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * Initialize the entity and define field types
 	 */
 	public function __construct() {
-		$this->addType(fieldName: 'uuid', type: 'string');
-		$this->addType(fieldName: 'slug', type: 'string');
-		$this->addType(fieldName: 'uri', type: 'string');
-		$this->addType(fieldName: 'version', type: 'string');
-		$this->addType(fieldName: 'register', type: 'string');
-		$this->addType(fieldName: 'schema', type: 'string');
-		$this->addType(fieldName: 'object', type: 'json');
-		$this->addType(fieldName: 'files', type: 'json');
-		$this->addType(fieldName: 'relations', type: 'json');
-		$this->addType(fieldName: 'locked', type: 'json');
-		$this->addType(fieldName: 'owner', type: 'string');
-		$this->addType(fieldName: 'authorization', type: 'json');
-		$this->addType(fieldName: 'folder', type: 'string');
-		$this->addType(fieldName: 'application', type: 'string');
-		$this->addType(fieldName: 'organisation', type: 'string');
-		$this->addType(fieldName: 'validation', type: 'json');
-		$this->addType(fieldName: 'quality', type: 'json');
-		$this->addType(fieldName: 'deleted', type: 'json');
-		$this->addType(fieldName: 'archived', type: 'json');
-		$this->addType(fieldName: 'frozen', type: 'json');
-		$this->addType(fieldName: 'status', type: 'string');
-		$this->addType(fieldName: 'geo', type: 'json');
-		$this->addType(fieldName: 'retention', type: 'json');
-		$this->addType(fieldName: 'tmlo', type: 'json');
-		$this->addType(fieldName: 'mail', type: 'json');
-		$this->addType(fieldName: 'contacts', type: 'json');
-		$this->addType(fieldName: 'notes', type: 'json');
-		$this->addType(fieldName: 'todos', type: 'json');
-		$this->addType(fieldName: 'calendar', type: 'json');
-		$this->addType(fieldName: 'talk', type: 'json');
-		$this->addType(fieldName: 'deck', type: 'json');
-		$this->addType(fieldName: 'size', type: 'string');
-		$this->addType(fieldName: 'schemaVersion', type: 'string');
-		$this->addType(fieldName: 'name', type: 'string');
-		$this->addType(fieldName: 'description', type: 'string');
-		$this->addType(fieldName: 'summary', type: 'string');
-		$this->addType(fieldName: 'image', type: 'string');
-		$this->addType(fieldName: 'updated', type: 'datetime');
-		$this->addType(fieldName: 'lastUserActivity', type: 'datetime');
-		$this->addType(fieldName: 'created', type: 'datetime');
-		$this->addType(fieldName: 'groups', type: 'json');
-		$this->addType(fieldName: 'expires', type: 'datetime');
+		foreach (ObjectEntityFieldTypes::TYPES as $fieldName => $type) {
+			$this->addType(fieldName: $fieldName, type: $type);
+		}
 	}//end __construct()
 
 	/**
@@ -1306,25 +1267,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @return static Returns the hydrated entity
 	 */
 	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		if (isset($object['metadata']) === false) {
-			$object['metadata'] = [];
-		}
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
+		(new EmptyJsonHydration())->hydrate(entity: $this, object: $object);
 
 		return $this;
 	}//end hydrate()
@@ -1414,13 +1357,31 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *     geo: array|null, retention: array|null, tmlo: array|null, size: null|string,
 	 *     updated: null|string, created: null|string,
 	 *     deleted: array|null}
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function getObjectArray(array $object = []): array {
-		// Initialize the object array with default properties.
 		// Use getters to ensure our custom getter logic is applied (e.g., [] for null arrays).
-		$objectArray = [
+		$objectArray = array_merge(
+			$this->identityArray(),
+			$this->ownershipArray(),
+			$this->assessmentArray(),
+			$this->lifecycleArray(),
+			$this->workspaceArray()
+		);
+
+		$objectArray = $this->mergeTransientRenderFields(objectArray: $objectArray);
+
+		// Use the '@self' values when the object metadata is extended.
+		return $this->applySelfOverrides(objectArray: $objectArray, object: $object);
+	}//end getObjectArray()
+
+
+	/**
+	 * What the object is and where it lives: identity, register and schema.
+	 *
+	 * @return array<string, mixed> The identity part of the object array.
+	 */
+	private function identityArray(): array {
+		return [
 			'id' => $this->uuid,
 			'slug' => $this->slug,
 			'name' => $this->name ?? $this->uuid,
@@ -1432,6 +1393,16 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'register' => $this->register,
 			'schema' => $this->schema,
 			'schemaVersion' => $this->schemaVersion,
+		];
+	}//end identityArray()
+
+	/**
+	 * What the object holds and who holds it: files, relations, lock, owner and access.
+	 *
+	 * @return array<string, mixed> The ownership part of the object array.
+	 */
+	private function ownershipArray(): array {
+		return [
 			'files' => $this->getFiles(),
 			'relations' => $this->getRelations(),
 			'locked' => $this->getLocked(),
@@ -1441,11 +1412,31 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'authorization' => $this->getAuthorization(),
 			'folder' => $this->folder,
 			'application' => $this->application,
+		];
+	}//end ownershipArray()
+
+	/**
+	 * What has been assessed about the object: validation, quality, place and retention.
+	 *
+	 * @return array<string, mixed> The assessment part of the object array.
+	 */
+	private function assessmentArray(): array {
+		return [
 			'validation' => $this->getValidation(),
 			'quality' => $this->getQuality(),
 			'geo' => $this->getGeo(),
 			'retention' => $this->getRetention(),
 			'tmlo' => $this->getTmlo(),
+		];
+	}//end assessmentArray()
+
+	/**
+	 * Where the object is in its life: size, timestamps and the deleted, archived and frozen states.
+	 *
+	 * @return array<string, mixed> The lifecycle part of the object array.
+	 */
+	private function lifecycleArray(): array {
+		return [
 			'size' => $this->size,
 			'updated' => $this->getFormattedDate(date: $this->updated),
 			'lastUserActivity' => $this->getFormattedDate(date: $this->lastUserActivity),
@@ -1455,6 +1446,16 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'frozen' => $this->getFrozen(),
 			'status' => $this->status,
 			'source' => $this->source,
+		];
+	}//end lifecycleArray()
+
+	/**
+	 * The workspace items linked to the object.
+	 *
+	 * @return array<string, mixed> The workspace part of the object array.
+	 */
+	private function workspaceArray(): array {
+		return [
 			'mail' => $this->getMail(),
 			'contacts' => $this->getContacts(),
 			'notes' => $this->getNotes(),
@@ -1463,37 +1464,37 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'talk' => $this->getTalk(),
 			'deck' => $this->getDeck(),
 		];
+	}//end workspaceArray()
 
-		$objectArray = $this->mergeTransientRenderFields(objectArray: $objectArray);
+	/**
+	 * Apply the '@self' values of an extended object over the object array.
+	 *
+	 * Register, schema, owner and application are taken only when they are
+	 * arrays (expanded); organisation whenever it is set.
+	 *
+	 * @param array $objectArray The object array.
+	 * @param array $object      The object whose '@self' may carry overrides.
+	 *
+	 * @return array The object array with the overrides applied.
+	 */
+	private function applySelfOverrides(array $objectArray, array $object): array {
+		$self = ($object['@self'] ?? null);
+		if (is_array($self) === false) {
+			return $objectArray;
+		}
 
-		// Check for '@self' in the provided object array (this is the case if the object metadata is extended).
-		if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
-			$self = $object['@self'];
-
-			// Use the '@self' values if they are arrays.
-			if (($self['register'] ?? null) !== null && is_array($self['register']) === true) {
-				$objectArray['register'] = $self['register'];
+		foreach (['register', 'schema', 'owner', 'application'] as $key) {
+			if (is_array($self[$key] ?? null) === true) {
+				$objectArray[$key] = $self[$key];
 			}
+		}
 
-			if (($self['schema'] ?? null) !== null && is_array($self['schema']) === true) {
-				$objectArray['schema'] = $self['schema'];
-			}
-
-			if (($self['owner'] ?? null) !== null && is_array($self['owner']) === true) {
-				$objectArray['owner'] = $self['owner'];
-			}
-
-			if (($self['organisation'] ?? null) !== null) {
-				$objectArray['organisation'] = $self['organisation'];
-			}
-
-			if (($self['application'] ?? null) !== null && is_array($self['application']) === true) {
-				$objectArray['application'] = $self['application'];
-			}
-		}//end if
+		if (($self['organisation'] ?? null) !== null) {
+			$objectArray['organisation'] = $self['organisation'];
+		}
 
 		return $objectArray;
-	}//end getObjectArray()
+	}//end applySelfOverrides()
 
 	/**
 	 * The record as an access rule's `match` reads it: its data, with `@self` set from its own metadata.
@@ -1604,22 +1605,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		//
 		// This is a map rather than a chain of ifs because the chain grew one
 		// branch per feature and ran past the complexity budget.
-		$transient = [
-			'relevance'               => $this->relevance,
-			'urn'                     => $this->urn,
-			'translationCompleteness' => $this->translationCompleteness,
-			'_retention'              => $this->archivalRetention,
-			'_clocks'                 => $this->retentionClocks,
-			'registry'                => $this->registryState,
-			'fieldRules'              => $this->fieldRules,
-			'watching'                => $this->watching,
-			'watcherCount'            => $this->watcherCount,
-			'unread'                  => $this->unread,
-			'watchNotify'             => $this->watchNotify,
-			'favourite'               => $this->watching,
-			'viewedAt'                => $this->viewedAt,
-			'can'                     => $this->can,
-		];
+		$transient = array_merge($this->renderedFields(), $this->readerFields());
 
 		foreach ($transient as $key => $value) {
 			if ($value !== null) {
@@ -1635,6 +1621,40 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 
 		return $objectArray;
 	}//end mergeTransientRenderFields()
+
+	/**
+	 * The transient fields the render layer derived for the object itself.
+	 *
+	 * @return array<string, mixed> Field values keyed by their name in @self, null when not rendered.
+	 */
+	private function renderedFields(): array {
+		return [
+			'relevance'               => $this->relevance,
+			'urn'                     => $this->urn,
+			'translationCompleteness' => $this->translationCompleteness,
+			'_retention'              => $this->archivalRetention,
+			'_clocks'                 => $this->retentionClocks,
+			'registry'                => $this->registryState,
+			'fieldRules'              => $this->fieldRules,
+		];
+	}//end renderedFields()
+
+	/**
+	 * The transient fields that answer for the current reader.
+	 *
+	 * @return array<string, mixed> Field values keyed by their name in @self, null when not rendered.
+	 */
+	private function readerFields(): array {
+		return [
+			'watching'                => $this->watching,
+			'watcherCount'            => $this->watcherCount,
+			'unread'                  => $this->unread,
+			'watchNotify'             => $this->watchNotify,
+			'favourite'               => $this->watching,
+			'viewedAt'                => $this->viewedAt,
+			'can'                     => $this->can,
+		];
+	}//end readerFields()
 
 	/**
 	 * Format DateTime object to ISO 8601 string or return null
@@ -1821,69 +1841,88 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		?int $duration = 3600,
 		?string $runUuid = null,
 	): bool {
+		return $this->acquireLock(userSession: $userSession, terms: new LockTerms(process: $process, duration: $duration, runUuid: $runUuid));
+	}//end lock()
+
+	/**
+	 * Take or extend a lock on the object under the given terms.
+	 *
+	 * A run uuid in the terms takes a RUN-scoped lock that refuses every
+	 * caller but that run, the run's own `runAs` user included; without one
+	 * this takes the user lock. The current holder extends its own lock.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param LockTerms    $terms       Process, duration and holding run
+	 *
+	 * @throws Exception If no user is logged in or the object is locked by another holder
+	 *
+	 * @return true True if lock was successful
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	public function acquireLock(IUserSession $userSession, LockTerms $terms=new LockTerms()): bool {
+		$now = new DateTime();
+		$payload = $terms->payloadFor(userId: self::loggedInUid(userSession: $userSession), now: $now);
+
+		// If already locked, only the holder may extend it.
+		if ($this->isLocked() === true) {
+			$payload = $this->extensionOf(payload: $payload);
+		}
+
+		$this->setLocked($this->withExpiration(payload: $payload, now: $now));
+
+		return true;
+	}//end acquireLock()
+
+	/**
+	 * The payload that extends the current lock for the caller it was built for.
+	 *
+	 * Two runs under ONE user are told apart here: ownership is not keyed on
+	 * the user alone, so the second run is refused instead of silently
+	 * extending the first's lock and being handed the object.
+	 *
+	 * @param array{kind: string, runUuid: ?string, user: string, process: ?string, created: string, duration: ?int} $payload The
+	 *        caller's new lock payload.
+	 *
+	 * @throws Exception If the lock data is missing or another holder has the lock
+	 *
+	 * @return array The payload keeping the current lock's creation time and, when none is given, its process.
+	 */
+	private function extensionOf(array $payload): array {
+		$lock = $this->getLocked();
+		if ($lock === null) {
+			throw new Exception('Lock data is missing');
+		}
+
+		if ($this->isLockedBySomeoneElse(userId: $payload['user'], runUuid: $payload['runUuid']) === true) {
+			throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
+		}
+
+		$payload['process'] = ($payload['process'] ?? $lock['process']);
+		$payload['created'] = $lock['created'];
+
+		return $payload;
+	}//end extensionOf()
+
+	/**
+	 * The logged-in user's id.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 *
+	 * @throws Exception If no user is logged in
+	 *
+	 * @return string The user id.
+	 */
+	private static function loggedInUid(IUserSession $userSession): string {
 		$currentUser = $userSession->getUser();
 		if ($currentUser === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$userId = $currentUser->getUID();
-		$now = new DateTime();
-
-		$kind = self::LOCK_KIND_USER;
-		if ($runUuid !== null && trim($runUuid) !== '') {
-			$kind = self::LOCK_KIND_RUN;
-			$runUuid = trim($runUuid);
-		}
-
-		// If already locked, check whether this caller is the holder.
-		if ($this->isLocked() === true) {
-			$lock = $this->getLocked();
-			if ($lock === null) {
-				throw new Exception('Lock data is missing');
-			}
-
-			// Held against this caller. Note that two runs under ONE user land
-			// here now: ownership is no longer keyed on the user alone, so the
-			// second run is refused instead of silently extending the first's
-			// lock and being handed the object.
-			if ($this->isLockedBySomeoneElse(userId: $userId, runUuid: $runUuid) === true) {
-				throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
-			}
-
-			// Same holder: extend the lock.
-			$this->setLocked(
-				$this->withExpiration(
-					payload: [
-						'kind' => $kind,
-						'runUuid' => $runUuid,
-						'user' => $userId,
-						'process' => ($process ?? $lock['process']),
-						'created' => $lock['created'],
-						'duration' => $duration,
-					],
-					now: $now
-				)
-			);
-			return true;
-		}//end if
-
-		// Create new lock.
-		$this->setLocked(
-			$this->withExpiration(
-				payload: [
-					'kind' => $kind,
-					'runUuid' => $runUuid,
-					'user' => $userId,
-					'process' => $process,
-					'created' => $now->format('c'),
-					'duration' => $duration,
-				],
-				now: $now
-			)
-		);
-
-		return true;
-	}//end lock()
+		return $currentUser->getUID();
+	}//end loggedInUid()
 
 	/**
 	 * The stored shape of a lock.
@@ -1948,39 +1987,61 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
 	 */
 	public function unlock(IUserSession $userSession, ?string $runUuid = null, bool $break = false): bool {
+		if ($break === true) {
+			return $this->breakLock();
+		}
+
+		return $this->releaseLock(userSession: $userSession, runUuid: $runUuid);
+	}//end unlock()
+
+	/**
+	 * Release the lock for its holder: the signed-in user, and the run when the lock is run-scoped.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param string|null  $runUuid     Flow run releasing the lock, for a run-scoped lock
+	 *
+	 * @throws Exception Without a signed-in user, or when another holder has the lock
+	 *
+	 * @return true True when the object is unlocked
+	 */
+	private function releaseLock(IUserSession $userSession, ?string $runUuid): bool {
 		if ($this->isLocked() === false) {
 			return true;
 		}
 
 		$currentUser = $userSession->getUser();
-		if ($currentUser === null && $break === false) {
-			// A break has no session requirement. The engine releases a run's
-			// locks from a terminal-event listener and from the cron sweep,
-			// and neither has a session: `occ` and background jobs run as
-			// nobody. Requiring a user there would mean the release layers
-			// that exist for crashed runs could never fire, which is the
-			// whole case they were built for. Authorization for a break lives
-			// at the call site (administrator, or the engine releasing a lock
-			// whose holding run it has already matched).
+		if ($currentUser === null) {
 			throw new Exception('No user logged in');
 		}
 
-		$userId = $currentUser?->getUID();
-
-		// Check if locked by different user.
-		if ($this->locked === null) {
-			throw new Exception('Object is not locked');
-		}
-
-		if ($break === false
-			&& $this->isLockedBySomeoneElse(userId: $userId, runUuid: $runUuid) === true
-		) {
+		if ($this->isLockedBySomeoneElse(userId: $currentUser->getUID(), runUuid: $runUuid) === true) {
 			throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
 		}
 
 		$this->setLocked(null);
 		return true;
-	}//end unlock()
+	}//end releaseLock()
+
+	/**
+	 * Release the lock regardless of who holds it.
+	 *
+	 * A break has no session requirement. The engine releases a run's locks
+	 * from a terminal-event listener and from the cron sweep, and neither has
+	 * a session: `occ` and background jobs run as nobody. Requiring a user
+	 * there would mean the release layers that exist for crashed runs could
+	 * never fire, which is the whole case they were built for. Authorization
+	 * for a break lives at the call site (administrator, or the engine
+	 * releasing a lock whose holding run it has already matched).
+	 *
+	 * @return true True when the object is unlocked
+	 */
+	private function breakLock(): bool {
+		if ($this->isLocked() === true) {
+			$this->setLocked(null);
+		}
+
+		return true;
+	}//end breakLock()
 
 	/**
 	 * Check if the object is currently locked
@@ -2059,37 +2120,27 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
-		$currentUser = $userSession->getUser();
-		if ($currentUser === null) {
-			throw new Exception('No user logged in');
-		}
+		return $this->softDelete(userSession: $userSession, deletion: new SoftDeletion(reason: $deletedReason, retentionDays: $retentionPeriod));
+	}//end delete()
 
-		$userId = $currentUser->getUID();
-		$now = new DateTime();
-
-		// The retention handed in is the window. It used to be ignored: every
-		// object got a hard-coded 31 days whatever the schema or the instance
-		// said, so a schema declaring a year of recovery quietly had a month.
-		// A non-positive retention is not a window, so the default applies.
-		$days = $retentionPeriod;
-		if ($days === null || $days < 1) {
-			$days = DeletionWindowService::DEFAULT_RETENTION_DAYS;
-		}
-
-		$purgeDate = clone $now;
-		$purgeDate->add(new DateInterval('P' . (string)$days . 'D'));
-
-		$this->setDeleted(
-			[
-				'deleted' => $now->format('c'),
-				'deletedAt' => $now->format('c'),
-				'deletedBy' => $userId,
-				'deletedReason' => $deletedReason,
-				'retentionPeriod' => $days,
-				'purgeDate' => $purgeDate->format('c'),
-				'destroyableFrom' => $purgeDate->format('c'),
-			]
-		);
+	/**
+	 * Soft-delete the object: record who deleted it, why, and until when it stays recoverable.
+	 *
+	 * The retention handed in is the window (a non-positive one takes the
+	 * default), so a schema declaring a year of recovery gets a year.
+	 *
+	 * @param IUserSession $userSession Current user session
+	 * @param SoftDeletion $deletion    The reason and the retention window
+	 *
+	 * @throws Exception If no user is logged in
+	 *
+	 * @return static Returns the entity
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	public function softDelete(IUserSession $userSession, SoftDeletion $deletion=new SoftDeletion()): static {
+		$userId = self::loggedInUid(userSession: $userSession);
+		$this->setDeleted($deletion->metadataFor(userId: $userId, now: new DateTime()));
 
 		return $this;
 	}//end delete()
@@ -2106,7 +2157,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * here now; the third still reads a raw retention array rather than a
 	 * record, so it cannot, and it drives no delete path.
 	 *
-	 * A RELEASED HOLD IS NOT A HOLD. `releaseLegalHold()` leaves the
+	 * A RELEASED HOLD IS NOT A HOLD. `releaseHold()` leaves the
 	 * `legalHold` key in place with `active: false` and the reason in
 	 * `history`, so "the key exists" is not the question and never was.
 	 *
@@ -2247,46 +2298,50 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * it when a state declared the freeze, and is null when a person did.
 	 *
 	 * @param IUserSession $userSession Current user session.
-	 * @param string|null $reason Why the object was frozen.
-	 * @param string|null $state The lifecycle state that declared the freeze.
-	 * @param string|null $actor Explicit actor, for a freeze declared by a
-	 *                           lifecycle transition running without a session.
+	 * @param string|null  $reason      Why the object was frozen.
 	 *
-	 * @throws Exception If no user is logged in and no actor was named.
+	 * @throws Exception If no user is logged in.
 	 *
 	 * @return static Returns the entity.
 	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
-	public function freeze(
-		IUserSession $userSession,
-		?string $reason = null,
-		?string $state = null,
-		?string $actor = null,
-	): static {
-		$userId = $actor;
-		if ($userId === null) {
-			$currentUser = $userSession->getUser();
-			if ($currentUser === null) {
-				throw new Exception('No user logged in');
-			}
+	public function freeze(IUserSession $userSession, ?string $reason = null): static {
+		return $this->freezeWith(userSession: $userSession, terms: new FreezeTerms(reason: $reason));
+	}//end freeze()
 
-			$userId = $currentUser->getUID();
+	/**
+	 * Freeze the object on the given terms: the reason and, when a lifecycle
+	 * state declared the freeze, that state.
+	 *
+	 * @param IUserSession $userSession Current user session.
+	 * @param FreezeTerms  $terms       Why the object was frozen, and the state that declared it.
+	 *
+	 * @throws Exception If no user is logged in.
+	 *
+	 * @return static Returns the entity.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
+	 */
+	public function freezeWith(IUserSession $userSession, FreezeTerms $terms): static {
+		$currentUser = $userSession->getUser();
+		if ($currentUser === null) {
+			throw new Exception('No user logged in');
 		}
 
 		$now = new DateTime();
 
 		$this->setFrozen(
 			[
-				'by' => $userId,
+				'by' => $currentUser->getUID(),
 				'at' => $now->format('c'),
-				'reason' => $reason,
-				'state' => $state,
+				'reason' => $terms->reason,
+				'state' => $terms->state,
 			]
 		);
 
 		return $this;
-	}//end freeze()
+	}//end freezeWith()
 
 	/**
 	 * Unfreeze the object.

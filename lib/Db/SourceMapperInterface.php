@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -66,11 +67,9 @@ interface SourceMapperInterface {
 	/**
 	 * Finds all sources
 	 *
-	 * @param int|null $limit The limit of the results
-	 * @param int|null $offset The offset of the results
+	 * @param int|null   $limit   The limit of the results, null for all.
+	 * @param int|null   $offset  The offset of the results
 	 * @param array|null $filters The filters to apply
-	 * @param array|null $searchConditions The search conditions to apply
-	 * @param array|null $searchParams The search parameters to apply
 	 *
 	 * @return Source[]
 	 *
@@ -78,13 +77,20 @@ interface SourceMapperInterface {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
 	 */
-	public function findAll(
-		?int $limit = null,
-		?int $offset = null,
-		?array $filters = [],
-		?array $searchConditions = [],
-		?array $searchParams = [],
-	): array;
+	public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[]): array;
+
+	/**
+	 * Finds the sources one list query asks for.
+	 *
+	 * @param ListQuery $query The limit (unbounded for all), offset and column filters.
+	 *
+	 * @return Source[]
+	 *
+	 * @throws \Exception If user doesn't have read permission
+	 *
+	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
+	 */
+	public function findList(ListQuery $query): array;
 
 	/**
 	 * Find all sources that have scheduled sync enabled.

@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\RecordTemplatesController;
+use OCA\OpenRegister\Controller\Support\RecordTemplatesControllerServices;
 use OCA\OpenRegister\Exception\RecordTemplateRefused;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
@@ -82,7 +83,7 @@ class RecordTemplatesControllerA24GoldenTest extends TestCase {
 			groups: [],
 			isAdmin: false
 		));
-		return new RecordTemplatesController($request, $this->templates, $viewers, $this->logger);
+		return new RecordTemplatesController($request, new RecordTemplatesControllerServices($this->templates, $viewers, $this->logger));
 	}//end controller()
 
 	/**

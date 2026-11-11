@@ -53,11 +53,12 @@ interface CalendarFeedTokenServiceInterface {
 	 * so the identity the token will carry is decided at the HTTP boundary and
 	 * is visible there.
 	 *
-	 * @param string $userId The principal the token will name.
-	 * @param string $scopeType `schema` or `view`.
-	 * @param string $scopeId The schema id, or the view uuid.
-	 * @param string|null $label Optional human label.
-	 * @param int|null $ttlSeconds Seconds until the token expires; null never expires.
+	 * The caller names what the token covers on an unsaved token: its scope
+	 * type and scope id, and optionally a label.
+	 *
+	 * @param string            $userId     The principal the token will name.
+	 * @param CalendarFeedToken $draft      The unsaved token: scopeType (`schema` or `view`), scopeId and label.
+	 * @param int|null          $ttlSeconds Seconds until the token expires; null never expires.
 	 *
 	 * @return array<string, mixed> The token row plus its subscribable URL.
 	 *
@@ -65,13 +66,20 @@ interface CalendarFeedTokenServiceInterface {
 	 *
 	 * @spec openspec/specs/calendar-provider/spec.md
 	 */
-	public function mint(
-		string $userId,
-		string $scopeType,
-		string $scopeId,
-		?string $label = null,
-		?int $ttlSeconds = null,
-	): array;
+	public function mint(string $userId, CalendarFeedToken $draft, ?int $ttlSeconds=null): array;
+
+	/**
+	 * Mint a feed token for the principal the request names, as mint() does.
+	 *
+	 * @param FeedTokenMint $mint The principal, the unsaved token and its lifetime.
+	 *
+	 * @return array<string, mixed> The token row plus its subscribable URL.
+	 *
+	 * @throws InvalidArgumentException When the scope is unusable or the caller is anonymous.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md
+	 */
+	public function mintToken(FeedTokenMint $mint): array;
 
 	/**
 	 * Note that a client read the feed, so a holder can see a dead subscription.

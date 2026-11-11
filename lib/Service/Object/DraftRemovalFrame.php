@@ -29,11 +29,12 @@ namespace OCA\OpenRegister\Service\Object;
  *
  * DraftRemovalRecord writes the audit entry of a removed draft and stays
  * inside lib/Service; a job outside it opens the named-job frame through
- * this class, which hands straight to DraftRemovalRecord::asJob().
+ * DraftRemovalFrameInterface, which this class serves by handing straight to
+ * DraftRemovalRecord::asJob().
  *
  * @SuppressWarnings(PHPMD.StaticAccess) The frame is DraftRemovalRecord's static frame.
  */
-final class DraftRemovalFrame {
+final class DraftRemovalFrame implements DraftRemovalFrameInterface {
 
 	/**
 	 * Run a removal as a named job, so its audit entry names that job.
@@ -47,7 +48,7 @@ final class DraftRemovalFrame {
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-removing-a-draft-must-leave-one-audit-trail-entry-without-its-content
 	 */
-	public static function asJob(string $job, callable $operation): mixed {
+	public function asJob(string $job, callable $operation): mixed {
 		return DraftRemovalRecord::asJob(job: $job, operation: $operation);
 	}//end asJob()
 }//end class

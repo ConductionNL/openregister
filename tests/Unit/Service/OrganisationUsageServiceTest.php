@@ -26,6 +26,8 @@ use Exception;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\OrganisationUsageService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -79,23 +81,23 @@ class OrganisationUsageServiceTest extends TestCase {
 	 * @return OrganisationUsageService The service.
 	 */
 	private function service(bool $available, array $counters = []): OrganisationUsageService {
-		return new class($this->magicMapper, $this->fileMapper, new NullLogger(), $available, $counters, $this->schemaMapper) extends OrganisationUsageService {
+		$catalog = new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $this->schemaMapper, $this->magicMapper);
+		return new class($catalog, $this->fileMapper, new NullLogger(), $available, $counters) extends OrganisationUsageService {
 			/**
-			 * @param MagicMapper        $magicMapper The magic mapper.
+			 * @param SchemaCatalog      $catalog     The register, schema and magic mappers.
 			 * @param FileMapper         $fileMapper  The file mapper.
 			 * @param NullLogger         $logger      The logger.
 			 * @param bool               $available   Whether APCu is enabled.
 			 * @param array<string, int> $counters    The counters by key.
 			 */
 			public function __construct(
-				MagicMapper $magicMapper,
+				SchemaCatalog $catalog,
 				FileMapper $fileMapper,
 				NullLogger $logger,
 				private bool $available,
 				private array $counters,
-				SchemaMapper $schemaMapper,
 			) {
-				parent::__construct(magicMapper: $magicMapper, fileMapper: $fileMapper, logger: $logger, schemaMapper: $schemaMapper);
+				parent::__construct(catalog: $catalog, fileMapper: $fileMapper, logger: $logger);
 			}
 
 			/**

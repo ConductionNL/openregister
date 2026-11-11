@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\SaveObject\ReferenceExistence;
 use PHPUnit\Framework\MockObject\MockObject;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -170,9 +171,11 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 		$handler = $this->handlerYielding(verdicts: ['unchanged']);
 
 		$status = $handler->saveObjectsStreaming(
-			register: 1,
-			schema: 1,
-			rows: [['id' => 'uuid-1', 'title' => 'same as stored']]
+			save: new StreamingSave(
+				register: 1,
+				schema: 1,
+				rows: [['id' => 'uuid-1', 'title' => 'same as stored']]
+			)
 		);
 
 		$this->assertSame(['uuid-1'], $status->getUnchanged());
@@ -192,9 +195,11 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 		$handler = $this->handlerYielding(verdicts: ['created']);
 
 		$status = $handler->saveObjectsStreaming(
-			register: 1,
-			schema: 1,
-			rows: [['id' => 'client-chosen-uuid', 'title' => 'brand new']]
+			save: new StreamingSave(
+				register: 1,
+				schema: 1,
+				rows: [['id' => 'client-chosen-uuid', 'title' => 'brand new']]
+			)
 		);
 
 		$this->assertSame(['uuid-1'], $status->getCreated());
@@ -212,9 +217,11 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 		$handler = $this->handlerYielding(verdicts: ['updated']);
 
 		$status = $handler->saveObjectsStreaming(
-			register: 1,
-			schema: 1,
-			rows: [['id' => 'uuid-1', 'title' => 'changed']]
+			save: new StreamingSave(
+				register: 1,
+				schema: 1,
+				rows: [['id' => 'uuid-1', 'title' => 'changed']]
+			)
 		);
 
 		$this->assertSame(['uuid-1'], $status->getUpdated());
@@ -232,9 +239,11 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 		$handler = $this->handlerYielding(verdicts: ['created', 'unchanged', 'updated']);
 
 		$status = $handler->saveObjectsStreaming(
-			register: 1,
-			schema: 1,
-			rows: [['title' => 'a'], ['id' => 'b'], ['id' => 'c']]
+			save: new StreamingSave(
+				register: 1,
+				schema: 1,
+				rows: [['title' => 'a'], ['id' => 'b'], ['id' => 'c']]
+			)
 		);
 
 		$this->assertSame(['uuid-1'], $status->getCreated());
@@ -255,9 +264,11 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 		$handler = $this->handlerYieldingWithFailureAt(failIndex: 1);
 
 		$status = $handler->saveObjectsStreaming(
-			register: 1,
-			schema: 1,
-			rows: [['title' => 'a'], ['title' => 'bad'], ['title' => 'c']]
+			save: new StreamingSave(
+				register: 1,
+				schema: 1,
+				rows: [['title' => 'a'], ['title' => 'bad'], ['title' => 'c']]
+			)
 		);
 
 		$failed = $status->getFailed();
@@ -282,9 +293,11 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 		$handler = $this->handlerYielding(verdicts: ['unchanged', null]);
 
 		$status = $handler->saveObjectsStreaming(
-			register: 1,
-			schema: 1,
-			rows: [['id' => 'a'], ['id' => 'b']]
+			save: new StreamingSave(
+				register: 1,
+				schema: 1,
+				rows: [['id' => 'a'], ['id' => 'b']]
+			)
 		);
 
 		$this->assertSame(['uuid-1'], $status->getUnchanged());
@@ -300,7 +313,7 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 	public function testAFailedRowReportsTheIdentifierItCarries(): void {
 		$uuids = [];
 		foreach ([['@self' => ['id' => 'self-id'], 'id' => 'plain'], ['id' => 'plain'], ['uuid' => 'u'], ['id' => 7], 'not-a-row'] as $row) {
-			$status = $this->handlerYieldingWithFailureAt(failIndex: 0)->saveObjectsStreaming(register: 1, schema: 1, rows: [$row]);
+			$status = $this->handlerYieldingWithFailureAt(failIndex: 0)->saveObjectsStreaming(save: new StreamingSave(register: 1, schema: 1, rows: [$row]));
 			$uuids[] = $status->getFailed()[0]['uuid'];
 		}
 
@@ -333,7 +346,7 @@ class SaveObjectStreamingOutcomeTest extends TestCase {
 			}
 		);
 
-		$status = $handler->saveObjectsStreaming(register: 1, schema: 1, rows: [['a' => 1], ['a' => 2], ['a' => 3]]);
+		$status = $handler->saveObjectsStreaming(save: new StreamingSave(register: 1, schema: 1, rows: [['a' => 1], ['a' => 2], ['a' => 3]]));
 
 		$this->assertSame([1, 3], [$status->getReferenceCacheHits(), $status->getReferenceCacheMisses()]);
 	}//end testReferenceCacheGrowthCountsAsMissesAndNoGrowthAsAHit()

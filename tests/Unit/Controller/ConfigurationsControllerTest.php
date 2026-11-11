@@ -41,12 +41,10 @@ class ConfigurationsControllerTest extends TestCase {
 		$groupManager->method('isAdmin')->willReturn(true);
 
 		$this->controller = ConfigurationsControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->configurationMapper,
 			$this->configurationService,
 			$this->uploadService,
-			'admin',
 			$userSession,
 			$groupManager
 		);

@@ -132,7 +132,20 @@ class RenderObjectFilesGoldenTest extends TestCase {
 		});
 
 		$render = (new ReflectionClass(RenderObject::class))->newInstanceWithoutConstructor();
-		foreach (['fileMapper' => $fileMapper, 'systemTagMapper' => $tagMapper, 'systemTagManager' => $tagManager, 'container' => null, 'fileTagsCache' => []] as $property => $value) {
+		$stores = new \OCA\OpenRegister\Service\Object\RenderStores(
+			mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(\OCA\OpenRegister\Db\RegisterMapperInterface::class), schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class)),
+					objectCacheService: $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandlerInterface::class)
+			),
+			files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
+				fileMapper: $fileMapper,
+				fileService: $this->createMock(\OCA\OpenRegister\Service\FileReaderInterface::class),
+				systemTagManager: $tagManager,
+				systemTagMapper: $tagMapper
+			)
+		);
+		$runtime = new \OCA\OpenRegister\Service\Object\RenderRuntime(logger: $this->createMock(\Psr\Log\LoggerInterface::class), extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(), container: null);
+		foreach (['stores' => $stores, 'runtime' => $runtime, 'fileTagsCache' => []] as $property => $value) {
 			(new ReflectionProperty(RenderObject::class, $property))->setValue($render, $value);
 		}
 

@@ -36,7 +36,9 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\CaseToken;
 use OCA\OpenRegister\Db\CaseTokenMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\CaseTokenIssuance;
 use OCA\OpenRegister\Service\CaseTokenService;
+use OCA\OpenRegister\Service\CaseTokenTarget;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -114,10 +116,8 @@ class CaseTokenServiceGoldenTest extends TestCase {
 		);
 
 		return new CaseTokenService(
-			$this->mapper,
-			$rng,
+			new CaseTokenIssuance($this->mapper, $rng, $url),
 			$session,
-			$url,
 			$this->createMock(LoggerInterface::class),
 			$container
 		);
@@ -174,7 +174,7 @@ class CaseTokenServiceGoldenTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('objectUuid is required to mint a case token');
 
-		$this->service(null)->mint('   ');
+		$this->service(null)->mintFor(target: new CaseTokenTarget(objectUuid: '   '));
 	}//end testMintRefusesBlankUuidBeforeTheAnonymousCheck()
 
 	/**
@@ -188,7 +188,7 @@ class CaseTokenServiceGoldenTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessage('A logged-in user is required to mint a case token');
 
-		$this->service(null)->mint('obj-1');
+		$this->service(null)->mintFor(target: new CaseTokenTarget(objectUuid: 'obj-1'));
 	}//end testMintRefusesAnonymous()
 
 	/**
@@ -199,7 +199,7 @@ class CaseTokenServiceGoldenTest extends TestCase {
 	public function testMintWritesTheRowFieldsInOrder(): void {
 		$captured = $this->captureInsert();
 
-		$result = $this->service()->mint('obj-1', 3, 9, 'Label', 120);
+		$result = $this->service()->mintFor(target: new CaseTokenTarget(objectUuid: 'obj-1', registerId: 3, schemaId: 9, label: 'Label'), ttlSeconds: 120);
 
 		$row = $captured[0];
 		$this->assertSame(
@@ -224,9 +224,9 @@ class CaseTokenServiceGoldenTest extends TestCase {
 		$captured = $this->captureInsert();
 		$service = $this->service();
 
-		$service->mint('obj-1');
-		$service->mint('obj-1', null, null, null, 0);
-		$service->mint('obj-1', null, null, null, -5);
+		$service->mintFor(target: new CaseTokenTarget(objectUuid: 'obj-1'));
+		$service->mintFor(target: new CaseTokenTarget(objectUuid: 'obj-1'), ttlSeconds: 0);
+		$service->mintFor(target: new CaseTokenTarget(objectUuid: 'obj-1'), ttlSeconds: -5);
 
 		$this->assertCount(3, $captured);
 		foreach ($captured as $row) {

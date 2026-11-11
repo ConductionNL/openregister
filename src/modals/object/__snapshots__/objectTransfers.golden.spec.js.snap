@@ -1,0 +1,364 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MergeObject::performMerge (golden) records the merged merge 1`] = `
+{
+  "calls": [
+    [
+      "object",
+      "src",
+      {
+        "fileAction": "transfer",
+        "object": {
+          "empty": null,
+          "emptyCustom": "",
+          "labelled": "inner",
+          "plain": "kept",
+          "title": "Custom title",
+          "valueUndefined": {
+            "label": "only label",
+          },
+        },
+        "referenceAction": "update",
+        "relationAction": "transfer",
+        "target": "tgt",
+      },
+    ],
+  ],
+  "loading": false,
+  "logged": [],
+  "mergeResult": {
+    "statistics": {},
+    "success": true,
+  },
+  "refreshed": 1,
+  "step": 3,
+}
+`;
+
+exports[`MergeObject::performMerge (golden) records the refused merge 1`] = `
+{
+  "calls": [
+    [
+      "object",
+      "src",
+      {
+        "fileAction": "transfer",
+        "object": {
+          "empty": null,
+          "emptyCustom": "",
+          "labelled": "inner",
+          "plain": "kept",
+          "title": "Custom title",
+          "valueUndefined": {
+            "label": "only label",
+          },
+        },
+        "referenceAction": "update",
+        "relationAction": "transfer",
+        "target": "tgt",
+      },
+    ],
+  ],
+  "loading": false,
+  "logged": [
+    [
+      "Error performing merge:",
+      "Error(locked)",
+    ],
+  ],
+  "mergeResult": {
+    "errors": [
+      "locked",
+    ],
+    "success": false,
+  },
+  "refreshed": 0,
+  "step": 3,
+}
+`;
+
+exports[`MergeObject::performMerge (golden) records the refusedNoError merge 1`] = `
+{
+  "calls": [
+    [
+      "object",
+      "src",
+      {
+        "fileAction": "transfer",
+        "object": {
+          "empty": null,
+          "emptyCustom": "",
+          "labelled": "inner",
+          "plain": "kept",
+          "title": "Custom title",
+          "valueUndefined": {
+            "label": "only label",
+          },
+        },
+        "referenceAction": "update",
+        "relationAction": "transfer",
+        "target": "tgt",
+      },
+    ],
+  ],
+  "loading": false,
+  "logged": [
+    [
+      "Error performing merge:",
+      "Error()",
+    ],
+  ],
+  "mergeResult": {
+    "errors": [
+      "An error occurred during merge",
+    ],
+    "success": false,
+  },
+  "refreshed": 0,
+  "step": 3,
+}
+`;
+
+exports[`MergeObject::performMerge (golden) records the thrown merge 1`] = `
+{
+  "calls": [
+    [
+      "object",
+      "src",
+      {
+        "fileAction": "transfer",
+        "object": {
+          "empty": null,
+          "emptyCustom": "",
+          "labelled": "inner",
+          "plain": "kept",
+          "title": "Custom title",
+          "valueUndefined": {
+            "label": "only label",
+          },
+        },
+        "referenceAction": "update",
+        "relationAction": "transfer",
+        "target": "tgt",
+      },
+    ],
+  ],
+  "loading": false,
+  "logged": [
+    [
+      "Error performing merge:",
+      "Error(boom)",
+    ],
+  ],
+  "mergeResult": {
+    "errors": [
+      "boom",
+    ],
+    "success": false,
+  },
+  "refreshed": 0,
+  "step": 3,
+}
+`;
+
+exports[`MergeObject::performMerge (golden) records the thrownNoMessage merge 1`] = `
+{
+  "calls": [
+    [
+      "object",
+      "src",
+      {
+        "fileAction": "transfer",
+        "object": {
+          "empty": null,
+          "emptyCustom": "",
+          "labelled": "inner",
+          "plain": "kept",
+          "title": "Custom title",
+          "valueUndefined": {
+            "label": "only label",
+          },
+        },
+        "referenceAction": "update",
+        "relationAction": "transfer",
+        "target": "tgt",
+      },
+    ],
+  ],
+  "loading": false,
+  "logged": [
+    [
+      "Error performing merge:",
+      "Error()",
+    ],
+  ],
+  "mergeResult": {
+    "errors": [
+      "An error occurred during merge",
+    ],
+    "success": false,
+  },
+  "refreshed": 0,
+  "step": 3,
+}
+`;
+
+exports[`MigrationObject::performMigration (golden) records the migrated migration 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/migrate",
+      {
+        "body": "{"sourceRegister":1,"sourceSchema":2,"targetRegister":3,"targetSchema":4,"objects":["a","b"],"mapping":{"title":"name"}}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "loading": false,
+  "logged": [],
+  "mapping": {
+    "title": "name",
+  },
+  "migrationResult": {
+    "statistics": {
+      "objectsMigrated": 2,
+    },
+    "success": true,
+  },
+  "refreshed": 1,
+  "step": 4,
+}
+`;
+
+exports[`MigrationObject::performMigration (golden) records the okNoBody migration 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/migrate",
+      {
+        "body": "{"sourceRegister":1,"sourceSchema":2,"targetRegister":3,"targetSchema":4,"objects":["a","b"],"mapping":{"title":"name"}}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "loading": false,
+  "logged": [],
+  "mapping": {
+    "title": "name",
+  },
+  "migrationResult": {},
+  "refreshed": 1,
+  "step": 4,
+}
+`;
+
+exports[`MigrationObject::performMigration (golden) records the refused migration 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/migrate",
+      {
+        "body": "{"sourceRegister":1,"sourceSchema":2,"targetRegister":3,"targetSchema":4,"objects":["a","b"],"mapping":{"title":"name"}}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "loading": false,
+  "logged": [
+    [
+      "Error performing migration:",
+      "Error(not allowed)",
+    ],
+  ],
+  "mapping": {
+    "title": "name",
+  },
+  "migrationResult": {
+    "errors": [
+      "not allowed",
+    ],
+    "success": false,
+  },
+  "refreshed": 0,
+  "step": 4,
+}
+`;
+
+exports[`MigrationObject::performMigration (golden) records the refusedNoBody migration 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/migrate",
+      {
+        "body": "{"sourceRegister":1,"sourceSchema":2,"targetRegister":3,"targetSchema":4,"objects":["a","b"],"mapping":{"title":"name"}}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "loading": false,
+  "logged": [
+    [
+      "Error performing migration:",
+      "Error()",
+    ],
+  ],
+  "mapping": {
+    "title": "name",
+  },
+  "migrationResult": {
+    "errors": [
+      "An error occurred during migration",
+    ],
+    "success": false,
+  },
+  "refreshed": 0,
+  "step": 4,
+}
+`;
+
+exports[`MigrationObject::performMigration (golden) records the thrown migration 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/migrate",
+      {
+        "body": "{"sourceRegister":1,"sourceSchema":2,"targetRegister":3,"targetSchema":4,"objects":["a","b"],"mapping":{"title":"name"}}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  "loading": false,
+  "logged": [
+    [
+      "Error performing migration:",
+      "Error(offline)",
+    ],
+  ],
+  "mapping": {
+    "title": "name",
+  },
+  "migrationResult": {
+    "errors": [
+      "offline",
+    ],
+    "success": false,
+  },
+  "refreshed": 0,
+  "step": 4,
+}
+`;

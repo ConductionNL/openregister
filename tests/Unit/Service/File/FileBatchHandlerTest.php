@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service\File;
 
 use Exception;
+use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Service\File\FileBatchHandler;
@@ -62,7 +63,7 @@ class FileBatchHandlerTest extends TestCase {
 			->expects($this->exactly(3))
 			->method('publishFile');
 
-		$result = $this->handler->executeBatch($object, 'publish', [42, 43, 44]);
+		$result = $this->handler->runBatch(request: new FileBatchRequest(object: $object, action: 'publish', params: []), fileIds: [42, 43, 44]);
 
 		$this->assertEquals(3, $result['summary']['total']);
 		$this->assertEquals(3, $result['summary']['succeeded']);
@@ -84,7 +85,7 @@ class FileBatchHandlerTest extends TestCase {
 				return true;
 			});
 
-		$result = $this->handler->executeBatch($object, 'delete', [42, 43, 44]);
+		$result = $this->handler->runBatch(request: new FileBatchRequest(object: $object, action: 'delete', params: []), fileIds: [42, 43, 44]);
 
 		$this->assertEquals(3, $result['summary']['total']);
 		$this->assertEquals(2, $result['summary']['succeeded']);
@@ -102,7 +103,7 @@ class FileBatchHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Batch operations are limited to 100 files per request');
 
-		$this->handler->executeBatch($object, 'publish', $fileIds);
+		$this->handler->runBatch(request: new FileBatchRequest(object: $object, action: 'publish', params: []), fileIds: $fileIds);
 	}
 
 	/**
@@ -114,7 +115,7 @@ class FileBatchHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Invalid batch action');
 
-		$this->handler->executeBatch($object, 'archive', [42]);
+		$this->handler->runBatch(request: new FileBatchRequest(object: $object, action: 'archive', params: []), fileIds: [42]);
 	}
 
 	/**
@@ -126,7 +127,7 @@ class FileBatchHandlerTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('No file IDs provided');
 
-		$this->handler->executeBatch($object, 'publish', []);
+		$this->handler->runBatch(request: new FileBatchRequest(object: $object, action: 'publish', params: []), fileIds: []);
 	}
 
 	/**
@@ -139,7 +140,7 @@ class FileBatchHandlerTest extends TestCase {
 			->method('deleteFile')
 			->willReturnCallback(static fn ($file, $obj): bool => $file !== 43);
 
-		$result = $this->handler->executeBatch($object, 'delete', [42, 43]);
+		$result = $this->handler->runBatch(request: new FileBatchRequest(object: $object, action: 'delete', params: []), fileIds: [42, 43]);
 
 		$this->assertEquals(1, $result['summary']['succeeded']);
 		$this->assertEquals(1, $result['summary']['failed']);

@@ -76,17 +76,18 @@ final class SipContents {
 	}//end addDocument()
 
 	/**
-	 * Add an MDTO document of an object, which mets.xml lists too.
+	 * List an added document as an MDTO document of an object, so mets.xml lists it too.
 	 *
-	 * @param string|null $uuid    The object uuid.
-	 * @param string      $path    The SIP path.
-	 * @param string      $content The bytes.
+	 * @param string|null                                      $uuid The object uuid.
+	 * @param array{path: string, size: int, checksum: string} $row  The manifest row addDocument() returned.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/edepot-bagit-output/spec.md
 	 */
-	public function addMetadataDocument(?string $uuid, string $path, string $content): void {
-		$this->metadata[$uuid][] = $this->addDocument(path: $path, content: $content);
-	}//end addMetadataDocument()
+	public function listAsMetadata(?string $uuid, array $row): void {
+		$this->metadata[$uuid][] = $row;
+	}//end listAsMetadata()
 
 	/**
 	 * Add an on-disk content file, listed with its recorded size and checksum.

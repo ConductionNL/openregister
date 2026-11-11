@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Command;
 use OCA\OpenRegister\Command\RematerialiseCalculationsCommand;
 use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
 use OCA\OpenRegister\Command\Support\RematerialiseStorage;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -52,6 +53,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
  * learniq session (O8) and enrolment (O9), each one row.
@@ -118,7 +120,7 @@ class RematerialiseRestoresStringTypedValuesTest extends TestCase {
 					}
 				}
 
-				$violations = $rules->validateReadOnlyConstraints(incomingObject: $object, existingObject: $stored, schema: $schema);
+				$violations = $rules->validateReadOnlyConstraints(check: new WriteConstraintCheck(incoming: $object, stored: $stored), schema: $schema);
 				if ($violations !== []) {
 					throw new RuntimeException('Cannot modify readOnly properties: ' . implode(', ', array_column($violations, 'property')));
 				}
@@ -130,7 +132,7 @@ class RematerialiseRestoresStringTypedValuesTest extends TestCase {
 		);
 
 		$command = new RematerialiseCalculationsCommand(
-			new RematerialiseStorage($registers, $schemas, $magic, $objects),
+			new RematerialiseStorage(new SchemaCatalog($registers, $schemas, $magic), $objects),
 			new RematerialiseEvaluation($evaluator, $this->createMock(ReferenceResolver::class), ($aggregates ?? $this->createMock(AggregateReferenceResolver::class))),
 			new SchemaTypeConverter()
 		);

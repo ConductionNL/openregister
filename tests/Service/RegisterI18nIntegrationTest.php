@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -35,11 +36,15 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Translation;
+use OCA\OpenRegister\Db\TranslationFilter;
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Service\LanguageGapScan;
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\TranslationProjectionService;
+use OCA\OpenRegister\Service\TranslationSearch;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IUserManager;
@@ -270,8 +275,7 @@ class RegisterI18nIntegrationTest extends TestCase {
 
 		$resolved = $this->translationHandler->resolveTranslationsForRender(
 			['title' => ['fr' => 'Salut le monde']],
-			$this->testSchema,
-			$this->testRegister
+			new TranslationScope($this->testSchema, $this->testRegister)
 		);
 
 		$this->assertSame('Salut le monde', $resolved['title']);
@@ -285,8 +289,7 @@ class RegisterI18nIntegrationTest extends TestCase {
 
 		$resolved = $this->translationHandler->resolveTranslationsForRender(
 			['title' => ['nl' => 'Hoi', 'en' => 'Hi']],
-			$this->testSchema,
-			$this->testRegister
+			new TranslationScope($this->testSchema, $this->testRegister)
 		);
 
 		$this->assertSame('Hi', $resolved['title']);
@@ -301,9 +304,7 @@ class RegisterI18nIntegrationTest extends TestCase {
 
 		// Promote the EN slot to approved.
 		$promoted = $this->statusService->setStatus(
-			(string)$this->testObject->getUuid(),
-			'title',
-			'en',
+			new TranslationSlot((string)$this->testObject->getUuid(), 'title', 'en'),
 			Translation::STATUS_APPROVED
 		);
 		$this->assertSame(Translation::STATUS_APPROVED, $promoted->getStatus());
@@ -312,7 +313,7 @@ class RegisterI18nIntegrationTest extends TestCase {
 		// doesn't second-guess workflow state).
 		$this->projection->project($this->testObject);
 
-		$reread = $this->translationMapper->findOne((string)$this->testObject->getUuid(), 'title', 'en');
+		$reread = $this->translationMapper->findOne(new TranslationSlot((string)$this->testObject->getUuid(), 'title', 'en'));
 		$this->assertSame(Translation::STATUS_APPROVED, $reread->getStatus(), 'projection MUST preserve workflow status across re-projections');
 	}
 
@@ -325,7 +326,7 @@ class RegisterI18nIntegrationTest extends TestCase {
 		$this->projection->project($this->testObject);
 
 		// Cross-language: drop the language filter, hit both.
-		$hits = $this->statusService->search(query: $unique, language: null);
+		$hits = $this->statusService->search(new TranslationSearch(query: $unique));
 		$languages = array_map(fn ($r) => $r['language'], $hits);
 		$this->assertContains('nl', $languages);
 		$this->assertContains('en', $languages);
@@ -339,7 +340,7 @@ class RegisterI18nIntegrationTest extends TestCase {
 		]);
 		$this->projection->project($this->testObject);
 
-		$hits = $this->statusService->search(query: $unique, language: 'nl');
+		$hits = $this->statusService->search(new TranslationSearch(filter: new TranslationFilter(language: 'nl'), query: $unique));
 		$this->assertCount(1, $hits);
 		$this->assertSame('nl', $hits[0]['language']);
 	}
@@ -352,9 +353,8 @@ class RegisterI18nIntegrationTest extends TestCase {
 		$this->projection->project($this->testObject);
 
 		$missing = $this->statusService->findObjectsMissingLanguage(
-			'en',
 			$this->testSchema,
-			[(string)$this->testObject->getUuid()]
+			new LanguageGapScan('en', [(string)$this->testObject->getUuid()])
 		);
 
 		$this->assertContains((string)$this->testObject->getUuid(), $missing);
