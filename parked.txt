@@ -153,3 +153,4 @@ openregister#9023 01eb4bf49b53dff10fac19e12ba040f7a96c067e precheck-red alone on
 openregister#9477 b09b022794cb8eadacb48ad233f8e6df60e14412 bisect-park: OCA\OpenRegister\Tests\Unit\Dto\BulkSaveOutcomeBatchErrorCapTest::testAtMostFiveBatchErrorsAreRepeated
 openregister#9798 5e5040bfa3b46e177265754e2707a3c321a60cd7 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\TalkLink\TalkGatewaySetDescriptionTest::testWithoutTalkNothingIsResolved
 openregister#9029 2e50fcfc25d8cbf5735f7d689e7b7d210e93f60a precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectObjectSourceDelegationTest::testAnEmptyIdIsACreate;OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjectObjectSourceDelegationTest::testAnUpdateAuditsTheStoredR
+openregister#9059 30eaeffdd17c1b641d3d2c8edd8d67aa67168436 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\TalkLink\TalkGatewaySetDescriptionTest::testWithoutTalkNothingIsResolved
