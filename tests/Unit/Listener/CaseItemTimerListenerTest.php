@@ -28,6 +28,7 @@ use OCA\OpenRegister\Listener\CaseItemTimerListener;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
 use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
+use OCA\OpenRegister\Service\Flow\Timer\TimerFiring;
 use OCA\OpenRegister\Tests\Unit\Service\Case\CaseFixtures;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
@@ -69,8 +70,8 @@ class CaseItemTimerListenerTest extends TestCase {
 		$timer->setPurpose(FlowTimer::PURPOSE_EXPIRY);
 		$timer->setLegalEffect(FlowTimer::LEGAL_WETTELIJK);
 		$timer->setOnExpiry(CasePlanItemTimers::ON_EXPIRY);
-		$listener->handle(new FlowTimerFiredEvent(timer: $timer, kind: FlowTimerFiredEvent::KIND_EXPIRY, transition: 'expiry', rungKey: null, recipients: [], priority: null, message: null));
-		$listener->handle(new FlowTimerFiredEvent(timer: $timer, kind: FlowTimerFiredEvent::KIND_RUNG, transition: 'rung', rungKey: 'r1', recipients: [], priority: null, message: null));
+		$listener->handle(new FlowTimerFiredEvent(timer: $timer, firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_EXPIRY, transition: 'expiry')));
+		$listener->handle(new FlowTimerFiredEvent(timer: $timer, firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_RUNG, transition: 'rung', rungKey: 'r1')));
 		$listener->handle(new Event());
 	}//end testTransitionsAndExpiriesReachTheRightVerb()
 }//end class

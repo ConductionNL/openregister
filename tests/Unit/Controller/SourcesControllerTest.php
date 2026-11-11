@@ -9,7 +9,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SourcesControllerFactory;
 use OCA\OpenRegister\Controller\SourcesController;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapper;
 use OCA\OpenRegister\Service\Credential\CredentialStore;

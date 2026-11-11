@@ -72,6 +72,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Regression: a PENDING schema ref left by a previous caller must not be
@@ -100,7 +101,7 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler:    $this->createMock(DataManipulationHandler::class),
 			deleteHandler:       $this->createMock(DeleteObject::class),
 			getHandler:          $this->createMock(GetObject::class),
@@ -139,7 +140,7 @@ class ObjectServiceStaleSchemaRefTest extends TestCase {
 			dateTimeNormalizer:  $this->createMock(DateTimeNormalizer::class),
 			container:           $this->createMock(IAppContainer::class),
 			objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 	}//end setUp()
 

@@ -1118,7 +1118,7 @@
       "count": 1
     },
     "no-console": {
-      "count": 13
+      "count": 11
     }
   },
   "src/views/settings/sections/FlowConfiguration.vue": {

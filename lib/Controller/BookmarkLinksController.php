@@ -321,10 +321,20 @@ class BookmarkLinksController extends Controller {
 			$search = (string)$search;
 		}
 
-		$tags = null;
+		$bookmarks = $this->bookmarkLinkService->getAvailableBookmarks($search, $this->requestedTags());
+
+		return LinkedSourceResponses::listed(items: $bookmarks);
+	}//end available()
+
+	/**
+	 * The tags the picker narrows to: a comma list or a list of text, or null for no narrowing.
+	 *
+	 * @return array<int, string>|null The tags
+	 */
+	private function requestedTags(): ?array {
 		$rawTags = $this->request->getParam('tags');
 		if (is_string($rawTags) === true && $rawTags !== '') {
-			$tags = array_values(
+			return array_values(
 				array_filter(
 					array_map('trim', explode(',', $rawTags)),
 					static function (string $tag): bool {
@@ -332,13 +342,14 @@ class BookmarkLinksController extends Controller {
 					}
 				)
 			);
-		} elseif (is_array($rawTags) === true) {
-			$tags = array_values(array_filter($rawTags, 'is_string'));
 		}
 
-		$bookmarks = $this->bookmarkLinkService->getAvailableBookmarks($search, $tags);
-		return new JSONResponse(['results' => $bookmarks, 'total' => count($bookmarks)]);
-	}//end available()
+		if (is_array($rawTags) === true) {
+			return array_values(array_filter($rawTags, 'is_string'));
+		}
+
+		return null;
+	}//end requestedTags()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -355,24 +366,7 @@ class BookmarkLinksController extends Controller {
 	 * @return JSONResponse
 	 */
 	protected function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if ($code === 409) {
-			return new JSONResponse(['error' => $exception->getMessage()], 409);
-		}
-
-		if ($code === 404) {
-			return new JSONResponse(['error' => $exception->getMessage()], 404);
-		}
-
-		if ($code === 503) {
-			return new JSONResponse(['error' => $exception->getMessage()], 503);
-		}
-
-		if ($code === 400) {
-			return new JSONResponse(['error' => $exception->getMessage()], 400);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [400, 404, 409, 503]);
 	}//end mapException()
 
 	/**

@@ -280,30 +280,67 @@ class ReferencedAddressNotifier implements ReferencedAddressNotifierInterface {
 			return (string)$entry['reason'];
 		}
 
-		$optOut = $this->delivery->optOut;
-		$decision = $optOut->decisionFor(decisions: $mailing->decisions, address: $entry['address']);
-		if (($decision['send'] ?? false) !== true) {
-			if (($decision['code'] ?? '') === OptOutAuthorityInterface::CODE_AUTHORITY_UNAVAILABLE) {
-				return self::OUTCOME_AUTHORITY_UNAVAILABLE;
-			}
-
-			return self::OUTCOME_REFUSED_OPTED_OUT;
-		}
-
-		$unsubscribe = null;
-		if (is_array($decision['unsubscribe'] ?? null) === true) {
-			$unsubscribe = $decision['unsubscribe'];
+		$decision = $this->delivery->optOut->decisionFor(decisions: $mailing->decisions, address: $entry['address']);
+		$refusal = $this->refusalOf(decision: $decision);
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		return $this->delivery->email->sendMailTo(
 			addressee: new \OCA\OpenRegister\Notifications\Service\Notification\MailAddressee(address: $entry['address'], displayName: ''),
-			content: new \OCA\OpenRegister\Notifications\Service\Notification\MailContent(
-				subject: $mailing->subject,
-				body: $optOut->withLink(body: $mailing->body, unsubscribe: $unsubscribe),
-				unsubscribe: $unsubscribe
-			)
+			content: $this->contentFor(mailing: $mailing, unsubscribe: $this->unsubscribeOf(decision: $decision))
 		);
 	}//end sendOne()
+
+	/**
+	 * The outcome when the opt-out decision says not to send, or null when it may go.
+	 *
+	 * @param array<string, mixed> $decision The opt-out decision for the address.
+	 *
+	 * @return string|null The refusal outcome, or null.
+	 */
+	private function refusalOf(array $decision): ?string {
+		if (($decision['send'] ?? false) === true) {
+			return null;
+		}
+
+		if (($decision['code'] ?? '') === OptOutAuthorityInterface::CODE_AUTHORITY_UNAVAILABLE) {
+			return self::OUTCOME_AUTHORITY_UNAVAILABLE;
+		}
+
+		return self::OUTCOME_REFUSED_OPTED_OUT;
+	}//end refusalOf()
+
+	/**
+	 * The unsubscribe details the decision carries, or null.
+	 *
+	 * @param array<string, mixed> $decision The opt-out decision for the address.
+	 *
+	 * @return array<string, mixed>|null The unsubscribe details.
+	 */
+	private function unsubscribeOf(array $decision): ?array {
+		if (is_array($decision['unsubscribe'] ?? null) === true) {
+			return $decision['unsubscribe'];
+		}
+
+		return null;
+	}//end unsubscribeOf()
+
+	/**
+	 * The mail content: the mailing's subject, and its body with the unsubscribe link.
+	 *
+	 * @param ClearedMailing            $mailing     The cleared mailing.
+	 * @param array<string, mixed>|null $unsubscribe The unsubscribe details, or null.
+	 *
+	 * @return \OCA\OpenRegister\Notifications\Service\Notification\MailContent The content.
+	 */
+	private function contentFor(ClearedMailing $mailing, ?array $unsubscribe): \OCA\OpenRegister\Notifications\Service\Notification\MailContent {
+		return new \OCA\OpenRegister\Notifications\Service\Notification\MailContent(
+			subject: $mailing->subject,
+			body: $this->delivery->optOut->withLink(body: $mailing->body, unsubscribe: $unsubscribe),
+			unsubscribe: $unsubscribe
+		);
+	}//end contentFor()
 
 	/**
 	 * The id a stored reference value names, or null.

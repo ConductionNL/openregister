@@ -46,6 +46,7 @@ namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Repair\Support\EveryFlow;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCP\Migration\IOutput;

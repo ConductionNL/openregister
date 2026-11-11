@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Mcp\Tool;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
