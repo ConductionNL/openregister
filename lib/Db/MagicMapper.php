@@ -4812,40 +4812,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * It's useful for operations like lock/unlock where the caller doesn't know
 	 * which storage backend contains the object.
 	 *
-	 * @param string|int $identifier Object identifier (ID, UUID, slug, or URI).
-	 * @param bool $includeDeleted Whether to include deleted objects.
-	 * @param bool $_rbac Whether to apply RBAC checks.
-	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
-	 * @param int|null $registerIdScope Restrict the scan to one register's tables.
-	 *                                  A caller that named a register has already
-	 *                                  said where the object lives; widening the
-	 *                                  search past it is never a correct answer,
-	 *                                  and it is what makes this method cost
-	 *                                  seconds. Null keeps the historic
-	 *                                  everything-everywhere behaviour.
-	 *
-	 * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
-	 *                                                                                   The found object with its register and schema context.
-	 *
-	 * @throws DoesNotExistException If object not found in any magic table.
-	 *
-	 * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
-	 */
-	public function findAcrossAllMagicTables(
-		string|int $identifier,
-		bool $includeDeleted = false,
-		bool $_rbac = true,
-		bool $_multitenancy = true,
-		?int $registerIdScope = null,
-	): array {
-		$find = new MagicIdentifierFind(identifier: $identifier, includeDeleted: $includeDeleted, registerIdScope: $registerIdScope);
-		return $this->findAcross(find: $find, _rbac: $_rbac, _multitenancy: $_multitenancy);
-	}//end findAcrossAllMagicTables()
-
-	/**
-	 * Find an object by identifier across the magic tables (see findAcrossAllMagicTables()).
-	 *
-	 * @param MagicIdentifierFind $find          The identifier, whether deleted objects count and the register to narrow to.
+	 * @param MagicIdentifierFind $find          The identifier, whether deleted objects count, and the register
+	 *                                           to narrow to: a caller that named a register has already said
+	 *                                           where the object lives, and null keeps the scan over every table.
 	 * @param bool                $_rbac         Whether to apply RBAC checks.
 	 * @param bool                $_multitenancy Whether to apply multitenancy filtering.
 	 *
@@ -8478,13 +8447,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// A register WITHOUT a schema still bounds the search: only that
 		// register's magic tables can hold the object. Passing it turns an
 		// instance-wide union into a handful of branches.
-		$result = $this->findAcrossAllMagicTables(
-			identifier: $find->identifier,
-			includeDeleted: $find->includeDeleted,
-			_rbac: $_rbac,
-			_multitenancy: $_multitenancy,
-			registerIdScope: $find->registerIdScope
-		);
+		$result = $this->findAcross(find: $find, _rbac: $_rbac, _multitenancy: $_multitenancy);
 		$result['object']->setSource('orm');
 		return $result['object'];
 	}//end findObject()
@@ -8516,12 +8479,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		bool $_multitenancy = true,
 		?int $registerIdScope = null,
 	): array {
-		return $this->findAcrossAllMagicTables(
-			identifier: $identifier,
-			includeDeleted: $includeDeleted,
+		return $this->findAcross(
+			find: new MagicIdentifierFind(
+				identifier: $identifier,
+				includeDeleted: $includeDeleted,
+				registerIdScope: $registerIdScope
+			),
 			_rbac: $_rbac,
-			_multitenancy: $_multitenancy,
-			registerIdScope: $registerIdScope
+			_multitenancy: $_multitenancy
 		);
 	}//end findAcrossAllSources()
 
