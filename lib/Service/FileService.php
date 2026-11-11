@@ -1222,12 +1222,7 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 			$this->fileLockHandler->assertCanModify($overwrite->filePath);
 		}
 
-		return $this->updateFileHandler->updateFile(
-			filePath: $overwrite->filePath,
-			content: $overwrite->content,
-			tags: $overwrite->tags,
-			object: $overwrite->object
-		);
+		return $this->updateFileHandler->updateFile(overwrite: $overwrite);
 	}//end overwriteFile()
 
 	/**
@@ -1930,23 +1925,6 @@ class FileService implements FileServiceInterface, FileHandlerSupportInterface {
 			// Name is available.
 		}
 	}//end assertNameIsFree()
-
-	/**
-	 * Copy a file to another object.
-	 *
-	 * @param ObjectEntity $sourceObject The source object entity.
-	 * @param int $fileId The source file ID.
-	 * @param ObjectEntity $targetObject The target object entity.
-	 *
-	 * @return File The new file copy.
-	 *
-	 * @throws Exception If the copy fails.
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File {
-		return $this->copyAttachedFile(transfer: new FileTransfer(source: $sourceObject, fileId: $fileId, target: $targetObject));
-	}//end copyFile()
 
 	/**
 	 * Copy a file to another object, as one transfer.

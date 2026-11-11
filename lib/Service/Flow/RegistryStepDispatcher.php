@@ -198,13 +198,13 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 		$engineOwned = str_starts_with(get_class($node), 'OCA\\OpenRegister\\');
 
 		if ($this->scope === null || $engineOwned === true || $node instanceof IFlowSelfScopedNode === true) {
-			return $node->execute(items: $call->items, config: $call->config(), context: $call->context);
+			return $node->execute(call: $call->nodeCall());
 		}
 
 		return (array)$this->scope->call(
 			context: $call->context,
 			operation: static function () use ($node, $call): array {
-				return $node->execute(items: $call->items, config: $call->config(), context: $call->context);
+				return $node->execute(call: $call->nodeCall());
 			}
 		);
 	}//end executeScoped()

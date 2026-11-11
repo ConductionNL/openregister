@@ -14,12 +14,13 @@
 namespace OCA\OpenRegister\Tests\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\ConfigurationSyncResult;
 use OCA\OpenRegister\Db\MagicMapper\StatisticsScope;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
@@ -735,8 +736,7 @@ class MappersIntegrationTest extends TestCase {
 		try {
 			$updated = $this->configurationMapper->updateSyncStatus(
 				$config->getId(),
-				'success',
-				new DateTime()
+				new ConfigurationSyncResult('success', new DateTime())
 			);
 			$this->assertSame('success', $updated->getSyncStatus());
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {

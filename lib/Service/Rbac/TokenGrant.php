@@ -172,36 +172,74 @@ class TokenGrant {
 			return null;
 		}
 
-		if (is_array($stored) === false) {
+		$verbs = self::storedVerbs(stored: $stored);
+		if ($verbs === null) {
 			return new self(verbs: [], tokenId: $tokenId);
+		}
+
+		return new self(
+			verbs: $verbs,
+			reach: self::storedReach(stored: $stored),
+			terms: self::storedTerms(stored: $stored),
+			tokenId: $tokenId
+		);
+	}//end fromStored()
+
+	/**
+	 * The stored verbs as strings, or null when the grant or its verb list is malformed.
+	 *
+	 * @param mixed $stored The stored grant.
+	 *
+	 * @return array<int, string>|null The verbs.
+	 */
+	private static function storedVerbs(mixed $stored): ?array {
+		if (is_array($stored) === false) {
+			return null;
 		}
 
 		$verbs = ($stored['verbs'] ?? null);
 		if (is_array($verbs) === false) {
-			return new self(verbs: [], tokenId: $tokenId);
+			return null;
 		}
 
+		return array_values(array_map(static fn (mixed $v): string => (string)$v, $verbs));
+	}//end storedVerbs()
+
+	/**
+	 * Where a stored grant reaches: its registers, schemas and match; each null when absent or malformed.
+	 *
+	 * @param array<string, mixed> $stored The stored grant.
+	 *
+	 * @return TokenGrantReach The reach.
+	 */
+	private static function storedReach(array $stored): TokenGrantReach {
 		$match = null;
 		if (is_array(($stored['match'] ?? null)) === true) {
 			$match = $stored['match'];
 		}
 
+		return new TokenGrantReach(
+			registers: self::listOrNull(value: ($stored['registers'] ?? null)),
+			schemas: self::listOrNull(value: ($stored['schemas'] ?? null)),
+			match: $match
+		);
+	}//end storedReach()
+
+	/**
+	 * Until when and how often a stored grant may be used; each null when absent or malformed.
+	 *
+	 * @param array<string, mixed> $stored The stored grant.
+	 *
+	 * @return TokenGrantTerms The terms.
+	 */
+	private static function storedTerms(array $stored): TokenGrantTerms {
 		$rateLimit = null;
 		if (is_numeric(($stored['rateLimit'] ?? null)) === true) {
 			$rateLimit = (int)$stored['rateLimit'];
 		}
 
-		return new self(
-			verbs: array_values(array_map(static fn (mixed $v): string => (string)$v, $verbs)),
-			reach: new TokenGrantReach(
-				registers: self::listOrNull(value: ($stored['registers'] ?? null)),
-				schemas: self::listOrNull(value: ($stored['schemas'] ?? null)),
-				match: $match
-			),
-			terms: new TokenGrantTerms(expiresAt: self::dateOrNull(value: ($stored['expiresAt'] ?? null)), rateLimit: $rateLimit),
-			tokenId: $tokenId
-		);
-	}//end fromStored()
+		return new TokenGrantTerms(expiresAt: self::dateOrNull(value: ($stored['expiresAt'] ?? null)), rateLimit: $rateLimit);
+	}//end storedTerms()
 
 	/**
 	 * Whether this grant permits nothing at all.

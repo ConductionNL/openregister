@@ -395,8 +395,8 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 		return $this->urlGenerator->linkToRouteAbsolute(
 			'openregister.objects.show',
 			[
-				'register' => $this->slugOf(entity: $target->register),
-				'schema' => $this->slugOf(entity: $target->schema),
+				'register' => JsonLdRouteSlug::of(entity: $target->register),
+				'schema' => JsonLdRouteSlug::of(entity: $target->schema),
 				'id' => (string)$uuid,
 			]
 		);
@@ -504,25 +504,4 @@ class JsonLdSerializer implements JsonLdSerializerInterface {
 	private function isReservedKey(int|string $key): bool {
 		return is_string($key) === true && str_starts_with($key, '@') === true;
 	}//end isReservedKey()
-
-	/**
-	 * Resolve the slug for an entity, falling back to UUID then id.
-	 *
-	 * @param Register|Schema $entity The entity.
-	 *
-	 * @return string The slug-like identifier.
-	 */
-	private function slugOf(Register|Schema $entity): string {
-		$slug = $entity->getSlug();
-		if (is_string($slug) === true && $slug !== '') {
-			return $slug;
-		}
-
-		$uuid = $entity->getUuid();
-		if (is_string($uuid) === true && $uuid !== '') {
-			return $uuid;
-		}
-
-		return (string)$entity->getId();
-	}//end slugOf()
 }//end class

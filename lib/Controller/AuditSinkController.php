@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\AdminGroupMembership;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AuditSinkControllerServices;
 use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
@@ -108,30 +109,49 @@ class AuditSinkController extends Controller {
 			return $this->forbidden();
 		}
 
+		return new JSONResponse(data: $this->sinkReport());
+	}//end show()
+
+	/**
+	 * Where the trail is written and how the shipping is going.
+	 *
+	 * @return array<string, mixed> The sink's configuration and status
+	 */
+	private function sinkReport(): array {
 		$configured = $this->sink->isConfigured();
 		$status = $this->status->read();
 
-		// Null, not false. An instance that ships nothing has not been found
-		// unhealthy, it has not been asked.
-		$healthy = null;
+		return [
+			'configured' => $configured,
+			'path' => $this->sink->path(),
+			'format' => $this->sink->format(),
+			'healthy' => self::healthOf(configured: $configured, status: $status),
+			'lastSuccessAt' => $status['lastSuccessAt'],
+			'lastFailureAt' => $status['lastFailureAt'],
+			'lastError' => $status['lastError'],
+			'unshipped' => $status['unshipped'],
+			'acknowledgedAt' => $status['acknowledgedAt'],
+		];
+	}//end sinkReport()
+
+	/**
+	 * Whether the sink is healthy.
+	 *
+	 * Null, not false. An instance that ships nothing has not been found
+	 * unhealthy, it has not been asked.
+	 *
+	 * @param bool                 $configured Whether a sink is configured
+	 * @param array<string, mixed> $status     The shipping status
+	 *
+	 * @return mixed The reported health, or null for an unconfigured sink
+	 */
+	private static function healthOf(bool $configured, array $status): mixed {
 		if ($configured === true) {
-			$healthy = $status['healthy'];
+			return $status['healthy'];
 		}
 
-		return new JSONResponse(
-			data: [
-				'configured' => $configured,
-				'path' => $this->sink->path(),
-				'format' => $this->sink->format(),
-				'healthy' => $healthy,
-				'lastSuccessAt' => $status['lastSuccessAt'],
-				'lastFailureAt' => $status['lastFailureAt'],
-				'lastError' => $status['lastError'],
-				'unshipped' => $status['unshipped'],
-				'acknowledgedAt' => $status['acknowledgedAt'],
-			]
-		);
-	}//end show()
+		return null;
+	}//end healthOf()
 
 	/**
 	 * POST /api/audit/sink/acknowledge — an operator says the gap is handled.
@@ -163,16 +183,7 @@ class AuditSinkController extends Controller {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function isAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return in_array(
-			needle: 'admin',
-			haystack: $this->groupManager->getUserGroupIds($user),
-			strict: true
-		);
+		return AdminGroupMembership::ofCaller(userSession: $this->userSession, groupManager: $this->groupManager);
 	}//end isAdmin()
 
 	/**

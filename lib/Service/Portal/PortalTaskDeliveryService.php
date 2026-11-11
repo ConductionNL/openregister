@@ -113,12 +113,7 @@ class PortalTaskDeliveryService implements PortalTaskDeliveryServiceInterface, P
 	 */
 	private function insert(DeliveryRequest $request, string $channel): ?PortalTaskDelivery {
 		$task = $request->task;
-		$row = new PortalTaskDelivery();
-		$row->setTaskUuid((string)$task->getUuid());
-		$row->setPartyReference((string)$task->getAssignee());
-		$row->setChannel($channel);
-		$row->setKind($request->kind);
-		$row->setMessage($request->message);
+		$row = self::rowFor(request: $request, channel: $channel);
 
 		try {
 			return $this->deliveries->insert($row);
@@ -131,6 +126,25 @@ class PortalTaskDeliveryService implements PortalTaskDeliveryServiceInterface, P
 			return null;
 		}
 	}//end insert()
+
+	/**
+	 * The delivery row for one channel of a request, not yet written.
+	 *
+	 * @param DeliveryRequest $request The task, the kind of ask and its message.
+	 * @param string          $channel The channel.
+	 *
+	 * @return PortalTaskDelivery The row.
+	 */
+	private static function rowFor(DeliveryRequest $request, string $channel): PortalTaskDelivery {
+		$row = new PortalTaskDelivery();
+		$row->setTaskUuid((string)$request->task->getUuid());
+		$row->setPartyReference((string)$request->task->getAssignee());
+		$row->setChannel($channel);
+		$row->setKind($request->kind);
+		$row->setMessage($request->message);
+
+		return $row;
+	}//end rowFor()
 
 	/**
 	 * The message an ask, re-ask or reminder carries to portaliq.
@@ -157,14 +171,25 @@ class PortalTaskDeliveryService implements PortalTaskDeliveryServiceInterface, P
 			'partyReference' => $task->getAssignee(),
 			'dueAt' => $task->getDueAt()?->format('c'),
 			'expiresAt' => $task->getExpiresAt()?->format('c'),
-			'case' => [
-				'uuid' => $task->getObjectUuid(),
-				'register' => $task->getRegisterId(),
-				'schema' => $task->getSchemaId(),
-			],
+			'case' => self::caseAnchor(task: $task),
 			'upload' => ($metadata['upload'] ?? null),
 		];
 	}//end messageFor()
+
+	/**
+	 * The case the task is about, by uuid, register and schema only.
+	 *
+	 * @param TaskInterface $task The external task.
+	 *
+	 * @return array{uuid: mixed, register: mixed, schema: mixed} The anchor.
+	 */
+	private static function caseAnchor(TaskInterface $task): array {
+		return [
+			'uuid' => $task->getObjectUuid(),
+			'register' => $task->getRegisterId(),
+			'schema' => $task->getSchemaId(),
+		];
+	}//end caseAnchor()
 
 	/**
 	 * The delivery state of one task, summarised for its row.

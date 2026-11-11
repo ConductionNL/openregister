@@ -1,0 +1,297 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LockObject.lockObject (golden) locks with a process and duration 1`] = `
+{
+  "after": {
+    "closes": 1,
+    "error": null,
+    "loading": false,
+    "success": true,
+  },
+  "before": {
+    "closes": 0,
+    "error": null,
+    "loading": false,
+    "success": true,
+  },
+  "calls": [
+    [
+      "obj-1",
+      "review",
+      60,
+    ],
+  ],
+  "during": true,
+  "early": 0,
+}
+`;
+
+exports[`LockObject.lockObject (golden) locks without a process or duration 1`] = `
+{
+  "after": {
+    "closes": 1,
+    "error": null,
+    "loading": false,
+    "success": true,
+  },
+  "before": {
+    "closes": 0,
+    "error": null,
+    "loading": false,
+    "success": true,
+  },
+  "calls": [
+    [
+      "obj-1",
+      undefined,
+      undefined,
+    ],
+  ],
+  "during": true,
+  "early": 0,
+}
+`;
+
+exports[`LockObject.lockObject (golden) reports a failure without a message 1`] = `
+{
+  "after": {
+    "closes": 0,
+    "error": "Failed to lock object",
+    "loading": false,
+    "success": null,
+  },
+  "before": {
+    "closes": 0,
+    "error": "Failed to lock object",
+    "loading": false,
+    "success": null,
+  },
+  "calls": [
+    [
+      "obj-1",
+      "p",
+      5,
+    ],
+  ],
+  "during": true,
+  "early": 0,
+}
+`;
+
+exports[`LockObject.lockObject (golden) reports a refusal 1`] = `
+{
+  "after": {
+    "closes": 0,
+    "error": "Already locked",
+    "loading": false,
+    "success": null,
+  },
+  "before": {
+    "closes": 0,
+    "error": "Already locked",
+    "loading": false,
+    "success": null,
+  },
+  "calls": [
+    [
+      "obj-1",
+      "p",
+      5,
+    ],
+  ],
+  "during": true,
+  "early": 0,
+}
+`;
+
+exports[`UploadObject.uploadObject (golden) reports a failure 1`] = `
+{
+  "after": {
+    "closes": 0,
+    "error": "Invalid",
+    "loading": false,
+    "success": false,
+  },
+  "before": {
+    "closes": 0,
+    "error": "Invalid",
+    "loading": false,
+    "success": false,
+  },
+  "during": true,
+  "log": [
+    [
+      "register",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "save",
+      "1-2",
+      {
+        "mapping": null,
+        "object": {},
+        "register": 1,
+        "schema": 2,
+        "schemas": "",
+      },
+    ],
+  ],
+  "returned": Promise {},
+}
+`;
+
+exports[`UploadObject.uploadObject (golden) reports a failure without a message 1`] = `
+{
+  "after": {
+    "closes": 0,
+    "error": "An error occurred while uploading the object",
+    "loading": false,
+    "success": false,
+  },
+  "before": {
+    "closes": 0,
+    "error": "An error occurred while uploading the object",
+    "loading": false,
+    "success": false,
+  },
+  "during": true,
+  "log": [
+    [
+      "register",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "save",
+      "1-2",
+      {
+        "mapping": null,
+        "object": {},
+        "register": 1,
+        "schema": 2,
+        "schemas": "",
+      },
+    ],
+  ],
+  "returned": Promise {},
+}
+`;
+
+exports[`UploadObject.uploadObject (golden) reports nothing saved 1`] = `
+{
+  "after": {
+    "closes": 0,
+    "error": false,
+    "loading": false,
+    "success": false,
+  },
+  "before": {
+    "closes": 0,
+    "error": false,
+    "loading": false,
+    "success": false,
+  },
+  "during": true,
+  "log": [
+    [
+      "register",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "save",
+      "1-2",
+      {
+        "mapping": null,
+        "object": {},
+        "register": 1,
+        "schema": 2,
+        "schemas": "",
+      },
+    ],
+  ],
+  "returned": Promise {},
+}
+`;
+
+exports[`UploadObject.uploadObject (golden) saves with a mapping 1`] = `
+{
+  "after": {
+    "closes": 1,
+    "error": false,
+    "loading": false,
+    "success": true,
+  },
+  "before": {
+    "closes": 0,
+    "error": false,
+    "loading": false,
+    "success": true,
+  },
+  "during": true,
+  "log": [
+    [
+      "register",
+      "3-7",
+      7,
+      3,
+    ],
+    [
+      "save",
+      "3-7",
+      {
+        "mapping": 9,
+        "object": {
+          "a": 1,
+        },
+        "register": 3,
+        "schema": 7,
+        "schemas": "",
+      },
+    ],
+  ],
+  "returned": Promise {},
+}
+`;
+
+exports[`UploadObject.uploadObject (golden) saves without a mapping 1`] = `
+{
+  "after": {
+    "closes": 1,
+    "error": false,
+    "loading": false,
+    "success": true,
+  },
+  "before": {
+    "closes": 0,
+    "error": false,
+    "loading": false,
+    "success": true,
+  },
+  "during": true,
+  "log": [
+    [
+      "register",
+      "-",
+      "",
+      "",
+    ],
+    [
+      "save",
+      "-",
+      {
+        "mapping": null,
+        "object": "",
+        "register": "",
+        "schema": "",
+        "schemas": "",
+      },
+    ],
+  ],
+  "returned": Promise {},
+}
+`;

@@ -16,6 +16,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
@@ -265,7 +266,7 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/runAs/');
 
-		$this->node->execute($this->items([['id' => 'a']]), $this->config(), ['runAs' => null]);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['id' => 'a']]), config: $this->config(), context: ['runAs' => null]));
 
 	}//end testARunWithNoOwnerWritesNothing()
 
@@ -274,11 +275,11 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute(
-			$this->items([['id' => 'a']]),
-			$this->config(['user' => 'alice', 'owner' => 'alice']),
-			[]
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 'a']]),
+			config: $this->config(['user' => 'alice', 'owner' => 'alice']),
+			context: []
+		));
 
 	}//end testAnOwnerNamedInTheConfigurationCannotSubstituteForTheRunOwner()
 
@@ -287,7 +288,7 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute($this->items([['id' => 'a']]), $this->config(), ['runAs' => 'nobody']);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['id' => 'a']]), config: $this->config(), context: ['runAs' => 'nobody']));
 
 	}//end testAnUnknownOwnerAccountAlsoFailsClosed()
 
@@ -310,7 +311,7 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/disabled/');
 
-		$this->node->execute($this->items([['id' => 'a']]), $this->config(), ['runAs' => 'dormant']);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['id' => 'a']]), config: $this->config(), context: ['runAs' => 'dormant']));
 
 	}//end testADisabledActingIdentityFailsClosed()
 
@@ -339,8 +340,8 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute($this->items([['name' => 'a']]), $this->config(['onConflict' => 'fail', 'fields' => ['title' => '{{name}}']]), $this->registerContext);
-		$this->node->execute($this->items([['name' => 'b']]), $this->config(['fields' => ['title' => '{{name}}']]), $this->registerContext);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['name' => 'a']]), config: $this->config(['onConflict' => 'fail', 'fields' => ['title' => '{{name}}']]), context: $this->registerContext));
+		$this->node->execute(new FlowNodeCall(items: $this->items([['name' => 'b']]), config: $this->config(['fields' => ['title' => '{{name}}']]), context: $this->registerContext));
 
 		$this->assertSame([true, false], $flags);
 
@@ -364,11 +365,11 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			$this->items([['name' => 'a'], ['name' => 'b'], ['name' => 'c']]),
-			$this->config(['fields' => ['title' => '{{name}}']]),
-			$this->registerContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['name' => 'a'], ['name' => 'b'], ['name' => 'c']]),
+			config: $this->config(['fields' => ['title' => '{{name}}']]),
+			context: $this->registerContext
+		));
 
 		$this->assertCount(3, $seen, 'three items, three writes');
 		$this->assertCount(3, $out, 'three items, three output items');
@@ -406,9 +407,9 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute(
-			$this->items([['name' => 'a']]),
-			$this->config(
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['name' => 'a']]),
+			config: $this->config(
 				[
 					'_rbac' => false,
 					'_multitenancy' => false,
@@ -417,8 +418,8 @@ class ObjectWriteNodeTest extends TestCase {
 					'hardDelete' => true,
 				]
 			),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 
 		$this->assertSame(['rbac' => true, 'multitenancy' => true, 'silent' => false], $seen);
 
@@ -428,7 +429,7 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->objects->method('saveObject')->willReturn($this->entity('uuid-1', ['title' => 'a']));
 
 		$item = FlowItems::item(json: ['name' => 'a'], options: new FlowItemOptions(binary: ['file' => ['mimeType' => 'text/plain']]));
-		$out = $this->node->execute([$item], $this->config(), $this->registerContext);
+		$out = $this->node->execute(new FlowNodeCall(items: [$item], config: $this->config(), context: $this->registerContext));
 
 		$this->assertSame(['file' => ['mimeType' => 'text/plain']], $out[0]['binary']);
 
@@ -437,7 +438,7 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testNoItemsInMeansNoWrites(): void {
 		$this->objects->expects($this->never())->method('saveObject');
 
-		$this->assertSame([], $this->node->execute([], $this->config(), $this->registerContext));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall(items: [], config: $this->config(), context: $this->registerContext)));
 
 	}//end testNoItemsInMeansNoWrites()
 
@@ -456,11 +457,11 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute(
-			$this->items([$json]),
-			$this->config(array_merge(['fields' => $fields], $extraConfig)),
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([$json]),
+			config: $this->config(array_merge(['fields' => $fields], $extraConfig)),
+			context: $this->registerContext
+		));
 
 		return (array)$payload;
 	}//end payloadFor()
@@ -530,11 +531,11 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute(
-			$this->items([['other' => 1]]),
-			$this->config(['fields' => ['title' => '{{missing.path}}'], 'onMissing' => 'fail']),
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['other' => 1]]),
+			config: $this->config(['fields' => ['title' => '{{missing.path}}'], 'onMissing' => 'fail']),
+			context: $this->registerContext
+		));
 
 	}//end testOnMissingFailFailsTheItemInsteadOfOmitting()
 
@@ -586,9 +587,9 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute(
-			$this->items([['tenant' => 'be']]),
-			$this->config(
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['tenant' => 'be']]),
+			config: $this->config(
 				[
 					'operation' => 'update',
 					'fields' => ['status' => 'seen'],
@@ -598,8 +599,8 @@ class ObjectWriteNodeTest extends TestCase {
 					],
 				]
 			),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 
 		$this->assertSame('u-be', $patched, 'pairs are ANDed, never ORed');
 
@@ -620,17 +621,17 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/\b3\b/');
 
-		$this->node->execute(
-			$this->items([[]]),
-			$this->config(
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([[]]),
+			config: $this->config(
 				[
 					'operation' => 'update',
 					'fields' => ['status' => 'seen'],
 					'match' => [['property' => 'sourceId', 'value' => 's1']],
 				]
 			),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 
 	}//end testAnAmbiguousMatchFailsNamingTheCountAndWritesNothing()
 
@@ -642,17 +643,17 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute(
-			$this->items([[]]),
-			$this->config(
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([[]]),
+			config: $this->config(
 				[
 					'operation' => 'update',
 					'fields' => ['status' => 'seen'],
 					'match' => [['property' => 'sourceId', 'value' => 's1']],
 				]
 			),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 
 	}//end testAnUpdateThatMatchesNothingIsAnErrorNotASilentInsert()
 
@@ -665,9 +666,9 @@ class ObjectWriteNodeTest extends TestCase {
 
 		// `onMissing` is the default `omit`; a match key is still never omitted,
 		// because omitting one widens the match rather than narrowing it.
-		$this->node->execute(
-			$this->items([['sourceId' => 's1']]),
-			$this->config(
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['sourceId' => 's1']]),
+			config: $this->config(
 				[
 					'operation' => 'update',
 					'fields' => ['status' => 'seen'],
@@ -677,8 +678,8 @@ class ObjectWriteNodeTest extends TestCase {
 					],
 				]
 			),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 
 	}//end testAnUnresolvedPlaceholderInAMatchValueAlwaysFailsTheItem()
 
@@ -689,17 +690,17 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->objects->expects($this->never())->method('patchObject');
 		$this->objects->expects($this->once())->method('saveObject')->willReturn($this->entity('new', []));
 
-		$out = $this->node->execute(
-			$this->items([['id' => 'x']]),
-			$this->config(
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 'x']]),
+			config: $this->config(
 				[
 					'operation' => 'upsert',
 					'fields' => ['sourceId' => '{{id}}'],
 					'match' => [['property' => 'sourceId', 'value' => '{{id}}']],
 				]
 			),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 
 		$this->assertCount(1, $out);
 
@@ -713,17 +714,17 @@ class ObjectWriteNodeTest extends TestCase {
 			->method('patchObject')
 			->willReturn($this->entity('u-1', ['sourceId' => 'x', 'title' => 'Alpha']));
 
-		$this->node->execute(
-			$this->items([['id' => 'x']]),
-			$this->config(
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 'x']]),
+			config: $this->config(
 				[
 					'operation' => 'upsert',
 					'fields' => ['sourceId' => '{{id}}'],
 					'match' => [['property' => 'sourceId', 'value' => '{{id}}']],
 				]
 			),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 
 	}//end testUpsertPatchesWhenAMatchExists()
 
@@ -740,17 +741,17 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$report = new FlowStepReport();
 
-		$this->node->execute(
-			$this->items([['id' => 'x'], ['id' => 'y']]),
-			$this->config(
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 'x'], ['id' => 'y']]),
+			config: $this->config(
 				[
 					'operation' => 'upsert',
 					'fields' => ['sourceId' => '{{id}}'],
 					'match' => [['property' => 'sourceId', 'value' => '{{id}}']],
 				]
 			),
-			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
-		);
+			context: $this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+		));
 
 		$this->assertSame(
 			[
@@ -778,17 +779,17 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			$this->items([['id' => 'x']]),
-			$this->config(
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 'x']]),
+			config: $this->config(
 				[
 					'operation' => 'update',
 					'fields' => ['status' => 'seen'],
 					'match' => [['property' => 'sourceId', 'value' => '{{id}}']],
 				]
 			),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 
 		$this->assertSame('u-1', $seen['objectId']);
 		$this->assertSame(['status' => 'seen'], $seen['data'], 'only the mapped fields are sent; the merge is the service\'s job');
@@ -814,9 +815,9 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute(
-			$this->items([['id' => 'x']]),
-			$this->config(
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 'x']]),
+			config: $this->config(
 				[
 					'operation' => 'update',
 					'replace' => true,
@@ -824,8 +825,8 @@ class ObjectWriteNodeTest extends TestCase {
 					'match' => [['property' => 'sourceId', 'value' => '{{id}}']],
 				]
 			),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 
 		$this->assertSame('u-1', $seenUuid);
 
@@ -867,11 +868,11 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			$this->items([['retiredId' => 'r1']]),
-			$this->deleteConfig(),
-			$this->registerContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['retiredId' => 'r1']]),
+			config: $this->deleteConfig(),
+			context: $this->registerContext
+		));
 
 		$this->assertSame('u-gone', $seen['uuid']);
 		$this->assertSame($this->register, $seen['register'], 'the delete is scoped to one magic table');
@@ -903,11 +904,11 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$report = new FlowStepReport();
 
-		$this->node->execute(
-			$this->items([['retiredId' => 'r1'], ['retiredId' => 'r2']]),
-			$this->deleteConfig(),
-			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['retiredId' => 'r1'], ['retiredId' => 'r2']]),
+			config: $this->deleteConfig(),
+			context: $this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+		));
 
 		$this->assertSame(
 			[
@@ -938,11 +939,11 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$report = new FlowStepReport();
 
-		$out = $this->node->execute(
-			$this->items(records: [['retiredId' => 'r1']]),
-			$this->deleteConfig(),
-			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items(records: [['retiredId' => 'r1']]),
+			config: $this->deleteConfig(),
+			context: $this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+		));
 
 		$this->assertFalse(
 			condition: $out[0]['json']['deleted'],
@@ -967,7 +968,7 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 
-		$this->node->execute($this->items([['retiredId' => 'r1']]), $this->deleteConfig(), $this->registerContext);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['retiredId' => 'r1']]), config: $this->deleteConfig(), context: $this->registerContext));
 
 	}//end testADeleteMatchingNothingErrorsByDefault()
 
@@ -975,11 +976,11 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->tableOf([]);
 		$this->objects->expects($this->never())->method('deleteObject');
 
-		$out = $this->node->execute(
-			$this->items([['retiredId' => 'r1']]),
-			$this->deleteConfig(['onNoMatch' => 'skip']),
-			$this->registerContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['retiredId' => 'r1']]),
+			config: $this->deleteConfig(['onNoMatch' => 'skip']),
+			context: $this->registerContext
+		));
 
 		$this->assertFalse($out[0]['json']['deleted']);
 		$this->assertSame('r1', $out[0]['json']['retiredId'], 'the input record is carried through');
@@ -1014,7 +1015,7 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute($this->items([['retiredId' => 'r1']]), $config, $this->registerContext);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['retiredId' => 'r1']]), config: $config, context: $this->registerContext));
 
 		return $seen;
 
@@ -1086,11 +1087,11 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->tableOf([['uuid' => 'u-gone', 'data' => ['sourceId' => 'r1']]]);
 		$this->objects->method('deleteObject')->willReturn(true);
 
-		$out = $this->node->execute(
-			$this->items([['retiredId' => 'r1', 'issue' => 489]]),
-			$this->deleteConfig(['output' => 'removed']),
-			$this->registerContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['retiredId' => 'r1', 'issue' => 489]]),
+			config: $this->deleteConfig(['output' => 'removed']),
+			context: $this->registerContext
+		));
 
 		$json = $out[0]['json'];
 
@@ -1112,11 +1113,11 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->tableOf([['uuid' => 'u-gone', 'data' => ['sourceId' => 'r1']]]);
 		$this->objects->method('deleteObject')->willReturn(true);
 
-		$out = $this->node->execute(
-			$this->items([['retiredId' => 'r1', 'issue' => 489]]),
-			$this->deleteConfig(),
-			$this->registerContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['retiredId' => 'r1', 'issue' => 489]]),
+			config: $this->deleteConfig(),
+			context: $this->registerContext
+		));
 
 		$json = $out[0]['json'];
 
@@ -1140,11 +1141,11 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->tableOf([]);
 		$this->objects->expects($this->never())->method('deleteObject');
 
-		$out = $this->node->execute(
-			$this->items([['retiredId' => 'r1', 'issue' => 489]]),
-			$this->deleteConfig(['onNoMatch' => 'skip', 'output' => 'removed']),
-			$this->registerContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['retiredId' => 'r1', 'issue' => 489]]),
+			config: $this->deleteConfig(['onNoMatch' => 'skip', 'output' => 'removed']),
+			context: $this->registerContext
+		));
 
 		$json = $out[0]['json'];
 
@@ -1167,7 +1168,7 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/\b2\b/');
 
-		$this->node->execute($this->items([['retiredId' => 'r1']]), $this->deleteConfig(), $this->registerContext);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['retiredId' => 'r1']]), config: $this->deleteConfig(), context: $this->registerContext));
 
 	}//end testAnAmbiguousDeleteMatchFailsRatherThanChoosing()
 
@@ -1181,7 +1182,7 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('APPEND_ONLY');
 
-		$this->node->execute($this->items([['retiredId' => 'r1']]), $this->deleteConfig(), $this->registerContext);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['retiredId' => 'r1']]), config: $this->deleteConfig(), context: $this->registerContext));
 
 	}//end testAServiceRefusalIsNeverSwallowedIntoAHollowSuccess()
 
@@ -1190,11 +1191,11 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testAStepUnderItsCapWritesNormally(): void {
 		$this->objects->expects($this->exactly(3))->method('saveObject')->willReturn($this->entity('u', []));
 
-		$out = $this->node->execute(
-			$this->items([['n' => 1], ['n' => 2], ['n' => 3]]),
-			$this->config(['maxWrites' => 10]),
-			$this->registerContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['n' => 1], ['n' => 2], ['n' => 3]]),
+			config: $this->config(['maxWrites' => 10]),
+			context: $this->registerContext
+		));
 
 		$this->assertCount(3, $out);
 
@@ -1216,7 +1217,7 @@ class ObjectWriteNodeTest extends TestCase {
 		}
 
 		try {
-			$this->node->execute($this->items($records), $this->config(['maxWrites' => 10]), $this->registerContext);
+			$this->node->execute(new FlowNodeCall(items: $this->items($records), config: $this->config(['maxWrites' => 10]), context: $this->registerContext));
 			$this->fail('The step should not have completed: it was asked for fifty writes under a cap of ten.');
 		} catch (RuntimeException $e) {
 			$this->assertMatchesRegularExpression('/\b10\b/', $e->getMessage(), 'the error names the cap');
@@ -1235,7 +1236,7 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$result = null;
 		try {
-			$result = $this->node->execute($this->items($records), $this->config(['maxWrites' => 5]), $this->registerContext);
+			$result = $this->node->execute(new FlowNodeCall(items: $this->items($records), config: $this->config(['maxWrites' => 5]), context: $this->registerContext));
 		} catch (RuntimeException $e) {
 			$this->addToAssertionCount(1);
 		}
@@ -1260,7 +1261,7 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		try {
-			$this->node->execute($this->items($records), $this->deleteConfig(['maxWrites' => 5]), $this->registerContext);
+			$this->node->execute(new FlowNodeCall(items: $this->items($records), config: $this->deleteConfig(['maxWrites' => 5]), context: $this->registerContext));
 		} finally {
 			$this->assertSame(5, $deletes, 'the sixth delete is refused');
 		}
@@ -1293,11 +1294,11 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->expectException(exception: RuntimeException::class);
 		try {
-			$this->node->execute(
-				$this->items(records: $records),
-				$this->deleteConfig(overrides: ['maxWrites' => 5]),
-				$this->registerContext
-			);
+			$this->node->execute(new FlowNodeCall(
+				items: $this->items(records: $records),
+				config: $this->deleteConfig(overrides: ['maxWrites' => 5]),
+				context: $this->registerContext
+			));
 		} finally {
 			$this->assertSame(expected: 5, actual: $attempts, message: 'the sixth attempt is refused, failed or not');
 		}
@@ -1334,7 +1335,7 @@ class ObjectWriteNodeTest extends TestCase {
 			new FlowNodePresentation($l10n, $this->createMock(IURLGenerator::class))
 		);
 
-		$node->execute($this->items([['n' => 1]]), $this->config(), $this->registerContext);
+		$node->execute(new FlowNodeCall(items: $this->items([['n' => 1]]), config: $this->config(), context: $this->registerContext));
 
 		$this->assertSame(1000, $seenDefault, 'the shipped default cap is 1000 writes per step execution');
 
@@ -1359,11 +1360,11 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			$this->items([['repo' => 'ConductionNL/hydra', 'issue' => 410]]),
-			$this->config(['output' => 'lock', 'fields' => ['title' => '{{repo}}']]),
-			$this->registerContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['repo' => 'ConductionNL/hydra', 'issue' => 410]]),
+			config: $this->config(['output' => 'lock', 'fields' => ['title' => '{{repo}}']]),
+			context: $this->registerContext
+		));
 
 		// What the run was carrying is still there.
 		$this->assertSame('ConductionNL/hydra', $out[0]['json']['repo']);
@@ -1389,11 +1390,11 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			$this->items([['repo' => 'ConductionNL/hydra']]),
-			$this->config(['fields' => ['title' => 'literal']]),
-			$this->registerContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['repo' => 'ConductionNL/hydra']]),
+			config: $this->config(['fields' => ['title' => 'literal']]),
+			context: $this->registerContext
+		));
 
 		$this->assertArrayNotHasKey('repo', $out[0]['json']);
 		$this->assertSame('uuid-1', $out[0]['json']['uuid']);
@@ -1572,11 +1573,11 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			$this->items([['title' => 'a'], ['title' => 'b'], ['title' => 'c']]),
-			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
-			$this->registerContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['title' => 'a'], ['title' => 'b'], ['title' => 'c']]),
+			config: $this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+			context: $this->registerContext
+		));
 
 		$this->assertCount(3, $sent);
 		$ids = array_column($sent, 'id');
@@ -1608,17 +1609,17 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$this->node->execute(
-			$this->items([['uuid' => 'row-1', 'title' => 'a'], ['uuid' => 'row-2', 'title' => 'b']]),
-			$this->config([
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['uuid' => 'row-1', 'title' => 'a'], ['uuid' => 'row-2', 'title' => 'b']]),
+			config: $this->config([
 				'operation' => ObjectWriteNode::OP_UPSERT,
 				'match' => ['@self.uuid' => '{{uuid}}'],
 				'replace' => true,
 				'bulk' => true,
 				'fields' => ['title' => '{{title}}'],
 			]),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 
 		$this->assertSame(['row-1', 'row-2'], array_column($sent, 'id'));
 	}
@@ -1634,17 +1635,17 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/never omitted/');
-		$this->node->execute(
-			$this->items([['title' => 'no-uuid-here']]),
-			$this->config([
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['title' => 'no-uuid-here']]),
+			config: $this->config([
 				'operation' => ObjectWriteNode::OP_UPSERT,
 				'match' => ['@self.uuid' => '{{uuid}}'],
 				'replace' => true,
 				'bulk' => true,
 				'fields' => ['title' => '{{title}}'],
 			]),
-			$this->registerContext
-		);
+			context: $this->registerContext
+		));
 	}
 
 	/**
@@ -1658,11 +1659,11 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/nothing was written/');
-		$this->node->execute(
-			$this->items([['title' => 'a'], ['title' => 'b'], ['title' => 'c']]),
-			$this->config(['bulk' => true, 'maxWrites' => 2, 'fields' => ['title' => '{{title}}']]),
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['title' => 'a'], ['title' => 'b'], ['title' => 'c']]),
+			config: $this->config(['bulk' => true, 'maxWrites' => 2, 'fields' => ['title' => '{{title}}']]),
+			context: $this->registerContext
+		));
 	}
 
 	/**
@@ -1682,11 +1683,11 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/rejected 1 of its rows.*Row 2 failed schema validation.*not rolled back/');
-		$this->node->execute(
-			$this->items([['title' => 'a']]),
-			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
-			$this->registerContext
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['title' => 'a']]),
+			config: $this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+			context: $this->registerContext
+		));
 	}
 
 	/**
@@ -1712,11 +1713,11 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			$this->items([['title' => 'a']]),
-			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
-			$this->registerContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['title' => 'a']]),
+			config: $this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+			context: $this->registerContext
+		));
 
 		$this->assertSame('slug-a', $out[0]['json']['serverComputed']);
 		$this->assertArrayNotHasKey('@self', $out[0]['json']);
@@ -1732,11 +1733,11 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testASkippedItemIsEmittedButNotWritten(): void {
 		$this->objects->expects($this->never())->method('saveObject');
 
-		$out = $this->node->execute(
-			$this->items([['title' => 'a', 'contract' => ['outcome' => 'skip']]]),
-			$this->config(['skipWhen' => 'contract.outcome']),
-			$this->registerContext
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['title' => 'a', 'contract' => ['outcome' => 'skip']]]),
+			config: $this->config(['skipWhen' => 'contract.outcome']),
+			context: $this->registerContext
+		));
 
 		$this->assertCount(1, $out, 'a skipped item must still be emitted, never dropped');
 		$this->assertSame('a', $out[0]['json']['title']);
@@ -1758,15 +1759,15 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			$this->items([
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([
 				['title' => 'keep-1', 'contract' => ['outcome' => 'create']],
 				['title' => 'skip-me', 'contract' => ['outcome' => 'skip']],
 				['title' => 'keep-2', 'contract' => ['outcome' => 'update']],
 			]),
-			$this->config(['skipWhen' => 'contract.outcome', 'fields' => ['title' => '{{title}}']]),
-			$this->registerContext
-		);
+			config: $this->config(['skipWhen' => 'contract.outcome', 'fields' => ['title' => '{{title}}']]),
+			context: $this->registerContext
+		));
 
 		$this->assertCount(3, $out, 'every input item must be emitted');
 		$this->assertSame(['keep-1', 'keep-2'], $written, 'only unskipped items are written');
@@ -1781,15 +1782,15 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testSkippedItemsDoNotConsumeTheWriteCap(): void {
 		$this->objects->expects($this->never())->method('saveObject');
 
-		$out = $this->node->execute(
-			$this->items([
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([
 				['title' => 'a', 'contract' => ['outcome' => 'skip']],
 				['title' => 'b', 'contract' => ['outcome' => 'skip']],
 				['title' => 'c', 'contract' => ['outcome' => 'skip']],
 			]),
-			$this->config(['skipWhen' => 'contract.outcome', 'maxWrites' => 1]),
-			$this->registerContext
-		);
+			config: $this->config(['skipWhen' => 'contract.outcome', 'maxWrites' => 1]),
+			context: $this->registerContext
+		));
 
 		$this->assertCount(3, $out);
 	}
@@ -1803,15 +1804,15 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testOnlyADeliberateSkipValueSkips(): void {
 		$this->objects->expects($this->exactly(2))->method('saveObject')->willReturn($this->entity('u', []));
 
-		$out = $this->node->execute(
-			$this->items([
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([
 				['title' => 'a', 'flag' => 'false'],
 				['title' => 'b', 'flag' => '0'],
 				['title' => 'c', 'flag' => true],
 			]),
-			$this->config(['skipWhen' => 'flag', 'fields' => ['title' => '{{title}}']]),
-			$this->registerContext
-		);
+			config: $this->config(['skipWhen' => 'flag', 'fields' => ['title' => '{{title}}']]),
+			context: $this->registerContext
+		));
 
 		$this->assertCount(3, $out);
 	}
@@ -1824,14 +1825,14 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testWithoutSkipWhenEveryItemIsStillWritten(): void {
 		$this->objects->expects($this->exactly(2))->method('saveObject')->willReturn($this->entity('u', []));
 
-		$this->node->execute(
-			$this->items([
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([
 				['title' => 'a', 'contract' => ['outcome' => 'skip']],
 				['title' => 'b', 'contract' => ['outcome' => 'skip']],
 			]),
-			$this->config(['fields' => ['title' => '{{title}}']]),
-			$this->registerContext
-		);
+			config: $this->config(['fields' => ['title' => '{{title}}']]),
+			context: $this->registerContext
+		));
 	}
 
 	/**
@@ -1850,25 +1851,25 @@ class ObjectWriteNodeTest extends TestCase {
 			}
 		);
 
-		$out = $this->node->execute(
-			$this->items([
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([
 				['title' => 'a', 'contract' => ['outcome' => 'skip']],
 				['title' => 'b', 'contract' => ['outcome' => 'create']],
 			]),
-			$this->config(['bulk' => true, 'skipWhen' => 'contract.outcome', 'fields' => ['title' => '{{title}}']]),
-			$this->registerContext
-		);
+			config: $this->config(['bulk' => true, 'skipWhen' => 'contract.outcome', 'fields' => ['title' => '{{title}}']]),
+			context: $this->registerContext
+		));
 
 		$this->assertCount(1, $sent, 'only the unskipped row is sent');
 		$this->assertCount(2, $out, 'both items are emitted');
 
 		// An all-skipped page must not reach the service at all.
 		$this->objects->expects($this->never())->method('saveObjects');
-		$allSkipped = $this->node->execute(
-			$this->items([['title' => 'x', 'contract' => ['outcome' => 'skip']]]),
-			$this->config(['bulk' => true, 'skipWhen' => 'contract.outcome', 'fields' => ['title' => '{{title}}']]),
-			$this->registerContext
-		);
+		$allSkipped = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['title' => 'x', 'contract' => ['outcome' => 'skip']]]),
+			config: $this->config(['bulk' => true, 'skipWhen' => 'contract.outcome', 'fields' => ['title' => '{{title}}']]),
+			context: $this->registerContext
+		));
 		$this->assertCount(1, $allSkipped);
 	}
 
@@ -1905,8 +1906,8 @@ class ObjectWriteNodeTest extends TestCase {
 
 		$report = new FlowStepReport();
 
-		$this->node->execute(
-			$this->items(
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items(
 				[
 					['title' => 'a'],
 					['title' => 'b'],
@@ -1916,9 +1917,9 @@ class ObjectWriteNodeTest extends TestCase {
 					['title' => 'f'],
 				]
 			),
-			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
-			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
-		);
+			config: $this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+			context: $this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+		));
 
 		$this->assertSame(
 			[
@@ -1957,14 +1958,14 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->expectExceptionMessage('could not be converted to string');
 
 		try {
-			$this->node->execute(
-				$this->items([['title' => 'a']]),
-				// `output` is normally a string key name; an object here has
+			$this->node->execute(new FlowNodeCall(
+				items: $this->items([['title' => 'a']]),
+				config: // `output` is normally a string key name; an object here has
 				// no business meaning — it exists purely to make outputJson()'s
 				// `(string)` cast fail with a real PHP `\Error`.
 				$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}'], 'output' => new \stdClass()]),
-				$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
-			);
+				context: $this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+			));
 		} finally {
 			$this->assertSame([], $report->take(), 'no report is written for a step that did not finish');
 		}
@@ -1980,11 +1981,11 @@ class ObjectWriteNodeTest extends TestCase {
 	public function testPreviewNamesTheFieldsItWouldSetAndWritesNothing(): void {
 		$this->objects->expects($this->never())->method('saveObject');
 
-		$preview = $this->node->preview(
+		$preview = $this->node->preview(new FlowNodeCall(
 			items: [FlowItems::item(json: ['id' => 'o1'])],
 			config: ['register' => 'dossiq', 'schema' => 'case', 'operation' => 'update', 'fields' => ['status' => 'closed', 'closedBy' => '{{ user }}']],
 			context: []
-		);
+		));
 
 		self::assertSame(
 			[

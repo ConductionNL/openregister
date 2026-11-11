@@ -81,6 +81,21 @@ final class ProcessingActivityAuditCounts {
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	private function query(array $uuids): array {
+		$result = $this->countsPerAction(uuids: $uuids)->executeQuery();
+		$rows = $result->fetchAll();
+		$result->closeCursor();
+
+		return $rows;
+	}//end query()
+
+	/**
+	 * The audit row count per activity and action, for some activities.
+	 *
+	 * @param array<int, string> $uuids The activity uuids.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function countsPerAction(array $uuids): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('processing_activity_id', 'action')
 			->selectAlias($qb->func()->count('*'), 'cnt')
@@ -93,12 +108,8 @@ final class ProcessingActivityAuditCounts {
 			)
 			->groupBy('processing_activity_id', 'action');
 
-		$result = $qb->executeQuery();
-		$rows = $result->fetchAll();
-		$result->closeCursor();
-
-		return $rows;
-	}//end query()
+		return $qb;
+	}//end countsPerAction()
 
 	/**
 	 * Fold the grouped rows into per-activity totals.

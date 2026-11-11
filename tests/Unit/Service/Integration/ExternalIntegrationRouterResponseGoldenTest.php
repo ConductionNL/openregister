@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
@@ -150,8 +151,8 @@ final class ExternalIntegrationRouterResponseGoldenTest extends TestCase {
 		$provider = new GoldenExternalProvider(storage: 'external');
 
 		return [
-			'call'     => $this->answer(run: static fn () => $router->call($provider, 'POST', 'items', ['query' => ['q' => 1]])),
-			'withMeta' => $this->answer(run: static fn () => $router->callWithMeta($provider, 'GET', 'items')),
+			'call'     => $this->answer(run: static fn () => $router->call($provider, new UpstreamRequest(method: 'POST', path: 'items', options: ['query' => ['q' => 1]]))),
+			'withMeta' => $this->answer(run: static fn () => $router->callWithMeta($provider, new UpstreamRequest(method: 'GET', path: 'items', options: []))),
 			'logs'     => $logger->lines,
 		];
 	}//end both()

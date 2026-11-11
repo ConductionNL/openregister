@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
@@ -207,7 +208,7 @@ final class ObjectWriteAccessGoldenTest extends TestCase {
 
 		$outcome = [];
 		try {
-			$outcome['out'] = $this->node(properties: ($case['properties'] ?? []))->execute(items: $items, config: $config, context: $context);
+			$outcome['out'] = $this->node(properties: ($case['properties'] ?? []))->execute(new FlowNodeCall(items: $items, config: $config, context: $context));
 		} catch (SchemaNotInRegisterException $e) {
 			$outcome['failure'] = get_class($e) . ': ' . $e->getMessage();
 		} catch (Throwable $e) {

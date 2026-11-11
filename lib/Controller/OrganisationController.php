@@ -33,9 +33,11 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Controller\Support\MembershipChangeRun;
+use OCA\OpenRegister\Controller\Support\ParentAssignmentRun;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Controller\Support\OrganisationEdit;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsage\UsageRange;
@@ -53,6 +55,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -75,6 +78,46 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class OrganisationController extends Controller {
+
+	/**
+	 * The refusal of a join or leave for another user, by operation.
+	 *
+	 * @var array<string, string>
+	 */
+	private const MEMBERSHIP_REFUSALS = [
+		MembershipChangeRun::JOIN => 'Only admins or organisation owners may enroll other users',
+		MembershipChangeRun::LEAVE => 'Only admins or organisation owners may remove other users',
+	];
+
+	/**
+	 * The error of a join or leave the service declined, by operation.
+	 *
+	 * @var array<string, string>
+	 */
+	private const MEMBERSHIP_FAILURES = [
+		MembershipChangeRun::JOIN => 'Failed to join organisation',
+		MembershipChangeRun::LEAVE => 'Failed to leave organisation',
+	];
+
+	/**
+	 * The log message of a join or leave that threw, by operation.
+	 *
+	 * @var array<string, string>
+	 */
+	private const MEMBERSHIP_FAILURE_LOGS = [
+		MembershipChangeRun::JOIN => '[OrganisationController] Failed to join organisation',
+		MembershipChangeRun::LEAVE => '[OrganisationController] Failed to leave organisation',
+	];
+
+	/**
+	 * How the failure log names the caller acting for themselves, by operation.
+	 *
+	 * @var array<string, string>
+	 */
+	private const MEMBERSHIP_LOG_CALLER = [
+		MembershipChangeRun::JOIN => 'current_user',
+		MembershipChangeRun::LEAVE => 'current-user',
+	];
 
 	/**
 	 * Organisation service for business logic
@@ -479,69 +522,21 @@ class OrganisationController extends Controller {
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function join(string $uuid): JSONResponse {
+		$run = new MembershipChangeRun(operation: MembershipChangeRun::JOIN, uuid: $uuid);
 		try {
 			// Get optional userId from request body.
 			$requestData = $this->request->getParams();
-			$userId = $requestData['userId'] ?? null;
-
-			// Authorization: enrolling another user is privileged. A caller may
-			// only enroll themselves; admins or organisation owners may enroll
-			// arbitrary users. This blocks the cross-user enroll vector where
-			// any authenticated user could otherwise add anyone (incl. admins)
-			// to an organisation whose UUID they know.
-			$currentUser = $this->userSession->getUser();
-			if ($currentUser === null) {
-				return new JSONResponse(
-					data: ['error' => 'Not authenticated'],
-					statusCode: Http::STATUS_UNAUTHORIZED
-				);
-			}
-
-			if ($userId !== null && $userId !== $currentUser->getUID()
-				&& $this->canManageOrganisationMembers(organisationUuid: $uuid) === false
-			) {
-				return new JSONResponse(
-					data: ['error' => 'Only admins or organisation owners may enroll other users'],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
+			$run->userId = $requestData['userId'] ?? null;
+			$refusal = $this->membershipRefusal(run: $run);
+			if ($refusal !== null) {
+				return $refusal;
 			}
 
 			// Join organisation with optional userId parameter.
-			$success = $this->organisationService->joinOrganisation(organisationUuid: $uuid, targetUserId: $userId);
-
-			if ($success === true) {
-				return new JSONResponse(
-					data: [
-						'message' => 'Successfully joined organisation',
-					],
-					statusCode: Http::STATUS_OK
-				);
-			}
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to join organisation',
-				],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			$success = $this->organisationService->joinOrganisation(organisationUuid: $uuid, targetUserId: $run->userId);
+			return self::membershipOutcome(run: $run, success: $success);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[OrganisationController] Failed to join organisation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'userId' => $requestData['userId'] ?? 'current_user',
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->membershipFailure(run: $run, error: $e);
 		}//end try
 	}//end join()
 
@@ -559,76 +554,172 @@ class OrganisationController extends Controller {
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function leave(string $uuid): JSONResponse {
+		$run = new MembershipChangeRun(operation: MembershipChangeRun::LEAVE, uuid: $uuid);
 		try {
 			// Check if a specific userId is provided in the request body.
 			$data = $this->request->getParams();
-			$userId = $data['userId'] ?? null;
-
-			// Authorization: removing another user from an organisation is
-			// privileged. A caller may only remove themselves; admins or
-			// organisation owners may remove arbitrary users. This blocks the
-			// cross-user removal vector where any authenticated user could
-			// otherwise kick anyone (incl. admins) out of an organisation
-			// whose UUID they know.
-			$currentUser = $this->userSession->getUser();
-			if ($currentUser === null) {
-				return new JSONResponse(
-					data: ['error' => 'Not authenticated'],
-					statusCode: Http::STATUS_UNAUTHORIZED
-				);
+			$run->userId = $data['userId'] ?? null;
+			$refusal = $this->membershipRefusal(run: $run);
+			if ($refusal !== null) {
+				return $refusal;
 			}
 
-			if ($userId !== null && $userId !== $currentUser->getUID()
-				&& $this->canManageOrganisationMembers(organisationUuid: $uuid) === false
-			) {
-				return new JSONResponse(
-					data: ['error' => 'Only admins or organisation owners may remove other users'],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
-			}
-
-			$success = $this->organisationService->leaveOrganisation(organisationUuid: $uuid, targetUserId: $userId);
-
-			if ($success === true) {
-				$message = 'Successfully left organisation';
-				if ($userId !== null) {
-					$message = 'Successfully removed user from organisation';
-				}
-
-				return new JSONResponse(
-					data: [
-						'message' => $message,
-					],
-					statusCode: Http::STATUS_OK
-				);
-			}
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to leave organisation',
-				],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			$success = $this->organisationService->leaveOrganisation(organisationUuid: $uuid, targetUserId: $run->userId);
+			return self::membershipOutcome(run: $run, success: $success);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[OrganisationController] Failed to leave organisation',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'uuid' => $uuid,
-					'userId' => $userId ?? 'current-user',
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->membershipFailure(run: $run, error: $e);
 		}//end try
 	}//end leave()
+
+	/**
+	 * The refusal of a join or leave, or null when the caller may make it.
+	 *
+	 * Authorization: enrolling another user into, or removing another user
+	 * from, an organisation is privileged. A caller may only act for
+	 * themselves; admins or organisation owners may act for arbitrary users.
+	 * This blocks the cross-user vectors where any authenticated user could
+	 * otherwise add anyone (incl. admins) to, or kick anyone out of, an
+	 * organisation whose UUID they know.
+	 *
+	 * @param MembershipChangeRun $run The join or leave.
+	 *
+	 * @return JSONResponse|null 401 without a session, 403 for another user without the right, else null.
+	 */
+	private function membershipRefusal(MembershipChangeRun $run): ?JSONResponse {
+		$currentUser = $this->userSession->getUser();
+		if ($currentUser === null) {
+			return self::notAuthenticatedResponse();
+		}
+
+		if ($this->actsForAnotherUserWithoutRight(run: $run, caller: $currentUser) === true) {
+			return new JSONResponse(
+				data: ['error' => self::MEMBERSHIP_REFUSALS[$run->operation]],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		return null;
+	}//end membershipRefusal()
+
+	/**
+	 * The answer to a caller without a session.
+	 *
+	 * @return JSONResponse
+	 */
+	private static function notAuthenticatedResponse(): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'Not authenticated'],
+			statusCode: Http::STATUS_UNAUTHORIZED
+		);
+	}//end notAuthenticatedResponse()
+
+	/**
+	 * Whether the change is for another user and the caller may not manage the organisation's members.
+	 *
+	 * @param MembershipChangeRun $run    The join or leave.
+	 * @param IUser               $caller The signed-in caller.
+	 *
+	 * @return bool
+	 */
+	private function actsForAnotherUserWithoutRight(MembershipChangeRun $run, IUser $caller): bool {
+		return $run->userId !== null && $run->userId !== $caller->getUID()
+			&& $this->canManageOrganisationMembers(organisationUuid: $run->uuid) === false;
+	}//end actsForAnotherUserWithoutRight()
+
+	/**
+	 * The answer to a join or leave the service accepted or declined.
+	 *
+	 * @param MembershipChangeRun $run     The join or leave.
+	 * @param bool                $success Whether the service made the change.
+	 *
+	 * @return JSONResponse
+	 */
+	private static function membershipOutcome(MembershipChangeRun $run, bool $success): JSONResponse {
+		if ($success === true) {
+			return new JSONResponse(
+				data: [
+					'message' => self::membershipSuccessMessage(run: $run),
+				],
+				statusCode: Http::STATUS_OK
+			);
+		}
+
+		return self::membershipDeclined(run: $run);
+	}//end membershipOutcome()
+
+	/**
+	 * The answer to a join or leave the service declined.
+	 *
+	 * @param MembershipChangeRun $run The join or leave.
+	 *
+	 * @return JSONResponse
+	 */
+	private static function membershipDeclined(MembershipChangeRun $run): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => self::MEMBERSHIP_FAILURES[$run->operation],
+			],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end membershipDeclined()
+
+	/**
+	 * The success message of a join or leave.
+	 *
+	 * @param MembershipChangeRun $run The join or leave.
+	 *
+	 * @return string
+	 */
+	private static function membershipSuccessMessage(MembershipChangeRun $run): string {
+		if ($run->operation === MembershipChangeRun::JOIN) {
+			return 'Successfully joined organisation';
+		}
+
+		if ($run->userId !== null) {
+			return 'Successfully removed user from organisation';
+		}
+
+		return 'Successfully left organisation';
+	}//end membershipSuccessMessage()
+
+	/**
+	 * Log a failed join or leave and answer it with the error.
+	 *
+	 * @param MembershipChangeRun $run   The join or leave.
+	 * @param Exception           $error The failure.
+	 *
+	 * @return JSONResponse
+	 */
+	private function membershipFailure(MembershipChangeRun $run, Exception $error): JSONResponse {
+		$this->logger->error(
+			message: self::MEMBERSHIP_FAILURE_LOGS[$run->operation],
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'uuid' => $run->uuid,
+				'userId' => $run->userId ?? self::MEMBERSHIP_LOG_CALLER[$run->operation],
+				'error' => $error->getMessage(),
+			]
+		);
+
+		return self::errorResponse(error: $error);
+	}//end membershipFailure()
+
+	/**
+	 * A 400 answer carrying an exception's message.
+	 *
+	 * @param Exception $error The failure.
+	 *
+	 * @return JSONResponse
+	 */
+	private static function errorResponse(Exception $error): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => $error->getMessage(),
+			],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end errorResponse()
 
 	/**
 	 * Get organisation details by UUID
@@ -1195,45 +1286,75 @@ class OrganisationController extends Controller {
 	 */
 	private function handleParentUpdate(object $organisation, OrganisationEdit $edit): ?JSONResponse {
 		$data = $edit->data;
-		$uuid = $edit->uuid;
 
 		// Only process if parent key exists in request data.
 		if (array_key_exists('parent', $data) === false) {
 			return null;
 		}
 
-		// Normalize parent value (empty string or null becomes null).
-		$newParent = null;
-		if ($data['parent'] !== '' && $data['parent'] !== null) {
-			$newParent = $data['parent'];
+		return $this->assignParent(
+			organisation: $organisation,
+			run: new ParentAssignmentRun(uuid: $edit->uuid, newParent: self::normalisedParent(parent: $data['parent']))
+		);
+	}//end handleParentUpdate()
+
+	/**
+	 * A parent value as it is assigned: an empty string or null becomes null.
+	 *
+	 * @param mixed $parent The requested parent.
+	 *
+	 * @return mixed The parent UUID, or null.
+	 */
+	private static function normalisedParent(mixed $parent): mixed {
+		if ($parent !== '' && $parent !== null) {
+			return $parent;
 		}
 
-		// Validate parent assignment to prevent circular references.
+		return null;
+	}//end normalisedParent()
+
+	/**
+	 * Validate the parent against circular references and set it, or answer the refusal.
+	 *
+	 * @param object              $organisation The organisation being updated.
+	 * @param ParentAssignmentRun $run          The organisation UUID and its new parent.
+	 *
+	 * @return JSONResponse|null Null when the parent is set, 400 when it is refused.
+	 */
+	private function assignParent(object $organisation, ParentAssignmentRun $run): ?JSONResponse {
 		try {
 			$this->organisationMapper->validateParentAssignment(
-				organisationUuid: $uuid,
-				newParentUuid: $newParent
+				organisationUuid: $run->uuid,
+				newParentUuid: $run->newParent
 			);
-			$organisation->setParent($newParent);
+			$organisation->setParent($run->newParent);
 			return null;
 		} catch (Exception $e) {
-			$this->logger->warning(
-				message: '[OrganisationController] Parent assignment validation failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'organisationUuid' => $uuid,
-					'newParent' => $newParent,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			$this->logParentRefusal(run: $run, error: $e);
+			return self::errorResponse(error: $e);
 		}//end try
-	}//end handleParentUpdate()
+	}//end assignParent()
+
+	/**
+	 * Log a parent assignment the mapper refused.
+	 *
+	 * @param ParentAssignmentRun $run   The organisation UUID and its new parent.
+	 * @param Exception           $error The refusal.
+	 *
+	 * @return void
+	 */
+	private function logParentRefusal(ParentAssignmentRun $run, Exception $error): void {
+		$this->logger->warning(
+			message: '[OrganisationController] Parent assignment validation failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'organisationUuid' => $run->uuid,
+				'newParent' => $run->newParent,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logParentRefusal()
 
 	/**
 	 * Save organisation and return JSON response
@@ -1448,76 +1569,11 @@ class OrganisationController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	public function usage(string $uuid): JSONResponse {
 		try {
-			$organisation = $this->organisationMapper->findByUuid($uuid);
-			$orgUuid = $organisation->getUuid();
-
-			// Get current hour usage from APCu.
-			$hourBucket = (new DateTime())->format('YmdH');
-			$currentRequests = 0;
-			$currentBandwidth = 0;
-
-			if (function_exists('apcu_enabled') === true && apcu_enabled() === true) {
-				$reqSuccess = false;
-				$bwSuccess = false;
-
-				$reqFetched = apcu_fetch("or_quota_{$orgUuid}_{$hourBucket}", $reqSuccess);
-				if ($reqSuccess === true) {
-					$currentRequests = (int)$reqFetched;
-				}
-
-				$bwFetched = apcu_fetch("or_bw_{$orgUuid}_{$hourBucket}", $bwSuccess);
-				if ($bwSuccess === true) {
-					$currentBandwidth = (int)$bwFetched;
-				}
-			}
-
-			// Get historical data (last 30 days).
-			$from = new DateTime('-30 days');
-			$to = new DateTime();
-			$history = $this->tenantUsageMapper->findByOrgAndDateRange($orgUuid, new UsageRange(from: $from, to: $to));
-
-			$requestQuota = $organisation->getRequestQuota();
-			$bandwidthQuota = $organisation->getBandwidthQuota();
-			$storageQuota = $organisation->getStorageQuota();
-
-			$requestUtil = null;
-			$bandwidthUtil = null;
-			if ($requestQuota !== null && $requestQuota > 0) {
-				$requestUtil = round((($currentRequests / $requestQuota) * 100), 1);
-			}
-
-			if ($bandwidthQuota !== null && $bandwidthQuota > 0) {
-				$bandwidthUtil = round((($currentBandwidth / $bandwidthQuota) * 100), 1);
-			}
-
 			return new JSONResponse(
-				data: [
-					'current' => [
-						'requests' => $currentRequests,
-						'bandwidth' => $currentBandwidth,
-						'period' => $hourBucket,
-					],
-					'quota' => [
-						'requests' => $requestQuota,
-						'bandwidth' => $bandwidthQuota,
-						'storage' => $storageQuota,
-					],
-					'utilization' => [
-						'requests' => $requestUtil,
-						'bandwidth' => $bandwidthUtil,
-					],
-					'history' => array_map(
-						static function ($record) {
-							return $record->jsonSerialize();
-						},
-						$history
-					),
-				],
+				data: $this->usageReport(uuid: $uuid),
 				statusCode: Http::STATUS_OK
 			);
 		} catch (Exception $e) {
@@ -1527,6 +1583,143 @@ class OrganisationController extends Controller {
 			);
 		}//end try
 	}//end usage()
+
+	/**
+	 * The usage report of an organisation: this hour's counters, the quotas,
+	 * the utilisation of each quota and the last 30 days of history.
+	 *
+	 * @param string $uuid Organisation UUID
+	 *
+	 * @return array<string, array> The report.
+	 */
+	private function usageReport(string $uuid): array {
+		$organisation = $this->organisationMapper->findByUuid($uuid);
+		$orgUuid = $organisation->getUuid();
+
+		$current = self::currentHourUsage(orgUuid: $orgUuid);
+		$history = $this->usageHistory(orgUuid: $orgUuid);
+		$quota = self::quotaOf(organisation: $organisation);
+
+		return [
+			'current' => $current,
+			'quota' => $quota,
+			'utilization' => self::utilisationOf(current: $current, quota: $quota),
+			'history' => self::serialisedHistory(history: $history),
+		];
+	}//end usageReport()
+
+	/**
+	 * This hour's request and bandwidth counters, from APCu when it is available.
+	 *
+	 * @param string|null $orgUuid The organisation UUID.
+	 *
+	 * @return array{requests: int, bandwidth: int, period: string} The counters and the hour bucket.
+	 */
+	private static function currentHourUsage(?string $orgUuid): array {
+		// Get current hour usage from APCu.
+		$hourBucket = (new DateTime())->format('YmdH');
+		$current = ['requests' => 0, 'bandwidth' => 0, 'period' => $hourBucket];
+
+		if (function_exists('apcu_enabled') === true && apcu_enabled() === true) {
+			$current['requests'] = self::apcuCounter(key: "or_quota_{$orgUuid}_{$hourBucket}");
+			$current['bandwidth'] = self::apcuCounter(key: "or_bw_{$orgUuid}_{$hourBucket}");
+		}
+
+		return $current;
+	}//end currentHourUsage()
+
+	/**
+	 * An APCu counter as an integer, or 0 when it is not stored.
+	 *
+	 * @param string $key The APCu key.
+	 *
+	 * @return int The counter.
+	 */
+	private static function apcuCounter(string $key): int {
+		$success = false;
+		$fetched = apcu_fetch($key, $success);
+		if ($success === true) {
+			return (int)$fetched;
+		}
+
+		return 0;
+	}//end apcuCounter()
+
+	/**
+	 * The usage records of the last 30 days.
+	 *
+	 * @param string|null $orgUuid The organisation UUID.
+	 *
+	 * @return array The usage records.
+	 */
+	private function usageHistory(?string $orgUuid): array {
+		// Get historical data (last 30 days).
+		$from = new DateTime('-30 days');
+		$to = new DateTime();
+		return $this->tenantUsageMapper->findByOrgAndDateRange($orgUuid, new UsageRange(from: $from, to: $to));
+	}//end usageHistory()
+
+	/**
+	 * The request, bandwidth and storage quotas of an organisation.
+	 *
+	 * @param Organisation $organisation The organisation.
+	 *
+	 * @return array{requests: int|null, bandwidth: int|null, storage: int|null} The quotas.
+	 */
+	private static function quotaOf(Organisation $organisation): array {
+		return [
+			'requests' => $organisation->getRequestQuota(),
+			'bandwidth' => $organisation->getBandwidthQuota(),
+			'storage' => $organisation->getStorageQuota(),
+		];
+	}//end quotaOf()
+
+	/**
+	 * The utilisation of the request and bandwidth quotas, in percent.
+	 *
+	 * @param array{requests: int, bandwidth: int} $current The current counters.
+	 * @param array{requests: int|null, bandwidth: int|null} $quota The quotas.
+	 *
+	 * @return array{requests: float|null, bandwidth: float|null} The utilisation, null without a positive quota.
+	 */
+	private static function utilisationOf(array $current, array $quota): array {
+		return [
+			'requests' => self::percentOfQuota(used: $current['requests'], quota: $quota['requests']),
+			'bandwidth' => self::percentOfQuota(used: $current['bandwidth'], quota: $quota['bandwidth']),
+		];
+	}//end utilisationOf()
+
+	/**
+	 * The share of a quota that is used, in percent rounded to one decimal.
+	 *
+	 * @param int      $used  The used amount.
+	 * @param int|null $quota The quota.
+	 *
+	 * @return float|null The percentage, or null without a positive quota.
+	 */
+	private static function percentOfQuota(int $used, ?int $quota): ?float {
+		if ($quota !== null && $quota > 0) {
+			return round((($used / $quota) * 100), 1);
+		}
+
+		return null;
+	}//end percentOfQuota()
+
+	/**
+	 * The usage records as JSON-serialised arrays.
+	 *
+	 * @param array $history The usage records.
+	 *
+	 * @return array The serialised records.
+	 */
+	private static function serialisedHistory(array $history): array {
+		return array_map(
+			static function ($record) {
+				return $record->jsonSerialize();
+			},
+			$history
+		);
+	}//end serialisedHistory()
 
 	/**
 	 * Run tenant isolation verification checks.

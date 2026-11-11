@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 use DateTime;
+use OCA\OpenRegister\Db\ConfigurationDeployment;
 use OCA\OpenRegister\Db\ConfigurationDeploymentMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -101,25 +102,50 @@ class ConfigurationExplainer {
 	private function answerFor(string $configKey, array $chain): array {
 		$effective = $this->effectiveOf(chain: $chain);
 
-		if ($effective === null) {
-			return [
-				'key' => $configKey,
-				'found' => false,
-				'value' => null,
-				'layer' => null,
-				'layerRef' => null,
-				'deployment' => null,
-				'predatesFirstDeployment' => false,
-				'explanation' => sprintf('no layer sets "%s"', $configKey),
-				'chain' => array_map(static fn ($item) => $item->jsonSerialize(), $chain),
-			];
+		$answer = $this->notFoundAnswer(configKey: $configKey);
+		if ($effective !== null) {
+			$answer = $this->foundAnswer(configKey: $configKey, effective: $effective);
 		}
 
+		return ['key' => $configKey] + $answer + [
+			'chain' => array_map(static fn ($item) => $item->jsonSerialize(), $chain),
+		];
+
+	}//end answerFor()
+
+	/**
+	 * The answer for a key no layer sets, between its key and its chain.
+	 *
+	 * @param string $configKey The configuration key.
+	 *
+	 * @return array<string, mixed> found, value, layer, layerRef, deployment, predatesFirstDeployment and explanation.
+	 */
+	private function notFoundAnswer(string $configKey): array {
+		return [
+			'found' => false,
+			'value' => null,
+			'layer' => null,
+			'layerRef' => null,
+			'deployment' => null,
+			'predatesFirstDeployment' => false,
+			'explanation' => sprintf('no layer sets "%s"', $configKey),
+		];
+
+	}//end notFoundAnswer()
+
+	/**
+	 * The answer for a key from the layer that sets it, between its key and its chain.
+	 *
+	 * @param string                $configKey The configuration key.
+	 * @param ConfigurationSnapshot $effective The highest-precedence snapshot holding a value.
+	 *
+	 * @return array<string, mixed> found, value, layer, layerRef, deployment, predatesFirstDeployment and explanation.
+	 */
+	private function foundAnswer(string $configKey, ConfigurationSnapshot $effective): array {
 		$deployment = $this->deploymentFor(uuid: $effective->deploymentUuid);
-		$predates = ($effective->hasProvenance() === false);
+		$predates   = ($effective->hasProvenance() === false);
 
 		return [
-			'key' => $configKey,
 			'found' => true,
 			'value' => $effective->value,
 			'layer' => $effective->layer,
@@ -130,10 +156,9 @@ class ConfigurationExplainer {
 				setAt: self::setAt(configKey: $configKey, effective: $effective),
 				deployment: $deployment
 			),
-			'chain' => array_map(static fn ($item) => $item->jsonSerialize(), $chain),
 		];
 
-	}//end answerFor()
+	}//end foundAnswer()
 
 	/**
 	 * The highest-precedence snapshot that holds a value.
@@ -179,6 +204,19 @@ class ConfigurationExplainer {
 			ConfigurationLayer::SUBJECT => $subject,
 		];
 
+		return $this->readChain(configKey: $configKey, references: $references);
+
+	}//end chainFor()
+
+	/**
+	 * Read one key at every layer that has its reference, lowest precedence first.
+	 *
+	 * @param string                     $configKey  The configuration key.
+	 * @param array<string, string|null> $references The reference of each layer (null when not named).
+	 *
+	 * @return array<int, ConfigurationSnapshot> Every named layer's answer.
+	 */
+	private function readChain(string $configKey, array $references): array {
 		$chain = [];
 		foreach (ConfigurationLayer::ORDER as $layer) {
 			$reference = $references[$layer];
@@ -194,7 +232,7 @@ class ConfigurationExplainer {
 
 		return $chain;
 
-	}//end chainFor()
+	}//end readChain()
 
 	/**
 	 * The deployment that last moved a value, rendered for a reader.
@@ -219,6 +257,18 @@ class ConfigurationExplainer {
 			return ['uuid' => $uuid, 'name' => null, 'deployedAt' => null, 'missing' => true];
 		}
 
+		return $this->deploymentSummary(deployment: $deployment);
+
+	}//end deploymentFor()
+
+	/**
+	 * What an explanation says about the deployment that set a value.
+	 *
+	 * @param ConfigurationDeployment $deployment The deployment.
+	 *
+	 * @return array<string, mixed> uuid, name, deployedAt, deployedBy, isRollback and missing (false).
+	 */
+	private function deploymentSummary(ConfigurationDeployment $deployment): array {
 		return [
 			'uuid' => $deployment->getUuid(),
 			'name' => $deployment->getName(),
@@ -228,7 +278,7 @@ class ConfigurationExplainer {
 			'missing' => false,
 		];
 
-	}//end deploymentFor()
+	}//end deploymentSummary()
 
 	/**
 	 * Where a key is set, as the opening of its explanation: `"key" is set at the <layer> layer[ by <ref>]`.

@@ -15,6 +15,7 @@ use Exception;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\MappingService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -60,7 +61,7 @@ final class MapNodeResolutionCharacterisationTest extends TestCase {
 		$node = new MapNode(l10n: $l10n, urls: $this->createMock(IURLGenerator::class), mappings: $mappings, mapper: $mapper);
 
 		try {
-			$node->execute([FlowItems::item(json: ['a' => 1])], ['mapping' => $reference], []);
+			$node->execute(new FlowNodeCall(items: [FlowItems::item(json: ['a' => 1])], config: ['mapping' => $reference], context: []));
 		} catch (Throwable $e) {
 			$previous = $e->getPrevious();
 			if ($previous !== null) {

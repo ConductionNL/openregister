@@ -142,7 +142,7 @@ class OpenProjectLinkServiceRefactorGoldenTest extends TestCase {
 		$this->build();
 		$this->router->method('call')->willReturnCallback(
 			function (...$args) use ($response) {
-				$this->calls[] = ['method' => $args[1], 'path' => $args[2], 'options' => $args[3]];
+				$this->calls[] = ['method' => $args[1]->method, 'path' => $args[1]->path, 'options' => $args[1]->options];
 				return $response;
 			}
 		);

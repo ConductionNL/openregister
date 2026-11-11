@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -56,11 +57,11 @@ class ExplodeNodeTest extends TestCase {
 	 * The whole point: a list on the item becomes items.
 	 */
 	public function testAListBecomesOneItemPerEntry(): void {
-		$out = $this->node->execute(
-			$this->items([['findings' => [['t' => 'a'], ['t' => 'b'], ['t' => 'c']]]]),
-			['path' => 'findings', 'as' => 'finding'],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['findings' => [['t' => 'a'], ['t' => 'b'], ['t' => 'c']]]]),
+			config: ['path' => 'findings', 'as' => 'finding'],
+			context: []
+		));
 
 		$this->assertCount(3, $out);
 		$this->assertSame('a', $out[0]['json']['finding']['t']);
@@ -74,11 +75,11 @@ class ExplodeNodeTest extends TestCase {
 	 * make the node unusable for anything but a list of complete records.
 	 */
 	public function testTheOriginalRecordIsCarried(): void {
-		$out = $this->node->execute(
-			$this->items([['repo' => 'openregister', 'findings' => [['t' => 'a']]]]),
-			['path' => 'findings', 'as' => 'finding'],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['repo' => 'openregister', 'findings' => [['t' => 'a']]]]),
+			config: ['path' => 'findings', 'as' => 'finding'],
+			context: []
+		));
 
 		$this->assertSame('openregister', $out[0]['json']['repo']);
 		$this->assertSame('a', $out[0]['json']['finding']['t']);
@@ -88,11 +89,11 @@ class ExplodeNodeTest extends TestCase {
 	 * A dotted path reaches into nested structure — where findings actually live.
 	 */
 	public function testADottedPathReachesNestedLists(): void {
-		$out = $this->node->execute(
-			$this->items([['stage' => ['files' => ['r.json' => ['code_review' => ['findings' => [1, 2]]]]]]]),
-			['path' => 'stage.files.r.json.code_review.findings'],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['stage' => ['files' => ['r.json' => ['code_review' => ['findings' => [1, 2]]]]]]]),
+			config: ['path' => 'stage.files.r.json.code_review.findings'],
+			context: []
+		));
 
 		// The literal key contains a dot, so this path cannot resolve — proving
 		// the traversal is strict rather than fuzzy.
@@ -106,11 +107,11 @@ class ExplodeNodeTest extends TestCase {
 	 * would turn a clean review into a broken run.
 	 */
 	public function testAnEmptyOrAbsentListIsNotAnError(): void {
-		$out = $this->node->execute(
-			$this->items([['findings' => []], ['other' => 1]]),
-			['path' => 'findings'],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['findings' => []], ['other' => 1]]),
+			config: ['path' => 'findings'],
+			context: []
+		));
 
 		$this->assertSame([], $out);
 	}
@@ -120,7 +121,7 @@ class ExplodeNodeTest extends TestCase {
 	 */
 	public function testAScalarAtThePathFails(): void {
 		$this->expectException(UnexpectedValueException::class);
-		$this->node->execute($this->items([['findings' => 'oops']]), ['path' => 'findings'], []);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['findings' => 'oops']]), config: ['path' => 'findings'], context: []));
 	}
 
 	/**
@@ -132,18 +133,18 @@ class ExplodeNodeTest extends TestCase {
 	 */
 	public function testAnUnconfiguredStepFailsInExecuteToo(): void {
 		$this->expectException(UnexpectedValueException::class);
-		$this->node->execute($this->items([['findings' => [1]]]), [], []);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['findings' => [1]]]), config: [], context: []));
 	}
 
 	/**
 	 * Several input items all explode, into one flat list.
 	 */
 	public function testEveryInputItemExplodes(): void {
-		$out = $this->node->execute(
-			$this->items([['f' => [1, 2]], ['f' => [3]]]),
-			['path' => 'f', 'as' => 'n'],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['f' => [1, 2]], ['f' => [3]]]),
+			config: ['path' => 'f', 'as' => 'n'],
+			context: []
+		));
 
 		$this->assertCount(3, $out);
 		$this->assertSame([1, 2, 3], array_map(static fn ($i) => $i['json']['n'], $out));

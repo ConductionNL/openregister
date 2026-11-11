@@ -24,6 +24,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ValidationSettingsControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\MassValidationRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -181,11 +182,13 @@ class ValidationSettingsController extends Controller {
 	 * @return array The validation results
 	 */
 	private function runMassValidation(array $options): array {
-		return $this->settingsService->massValidateObjects(
-			maxObjects: $options['maxObjects'],
-			batchSize: $options['batchSize'],
-			mode: $options['mode'],
-			collectErrors: $options['collectErrors']
+		return $this->settingsService->massValidate(
+			request: new MassValidationRequest(
+				maxObjects: $options['maxObjects'],
+				batchSize: $options['batchSize'],
+				mode: $options['mode'],
+				collectErrors: $options['collectErrors']
+			)
 		);
 	}//end runMassValidation()
 

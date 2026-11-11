@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Tests\Db;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -181,28 +182,28 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 		// Schema with no authorization = open access
 		$schema = $this->createTestSchema();
 
-		$hasPermission = $this->rbacHandler->hasPermission($schema, 'read');
+		$hasPermission = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'read'));
 		$this->assertTrue($hasPermission);
 	}
 
 	public function testHasPermissionNoAuthorizationForCreate(): void {
 		$schema = $this->createTestSchema();
 
-		$hasPermission = $this->rbacHandler->hasPermission($schema, 'create');
+		$hasPermission = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'create'));
 		$this->assertTrue($hasPermission);
 	}
 
 	public function testHasPermissionNoAuthorizationForUpdate(): void {
 		$schema = $this->createTestSchema();
 
-		$hasPermission = $this->rbacHandler->hasPermission($schema, 'update');
+		$hasPermission = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'update'));
 		$this->assertTrue($hasPermission);
 	}
 
 	public function testHasPermissionNoAuthorizationForDelete(): void {
 		$schema = $this->createTestSchema();
 
-		$hasPermission = $this->rbacHandler->hasPermission($schema, 'delete');
+		$hasPermission = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'delete'));
 		$this->assertTrue($hasPermission);
 	}
 
@@ -215,7 +216,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			'read' => ['public'],
 		]);
 
-		$hasPermission = $this->rbacHandler->hasPermission($schema, 'read');
+		$hasPermission = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'read'));
 		$this->assertTrue($hasPermission);
 	}
 
@@ -227,7 +228,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			'read' => ['public'],
 		]);
 
-		$hasPermission = $this->rbacHandler->hasPermission($schema, 'update');
+		$hasPermission = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'update'));
 		if ($this->rbacHandler->isAdmin() === true) {
 			$this->assertTrue($hasPermission, 'Admin bypasses RBAC');
 		} else {
@@ -246,7 +247,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 		]);
 
 		// If CLI test user is admin, it bypasses RBAC
-		$hasPermission = $this->rbacHandler->hasPermission($schema, 'read');
+		$hasPermission = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'read'));
 		// Result depends on whether test user is admin
 		$this->assertIsBool($hasPermission);
 	}
@@ -256,7 +257,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 			'read' => ['authenticated'],
 		]);
 
-		$hasPermission = $this->rbacHandler->hasPermission($schema, 'read');
+		$hasPermission = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'read'));
 		// If a user is logged in, should return true; if not, depends on CLI context
 		$this->assertIsBool($hasPermission);
 	}
@@ -273,11 +274,11 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 		$userId = $this->rbacHandler->getCurrentUserId();
 		if ($userId !== null) {
 			// Owner should always have access
-			$hasPermission = $this->rbacHandler->hasPermission($schema, 'read', $userId);
+			$hasPermission = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'read', $userId));
 			$this->assertTrue($hasPermission);
 		} else {
 			// No user session - just verify no crash
-			$hasPermission = $this->rbacHandler->hasPermission($schema, 'read', 'some-owner');
+			$hasPermission = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'read', 'some-owner'));
 			$this->assertIsBool($hasPermission);
 		}
 	}
@@ -295,7 +296,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 
 		// Public group with match condition - user qualifies (public)
 		// but actual data matching happens at query time
-		$hasPermission = $this->rbacHandler->hasPermission($schema, 'read');
+		$hasPermission = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'read'));
 		$this->assertTrue($hasPermission);
 	}
 
@@ -307,7 +308,7 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 		]);
 
 		// Conditional rule with public group but no match conditions = unconditional access
-		$hasPermission = $this->rbacHandler->hasPermission($schema, 'read');
+		$hasPermission = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'read'));
 		$this->assertTrue($hasPermission);
 	}
 
@@ -621,18 +622,18 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 		]);
 
 		// read: public - should always be true
-		$this->assertTrue($this->rbacHandler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 
 		// create: authenticated - depends on user session
-		$createPerm = $this->rbacHandler->hasPermission($schema, 'create');
+		$createPerm = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'create'));
 		$this->assertIsBool($createPerm);
 
 		// update: specific group - depends on user groups
-		$updatePerm = $this->rbacHandler->hasPermission($schema, 'update');
+		$updatePerm = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'update'));
 		$this->assertIsBool($updatePerm);
 
 		// delete: admin group - depends on user being admin
-		$deletePerm = $this->rbacHandler->hasPermission($schema, 'delete');
+		$deletePerm = $this->rbacHandler->hasPermission(new RbacPermissionAsk($schema, 'delete'));
 		$this->assertIsBool($deletePerm);
 	}
 
@@ -739,10 +740,12 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 
 		// With matching object data, should have permission
 		$hasPermission = $this->rbacHandler->hasPermission(
-			$schema,
-			'read',
-			null,
-			['status' => 'published']
+			new RbacPermissionAsk(
+				$schema,
+				'read',
+				null,
+				['status' => 'published']
+			)
 		);
 		$this->assertTrue($hasPermission);
 	}
@@ -756,10 +759,12 @@ class MagicRbacHandlerIntegrationTest extends TestCase {
 
 		// Non-matching group and no owner
 		$hasPermission = $this->rbacHandler->hasPermission(
-			$schema,
-			'read',
-			null,
-			['status' => 'draft']
+			new RbacPermissionAsk(
+				$schema,
+				'read',
+				null,
+				['status' => 'draft']
+			)
 		);
 		// If user is admin, still true; otherwise false
 		$this->assertIsBool($hasPermission);

@@ -68,21 +68,21 @@ class WorkingDayRoll {
 	 * one it decides; every other name is whatever the administrator called the
 	 * day they declared.
 	 *
-	 * @param DateTimeInterface    $moment   The computed moment.
-	 * @param string               $roll     One of ROLLS.
-	 * @param WorkingCalendar|null $calendar The resolved calendar.
+	 * @param DateTimeInterface $moment The computed moment.
+	 * @param RollRule          $rule   Which way to roll (one of ROLLS), and the resolved calendar.
 	 *
 	 * @return array{at: DateTimeImmutable, unrolledAt: ?DateTimeImmutable, rolledBy: ?string} Where it ended up.
 	 *
 	 * @spec openspec/changes/end-date-roll-on-the-calendar/specs/flow-business-timers/spec.md#requirement-a-budget-may-roll-its-end-date-to-a-working-day
 	 */
-	public function apply(DateTimeInterface $moment, string $roll, ?WorkingCalendar $calendar): array {
+	public function apply(DateTimeInterface $moment, RollRule $rule): array {
 		$instant = DateTimeImmutable::createFromInterface($moment);
-		if ($roll === SlaCalculatorInterface::ROLL_NONE || $calendar === null || $calendar->isWorkingDay(moment: $instant) === true) {
+		$calendar = $rule->calendar;
+		if ($rule->roll === SlaCalculatorInterface::ROLL_NONE || $calendar === null || $calendar->isWorkingDay(moment: $instant) === true) {
 			return ['at' => $instant, 'unrolledAt' => null, 'rolledBy' => null];
 		}
 
-		return $this->rolled(from: $instant, roll: new CalendarRoll(calendar: $calendar, modifier: $this->modifierFor(roll: $roll)));
+		return $this->rolled(from: $instant, roll: new CalendarRoll(calendar: $calendar, modifier: $this->modifierFor(roll: $rule->roll)));
 	}//end apply()
 
 	/**

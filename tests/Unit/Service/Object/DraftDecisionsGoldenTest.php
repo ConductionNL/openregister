@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\OwnDraftSearch;
+use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\Object\DraftListing;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -242,12 +244,12 @@ class DraftDecisionsGoldenTest extends TestCase {
 		$register = new Register();
 		$schema = new Schema();
 
-		$this->assertSame($mine, $finder->own(register: $register, schema: $schema, draftId: 'd-1', owner: $owner));
-		$this->assertNull($finder->own(register: $register, schema: $schema, draftId: 'd-1', owner: null));
-		$this->assertNull($finder->own(register: $register, schema: $schema, draftId: 'd-2', owner: $owner));
-		$this->assertNull($finder->own(register: $register, schema: $schema, draftId: 'd-3', owner: $owner));
-		$this->assertNull($finder->own(register: $register, schema: $schema, draftId: 'nope', owner: $owner));
-		$this->assertNull($finder->own(register: $register, schema: $schema, draftId: 'boom', owner: $owner));
+		$this->assertSame($mine, $finder->own(address: new DraftAddress(register: $register, schema: $schema, draftId: 'd-1'), owner: $owner));
+		$this->assertNull($finder->own(address: new DraftAddress(register: $register, schema: $schema, draftId: 'd-1'), owner: null));
+		$this->assertNull($finder->own(address: new DraftAddress(register: $register, schema: $schema, draftId: 'd-2'), owner: $owner));
+		$this->assertNull($finder->own(address: new DraftAddress(register: $register, schema: $schema, draftId: 'd-3'), owner: $owner));
+		$this->assertNull($finder->own(address: new DraftAddress(register: $register, schema: $schema, draftId: 'nope'), owner: $owner));
+		$this->assertNull($finder->own(address: new DraftAddress(register: $register, schema: $schema, draftId: 'boom'), owner: $owner));
 
 		$older = self::entity(ObjectEntity::STATUS_DRAFT, true, 'n-1', 'portal:p-1');
 		$older->setObject(['kind' => 'a']);
@@ -275,15 +277,21 @@ class DraftDecisionsGoldenTest extends TestCase {
 		foreach ($lists as $i => [$found, $match, $expected]) {
 			$search = $this->createMock(ObjectService::class);
 			$search->method('searchObjects')->willReturn($found);
-			$newest = (new DraftFinder(objects: $search))->newest(register: $register, schema: $schema, owner: $owner, match: $match);
+			$newest = (new DraftFinder(objects: $search))->newest(
+				search: new OwnDraftSearch(register: $register, schema: $schema, owner: $owner, match: $match)
+			);
 			$this->assertSame($expected, $newest?->getUuid(), "newest case $i");
 		}
 
 		$failing = $this->createMock(ObjectService::class);
 		$failing->method('searchObjects')->willThrowException(new \RuntimeException('down'));
-		$this->assertNull((new DraftFinder(objects: $failing))->newest(register: $register, schema: $schema, owner: $owner));
+		$this->assertNull((new DraftFinder(objects: $failing))->newest(
+			search: new OwnDraftSearch(register: $register, schema: $schema, owner: $owner)
+		));
 		$scalar = $this->createMock(ObjectService::class);
 		$scalar->method('searchObjects')->willReturn(['results' => 'x']);
-		$this->assertNull((new DraftFinder(objects: $scalar))->newest(register: $register, schema: $schema, owner: $owner));
+		$this->assertNull((new DraftFinder(objects: $scalar))->newest(
+			search: new OwnDraftSearch(register: $register, schema: $schema, owner: $owner)
+		));
 	}//end testFinderOutcomes()
 }//end class

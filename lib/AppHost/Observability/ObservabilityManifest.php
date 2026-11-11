@@ -172,30 +172,65 @@ final class ObservabilityManifest {
 		);
 		$result['cors'] = ($health['cors'] ?? false) === true;
 
-		$rawChecks = $health['checks'] ?? [];
+		return array_merge($result, self::parseChecks(rawChecks: ($health['checks'] ?? []), diagnostics: $diagnostics));
+	}//end parseHealth()
+
+	/**
+	 * Parse the health checks; any invalid entry marks the block invalid.
+	 *
+	 * @param mixed    $rawChecks   The `checks` list.
+	 * @param string[] $diagnostics Diagnostics accumulator (by ref).
+	 *
+	 * @return array{checks: HealthCheckDescriptor[], valid: bool}
+	 */
+	private static function parseChecks(mixed $rawChecks, array &$diagnostics): array {
 		if (is_array($rawChecks) === false) {
 			$diagnostics[] = 'observability.health.checks must be an array.';
-			$result['valid'] = false;
-			return $result;
+			return ['checks' => [], 'valid' => false];
 		}
 
-		foreach ($rawChecks as $index => $rawCheck) {
-			if (is_array($rawCheck) === false) {
-				$diagnostics[] = sprintf('Health check #%d is not an object.', $index);
-				$result['valid'] = false;
-				continue;
-			}
+		return self::parseEachCheck(rawChecks: $rawChecks, diagnostics: $diagnostics);
+	}//end parseChecks()
 
+	/**
+	 * Parse every entry of a checks list.
+	 *
+	 * @param array    $rawChecks   The `checks` list.
+	 * @param string[] $diagnostics Diagnostics accumulator (by ref).
+	 *
+	 * @return array{checks: HealthCheckDescriptor[], valid: bool}
+	 */
+	private static function parseEachCheck(array $rawChecks, array &$diagnostics): array {
+		$parsed = ['checks' => [], 'valid' => true];
+		foreach ($rawChecks as $index => $rawCheck) {
 			try {
-				$result['checks'][] = HealthCheckDescriptor::fromArray(raw: $rawCheck, index: (int)$index);
+				$parsed['checks'][] = self::parseCheck(rawCheck: $rawCheck, index: $index);
 			} catch (ObservabilityValidationException $e) {
 				$diagnostics[] = $e->getMessage();
-				$result['valid'] = false;
+				$parsed['valid'] = false;
 			}
 		}
 
-		return $result;
-	}//end parseHealth()
+		return $parsed;
+	}//end parseEachCheck()
+
+	/**
+	 * Parse one health check.
+	 *
+	 * @param mixed      $rawCheck The raw entry.
+	 * @param int|string $index    Its position in the list.
+	 *
+	 * @return HealthCheckDescriptor
+	 *
+	 * @throws ObservabilityValidationException When the entry is not an object or not a valid check.
+	 */
+	private static function parseCheck(mixed $rawCheck, int|string $index): HealthCheckDescriptor {
+		if (is_array($rawCheck) === false) {
+			throw new ObservabilityValidationException(message: sprintf('Health check #%d is not an object.', $index));
+		}
+
+		return HealthCheckDescriptor::fromArray(raw: $rawCheck, index: (int)$index);
+	}//end parseCheck()
 
 	/**
 	 * The status code policy, or adr006 with a diagnostic when it is not a known policy.

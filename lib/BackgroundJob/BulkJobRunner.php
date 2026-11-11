@@ -88,6 +88,21 @@ class BulkJobRunner extends QueuedJob {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	protected function run($argument): void {
+		$job = $this->runningJob(argument: $argument);
+		if ($job !== null) {
+			$this->runBatch(job: $job, argument: $argument);
+		}
+	}//end run()
+
+	/**
+	 * The job a run is for, when it still has work to do.
+	 *
+	 * @param mixed $argument Job arguments.
+	 *
+	 * @return BulkJob|null The running job; null when the argument names none,
+	 *                      it cannot be found or it is not running.
+	 */
+	private function runningJob($argument): ?BulkJob {
 		$jobId = ($argument['job_id'] ?? null);
 
 		if ($jobId === null) {
@@ -96,27 +111,50 @@ class BulkJobRunner extends QueuedJob {
 				context: ['argument' => $argument]
 			);
 
-			return;
+			return null;
 		}
 
+		$job = $this->findJob(jobId: $jobId);
+		if ($job === null || $job->getState() !== BulkJob::STATE_RUNNING) {
+			// A cancelled, completed or failed job has nothing left to do,
+			// and a cancelling one is finished off by the batch that saw the
+			// cancel. Either way, do not re-enqueue.
+			return null;
+		}
+
+		return $job;
+	}//end runningJob()
+
+	/**
+	 * Load a bulk job, logging when it cannot be found.
+	 *
+	 * @param mixed $jobId The job id from the arguments.
+	 *
+	 * @return BulkJob|null
+	 */
+	private function findJob($jobId): ?BulkJob {
 		try {
-			$job = $this->jobMapper->find((int)$jobId);
+			return $this->jobMapper->find((int)$jobId);
 		} catch (\Throwable $exception) {
 			$this->logger->error(
 				message: '[BulkJobRunner] Job not found',
 				context: ['job_id' => $jobId, 'error' => $exception->getMessage()]
 			);
 
-			return;
+			return null;
 		}
+	}//end findJob()
 
-		if ($job->getState() !== BulkJob::STATE_RUNNING) {
-			// A cancelled, completed or failed job has nothing left to do,
-			// and a cancelling one is finished off by the batch that saw the
-			// cancel. Either way, do not re-enqueue.
-			return;
-		}
-
+	/**
+	 * Walk one batch of a running job and re-enqueue it while members remain.
+	 *
+	 * @param BulkJob $job      The running job.
+	 * @param mixed   $argument Job arguments.
+	 *
+	 * @return void
+	 */
+	private function runBatch(BulkJob $job, $argument): void {
+		$jobId     = $argument['job_id'];
 		$batchSize = (int)($argument['batch_size'] ?? $this->bulkJobService->getBatchSize());
 
 		try {
@@ -126,18 +164,28 @@ class BulkJobRunner extends QueuedJob {
 				message: '[BulkJobRunner] Batch failed',
 				context: ['job_id' => $jobId, 'error' => $exception->getMessage()]
 			);
-
-			$job->setState(BulkJob::STATE_FAILED);
-			$report = ($job->getReport() ?? []);
-			$report['fatal'] = $exception->getMessage();
-			$job->setReport($report);
-			$this->jobMapper->save($job);
-
+			$this->markFailed(job: $job, exception: $exception);
 			return;
-		}//end try
+		}
 
 		if ($more === true) {
 			$this->jobList->add(self::class, ['job_id' => $jobId, 'batch_size' => $batchSize]);
 		}
-	}//end run()
+	}//end runBatch()
+
+	/**
+	 * Fail a job whose batch threw, keeping its report and recording the fatal error.
+	 *
+	 * @param BulkJob    $job       The job.
+	 * @param \Throwable $exception What the batch threw.
+	 *
+	 * @return void
+	 */
+	private function markFailed(BulkJob $job, \Throwable $exception): void {
+		$job->setState(BulkJob::STATE_FAILED);
+		$report          = ($job->getReport() ?? []);
+		$report['fatal'] = $exception->getMessage();
+		$job->setReport($report);
+		$this->jobMapper->save($job);
+	}//end markFailed()
 }//end class

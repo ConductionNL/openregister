@@ -88,16 +88,7 @@ class CasePlanTimerRearmJob extends TimedJob {
 		try {
 			$result = $this->rearm->run(now: DateTimeImmutable::createFromInterface($this->time->getDateTime()));
 			if ($result !== ['armed' => 0, 'enforced' => 0, 'dropped' => 0, 'failed' => 0]) {
-				$this->logger->info(
-					message: sprintf(
-						'[CasePlanTimerRearmJob] Armed %d statutory timer(s), enforced %d expired term(s), dropped %d marker(s); %d still failing',
-						$result['armed'],
-						$result['enforced'],
-						$result['dropped'],
-						$result['failed']
-					),
-					context: ['file' => __FILE__, 'line' => __LINE__] + $result
-				);
+				$this->logRearmed(result: $result);
 			}
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -105,6 +96,25 @@ class CasePlanTimerRearmJob extends TimedJob {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e]
 			);
 		}//end try
-
 	}//end run()
+
+	/**
+	 * Log what a re-arm pass did.
+	 *
+	 * @param array{armed: int, enforced: int, dropped: int, failed: int} $result The pass's counts.
+	 *
+	 * @return void
+	 */
+	private function logRearmed(array $result): void {
+		$this->logger->info(
+			message: sprintf(
+				'[CasePlanTimerRearmJob] Armed %d statutory timer(s), enforced %d expired term(s), dropped %d marker(s); %d still failing',
+				$result['armed'],
+				$result['enforced'],
+				$result['dropped'],
+				$result['failed']
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__] + $result
+		);
+	}//end logRearmed()
 }//end class
