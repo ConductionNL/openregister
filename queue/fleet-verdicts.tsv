@@ -1148,3 +1148,4 @@ pipelinq	3341	7920193b1717d7e5923114e19c51cc2b5d4c1dbd	GREEN	FV07:7	tree green: 
 pipelinq	3342	f106ca4ea615a9be043439bed0a0a022b1202234	GREEN	FV07:7	tree green: phpunit 0 new failures, vitest 0 new failures
 humaniq	922	42ca1b63363425ed8557970347541df8e2ce8ef3	GREEN	FV14:2	unit suites green on the tree
 humaniq	923	cba0b0bd412ec5ced6dffa40236a757e5a64dbb0	GREEN	FV14:2	unit suites green on the tree
+integriq	3143	06f190d5019ebbf3154e9837a336f891ff6acc3d	RED	FV09:4	phpunit UserServiceUserDataGoldenTest::testTheUserDataMatchesTheRecording (case plain-numeric-quota-db-down depends on process memory: in the full suite memory_get_usage exceeds the 128MB quota guard and the recorded warning differs)
