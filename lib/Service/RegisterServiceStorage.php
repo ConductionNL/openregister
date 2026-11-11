@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCP\IDBConnection;
 
@@ -35,16 +36,30 @@ use OCP\IDBConnection;
 final readonly class RegisterServiceStorage {
 
 	/**
+	 * Register mapper for database operations.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema mapper for schema operations.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public SchemaMapperInterface $schemaMapper;
+
+	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register mapper for database operations.
-	 * @param SchemaMapperInterface   $schemaMapper   Schema mapper for schema operations.
-	 * @param IDBConnection           $db             Database connection for custom queries.
+	 * @param IDBConnection          $db      Database connection for custom queries.
+	 * @param SchemaCatalogInterface $catalog Register, schema and magic-table mappers.
 	 */
 	public function __construct(
-		public RegisterMapperInterface $registerMapper,
-		public SchemaMapperInterface $schemaMapper,
 		public IDBConnection $db,
+		SchemaCatalogInterface $catalog,
 	) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper   = $catalog->schemas();
 	}//end __construct()
 }//end class

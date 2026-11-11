@@ -9,7 +9,9 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\SchemasController;
-use OCA\OpenRegister\Service\RegisterSchemaMappers;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SchemasControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -853,7 +855,7 @@ class SchemasControllerTest extends TestCase {
 			]
 		);
 
-		$this->auditTrailMapper->method('getStatistics')->willReturn(
+		$this->auditTrailMapper->method('statisticsTotals')->willReturn(
 			[
 				'total' => 100,
 			]
@@ -1158,7 +1160,7 @@ class SchemasControllerTest extends TestCase {
 				'size' => 5000,
 			]
 		);
-		$this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 50, 'size' => 200]);
+		$this->auditTrailMapper->method('statisticsTotals')->willReturn(['total' => 50, 'size' => 200]);
 
 		$result = $this->controller->show(1);
 
@@ -1210,7 +1212,7 @@ class SchemasControllerTest extends TestCase {
 				'size' => 0,
 			]
 		);
-		$this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 0, 'size' => 0]);
+		$this->auditTrailMapper->method('statisticsTotals')->willReturn(['total' => 0, 'size' => 0]);
 
 		$result = $this->controller->show(1);
 
@@ -1608,8 +1610,8 @@ class SchemasControllerTest extends TestCase {
 		$this->schemaMapper->method('findAll')->willReturn([$schema1, $schema2]);
 		$this->schemaMapper->method('hasReferenceToSchema')
 			->willReturnCallback(
-				function ($properties, $targetSchemaId) {
-					return $targetSchemaId === '2';
+				function ($properties, $target) {
+					return (string)$target->getId() === '2';
 				}
 			);
 
@@ -1792,7 +1794,7 @@ class SchemasControllerTest extends TestCase {
 		$jsonLdContext->method('getImplementedTypes')->willReturn($implementedTypes);
 
 		$resolver = new \OCA\OpenRegister\Service\SemanticTypeResolver(
-			new RegisterSchemaMappers($registerMapper, $schemaMapper),
+			new SchemaCatalog($registerMapper, $schemaMapper, $this->createMock(MagicMapperInterface::class)),
 			$jsonLdContext,
 			$this->logger,
 			null
@@ -2008,7 +2010,7 @@ class SchemasControllerTest extends TestCase {
 
 	public function testANonAdminReadingASchemaIsNotGivenTheTrailCount(): void {
 		$this->currentUserIsAdmin = false;
-		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->auditTrailMapper->expects($this->never())->method('statisticsTotals');
 
 		$data = $this->showWithLogStats();
 
@@ -2017,8 +2019,8 @@ class SchemasControllerTest extends TestCase {
 	}//end testANonAdminReadingASchemaIsNotGivenTheTrailCount()
 
 	public function testAnAdminReadingASchemaIsGivenTheTrailCount(): void {
-		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
-			->with(null, 1)->willReturn(['total' => 50, 'size' => 200]);
+		$this->auditTrailMapper->expects($this->once())->method('statisticsTotals')
+			->with(AuditStatisticsCalls::scope(null, 1))->willReturn(['total' => 50, 'size' => 200]);
 
 		$data = $this->showWithLogStats();
 
@@ -2027,7 +2029,7 @@ class SchemasControllerTest extends TestCase {
 
 	public function testANonAdminAskingForSchemaStatsIsNotGivenTheTrailCount(): void {
 		$this->currentUserIsAdmin = false;
-		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->auditTrailMapper->expects($this->never())->method('statisticsTotals');
 		$this->schemaMapper->method('find')->willReturn($this->createRealSchema(1, 'Stats Schema'));
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 7]);
 
@@ -2038,8 +2040,8 @@ class SchemasControllerTest extends TestCase {
 	}//end testANonAdminAskingForSchemaStatsIsNotGivenTheTrailCount()
 
 	public function testAnAdminAskingForSchemaStatsIsGivenTheTrailCount(): void {
-		$this->auditTrailMapper->expects($this->once())->method('getStatistics')
-			->with(null, 1)->willReturn(['total' => 9, 'size' => 90]);
+		$this->auditTrailMapper->expects($this->once())->method('statisticsTotals')
+			->with(AuditStatisticsCalls::scope(null, 1))->willReturn(['total' => 9, 'size' => 90]);
 		$this->schemaMapper->method('find')->willReturn($this->createRealSchema(1, 'Stats Schema'));
 		$this->objectMapper->method('getStatistics')->willReturn(['total' => 7]);
 

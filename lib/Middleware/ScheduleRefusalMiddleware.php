@@ -68,11 +68,22 @@ class ScheduleRefusalMiddleware extends Middleware {
 	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
 	 */
 	public function afterController(Controller $controller, string $methodName, Response $response): Response {
+		return $this->withRefusals(response: $response);
+	}//end afterController()
+
+	/**
+	 * The answer with this request's refusals in a header, when there are any.
+	 *
+	 * @param Response $response The answer.
+	 *
+	 * @return Response The same answer.
+	 */
+	private function withRefusals(Response $response): Response {
 		$refusals = $this->refusals->all();
 		if ($refusals !== []) {
 			$response->addHeader(self::HEADER, (string)json_encode($refusals));
 		}
 
 		return $response;
-	}//end afterController()
+	}//end withRefusals()
 }//end class

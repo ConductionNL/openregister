@@ -33,6 +33,8 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 
 /**
  * Object field filters, recorded per filter and platform.
@@ -161,7 +163,7 @@ class MagicSearchHandlerObjectFiltersGoldenTest extends TestCase {
 		$schema->setProperties(self::PROPERTIES);
 
 		try {
-			(new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters'))->invoke($handler, $this->queryBuilder(), $filters, $schema);
+			(new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters'))->invoke($handler, new TableFilterRun(qb: $this->queryBuilder(), query: [], table: new MagicReadTable(schema: $schema)), $filters);
 		} catch (\Throwable $e) {
 			$this->captured[] = 'threw ' . get_class($e) . ': ' . $e->getMessage();
 		}

@@ -198,16 +198,15 @@ class AutoTransitionPass implements AutoTransitionPassInterface {
 	 * Recording is ALL that happens on the event. Nothing here evaluates a
 	 * rule and nothing here writes.
 	 *
-	 * @param string $uuid The object's uuid.
-	 * @param string $register The object's register reference.
-	 * @param string $schema The object's schema reference.
+	 * @param ObjectRef $ref The object's register, schema and uuid.
 	 * @param array<string, mixed> $previous The object as it was before this write.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function record(string $uuid, string $register, string $schema, array $previous): void {
+	public function record(ObjectRef $ref, array $previous): void {
+		$uuid = $ref->id;
 		if ($uuid === '') {
 			return;
 		}
@@ -220,7 +219,7 @@ class AutoTransitionPass implements AutoTransitionPassInterface {
 		}
 
 		$inside = $this->isInsideBoundary();
-		$this->pending[$uuid] = ['uuid' => $uuid, 'register' => $register, 'schema' => $schema, 'inside' => $inside];
+		$this->pending[$uuid] = ['uuid' => $uuid, 'register' => (string)$ref->register, 'schema' => (string)$ref->schema, 'inside' => $inside];
 
 		if ($inside === false) {
 			$this->hookFlush();
@@ -260,24 +259,23 @@ class AutoTransitionPass implements AutoTransitionPassInterface {
 	}//end preferAutomatic()
 
 	/**
-	 * Continue a pass that was carried into a background job.
+	 * Continue a pass that was carried into a background job, from the lineage it carried.
 	 *
 	 * @param string $uuid The object whose lineage is being restored.
-	 * @param int $moves How many automatic moves the pass had already made.
-	 * @param array<int, string> $visited The states the object has occupied in this pass.
+	 * @param CarriedLineage $lineage The moves made and the states visited so far.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function resume(string $uuid, int $moves, array $visited): void {
+	public function resumeLineage(string $uuid, CarriedLineage $lineage): void {
 		$flags = [];
-		foreach ($visited as $state) {
+		foreach ($lineage->visited as $state) {
 			$flags[(string)$state] = true;
 		}
 
-		$this->lineage[$uuid] = ['visited' => $flags, 'moves' => max(0, $moves), 'applied' => []];
-	}//end resume()
+		$this->lineage[$uuid] = ['visited' => $flags, 'moves' => max(0, $lineage->moves), 'applied' => []];
+	}//end resumeLineage()
 
 	/**
 	 * Decide and queue every move recorded outside a write boundary.

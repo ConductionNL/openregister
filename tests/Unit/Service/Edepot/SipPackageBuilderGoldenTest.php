@@ -29,6 +29,7 @@ use OCP\ITempManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ZipArchive;
+use OCA\OpenRegister\Service\Edepot\TransferPackageRequest;
 
 /**
  * Pins every entry, its order and its bytes in the zip and BagIt packages,
@@ -289,7 +290,7 @@ class SipPackageBuilderGoldenTest extends TestCase {
 	 */
 	private function buildAndRecord(array $objects, int $max, string $format): void {
 		try {
-			$paths = $this->builder()->build('transfer-9', $objects, $max, $format);
+			$paths = $this->builder()->package(new TransferPackageRequest('transfer-9', $objects, $max, $format));
 		} catch (\Throwable $e) {
 			$this->calls[] = ['refused', get_class($e), $e->getMessage()];
 			return;

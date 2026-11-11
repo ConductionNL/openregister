@@ -24,9 +24,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
+use OCA\OpenRegister\Controller\Support\XwikiLinksControllerServices;
 use OCA\OpenRegister\Controller\XwikiLinksController;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\XwikiLink;
 use OCA\OpenRegister\Service\XwikiLinkServiceInterface;
+use OCA\OpenRegister\Service\XwikiPageDraft;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -52,7 +55,7 @@ class XwikiLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->service    = $this->createMock(XwikiLinkServiceInterface::class);
-		$this->controller = new XwikiLinksController('openregister', $this->request, $this->service, $this->objectService);
+		$this->controller = new XwikiLinksController($this->request, new XwikiLinksControllerServices($this->service, $this->objectService));
 	}
 
 	private function link(): XwikiLink {
@@ -136,7 +139,7 @@ class XwikiLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase {
 		$this->givenObject();
 		$this->params = ['space' => 'Main', 'title' => 'New page'];
 		$link         = $this->link();
-		$this->service->expects($this->once())->method('createAndLinkPage')->with($this->equalTo($this->target()), 'Main', 'New page')
+		$this->service->expects($this->once())->method('createAndLinkPage')->with($this->equalTo($this->target()), new XwikiPageDraft('Main', 'New page'))
 			->willReturn($link);
 
 		$this->assertResponse(201, $link->jsonSerialize(), $this->controller->createAndLink('r', 's', 'o'));
@@ -216,7 +219,7 @@ class XwikiLinksControllerA24GoldenTest extends LinkedSourceGoldenTestCase {
 	#[DataProvider('searchQueries')]
 	public function testSearchForwardsQueryAndPaging(array $params, ?string $query, int $limit, int $offset): void {
 		$this->params = $params;
-		$this->service->expects($this->once())->method('searchPages')->with($query, $limit, $offset)
+		$this->service->expects($this->once())->method('searchPages')->with(new ListQuery(limit: $limit, offset: $offset, search: $query))
 			->willReturn(
 			['offset' => 2, 'limit' => 1, 'total' => 4, 'results' => [['ref' => 'A']], 'extra' => true]
 		);

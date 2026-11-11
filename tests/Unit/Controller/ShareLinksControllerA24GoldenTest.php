@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\ShareLinksController;
+use OCA\OpenRegister\Controller\Support\ShareLinksControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\ShareDraft;
@@ -75,10 +76,11 @@ class ShareLinksControllerA24GoldenTest extends TestCase {
 		$objects->method('getObject')->willReturn($object);
 
 		return new ShareLinksController(
-			appName: 'openregister',
 			request: $request,
-			shareLinkService: $this->service,
-			objectService: $objects
+			services: new ShareLinksControllerServices(
+				shareLinkService: $this->service,
+				objectService: $objects
+			)
 		);
 	}
 

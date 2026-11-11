@@ -33,6 +33,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\ExampleSet\DeckBoardRequest;
 
 /**
  * Behaviour of the Deck table store against a recording query builder.
@@ -133,14 +134,14 @@ class ExampleSetDeckStoreBehaviourTest extends TestCase {
 	public function testAnExistingBoardIsReused(): void {
 		$this->answers = ['7'];
 
-		$this->assertSame(['id' => 7, 'created' => false], $this->store()->board('alice', 'Zaken', 'ff0000', ['g1']));
+		$this->assertSame(['id' => 7, 'created' => false], $this->store()->board(new DeckBoardRequest('alice', 'Zaken', 'ff0000', ['g1'])));
 		$this->assertSame([], $this->writes);
 	}
 
 	public function testANewBoardIsCreatedAndSharedWithEachGroupForEditing(): void {
 		$this->answers = [false];
 
-		$result = $this->store()->board('alice', 'Zaken', 'ff0000', ['g1', 'g2']);
+		$result = $this->store()->board(new DeckBoardRequest('alice', 'Zaken', 'ff0000', ['g1', 'g2']));
 
 		$this->assertSame(['id' => 100, 'created' => true], $result);
 		$this->assertSame('deck_boards', $this->writes[0][1]);
@@ -156,7 +157,7 @@ class ExampleSetDeckStoreBehaviourTest extends TestCase {
 	public function testABoardWithoutGroupsIsNotShared(): void {
 		$this->answers = [false];
 
-		$this->store()->board('alice', 'Zaken', 'ff0000', []);
+		$this->store()->board(new DeckBoardRequest('alice', 'Zaken', 'ff0000', []));
 
 		$this->assertCount(1, $this->writes);
 	}

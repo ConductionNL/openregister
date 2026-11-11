@@ -105,7 +105,8 @@ class ElementMappingValidator implements ElementMappingValidatorInterface {
 			return [$this->error(code: 'mdto-mapping-catalogue-unreadable', message: $e->getMessage())];
 		}
 
-		$errors = $this->entryErrors(mapping: $mapping, known: $known, properties: $properties);
+		$run = new MdtoMappingRun(known: $known, properties: $properties);
+		$errors = $this->entryErrors(mapping: $mapping, run: $run);
 
 		return array_merge($errors, $this->missingMandatory(mapping: $mapping, mandatory: $mandatory));
 	}//end validate()
@@ -113,18 +114,17 @@ class ElementMappingValidator implements ElementMappingValidatorInterface {
 	/**
 	 * Check every entry of the mapping, in the order it was written.
 	 *
-	 * @param array<string, mixed> $mapping    The annotation, as written.
-	 * @param array<string, bool>  $known      The catalogue.
-	 * @param array<string, mixed> $properties The schema's declared properties.
+	 * @param array<string, mixed> $mapping The annotation, as written.
+	 * @param MdtoMappingRun       $run     The catalogue and the schema's properties.
 	 *
 	 * @return array<int, array{code: string, message: string}> The errors of all entries.
 	 */
-	private function entryErrors(array $mapping, array $known, array $properties): array {
+	private function entryErrors(array $mapping, MdtoMappingRun $run): array {
 		$errors = [];
 		foreach ($mapping as $element => $entry) {
 			$errors = array_merge(
 				$errors,
-				$this->validateEntry(element: (string)$element, entry: $entry, known: $known, properties: $properties)
+				$this->validateEntry(entry: new MdtoMappingEntry(element: (string)$element, value: $entry), run: $run)
 			);
 		}
 
@@ -154,53 +154,70 @@ class ElementMappingValidator implements ElementMappingValidatorInterface {
 	/**
 	 * Check one element's entry.
 	 *
-	 * @param string               $element    The MDTO element name.
-	 * @param mixed                $entry      Whatever was written against it.
-	 * @param array<string, bool>  $known      The catalogue.
-	 * @param array<string, mixed> $properties The schema's declared properties.
+	 * @param MdtoMappingEntry $entry The element and whatever was written against it.
+	 * @param MdtoMappingRun   $run   The catalogue and the schema's properties.
 	 *
 	 * @return array<int, array{code: string, message: string}> The errors for this entry.
 	 */
-	private function validateEntry(string $element, mixed $entry, array $known, array $properties): array {
-		if (array_key_exists($element, $known) === false) {
-			$message = sprintf(self::UNKNOWN_ELEMENT, $element, implode(', ', array_keys($known)));
+	private function validateEntry(MdtoMappingEntry $entry, MdtoMappingRun $run): array {
+		if (array_key_exists($entry->element, $run->known) === false) {
+			$message = sprintf(self::UNKNOWN_ELEMENT, $entry->element, implode(', ', array_keys($run->known)));
 			return [$this->error(code: 'mdto-mapping-unknown-element', message: $message)];
 		}
 
-		if (is_array($entry) === false) {
+		if (is_array($entry->value) === false) {
 			$format = 'The mapping for "%s" must be an object naming a "%s" or a "%s".';
-			return [$this->sourceError(code: 'mdto-mapping-entry-not-an-object', format: $format, element: $element)];
+			return [$this->error(code: 'mdto-mapping-entry-not-an-object', message: $this->sourceMessage(format: $format, element: $entry->element))];
 		}
 
-		return $this->sourceErrors(element: $element, entry: $entry, properties: $properties);
+		return $this->sourceErrors(entry: $entry, properties: $run->properties);
 	}//end validateEntry()
 
 	/**
 	 * Check that an entry names exactly one source, and that a property source exists.
 	 *
-	 * @param string               $element    The MDTO element name.
-	 * @param array<mixed>         $entry      The entry written against it.
+	 * @param MdtoMappingEntry     $entry      The element and the entry written against it, an array.
 	 * @param array<string, mixed> $properties The schema's declared properties.
 	 *
 	 * @return array<int, array{code: string, message: string}> The errors for this entry.
 	 */
-	private function sourceErrors(string $element, array $entry, array $properties): array {
-		$property = ArchivalText::fromStringOrInt(value: ($entry[self::SOURCE_PROPERTY] ?? null));
-		$constant = ArchivalText::fromStringOrInt(value: ($entry[self::SOURCE_CONST] ?? null));
-		$named = count(array_filter([$property, $constant], 'is_string'));
+	private function sourceErrors(MdtoMappingEntry $entry, array $properties): array {
+		$named = count(array_filter([$this->propertySource(entry: $entry), $this->constSource(entry: $entry)], 'is_string'));
 
 		if ($named === 2) {
 			$format = 'The mapping for "%s" names both a "%s" and a "%s". One of them fills the element; say which.';
-			return [$this->sourceError(code: 'mdto-mapping-two-sources', format: $format, element: $element)];
+			return [$this->error(code: 'mdto-mapping-two-sources', message: $this->sourceMessage(format: $format, element: $entry->element))];
 		}
 
 		if ($named === 0) {
 			$format = 'The mapping for "%s" names neither a "%s" nor a "%s", so nothing fills the element.';
-			return [$this->sourceError(code: 'mdto-mapping-no-source', format: $format, element: $element)];
+			return [$this->error(code: 'mdto-mapping-no-source', message: $this->sourceMessage(format: $format, element: $entry->element))];
 		}
 
-		return $this->propertyErrors(element: $element, property: $property, properties: $properties);
+		return $this->propertyErrors(entry: $entry, properties: $properties);
 	}//end sourceErrors()
+
+	/**
+	 * The property an entry reads, or null when it names none.
+	 *
+	 * @param MdtoMappingEntry $entry The entry; its value is an array.
+	 *
+	 * @return string|null The property source.
+	 */
+	private function propertySource(MdtoMappingEntry $entry): ?string {
+		return ArchivalText::fromStringOrInt(value: ($entry->value[self::SOURCE_PROPERTY] ?? null));
+	}//end propertySource()
+
+	/**
+	 * The constant an entry fills the element with, or null when it names none.
+	 *
+	 * @param MdtoMappingEntry $entry The entry; its value is an array.
+	 *
+	 * @return string|null The constant source.
+	 */
+	private function constSource(MdtoMappingEntry $entry): ?string {
+		return ArchivalText::fromStringOrInt(value: ($entry->value[self::SOURCE_CONST] ?? null));
+	}//end constSource()
 
 	/**
 	 * Check that a property source names a property the schema declares.
@@ -210,13 +227,13 @@ class ElementMappingValidator implements ElementMappingValidatorInterface {
 	 * declare, and refusing a path we cannot verify would make every nested
 	 * source unmappable.
 	 *
-	 * @param string               $element    The MDTO element name.
-	 * @param string|null          $property   The property source, or null for a constant.
+	 * @param MdtoMappingEntry     $entry      The entry, naming exactly one source.
 	 * @param array<string, mixed> $properties The schema's declared properties.
 	 *
 	 * @return array<int, array{code: string, message: string}> The error, or none.
 	 */
-	private function propertyErrors(string $element, ?string $property, array $properties): array {
+	private function propertyErrors(MdtoMappingEntry $entry, array $properties): array {
+		$property = $this->propertySource(entry: $entry);
 		if ($property === null) {
 			return [];
 		}
@@ -227,25 +244,21 @@ class ElementMappingValidator implements ElementMappingValidatorInterface {
 		}
 
 		$format = 'The mapping for "%s" reads property "%s", which this schema does not declare.';
-		$message = sprintf($format, $element, $root);
+		$message = sprintf($format, $entry->element, $root);
 		return [$this->error(code: 'mdto-mapping-unknown-property', message: $message)];
 	}//end propertyErrors()
 
 	/**
-	 * An error about an entry's source, naming the element and both source keys.
+	 * A message about an entry's source, naming the element and both source keys.
 	 *
-	 * @param string $code    The error code.
 	 * @param string $format  The message, with the element, the property key and the const key in that order.
 	 * @param string $element The MDTO element name.
 	 *
-	 * @return array{code: string, message: string} The error.
+	 * @return string The message.
 	 */
-	private function sourceError(string $code, string $format, string $element): array {
-		return $this->error(
-			code: $code,
-			message: sprintf($format, $element, self::SOURCE_PROPERTY, self::SOURCE_CONST)
-		);
-	}//end sourceError()
+	private function sourceMessage(string $format, string $element): string {
+		return sprintf($format, $element, self::SOURCE_PROPERTY, self::SOURCE_CONST);
+	}//end sourceMessage()
 
 	/**
 	 * One validation error.

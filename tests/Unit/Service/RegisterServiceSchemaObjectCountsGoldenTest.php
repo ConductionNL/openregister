@@ -111,7 +111,7 @@ class RegisterServiceSchemaObjectCountsGoldenTest extends TestCase {
 		}
 
 		return new RegisterService(
-			new RegisterServiceStorage($this->createMock(RegisterMapper::class), $this->createMock(SchemaMapper::class), $db),
+			new RegisterServiceStorage($db, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new RegisterServiceHelpers(
 				$this->createMock(FileService::class),
 				new RegisterSerializer($this->createMock(SchemaMapper::class), $logger)

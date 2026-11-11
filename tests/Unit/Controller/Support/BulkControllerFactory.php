@@ -51,8 +51,7 @@ final class BulkControllerFactory {
 					schemaManageGate: $schemaManageGate,
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\BulkPlatform(
-					userSession: $userSession,
-					groupManager: $groupManager,
+					principal: new \OCA\OpenRegister\Controller\Support\SessionPrincipal(userSession: $userSession, groupManager: $groupManager),
 					db: $db,
 				),
 			),

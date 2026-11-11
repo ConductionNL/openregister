@@ -88,8 +88,7 @@ class DbalAggregatorPlatformGoldenTest extends TestCase {
 
 		$aggregator = new DbalAggregator(logger: new NullLogger());
 		$query = $aggregator->query(
-			connection: $connection,
-			table: '"facts"',
+			from: new \OCA\OpenRegister\Service\ObjectSource\DbalFromClause(connection: $connection, table: '"facts"'),
 			aggregation: new DbalAggregation(
 				metric: $spec['metric'],
 				field: ($spec['field'] ?? null),

@@ -126,7 +126,7 @@ class MagicMapperResolveContextTest extends TestCase {
 	private function resolve(MagicMapper $mapper, ObjectEntity $entity): array {
 		$method = new \ReflectionMethod(MagicMapper::class, 'getResolvedRegisterAndSchema');
 		$method->setAccessible(true);
-		return $method->invoke($mapper, $entity, null, null);
+		return $method->invoke($mapper, $entity);
 	}//end resolve()
 
 	/**

@@ -23,6 +23,7 @@
 
 namespace OCA\OpenRegister\Search\Service;
 
+use OCA\OpenRegister\Search\Service\Vectorization\SemanticSearchRequest;
 use Exception;
 use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 use OCA\OpenRegister\Search\Service\Vectorization\VectorizationRun;
@@ -33,6 +34,8 @@ use OCA\OpenRegister\Search\Service\Vectorization\Handlers\StoredVector;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorChunkPosition;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorPayload;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\VectorSubject;
+use OCA\OpenRegister\Search\Service\Vectorization\EmbeddingProbe;
+use OCA\OpenRegister\Search\Service\Vectorization\HybridSearchRequest;
 
 /**
  * VectorizationService
@@ -175,7 +178,7 @@ class VectorizationService implements VectorizationServiceInterface {
 				run: new VectorizationRun(strategy: $strategy, options: $options, entityType: $entityType)
 			);
 
-			return $this->completedBatch(entityType: $entityType, entityCount: count($entities), tally: $tally);
+			return $this->completedBatch(entityType: $entityType, tally: $tally);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[VectorizationService] Batch vectorization failed',
@@ -196,7 +199,7 @@ class VectorizationService implements VectorizationServiceInterface {
 	 * @param array            $entities The entities to vectorize
 	 * @param VectorizationRun $run      Strategy, processing options and entity type
 	 *
-	 * @return array{total_items: int, vectorized: int, failed: int, errors: array<int, array<string, mixed>>}
+	 * @return array{total_items: int, vectorized: int, failed: int, errors: array<int, array<string, mixed>>, total_entities: int}
 	 */
 	private function vectorizeEntities(array $entities, VectorizationRun $run): array {
 		$this->logger->info(
@@ -217,26 +220,26 @@ class VectorizationService implements VectorizationServiceInterface {
 			);
 		}
 
+		$tally['total_entities'] = count($entities);
 		return $tally;
 	}//end vectorizeEntities()
 
 	/**
 	 * Log a completed batch and build its result.
 	 *
-	 * @param string $entityType  Entity type
-	 * @param int    $entityCount How many entities the batch held
-	 * @param array  $tally       The batch's tally
+	 * @param string $entityType Entity type
+	 * @param array  $tally      The batch's tally, with how many entities it held
 	 *
 	 * @return array The vectorization result.
 	 */
-	private function completedBatch(string $entityType, int $entityCount, array $tally): array {
+	private function completedBatch(string $entityType, array $tally): array {
 		$this->logger->info(
 			message: '[VectorizationService] Batch vectorization completed',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'entityType' => $entityType,
-				'totalEntities' => $entityCount,
+				'totalEntities' => $tally['total_entities'],
 				'totalItems' => $tally['total_items'],
 				'vectorized' => $tally['vectorized'],
 				'failed' => $tally['failed'],
@@ -247,7 +250,7 @@ class VectorizationService implements VectorizationServiceInterface {
 			'success' => true,
 			'message' => "Batch vectorization completed: {$tally['vectorized']} vectorized, {$tally['failed']} failed",
 			'entity_type' => $entityType,
-			'total_entities' => $entityCount,
+			'total_entities' => $tally['total_entities'],
 			'total_items' => $tally['total_items'],
 			'vectorized' => $tally['vectorized'],
 			'failed' => $tally['failed'],
@@ -411,7 +414,7 @@ class VectorizationService implements VectorizationServiceInterface {
 		$part = self::NO_ITEMS;
 		try {
 			$embeddingData = $this->vectorService->generateEmbedding($item[1]['text']);
-			$this->storeVector(target: $target, item: $item[1], embeddingData: $embeddingData);
+			$this->storeVector(target: $target, embedded: ['item' => $item[1], 'embeddingData' => $embeddingData]);
 			$part['vectorized'] = 1;
 		} catch (\Exception $e) {
 			$part['failed']   = 1;
@@ -443,10 +446,12 @@ class VectorizationService implements VectorizationServiceInterface {
 			$embeddings = $this->vectorService->generateBatchEmbeddings($texts);
 
 			foreach ($batch as $index => $item) {
-				$part = $this->storeBatchItem(
-					target: $target,
-					part: $part,
-					embedded: ['index' => $index, 'item' => $item, 'embeddingData' => ($embeddings[$index] ?? null)]
+				$part = $this->addTally(
+					tally: $part,
+					part: $this->storeBatchItem(
+						target: $target,
+						embedded: ['index' => $index, 'item' => $item, 'embeddingData' => ($embeddings[$index] ?? null)]
+					)
 				);
 			}
 		} catch (\Exception $e) {
@@ -469,15 +474,15 @@ class VectorizationService implements VectorizationServiceInterface {
 	 * Store one item of a batch, or list it as failed when it has no embedding.
 	 *
 	 * @param VectorizedEntity                                     $target   The entity, its strategy and identifier
-	 * @param array                                                $part     The batch tally so far
 	 * @param array{index: int, item: array, embeddingData: mixed} $embedded The item, its index and its batch embedding
 	 *
 	 * @return array{total_items: int, vectorized: int, failed: int, errors: array<int, array<string, mixed>>}
 	 */
-	private function storeBatchItem(VectorizedEntity $target, array $part, array $embedded): array {
+	private function storeBatchItem(VectorizedEntity $target, array $embedded): array {
+		$part = self::NO_ITEMS;
 		$embeddingData = $embedded['embeddingData'];
 		if ($embeddingData !== null && (($embeddingData['embedding'] ?? null) !== null)) {
-			$this->storeVector(target: $target, item: $embedded['item'], embeddingData: $embeddingData);
+			$this->storeVector(target: $target, embedded: $embedded);
 			$part['vectorized']++;
 			return $part;
 		}
@@ -511,34 +516,42 @@ class VectorizationService implements VectorizationServiceInterface {
 	/**
 	 * Store a vector using strategy-provided metadata
 	 *
-	 * @param VectorizedEntity $target        Original entity and its strategy
-	 * @param array            $item          Vectorization item with text
-	 * @param array            $embeddingData Embedding result
+	 * @param VectorizedEntity                     $target   Original entity and its strategy
+	 * @param array{item: array, embeddingData: array} $embedded The vectorization item (with text) and its embedding result
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	private function storeVector(VectorizedEntity $target, array $item, array $embeddingData): void {
-		$metadata = $target->strategy->prepareVectorMetadata(entity: $target->entity, item: $item);
-
-		$this->vectorService->storeVector(
-			vector: new StoredVector(
-				subject: new VectorSubject(entityType: $metadata['entity_type'], entityId: $metadata['entity_id']),
-				payload: new VectorPayload(
-					embedding: $embeddingData['embedding'],
-					model: $embeddingData['model'],
-					dimensions: $embeddingData['dimensions']
-				),
-				position: new VectorChunkPosition(
-					chunkIndex: $metadata['chunk_index'] ?? 0,
-					totalChunks: $metadata['total_chunks'] ?? 1,
-					chunkText: $metadata['chunk_text'] ?? null
-				),
-				metadata: $metadata['additional_metadata'] ?? []
-			)
-		);
+	private function storeVector(VectorizedEntity $target, array $embedded): void {
+		$metadata = $target->strategy->prepareVectorMetadata(entity: $target->entity, item: $embedded['item']);
+		$this->vectorService->storeVector(vector: $this->storedVector(metadata: $metadata, embeddingData: $embedded['embeddingData']));
 	}//end storeVector()
+
+	/**
+	 * The vector to store for one item: its subject and chunk position from the strategy's metadata, its payload from the embedding.
+	 *
+	 * @param array $metadata      The strategy's vector metadata for the item
+	 * @param array $embeddingData Embedding result
+	 *
+	 * @return StoredVector
+	 */
+	private function storedVector(array $metadata, array $embeddingData): StoredVector {
+		return new StoredVector(
+			subject: new VectorSubject(entityType: $metadata['entity_type'], entityId: $metadata['entity_id']),
+			payload: new VectorPayload(
+				embedding: $embeddingData['embedding'],
+				model: $embeddingData['model'],
+				dimensions: $embeddingData['dimensions']
+			),
+			position: new VectorChunkPosition(
+				chunkIndex: $metadata['chunk_index'] ?? 0,
+				totalChunks: $metadata['total_chunks'] ?? 1,
+				chunkText: $metadata['chunk_text'] ?? null
+			),
+			metadata: $metadata['additional_metadata'] ?? []
+		);
+	}//end storedVector()
 
 	/**
 	 * Get strategy for entity type
@@ -592,10 +605,7 @@ class VectorizationService implements VectorizationServiceInterface {
 	 *
 	 * Delegates to VectorEmbeddings.
 	 *
-	 * @param string $query Query text to search for
-	 * @param int $limit Maximum number of results
-	 * @param array $filters Additional filters (entity_type, etc.)
-	 * @param string|null $provider Embedding provider
+	 * @param SemanticSearchRequest $request The query text, the maximum results, the filters and the embedding provider.
 	 *
 	 * @return array<int,array<string,mixed>> Search results
 	 *
@@ -603,13 +613,8 @@ class VectorizationService implements VectorizationServiceInterface {
 	 *
 	 * @spec exclude One-line facade delegation to VectorEmbeddings::semanticSearch; no logic of its own.
 	 */
-	public function semanticSearch(
-		string $query,
-		int $limit = 10,
-		array $filters = [],
-		?string $provider = null,
-	): array {
-		return $this->vectorService->semanticSearch(query: $query, limit: $limit, filters: $filters, provider: $provider);
+	public function semanticSearch(SemanticSearchRequest $request): array {
+		return $this->vectorService->semanticSearch(request: $request);
 	}//end semanticSearch()
 
 	/**
@@ -618,10 +623,8 @@ class VectorizationService implements VectorizationServiceInterface {
 	 * Delegates to VectorEmbeddings. Caller supplies keyword search results;
 	 * vector search runs against the PostgreSQL database.
 	 *
-	 * @param string $query Query text
-	 * @param array $keywordResults Pre-fetched keyword search results to fuse
-	 * @param int $limit Maximum results
-	 * @param array $weights Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
+	 * @param HybridSearchRequest $request The query text, the pre-fetched keyword results to fuse, the maximum
+	 *                                     results and the weight per search type.
 	 *
 	 * @return array Hybrid search results with combined scores and source breakdown.
 	 *
@@ -629,18 +632,8 @@ class VectorizationService implements VectorizationServiceInterface {
 	 *
 	 * @spec exclude One-line facade delegation to VectorEmbeddings::hybridSearch; no logic of its own.
 	 */
-	public function hybridSearch(
-		string $query,
-		array $keywordResults = [],
-		int $limit = 20,
-		array $weights = ['keyword' => 0.5, 'vector' => 0.5],
-	): array {
-		return $this->vectorService->hybridSearch(
-			query: $query,
-			keywordResults: $keywordResults,
-			limit: $limit,
-			weights: $weights
-		);
+	public function hybridSearch(HybridSearchRequest $request): array {
+		return $this->vectorService->hybridSearch(request: $request);
 	}//end hybridSearch()
 
 	/**
@@ -661,9 +654,7 @@ class VectorizationService implements VectorizationServiceInterface {
 	 *
 	 * Delegates to VectorEmbeddings.
 	 *
-	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
-	 * @param array $config Provider-specific configuration
-	 * @param string $testText Optional test text to embed
+	 * @param EmbeddingProbe $probe The provider ('openai', 'fireworks', 'ollama'), its configuration and the text to embed.
 	 *
 	 * @return ((float[]|int|mixed|string)[]|bool|string)[] Test results
 	 *
@@ -674,8 +665,8 @@ class VectorizationService implements VectorizationServiceInterface {
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array {
-		return $this->vectorService->testEmbedding(provider: $provider, config: $config, testText: $testText);
+	public function testEmbedding(EmbeddingProbe $probe): array {
+		return $this->vectorService->testEmbedding(probe: $probe);
 	}//end testEmbedding()
 
 	/**

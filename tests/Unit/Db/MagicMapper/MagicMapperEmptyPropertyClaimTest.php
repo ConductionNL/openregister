@@ -120,7 +120,7 @@ class MagicMapperEmptyPropertyClaimTest extends TestCase {
 	 */
 	private function update(MagicMapper $mapper): void {
 		(new ReflectionMethod(MagicMapper::class, 'updateExistingObject'))
-			->invoke($mapper, 'uuid-1', ['_uuid' => 'uuid-1', 'assigned_to' => 'anna', 'title' => ''], 'openregister_table_1_2');
+			->invoke($mapper, self::rowWrite('uuid-1', ['_uuid' => 'uuid-1', 'assigned_to' => 'anna', 'title' => ''], 'openregister_table_1_2'));
 	}//end update()
 
 	/**
@@ -163,4 +163,21 @@ class MagicMapperEmptyPropertyClaimTest extends TestCase {
 
 		$this->assertSame(["_uuid = 'uuid-1'"], $this->where);
 	}//end testOnlyTheClaimedWriteIsConditional()
+
+	/**
+	 * A row write of the given uuid, column values and table.
+	 *
+	 * @param string               $uuid  The object uuid.
+	 * @param array<string, mixed> $row   The prepared column values.
+	 * @param string               $table The table name.
+	 *
+	 * @return \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite The write.
+	 */
+	private static function rowWrite(string $uuid, array $row, string $table): \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite {
+		$write = new \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite(objectData: [], register: new \OCA\OpenRegister\Db\Register(), schema: new \OCA\OpenRegister\Db\Schema(), tableName: $table);
+		$write->uuid = $uuid;
+		$write->row  = $row;
+
+		return $write;
+	}//end rowWrite()
 }//end class

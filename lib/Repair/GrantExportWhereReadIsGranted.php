@@ -84,12 +84,8 @@ class GrantExportWhereReadIsGranted implements IRepairStep {
 	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function run(IOutput $output): void {
-		try {
-			$schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
-		} catch (Throwable $e) {
-			$this->logger->info(
-				'[GrantExportWhereReadIsGranted] Could not list schemas, skipping: ' . $e->getMessage()
-			);
+		$schemas = (new SchemaListing(schemaMapper: $this->schemaMapper, logger: $this->logger))->allOrSkip(step: 'GrantExportWhereReadIsGranted');
+		if ($schemas === null) {
 			return;
 		}
 
@@ -103,15 +99,27 @@ class GrantExportWhereReadIsGranted implements IRepairStep {
 			$granted += $this->grantOn(schema: $schema, failed: $failed);
 		}
 
-		$output->info(
-			sprintf(
-				'Wrote the export grant onto %d schema(s), %d could not be written. '
-				. 'Every schema that already named the export right was left alone.',
-				$granted,
-				$failed
-			)
-		);
+		$output->info(self::summary(granted: $granted, failed: $failed));
 	}//end run()
+
+	/**
+	 * The closing line: grants written and schemas that could not be written.
+	 *
+	 * @param int $granted Schemas given the export grant.
+	 * @param int $failed  Schemas whose write was refused.
+	 *
+	 * @return string The line.
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md
+	 */
+	private static function summary(int $granted, int $failed): string {
+		return sprintf(
+			'Wrote the export grant onto %d schema(s), %d could not be written. '
+			. 'Every schema that already named the export right was left alone.',
+			$granted,
+			$failed
+		);
+	}//end summary()
 
 	/**
 	 * Write the export grant onto one schema, when it is missing.
@@ -120,38 +128,73 @@ class GrantExportWhereReadIsGranted implements IRepairStep {
 	 * @param int    $failed Running count of schemas that could not be written, by reference.
 	 *
 	 * @return int 1 when a grant was written, 0 otherwise.
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	private function grantOn(Schema $schema, int &$failed): int {
-		$authorization = $schema->getAuthorization();
-		if (is_array($authorization) === false || $authorization === []) {
-			// No block at all. Nothing is narrowed here, so nothing has to be
-			// widened: the fallback to `read` already answers for this schema.
+		$authorization = self::withExportGrant(schema: $schema);
+		if ($authorization === null) {
 			return 0;
 		}
-
-		if (isset($authorization[ExportRightService::ACTION]) === true) {
-			return 0;
-		}
-
-		$read = ($authorization[ExportRightService::FALLBACK_ACTION] ?? null);
-		if (is_array($read) === false) {
-			return 0;
-		}
-
-		$authorization[ExportRightService::ACTION] = array_values($read);
 
 		try {
 			$schema->setAuthorization($authorization);
 			$this->schemaMapper->update($schema);
 		} catch (Throwable $e) {
 			$failed++;
-			$this->logger->warning(
-				'[GrantExportWhereReadIsGranted] Could not write the export grant on schema '
-				. (string)$schema->getId() . ': ' . $e->getMessage()
-			);
+			$this->logRefusedWrite(schema: $schema, error: $e);
 			return 0;
 		}
 
 		return 1;
 	}//end grantOn()
+
+	/**
+	 * Log a schema whose export grant could not be written.
+	 *
+	 * @param Schema    $schema The schema.
+	 * @param Throwable $error  Why the write was refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md
+	 */
+	private function logRefusedWrite(Schema $schema, Throwable $error): void {
+		$this->logger->warning(
+			'[GrantExportWhereReadIsGranted] Could not write the export grant on schema '
+			. (string)$schema->getId() . ': ' . $error->getMessage()
+		);
+	}//end logRefusedWrite()
+
+	/**
+	 * The schema's authorization block with an export grant equal to its read grant,
+	 * or null when it needs none.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array|null The block to write, or null to leave the schema alone.
+	 *
+	 * @spec openspec/specs/authorization-rbac/spec.md
+	 */
+	private static function withExportGrant(Schema $schema): ?array {
+		$authorization = $schema->getAuthorization();
+		if (is_array($authorization) === false || $authorization === []) {
+			// No block at all. Nothing is narrowed here, so nothing has to be
+			// widened: the fallback to `read` already answers for this schema.
+			return null;
+		}
+
+		if (isset($authorization[ExportRightService::ACTION]) === true) {
+			return null;
+		}
+
+		$read = ($authorization[ExportRightService::FALLBACK_ACTION] ?? null);
+		if (is_array($read) === false) {
+			return null;
+		}
+
+		$authorization[ExportRightService::ACTION] = array_values($read);
+
+		return $authorization;
+	}//end withExportGrant()
 }//end class

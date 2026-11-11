@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Translation;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
+use OCA\OpenRegister\Service\Translation\LanguagePair;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -34,8 +35,8 @@ class IdentityTranslationProviderTest extends TestCase {
 	public function testTheTextComesBackUntranslatedWhateverTheLanguages(): void {
 		$provider = new IdentityTranslationProvider();
 
-		$this->assertSame('Bouwvergunning', $provider->translate('Bouwvergunning', 'nl', 'en'));
-		$this->assertSame('', $provider->translate('', 'en', 'de'));
+		$this->assertSame('Bouwvergunning', $provider->translate('Bouwvergunning', new LanguagePair('nl', 'en')));
+		$this->assertSame('', $provider->translate('', new LanguagePair('en', 'de')));
 	}
 
 	public function testItIdentifiesAsTheIdentityProvider(): void {

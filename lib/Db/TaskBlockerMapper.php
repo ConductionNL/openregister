@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
@@ -75,16 +76,26 @@ class TaskBlockerMapper extends QBMapper implements TaskBlockerMapperInterface {
 			->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY)))
 			->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
 
-		$result = $qb->executeQuery();
-		$open = [];
+		return $this->uuidsOf(result: $qb->executeQuery());
+	}//end openBlockerUuids()
+
+	/**
+	 * The uuids a result holds, as strings; the result is closed after.
+	 *
+	 * @param IResult $result The result.
+	 *
+	 * @return array<int, string> The uuids.
+	 */
+	private function uuidsOf(IResult $result): array {
+		$uuids = [];
 		while (($row = $result->fetch()) !== false) {
-			$open[] = (string)$row['uuid'];
+			$uuids[] = (string)$row['uuid'];
 		}
 
 		$result->closeCursor();
 
-		return $open;
-	}//end openBlockerUuids()
+		return $uuids;
+	}//end uuidsOf()
 
 	/**
 	 * The open tasks that wait on this one.

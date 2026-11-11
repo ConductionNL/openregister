@@ -21,9 +21,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -72,15 +73,11 @@ class SelectionListSeeder {
 	/**
 	 * Constructor.
 	 *
-	 * @param ArchivalSettingsReaderInterface $settingsHandler Names the selectielijst register and schema.
-	 * @param ArchivalRegisterMappers $mappers The register, schema and object mappers.
-	 * @param SaveObjectWriterInterface             $saveObject      Writes a row.
-	 * @param LoggerInterface        $logger          Reports a row that could not be stored.
+	 * @param SelectielijstStorage $storage Names the selectielijst register and schema, reads its rows and writes a row.
+	 * @param LoggerInterface      $logger  Reports a row that could not be stored.
 	 */
 	public function __construct(
-		private readonly ArchivalSettingsReaderInterface $settingsHandler,
-		private readonly ArchivalRegisterMappers $mappers,
-		private readonly SaveObjectWriterInterface $saveObject,
+		private readonly SelectielijstStorage $storage,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -106,88 +103,79 @@ class SelectionListSeeder {
 			return $result;
 		}
 
-		return $this->seedRows(register: $target[0], schema: $target[1], entries: $entries, appId: $appId);
+		return $this->seedRows(run: new SeedRun(table: $target, appId: $appId), entries: $entries);
 	}//end seed()
 
 	/**
 	 * Write every entry into the configured register, tallying each outcome.
 	 *
-	 * @param mixed                    $register The selectielijst register.
-	 * @param mixed                    $schema   The selectielijst schema.
-	 * @param array<int|string, mixed> $entries  The shipped entries.
-	 * @param string|null              $appId    The app shipping them.
+	 * @param SeedRun                  $run     The register and schema, the app shipping the entries, and the tally.
+	 * @param array<int|string, mixed> $entries The shipped entries.
 	 *
 	 * @return array{created: int, updated: int, unchanged: int, kept: int, failed: array<int, array{category: string, reason: string}>}
 	 */
-	private function seedRows(mixed $register, mixed $schema, array $entries, ?string $appId): array {
-		$result = self::NOTHING_SEEDED;
-		$stored = $this->storedRows(register: $register, schema: $schema);
+	private function seedRows(SeedRun $run, array $entries): array {
+		$run->stored = $this->storedRows(table: $run->table);
 		foreach ($entries as $key => $entry) {
-			$row = $this->rowFor(entry: $this->withKeyAsCategory(entry: $entry, key: $key), appId: $appId);
+			$row = $this->rowFor(entry: $this->withKeyAsCategory(entry: $entry, key: $key), appId: $run->appId);
 			if (is_string($row) === true) {
-				$result['failed'][] = ['category' => $this->categoryOf(entry: $entry), 'reason' => $row];
+				$run->result['failed'][] = ['category' => $this->categoryOf(entry: $entry), 'reason' => $row];
 				continue;
 			}
 
-			$outcome = $this->write(register: $register, schema: $schema, row: $row, existing: ($stored[$this->keyOf(row: $row)] ?? null));
-			$stored = $this->remembered(stored: $stored, row: $row, outcome: $outcome);
-			$result = $this->tally(result: $result, row: $row, outcome: $outcome);
+			$seeded = new SeededRow(row: $row, outcome: $this->write(run: $run, row: $row));
+			$this->remember(run: $run, seeded: $seeded);
+			$this->tally(run: $run, seeded: $seeded);
 		}
 
-		return $result;
+		return $run->result;
 	}//end seedRows()
 
 	/**
-	 * The stored rows, with a row just created among them so a repeat in the same seed matches it.
+	 * Remember a row this run created, so a later duplicate entry is compared with it rather than created twice.
 	 *
-	 * @param array<string, ObjectEntity> $stored  The stored rows, by key.
-	 * @param array<string, mixed>        $row     The row written.
-	 * @param string                      $outcome What writing it did.
+	 * @param SeedRun   $run    The run, whose stored rows are extended.
+	 * @param SeededRow $seeded The row and its outcome.
 	 *
-	 * @return array<string, ObjectEntity> The stored rows.
+	 * @return void
 	 */
-	private function remembered(array $stored, array $row, string $outcome): array {
-		if ($outcome === 'created') {
+	private function remember(SeedRun $run, SeededRow $seeded): void {
+		if ($seeded->outcome === 'created') {
 			$created = new ObjectEntity();
-			$created->setObject($row);
-			$stored[$this->keyOf(row: $row)] = $created;
+			$created->setObject($seeded->row);
+			$run->stored[$this->keyOf(row: $seeded->row)] = $created;
 		}
-
-		return $stored;
-	}//end remembered()
+	}//end remember()
 
 	/**
-	 * Count one write's outcome; a failed write is named with its category.
+	 * Count one outcome; a failed write is listed with a pointer to the log.
 	 *
-	 * @param array<string, mixed> $result  The result so far.
-	 * @param array<string, mixed> $row     The row written.
-	 * @param string               $outcome What writing it did.
+	 * @param SeedRun   $run    The run, whose tally is updated.
+	 * @param SeededRow $seeded The row and its outcome.
 	 *
-	 * @return array<string, mixed> The result.
+	 * @return void
 	 */
-	private function tally(array $result, array $row, string $outcome): array {
-		if ($outcome === 'failed') {
-			$result['failed'][] = ['category' => $row['categorie'], 'reason' => 'The row could not be stored; see the log.'];
-			return $result;
+	private function tally(SeedRun $run, SeededRow $seeded): void {
+		if ($seeded->outcome === 'failed') {
+			$run->result['failed'][] = ['category' => $seeded->row['categorie'], 'reason' => 'The row could not be stored; see the log.'];
+			return;
 		}
 
-		$result[$outcome]++;
-		return $result;
+		$run->result[$seeded->outcome]++;
 	}//end tally()
 
 	/**
-	 * Store one row, or leave it: created, updated, unchanged, kept or failed.
+	 * Create a new row, or update the stored one when this app owns it and it changed.
 	 *
-	 * @param mixed                $register The selectielijst register.
-	 * @param mixed                $schema   The selectielijst schema.
-	 * @param array<string, mixed> $row      The row to write.
-	 * @param ObjectEntity|null    $existing The stored row with the same key.
+	 * @param SeedRun              $run The register and schema, and the stored rows.
+	 * @param array<string, mixed> $row The row to write.
 	 *
-	 * @return string The outcome.
+	 * @return string created, updated, unchanged, kept or failed.
 	 */
-	private function write(mixed $register, mixed $schema, array $row, ?ObjectEntity $existing): string {
+	private function write(SeedRun $run, array $row): string {
+		$existing = ($run->stored[$this->keyOf(row: $row)] ?? null);
 		if ($existing === null) {
-			return $this->saveRow(register: $register, schema: $schema, data: $row, uuid: null);
+			return $this->saveRow(table: $run->table, write: new RowWrite(data: $row, uuid: null));
 		}
 
 		$stored = ($existing->getObject() ?? []);
@@ -196,7 +184,7 @@ class SelectionListSeeder {
 			return $unwritten;
 		}
 
-		return $this->saveRow(register: $register, schema: $schema, data: array_merge($stored, $row), uuid: $existing->getUuid());
+		return $this->saveRow(table: $run->table, write: new RowWrite(data: array_merge($stored, $row), uuid: $existing->getUuid()));
 	}//end write()
 
 	/**
@@ -220,26 +208,24 @@ class SelectionListSeeder {
 	}//end unwritten()
 
 	/**
-	 * Save a row: created, updated, or failed when the save path refused it.
+	 * Store one row.
 	 *
-	 * @param mixed                $register The selectielijst register.
-	 * @param mixed                $schema   The selectielijst schema.
-	 * @param array<string, mixed> $data     The row as it is to be stored.
-	 * @param string|null          $uuid     The stored row's uuid, or null for a new row.
+	 * @param RegisterSchema $table The selectielijst register and schema.
+	 * @param RowWrite       $write The row's data, and the uuid of the row it replaces.
 	 *
-	 * @return string The outcome.
+	 * @return string created, updated or failed.
 	 */
-	private function saveRow(mixed $register, mixed $schema, array $data, ?string $uuid): string {
+	private function saveRow(RegisterSchema $table, RowWrite $write): string {
 		try {
-			$this->saveObject->saveObject($register, $schema, $data, $uuid);
+			$this->storage->writer->saveObject($table->register, $table->schema, $write->data, $write->uuid);
 		} catch (Throwable $e) {
 			$this->logger->warning(
-				'[SelectionListSeeder] Could not store category ' . $data['categorie'] . ': ' . $e->getMessage()
+				'[SelectionListSeeder] Could not store category ' . $write->data['categorie'] . ': ' . $e->getMessage()
 			);
 			return 'failed';
 		}
 
-		if ($uuid === null) {
+		if ($write->uuid === null) {
 			return 'created';
 		}
 
@@ -455,14 +441,14 @@ class SelectionListSeeder {
 	 * recognise becomes `1 = 0`, and a miss would re-create every row on every
 	 * import.
 	 *
-	 * @param mixed $register The selectielijst register.
-	 * @param mixed $schema   The selectielijst schema.
+	 * @param RegisterSchema $table The selectielijst register and schema.
 	 *
 	 * @return array<string, ObjectEntity> The rows.
 	 */
-	private function storedRows(mixed $register, mixed $schema): array {
+	private function storedRows(RegisterSchema $table): array {
 		try {
-			$objects = $this->mappers->objectMapper->findAll(limit: self::MAX_ROWS, register: $register, schema: $schema);
+			$request = new MagicListRequest(table: $table, query: new ListQuery(limit: self::MAX_ROWS));
+			$objects = $this->storage->catalog->tables()->findAllListed(request: $request);
 		} catch (Throwable $e) {
 			$this->logger->warning('[SelectionListSeeder] Could not read the selectielijst: ' . $e->getMessage());
 			return [];
@@ -525,10 +511,10 @@ class SelectionListSeeder {
 	/**
 	 * The selectielijst register and schema, or null when none is configured.
 	 *
-	 * @return array{0: mixed, 1: mixed}|null The pair.
+	 * @return RegisterSchema|null The register and schema, or null when none is configured or either is gone.
 	 */
-	private function target(): ?array {
-		$settings = $this->settingsHandler->getArchivalSettingsOnly();
+	private function target(): ?RegisterSchema {
+		$settings = $this->storage->settings->getArchivalSettingsOnly();
 		$registerId = ($settings['selectielijstRegister'] ?? null);
 		$schemaId = ($settings['selectielijstSchema'] ?? null);
 		if (empty($registerId) === true || empty($schemaId) === true) {
@@ -536,7 +522,8 @@ class SelectionListSeeder {
 		}
 
 		try {
-			return [$this->mappers->registerMapper->find((int)$registerId), $this->mappers->schemaMapper->find((int)$schemaId)];
+			$catalog = $this->storage->catalog;
+			return new RegisterSchema(register: $catalog->registers()->find((int)$registerId), schema: $catalog->schemas()->find((int)$schemaId));
 		} catch (Throwable $e) {
 			$this->logger->warning('[SelectionListSeeder] The selectielijst register or schema is gone: ' . $e->getMessage());
 			return null;

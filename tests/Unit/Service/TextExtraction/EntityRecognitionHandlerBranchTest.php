@@ -234,6 +234,8 @@ class EntityRecognitionHandlerBranchTest extends TestCase {
 			'entity_types' => [EntityRecognitionHandler::ENTITY_TYPE_PHONE],
 		]);
 		$this->assertIsArray($result);
+		// Only the requested phone type is extracted; the e-mail address is skipped.
+		$this->assertSame(['PHONE'], array_column($result['entities'], 'type'));
 	}
 
 	public function testExtractEmailAndCreateEntity(): void {

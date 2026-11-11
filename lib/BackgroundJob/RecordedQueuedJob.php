@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Service\Operations\JobRunStart;
 use OCA\OpenRegister\Service\Operations\JobRunContext;
 use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -65,15 +66,17 @@ abstract class RecordedQueuedJob extends QueuedJob implements RecordsItsRuns {
 	 */
 	final protected function run($argument): void {
 		$this->recorder->around(
-			jobClass: static::class,
+			start: new JobRunStart(
+				jobClass: static::class,
+				context: new JobRunContext(
+					cause: $this->causeOf(argument: $argument),
+					actor: $this->actorOf(argument: $argument),
+					argument: $argument
+				)
+			),
 			work: function () use ($argument): void {
 				$this->runRecorded(argument: $argument);
-			},
-			context: new JobRunContext(
-				cause: $this->causeOf(argument: $argument),
-				actor: $this->actorOf(argument: $argument),
-				argument: $argument
-			)
+			}
 		);
 
 	}//end run()

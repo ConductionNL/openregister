@@ -38,6 +38,7 @@ use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\PollLinkServiceInterface;
 use OCA\OpenRegister\Service\PollDraft;
 use OCP\AppFramework\Controller;
@@ -98,13 +99,24 @@ class PollLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexForObject(ObjectRef $ref): JSONResponse {
 		return $this->whenPollsInstalled(
 			answer: fn (): JSONResponse => $this->listLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 				action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->pollLinkService->getLinkedPolls($object->getUuid()))
 			)
 		);
-	}//end index()
+	}//end indexForObject()
 
 	/**
 	 * Link an existing poll.
@@ -123,17 +135,27 @@ class PollLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
+		return $this->linkForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end link()
+
+	/**
+	 * link() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function linkForObject(ObjectRef $ref): JSONResponse {
 		return $this->whenPollsInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-				action: LinkedSourceActions::linkById(
-					request: $this->request,
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				action: (new LinkedSourceActions(request: $this->request))->linkById(
 					param: 'pollId',
 					link: fn (ObjectEntity $object, int $pollId) => $this->pollLinkService->linkPoll($this->linkTargetOf(object: $object), $pollId)
 				)
 			)
 		);
-	}//end link()
+	}//end linkForObject()
 
 	/**
 	 * Create a new poll and link it.
@@ -153,13 +175,24 @@ class PollLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function createNew(string $register, string $schema, string $id): JSONResponse {
+		return $this->createNewForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end createNew()
+
+	/**
+	 * createNew() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function createNewForObject(ObjectRef $ref): JSONResponse {
 		return $this->whenPollsInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 				action: $this->createPoll(...)
 			)
 		);
-	}//end createNew()
+	}//end createNewForObject()
 
 	/**
 	 * Unlink a poll.
@@ -177,13 +210,25 @@ class PollLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function destroy(string $register, string $schema, string $id, string $pollId): JSONResponse {
+		return $this->destroyForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), pollId: $pollId);
+	}//end destroy()
+
+	/**
+	 * destroy() for the object the route names.
+	 *
+	 * @param ObjectRef $ref    The object the route names.
+	 * @param string    $pollId Polls poll id (numeric).
+	 *
+	 * @return JSONResponse
+	 */
+	private function destroyForObject(ObjectRef $ref, string $pollId): JSONResponse {
 		return $this->whenPollsInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 				action: LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->pollLinkService->unlinkPoll($uuid, (int)$pollId))
 			)
 		);
-	}//end destroy()
+	}//end destroyForObject()
 
 	/**
 	 * List polls visible to the current user (picker source).

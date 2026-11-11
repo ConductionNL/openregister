@@ -70,6 +70,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests for the appendOnly schema flag enforcement in ObjectService.
@@ -152,7 +155,7 @@ class AppendOnlyTest extends TestCase {
 			}
 		);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -191,7 +194,7 @@ class AppendOnlyTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 	}//end setUp()
@@ -321,7 +324,7 @@ class AppendOnlyTest extends TestCase {
 		$this->expectException(AppendOnlyException::class);
 		$this->expectExceptionCode(405);
 
-		$this->service->deleteObject(uuid: 'some-uuid-xyz');
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'some-uuid-xyz'));
 	}//end testDeleteObjectRejectedOnAppendOnlySchema()
 
 	// =========================================================================
@@ -386,7 +389,7 @@ class AppendOnlyTest extends TestCase {
 			->method('deleteObject')
 			->willReturn(true);
 
-		$result = $this->service->deleteObject(uuid: 'del-uuid-789');
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'del-uuid-789'));
 
 		$this->assertTrue($result);
 	}//end testDeleteObjectAllowedOnOrdinarySchema()
@@ -582,7 +585,7 @@ class AppendOnlyTest extends TestCase {
 
 		$this->expectException(AppendOnlyException::class);
 
-		$this->service->patchObject(objectId: 'stored-uuid', data: ['name' => 'changed']);
+		$this->service->patchObject(patch: new ObjectPatch(objectId: 'stored-uuid', data: ['name' => 'changed']));
 	}//end testPatchOfExistingObjectRefusedOnAppendOnlySchema()
 
 	/**
@@ -598,7 +601,7 @@ class AppendOnlyTest extends TestCase {
 		$this->expectException(AppendOnlyException::class);
 		$this->expectExceptionCode(405);
 
-		$this->service->deleteObject(uuid: 'stored-uuid');
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'stored-uuid'));
 	}//end testDeleteOfExistingObjectRefusedOnAppendOnlySchema()
 
 	/**

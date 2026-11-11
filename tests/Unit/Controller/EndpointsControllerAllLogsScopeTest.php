@@ -23,7 +23,9 @@ use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLog;
 use OCA\OpenRegister\Db\EndpointLogMapper;
+use OCA\OpenRegister\Db\EndpointLogScope;
 use OCA\OpenRegister\Db\EndpointMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\EndpointService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\EndpointsControllerFactory;
 use OCP\IGroupManager;
@@ -103,7 +105,7 @@ class EndpointsControllerAllLogsScopeTest extends TestCase {
 		$ownLog = new EndpointLog();
 		$this->endpointLogMapper->expects($this->once())
 			->method('findPageWithin')
-			->with([3, 7], null, 10, 0)
+			->with(new EndpointLogScope([3, 7], null), new ListQuery(10, 0))
 			->willReturn([[$ownLog], 1]);
 
 		$result = $this->controller(admin: false, params: ['limit' => 10, 'offset' => 0])->allLogs();
@@ -118,7 +120,7 @@ class EndpointsControllerAllLogsScopeTest extends TestCase {
 		$this->endpointLogMapper->expects($this->never())->method('findAll');
 		$this->endpointLogMapper->expects($this->once())
 			->method('findPageWithin')
-			->with([3, 7], 99, 50, 0)
+			->with(new EndpointLogScope([3, 7], 99), new ListQuery(50, 0))
 			->willReturn([[], 0]);
 
 		$result = $this->controller(admin: false, params: ['endpoint_id' => '99'])->allLogs();

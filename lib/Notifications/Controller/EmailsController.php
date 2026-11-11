@@ -30,6 +30,7 @@ use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Notifications\Controller\Support\EmailsControllerServices;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
 use OCA\OpenRegister\Service\EmailLinkServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
@@ -37,6 +38,8 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Notifications\Service\EmailLinkRequest;
 
 /**
  * EmailsController handles email relation operations for objects in registers.
@@ -134,12 +137,8 @@ class EmailsController extends Controller {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	public function index(
-		string $register,
-		string $schema,
-		string $id,
-	): JSONResponse {
-		return $this->listFor(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->listFor(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end index()
 
 	/**
@@ -156,12 +155,8 @@ class EmailsController extends Controller {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	public function create(
-		string $register,
-		string $schema,
-		string $id,
-	): JSONResponse {
-		return $this->linkTo(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	public function create(string $register, string $schema, string $id): JSONResponse {
+		return $this->linkTo(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end create()
 
 	/**
@@ -179,13 +174,8 @@ class EmailsController extends Controller {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
-	public function destroy(
-		string $register,
-		string $schema,
-		string $id,
-		string $emailId,
-	): JSONResponse {
-		return $this->unlinkFrom(path: ['register' => $register, 'schema' => $schema, 'id' => $id], emailId: $emailId);
+	public function destroy(string $register, string $schema, string $id, string $emailId): JSONResponse {
+		return $this->unlinkFrom(ref: new ObjectRef(register: $register, schema: $schema, id: $id), emailId: $emailId);
 	}//end destroy()
 
 	/**
@@ -205,20 +195,26 @@ class EmailsController extends Controller {
 	}//end mailUnavailable()
 
 	/**
-	 * List the email links of the object at a path.
+	 * List the email links of the object a reference names.
 	 *
-	 * @param array<string, string> $path The register, schema and object id.
+	 * @param ObjectRef $ref The register, schema and object id.
 	 *
 	 * @return JSONResponse JSON response with email links
 	 */
-	private function listFor(array $path): JSONResponse {
-		$unavailable = $this->mailUnavailable();
-		if ($unavailable !== null) {
-			return $unavailable;
-		}
+	private function listFor(ObjectRef $ref): JSONResponse {
+		return ($this->mailUnavailable() ?? $this->listLinks(ref: $ref));
+	}//end listFor()
 
+	/**
+	 * List the email links of the object a reference names, mail being available.
+	 *
+	 * @param ObjectRef $ref The register, schema and object id.
+	 *
+	 * @return JSONResponse JSON response with email links
+	 */
+	private function listLinks(ObjectRef $ref): JSONResponse {
 		try {
-			$object = $this->validateObject(path: $path);
+			$object = $this->validateObject(ref: $ref);
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
@@ -229,7 +225,7 @@ class EmailsController extends Controller {
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
 		}//end try
-	}//end listFor()
+	}//end listLinks()
 
 	/**
 	 * The email links of an object, paged by the request's `limit` and `offset`.
@@ -240,7 +236,7 @@ class EmailsController extends Controller {
 	 */
 	private function linksOf(\OCA\OpenRegister\Db\ObjectEntity $object): array {
 		$params = $this->request->getParams();
-		$limit = null;
+		$limit = ListQuery::UNBOUNDED;
 		if (isset($params['limit']) === true) {
 			$limit = (int)$params['limit'];
 		}
@@ -250,21 +246,21 @@ class EmailsController extends Controller {
 			$offset = (int)$params['offset'];
 		}
 
-		return $this->emailService->getEmailsForObject($object->getUuid(), $limit, $offset);
+		return $this->emailService->getEmailsForObject($object->getUuid(), new ListQuery(limit: $limit, offset: $offset));
 	}//end linksOf()
 
 	/**
-	 * The object at a path when the caller may change it, else the refusal.
+	 * The object a reference names when the caller may change it, else the refusal.
 	 *
 	 * A missing object is a 404 and the update right is asked before anything
 	 * is written; a DoesNotExistException propagates to the caller's 404.
 	 *
-	 * @param array<string, string> $path The register, schema and object id.
+	 * @param ObjectRef $ref The register, schema and object id.
 	 *
 	 * @return \OCA\OpenRegister\Db\ObjectEntity|JSONResponse The object, or the 404/403 refusal.
 	 */
-	private function writableObject(array $path): \OCA\OpenRegister\Db\ObjectEntity|JSONResponse {
-		$object = $this->validateObject(path: $path);
+	private function writableObject(ObjectRef $ref): \OCA\OpenRegister\Db\ObjectEntity|JSONResponse {
+		$object = $this->validateObject(ref: $ref);
 		if ($object === null) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		}
@@ -277,31 +273,54 @@ class EmailsController extends Controller {
 	}//end writableObject()
 
 	/**
-	 * Link the requested email to the object at a path.
+	 * Run an action on the object a reference names when the caller may change it, else answer the refusal.
 	 *
-	 * @param array<string, string> $path The register, schema and object id.
+	 * Exceptions from the lookup or the action propagate to the caller's error mapping.
+	 *
+	 * @param ObjectRef $ref    The register, schema and object id.
+	 * @param \Closure  $action The action on the writable object; answers the response.
+	 *
+	 * @return JSONResponse
+	 */
+	private function onWritable(ObjectRef $ref, \Closure $action): JSONResponse {
+		$object = $this->writableObject(ref: $ref);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		return $action($object);
+	}//end onWritable()
+
+	/**
+	 * Link the requested email to the object a reference names.
+	 *
+	 * @param ObjectRef $ref The register, schema and object id.
 	 *
 	 * @return JSONResponse JSON response with the created email link
 	 */
-	private function linkTo(array $path): JSONResponse {
-		$unavailable = $this->mailUnavailable();
-		if ($unavailable !== null) {
-			return $unavailable;
-		}
+	private function linkTo(ObjectRef $ref): JSONResponse {
+		return ($this->mailUnavailable() ?? $this->linkWritable(ref: $ref));
+	}//end linkTo()
 
+	/**
+	 * Link the requested email to the object a reference names, mail being available.
+	 *
+	 * @param ObjectRef $ref The register, schema and object id.
+	 *
+	 * @return JSONResponse JSON response with the created email link
+	 */
+	private function linkWritable(ObjectRef $ref): JSONResponse {
 		try {
-			$object = $this->writableObject(path: $path);
-			if ($object instanceof JSONResponse) {
-				return $object;
-			}
-
-			return $this->linkRequested(object: $object);
+			return $this->onWritable(
+				ref: $ref,
+				action: fn (\OCA\OpenRegister\Db\ObjectEntity $object): JSONResponse => $this->linkRequested(object: $object)
+			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		} catch (Exception $e) {
 			return $this->linkFailure(exception: $e);
 		}//end try
-	}//end linkTo()
+	}//end linkWritable()
 
 	/**
 	 * Link the email the request names to an object the caller may change.
@@ -325,10 +344,12 @@ class EmailsController extends Controller {
 		$this->emailLinkService->assertAccountOwnership(accountId: (int)$data['mailAccountId']);
 
 		$link = $this->emailService->linkEmail(
-			$object->getUuid(),
-			(int)$object->getRegister(),
-			(int)$data['mailAccountId'],
-			(int)$data['mailMessageId']
+			request: new EmailLinkRequest(
+				objectUuid: $object->getUuid(),
+				registerId: (int)$object->getRegister(),
+				mailAccountId: (int)$data['mailAccountId'],
+				mailMessageId: (int)$data['mailMessageId']
+			)
 		);
 
 		return new JSONResponse($link, 201);
@@ -355,26 +376,31 @@ class EmailsController extends Controller {
 	}//end linkFailure()
 
 	/**
-	 * Remove an email link from the object at a path.
+	 * Remove an email link from the object a reference names.
 	 *
-	 * @param array<string, string> $path    The register, schema and object id.
+	 * @param ObjectRef $ref     The register, schema and object id.
 	 * @param string                $emailId The email link ID
 	 *
 	 * @return JSONResponse JSON response confirming deletion
 	 */
-	private function unlinkFrom(array $path, string $emailId): JSONResponse {
-		$unavailable = $this->mailUnavailable();
-		if ($unavailable !== null) {
-			return $unavailable;
-		}
+	private function unlinkFrom(ObjectRef $ref, string $emailId): JSONResponse {
+		return ($this->mailUnavailable() ?? $this->unlinkWritable(ref: $ref, emailId: $emailId));
+	}//end unlinkFrom()
 
+	/**
+	 * Remove an email link from the object a reference names, mail being available.
+	 *
+	 * @param ObjectRef $ref     The register, schema and object id.
+	 * @param string    $emailId The email link ID
+	 *
+	 * @return JSONResponse JSON response confirming deletion
+	 */
+	private function unlinkWritable(ObjectRef $ref, string $emailId): JSONResponse {
 		try {
-			$object = $this->writableObject(path: $path);
-			if ($object instanceof JSONResponse) {
-				return $object;
-			}
-
-			return $this->unlinkOn(object: $object, emailId: $emailId);
+			return $this->onWritable(
+				ref: $ref,
+				action: fn (\OCA\OpenRegister\Db\ObjectEntity $object): JSONResponse => $this->unlinkOn(object: $object, emailId: $emailId)
+			);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'Object not found'], 404);
 		} catch (Exception $e) {
@@ -384,7 +410,7 @@ class EmailsController extends Controller {
 
 			return new JSONResponse(['error' => $e->getMessage()], 400);
 		}//end try
-	}//end unlinkFrom()
+	}//end unlinkWritable()
 
 	/**
 	 * Remove one of an object's email links; an object without a uuid has none.
@@ -423,13 +449,15 @@ class EmailsController extends Controller {
 	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
 	public function search(): JSONResponse {
-		if ($this->emailService->isMailAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Mail app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
+		return ($this->mailUnavailable() ?? $this->searchSender());
+	}//end search()
 
+	/**
+	 * Search the caller's mail for the request's `sender`, mail being available.
+	 *
+	 * @return JSONResponse JSON response with matching email links
+	 */
+	private function searchSender(): JSONResponse {
 		try {
 			$params = $this->request->getParams();
 			$sender = $params['sender'] ?? null;
@@ -444,7 +472,7 @@ class EmailsController extends Controller {
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
 		}
-	}//end search()
+	}//end searchSender()
 
 	/**
 	 * Which object a reply threads onto, by its `In-Reply-To` and `References`.
@@ -479,7 +507,7 @@ class EmailsController extends Controller {
 	/**
 	 * Validate that the object exists and return it.
 	 *
-	 * @param array<string, string> $path The register, schema and object id.
+	 * @param ObjectRef $ref The register, schema and object id.
 	 *
 	 * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
 	 *
@@ -488,10 +516,10 @@ class EmailsController extends Controller {
 	 *                               Swallowing it here would collapse "no such object" into the same null this method
 	 *                               returns for other reasons, which the caller could no longer tell apart.
 	 */
-	private function validateObject(array $path): ?\OCA\OpenRegister\Db\ObjectEntity {
-		$this->objectService->setRegister($path['register']);
-		$this->objectService->setSchema($path['schema']);
-		$this->objectService->setObject($path['id']);
+	private function validateObject(ObjectRef $ref): ?\OCA\OpenRegister\Db\ObjectEntity {
+		$this->objectService->setRegister($ref->register);
+		$this->objectService->setSchema($ref->schema);
+		$this->objectService->setObject($ref->id);
 
 		return $this->objectService->getObject();
 	}//end validateObject()

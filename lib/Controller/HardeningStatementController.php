@@ -27,6 +27,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\HardeningStatementControllerServices;
 use OCA\OpenRegister\Service\Hardening\ElevationRequiredExceptionInterface;
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
+use OCA\OpenRegister\Service\Hardening\StatementPublication;
 use OCA\OpenRegister\Service\Hardening\StatementServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -116,10 +117,7 @@ class HardeningStatementController extends Controller {
 	public function statement(): JSONResponse {
 		$uid = ($this->userSession->getUser()?->getUID() ?? '');
 		if ($uid === '') {
-			return new JSONResponse(
-				data: ['error' => 'A statement is shown to an account.'],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
+			return $this->accountRequired(error: 'A statement is shown to an account.');
 		}
 
 		return new JSONResponse(
@@ -148,10 +146,7 @@ class HardeningStatementController extends Controller {
 	public function acceptStatement(): JSONResponse {
 		$uid = ($this->userSession->getUser()?->getUID() ?? '');
 		if ($uid === '') {
-			return new JSONResponse(
-				data: ['error' => 'An acceptance is recorded against an account.'],
-				statusCode: Http::STATUS_UNAUTHORIZED
-			);
+			return $this->accountRequired(error: 'An acceptance is recorded against an account.');
 		}
 
 		try {
@@ -186,14 +181,7 @@ class HardeningStatementController extends Controller {
 		try {
 			$this->elevation->requireElevated();
 
-			return new JSONResponse(
-				data: $this->statements->publish(
-					version: (string)($this->request->getParam('version') ?? ''),
-					body: (string)($this->request->getParam('body') ?? ''),
-					title: (string)($this->request->getParam('title') ?? ''),
-					userId: ($this->userSession->getUser()?->getUID() ?? '')
-				)
-			);
+			return new JSONResponse(data: $this->statements->publish(publication: $this->requestedPublication()));
 		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (InvalidArgumentException $invalid) {
@@ -201,6 +189,34 @@ class HardeningStatementController extends Controller {
 		}
 
 	}//end publishStatement()
+
+	/**
+	 * The statement the request publishes, by the session's account.
+	 *
+	 * @return StatementPublication The version, body, title and publisher
+	 */
+	private function requestedPublication(): StatementPublication {
+		return new StatementPublication(
+			version: (string)($this->request->getParam('version') ?? ''),
+			body: (string)($this->request->getParam('body') ?? ''),
+			title: (string)($this->request->getParam('title') ?? ''),
+			publishedBy: ($this->userSession->getUser()?->getUID() ?? '')
+		);
+	}//end requestedPublication()
+
+	/**
+	 * The refusal for a caller without an account.
+	 *
+	 * @param string $error Why the account is needed
+	 *
+	 * @return JSONResponse 401
+	 */
+	private function accountRequired(string $error): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => $error],
+			statusCode: Http::STATUS_UNAUTHORIZED
+		);
+	}//end accountRequired()
 
 	/**
 	 * Withdraw the statement, so nothing is asked.

@@ -50,40 +50,36 @@ class DestructionScopeReader {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function declaredOn(?Schema $schema): array {
+		$names = self::declaredNames(schema: $schema);
+
+		return [
+			'scope' => array_values(array_unique(array_intersect($names, DestructionScope::MEMBERS))),
+			'unknown' => array_values(array_unique(array_diff($names, DestructionScope::MEMBERS))),
+		];
+	}//end declaredOn()
+
+	/**
+	 * The member names a schema declares, trimmed, skipping anything that is not a string.
+	 *
+	 * @param Schema|null $schema The schema, when it resolves.
+	 *
+	 * @return array<int, string> The declared names, in declared order.
+	 */
+	private static function declaredNames(?Schema $schema): array {
 		if ($schema === null) {
-			return [
-				'scope' => [],
-				'unknown' => [],
-			];
+			return [];
 		}
 
 		$declared = ($schema->getArchive()[DestructionScope::SCHEMA_KEY] ?? []);
 		if (is_array($declared) === false) {
-			return [
-				'scope' => [],
-				'unknown' => [],
-			];
+			return [];
 		}
 
-		$scope = [];
-		$unknown = [];
-		foreach ($declared as $member) {
-			if (is_string($member) === false) {
-				continue;
-			}
-
-			$name = trim($member);
-			if (in_array(needle: $name, haystack: DestructionScope::MEMBERS, strict: true) === true) {
-				$scope[] = $name;
-				continue;
-			}
-
-			$unknown[] = $name;
-		}
-
-		return [
-			'scope' => array_values(array_unique($scope)),
-			'unknown' => array_values(array_unique($unknown)),
-		];
-	}//end declaredOn()
+		return array_values(
+			array_map(
+				static fn (string $member): string => trim($member),
+				array_filter($declared, 'is_string')
+			)
+		);
+	}//end declaredNames()
 }//end class

@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Rbac\ScopeChange;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -32,6 +34,7 @@ use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\InheritedGrantLister;
 use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
+use OCA\OpenRegister\Service\Rbac\AuthorizationAssignment;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantRecords;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
@@ -99,8 +102,8 @@ final class ObjectSharingServiceScopeGoldenTest extends TestCase {
 		$writes = [];
 		$writer = $this->createMock(ObjectAuthorizationWriter::class);
 		$writer->method('writeAuthorizationBlock')->willReturnCallback(
-			function (Register $register, Schema $schema, string $objectUuid, array $block) use (&$writes): void {
-				$writes[] = [$register->getSlug(), $schema->getSlug(), $objectUuid, $block];
+			function (RegisterSchema $table, AuthorizationAssignment $assignment) use (&$writes): void {
+				$writes[] = [$table->register->getSlug(), $table->schema->getSlug(), $assignment->objectUuid, $assignment->block];
 			}
 		);
 
@@ -114,7 +117,7 @@ final class ObjectSharingServiceScopeGoldenTest extends TestCase {
 		$object->setAuthorization(['read' => ['group' => 'x']]);
 
 		try {
-			$result = ['returned' => $this->service(caller: $caller, writer: $writer)->setScope($register, $schema, $object, $scope)];
+			$result = ['returned' => $this->service(caller: $caller, writer: $writer)->setScope(table: new RegisterSchema(register: $register, schema: $schema), change: new ScopeChange(object: $object, scope: $scope))];
 		} catch (\Throwable $e) {
 			$result = ['refused' => [get_class($e), $e->getMessage()]];
 		}

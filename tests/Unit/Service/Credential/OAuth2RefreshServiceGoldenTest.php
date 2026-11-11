@@ -45,6 +45,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshStores;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshSteps;
+use OCA\OpenRegister\Service\Credential\OAuth2RefreshTarget;
+use OCA\OpenRegister\Service\Credential\TokenSetAddress;
+use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
 
 /**
  * Golden outcomes of the OAuth2 token refresh.
@@ -99,7 +102,12 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 	public function testABlockedCredentialIsRefusedBeforeAnythingIsRead(string $status): void {
 		foreach (['accessTokenFor', 'sweepCredential'] as $method) {
 			try {
-				$this->service()->{$method}(credential: ['status' => $status], provider: $this->provider(), credentialId: 'cred-1', scope: 'personal');
+				if ($method === 'accessTokenFor') {
+					$address = new TokenSetAddress(credentialId: 'cred-1', scope: 'personal');
+					$this->service()->accessTokenFor(target: new OAuth2RefreshTarget(credential: ['status' => $status], provider: $this->provider(), address: $address, actingUserId: null));
+				} else {
+					$this->service()->sweepCredential(credential: ['status' => $status], provider: $this->provider(), credentialId: 'cred-1', scope: 'personal');
+				}
 				$this->fail('blocked credential accepted');
 			} catch (CredentialRelinkRequiredException $refused) {
 				$this->assertSame('credential cred-1 is ' . $status . ' and must be re-authorised', $refused->getMessage());
@@ -112,12 +120,12 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 	public function testAFreshTokenIsReturnedWithoutLockOrExchange(): void {
 		$this->vault['cred-1'] = $this->stored(expiresAt: '2999-01-01T00:00:00+00:00');
 
-		$this->assertSame('OLD_AT', $this->service()->accessTokenFor(credential: $this->credential(), provider: $this->provider(), credentialId: 'cred-1', scope: 'personal'));
+		$this->assertSame('OLD_AT', $this->service()->accessTokenFor(target: new OAuth2RefreshTarget(credential: $this->credential(), provider: $this->provider(), address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal'), actingUserId: null)));
 		$this->assertSame(['get'], $this->events);
 	}
 
 	public function testAnExpiringTokenIsRotatedWithThePostedSecret(): void {
-		$token = $this->service()->accessTokenFor(credential: $this->credential(), provider: $this->provider(), credentialId: 'cred-1', scope: 'organisation', actingUserId: 'bob');
+		$token = $this->service()->accessTokenFor(target: new OAuth2RefreshTarget(credential: $this->credential(), provider: $this->provider(), address: new TokenSetAddress(credentialId: 'cred-1', scope: 'organisation'), actingUserId: 'bob'));
 
 		$this->assertSame('NEW_AT', $token);
 		$this->assertSame(['get', 'acquire', 'post', 'find', 'put', 'find', 'save', 'release'], $this->events);
@@ -151,7 +159,7 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 		$provider = $this->provider();
 		$provider['oauth2'] = ['tokenEndpoint' => 'https://graph.example/token', 'clientAuth' => 'client_secret_basic', 'refreshGrant' => 'fb_exchange_token'];
 
-		$this->service()->accessTokenFor(credential: $this->credential(), provider: $provider, credentialId: 'cred-1', scope: 'personal');
+		$this->service()->accessTokenFor(target: new OAuth2RefreshTarget(credential: $this->credential(), provider: $provider, address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal'), actingUserId: null));
 
 		$this->assertSame(
 			[['https://graph.example/token', [
@@ -166,7 +174,7 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 
 	public function testAPublicClientSendsNoSecret(): void {
 		$this->clientSecret = null;
-		$this->service()->accessTokenFor(credential: $this->credential(), provider: $this->provider(), credentialId: 'cred-1', scope: 'personal');
+		$this->service()->accessTokenFor(target: new OAuth2RefreshTarget(credential: $this->credential(), provider: $this->provider(), address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal'), actingUserId: null));
 
 		$this->assertSame(['grant_type' => 'refresh_token', 'refresh_token' => 'OLD_RT', 'client_id' => 'CID'], $this->posts[0][1]['body']);
 		$this->assertArrayNotHasKey('auth', $this->posts[0][1]);
@@ -176,14 +184,14 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 		$this->acquires = [false];
 		$this->reads = [$this->stored(expiresAt: '2001-01-01T00:00:00+00:00'), $this->stored(expiresAt: '2999-01-01T00:00:00+00:00', accessToken: 'THEIR_AT')];
 
-		$this->assertSame('THEIR_AT', $this->service()->accessTokenFor(credential: $this->credential(), provider: $this->provider(), credentialId: 'cred-1', scope: 'personal'));
+		$this->assertSame('THEIR_AT', $this->service()->accessTokenFor(target: new OAuth2RefreshTarget(credential: $this->credential(), provider: $this->provider(), address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal'), actingUserId: null)));
 		$this->assertSame(['get', 'acquire', 'wait', 'get'], $this->events);
 	}
 
 	public function testAContendedRefreshThatIsStillExpiringRotatesOnceTheLockIsFree(): void {
 		$this->acquires = [false, true];
 
-		$this->assertSame('NEW_AT', $this->service()->accessTokenFor(credential: $this->credential(), provider: $this->provider(), credentialId: 'cred-1', scope: 'personal'));
+		$this->assertSame('NEW_AT', $this->service()->accessTokenFor(target: new OAuth2RefreshTarget(credential: $this->credential(), provider: $this->provider(), address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal'), actingUserId: null)));
 		$this->assertSame(['get', 'acquire', 'wait', 'get', 'acquire', 'post', 'find', 'put', 'find', 'save', 'release'], $this->events);
 	}
 
@@ -192,7 +200,7 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 
 		$this->expectException(CredentialUpstreamException::class);
 		$this->expectExceptionMessage('refresh lock is held and the token is still expiring');
-		$this->service()->accessTokenFor(credential: $this->credential(), provider: $this->provider(), credentialId: 'cred-1', scope: 'personal');
+		$this->service()->accessTokenFor(target: new OAuth2RefreshTarget(credential: $this->credential(), provider: $this->provider(), address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal'), actingUserId: null));
 	}
 
 	public function testASetWithoutARefreshTokenRelinks(): void {
@@ -353,18 +361,16 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 		$this->assertSame('release', end($this->events));
 	}
 
-	public function testPersistMergesExtraMetadataAndWritesPastAccessControl(): void {
+	public function testPersistMirrorsAnActiveStatusAndWritesPastAccessControl(): void {
 		$this->service()->persist(
-			credentialId: 'cred-1',
-			scope: 'personal',
-			set: \OCA\OpenRegister\Service\Credential\OAuth2TokenSet::fromStoredJson(stored: $this->stored(expiresAt: '2030-01-01T00:00:00+00:00')),
-			extraMetadata: ['status' => 'relinked', 'extra' => 1]
+			address: new \OCA\OpenRegister\Service\Credential\TokenSetAddress(credentialId: 'cred-1', scope: 'personal'),
+			set: \OCA\OpenRegister\Service\Credential\OAuth2TokenSet::fromStoredJson(stored: $this->stored(expiresAt: '2030-01-01T00:00:00+00:00'))
 		);
 
 		$this->assertSame(['find', 'put', 'find', 'save'], $this->events);
 		$save = $this->saves[0];
-		$this->assertSame('relinked', $save['status']);
-		$this->assertSame(1, $save['extra']);
+		$this->assertSame('active', $save['status']);
+		$this->assertSame('', $save['lastError']);
 		$this->assertSame('2030-01-01T00:00:00+00:00', $save['expiresAt']);
 		$this->assertSame(['register' => 'credential-broker', 'schema' => 'brokeredcredential', 'uuid' => 'cred-1', '_rbac' => false, '_multitenancy' => false], $save['@args']);
 	}
@@ -381,12 +387,7 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 	 */
 	private function assertRefused(string $exception, ?string $message, ?array $provider = null, ?array $credential = null): \Throwable {
 		try {
-			$this->service()->accessTokenFor(
-				credential: ($credential ?? $this->credential()),
-				provider: ($provider ?? $this->provider()),
-				credentialId: 'cred-1',
-				scope: 'personal'
-			);
+			$this->service()->accessTokenFor(target: new OAuth2RefreshTarget(credential: ($credential ?? $this->credential()), provider: ($provider ?? $this->provider()), address: new TokenSetAddress(credentialId: 'cred-1', scope: 'personal'), actingUserId: null));
 		} catch (\Throwable $refused) {
 			$this->assertInstanceOf($exception, $refused);
 			if ($message !== null) {
@@ -554,9 +555,14 @@ class OAuth2RefreshServiceGoldenTest extends TestCase {
 		$http->method('newClient')->willReturn($client);
 
 		$notifier = $this->createMock(CredentialRelinkNotifier::class);
-		$notifier->method('announce')->willReturnCallback(function (string $credentialId, string $provider, string $owner, string $reason): void {
+		$notifier->method('announce')->willReturnCallback(function (CredentialRelinkRequiredEvent $event): void {
 			$this->events[] = 'announce';
-			$this->announcements[] = compact('credentialId', 'provider', 'owner', 'reason');
+			$this->announcements[] = [
+				'credentialId' => $event->getCredentialId(),
+				'provider' => $event->getProvider(),
+				'owner' => $event->getOwner(),
+				'reason' => $event->getReason(),
+			];
 		});
 
 		return $this->build(store: $store, objects: $objects, lock: $lock, clients: $clients, http: $http, notifier: $notifier);

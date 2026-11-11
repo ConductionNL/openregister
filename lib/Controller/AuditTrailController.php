@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\AuditObjectRef;
 use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
@@ -41,6 +42,7 @@ use OCA\OpenRegister\Service\Audit\AuditTrailPageServiceInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailListerInterface;
+use OCA\OpenRegister\Service\Audit\TrailPageOptions;
 use OCA\OpenRegister\Service\AuditHashServiceInterface;
 use OCA\OpenRegister\Service\LogService;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
@@ -48,6 +50,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * Class AuditTrailController
@@ -170,22 +173,9 @@ class AuditTrailController extends Controller {
 	 * @return JSONResponse|null 401/403 response when blocked, null when allowed.
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(
-				data: ['error' => 'Authentication required'],
-				statusCode: 401
-			);
-		}
+		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Forbidden: this audit-trail operation is admin-only'],
-				statusCode: 403
-			);
-		}
-
-		return null;
+		return $gate->refusal(forbidden: 'Forbidden: this audit-trail operation is admin-only');
 	}//end requireAdmin()
 
 	/**
@@ -536,9 +526,11 @@ class AuditTrailController extends Controller {
 
 		$page = $this->readableLister->page(
 			userId: $user->getUID(),
-			limit: (int)$params['limit'],
-			cursor: $cursor,
-			query: $this->readableLister->query(filters: ($params['filters'] ?? []), search: ($params['search'] ?? null))
+			options: new TrailPageOptions(
+				limit: (int)$params['limit'],
+				cursor: $cursor,
+				query: $this->readableLister->query(filters: ($params['filters'] ?? []), search: ($params['search'] ?? null))
+			)
 		);
 
 		return new JSONResponse(data: $page);
@@ -692,6 +684,19 @@ class AuditTrailController extends Controller {
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
 	public function objects(string $register, string $schema, string $id): JSONResponse {
+		return $this->objectLogs(object: new AuditObjectRef(register: $register, schema: $schema, id: $id));
+	}//end objects()
+
+	/**
+	 * The trail of one object: everything for an administrator, the readable part for anyone else signed in.
+	 *
+	 * @param AuditObjectRef $object The object the route names.
+	 *
+	 * @return JSONResponse The logs, or 401 without a session user.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	private function objectLogs(AuditObjectRef $object): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(
@@ -701,17 +706,11 @@ class AuditTrailController extends Controller {
 		}
 
 		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return $this->objectsForReader(object: new AuditObjectRef(register: $register, schema: $schema, id: $id));
+			return $this->objectsForReader(object: $object);
 		}
 
-		// Extract common parameters.
-		$params = $this->extractRequestParameters();
-
-		return $this->adminObjectLogs(
-			object: new AuditObjectRef(register: $register, schema: $schema, id: $id),
-			params: $params
-		);
-	}//end objects()
+		return $this->adminObjectLogs(object: $object, params: $this->extractRequestParameters());
+	}//end objectLogs()
 
 	/**
 	 * An administrator's read of one object's audit trail, read events included.
@@ -798,9 +797,7 @@ class AuditTrailController extends Controller {
 	private function objectsForReader(AuditObjectRef $object): JSONResponse {
 		try {
 			$page = $this->historyForReaders->page(
-				register: $object->register,
-				schema: $object->schema,
-				id: $object->id,
+				ref: new ObjectRef(register: $object->register, schema: $object->schema, id: $object->id),
 				params: $this->extractRequestParameters()
 			);
 		} catch (PurposeRefusedException $refusal) {

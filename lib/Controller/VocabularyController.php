@@ -41,12 +41,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\CodedOptionsRequest;
 use OCA\OpenRegister\Controller\Support\VocabularyControllerServices;
 use OCA\OpenRegister\Controller\Support\VocabularyLanguage;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
+use OCA\OpenRegister\Service\Vocabulary\CodedOptionScope;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilderInterface;
+use OCA\OpenRegister\Service\Vocabulary\DeclarationLookup;
 use OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolverInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -183,7 +186,7 @@ class VocabularyController extends Controller {
 			return new JSONResponse(['message' => 'Either "schema" and "property", or "scheme", must be given.'], Http::STATUS_BAD_REQUEST);
 		}
 
-		$declaration = $this->declarationResolver->resolveDeclaration(schemaRef: $schemaRef, property: $property, schemeUri: $schemeUri);
+		$declaration = $this->declarationResolver->resolveDeclaration(new DeclarationLookup(schemaRef: $schemaRef, property: $property, schemeUri: $schemeUri));
 		if ($declaration === null) {
 			return $this->notFound();
 		}
@@ -215,55 +218,40 @@ class VocabularyController extends Controller {
 	 * @return JSONResponse The tree or list envelope.
 	 */
 	private function optionsAnswer(CodedPropertyDeclaration $declaration, string $property): JSONResponse {
-		$language = $this->language->tag();
+		$read = new CodedOptionsRequest(declaration: $declaration, property: $property, language: $this->language->tag());
 		$asTree = filter_var($this->request->getParam('tree', false), FILTER_VALIDATE_BOOLEAN);
 
 		if ($asTree === true) {
-			$tree = $this->options->tree(declaration: $declaration, language: $language);
+			$tree = $this->options->tree(declaration: $declaration, scope: new CodedOptionScope(language: $read->language));
 
-			return new JSONResponse(array_merge($this->envelope(declaration: $declaration, property: $property, language: $language), ['tree' => $tree]));
+			return new JSONResponse(array_merge($read->envelope(), ['tree' => $tree]));
 		}
 
-		return $this->optionList(declaration: $declaration, property: $property, language: $language);
+		return $this->optionList(read: $read);
 	}//end optionsAnswer()
 
 	/**
 	 * The flat option list, narrowed by `context` when given.
 	 *
-	 * @param CodedPropertyDeclaration $declaration The coded declaration.
-	 * @param string $property The name the answer reports.
-	 * @param string $language The BCP-47 tag.
+	 * @param CodedOptionsRequest $read The declaration, reported name and language.
 	 *
 	 * @return JSONResponse The list envelope.
 	 */
-	private function optionList(CodedPropertyDeclaration $declaration, string $property, string $language): JSONResponse {
+	private function optionList(CodedOptionsRequest $read): JSONResponse {
 		$context = trim((string)$this->request->getParam('context', ''));
 		if ($context === '') {
 			$context = null;
 		}
 
-		$options = $this->options->options(declaration: $declaration, language: $language, context: $context);
+		$options = $this->options->options(declaration: $read->declaration, scope: new CodedOptionScope(language: $read->language, context: $context));
 
 		return new JSONResponse(
 			array_merge(
-				$this->envelope(declaration: $declaration, property: $property, language: $language),
+				$read->envelope(),
 				['context' => $context, 'results' => $options, 'total' => count($options)]
 			)
 		);
 	}//end optionList()
-
-	/**
-	 * The keys every options answer starts with.
-	 *
-	 * @param CodedPropertyDeclaration $declaration The coded declaration.
-	 * @param string $property The name the answer reports.
-	 * @param string $language The BCP-47 tag.
-	 *
-	 * @return array<string, string> The property, scheme and language.
-	 */
-	private function envelope(CodedPropertyDeclaration $declaration, string $property, string $language): array {
-		return ['property' => $property, 'scheme' => $declaration->scheme, 'language' => $language];
-	}//end envelope()
 
 	/**
 	 * GET /api/vocabulary/concept?uri=...

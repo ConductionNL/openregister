@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler as C;
+use OCA\OpenRegister\Service\Rbac\MatrixCaller;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -70,12 +71,12 @@ final class DepartmentMatrixCompilerGoldenTest extends TestCase {
 		  ['group' => 'marked', 'values' => ['h'], 'actions' => ['read'], 'crossOrganisation' => false],
 		]];
 		$out = [
-		 'compiled' => $c->compile($m, ['own-1', 'b'], $now),
-		 'compiledOtherOwn' => $c->compile($m, ['own-1'], $now),
-		 'compiledNoOwn' => $c->compile($m, [], $now),
-		 'noField' => $c->compile(['rows' => $m['rows']], [], $now),
-		 'blankField' => $c->compile(['field' => ' ', 'rows' => []], [], $now),
-		 'rowsNotArray' => $c->compile(['field' => 'd', 'rows' => 'x'], [], $now),
+		 'compiled' => $c->compileAt($m, new MatrixCaller(['own-1', 'b'], $now)),
+		 'compiledOtherOwn' => $c->compileAt($m, new MatrixCaller(['own-1'], $now)),
+		 'compiledNoOwn' => $c->compileAt($m, new MatrixCaller([], $now)),
+		 'noField' => $c->compileAt(['rows' => $m['rows']], new MatrixCaller([], $now)),
+		 'blankField' => $c->compileAt(['field' => ' ', 'rows' => []], new MatrixCaller([], $now)),
+		 'rowsNotArray' => $c->compileAt(['field' => 'd', 'rows' => 'x'], new MatrixCaller([], $now)),
 		 'defaultClock' => [
 		  $c->compile(['field' => 'd', 'rows' => [['group' => 'g', 'value' => 'x', 'actions' => ['read'], 'until' => '2000-01-01T00:00:00+00:00']]], []),
 		  $c->compile(['field' => 'd', 'rows' => [['group' => 'g', 'value' => 'x', 'actions' => ['read'], 'until' => '2999-01-01T00:00:00+00:00']]], []),

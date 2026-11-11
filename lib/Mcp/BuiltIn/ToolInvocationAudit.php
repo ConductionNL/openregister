@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -54,25 +55,25 @@ final class ToolInvocationAudit {
 	/**
 	 * Run the invocation and audit its outcome.
 	 *
-	 * @param ToolAuditTarget                              $target    What the record is about.
-	 * @param array<string, mixed>                         $arguments The tool arguments (digested, never stored).
-	 * @param callable(): array<string, mixed>             $call      The invocation.
-	 * @param callable(array<string, mixed>): array<string, mixed> $summarise The success summary of a result.
+	 * @param ToolAuditTarget   $target     What the record is about.
+	 * @param AuditedInvocation $invocation The arguments, the invocation and its success summary.
 	 *
 	 * @return array<string, mixed> The invocation result.
 	 *
 	 * @throws Throwable Whatever the invocation throws, after auditing it.
 	 */
-	public function run(ToolAuditTarget $target, array $arguments, callable $call, callable $summarise): array {
-		$paramsDigest = ToolInvocationDigest::paramsDigest(arguments: $arguments);
+	public function run(ToolAuditTarget $target, AuditedInvocation $invocation): array {
+		$paramsDigest = ToolInvocationDigest::paramsDigest(arguments: $invocation->arguments);
 
 		try {
-			$result = $call();
-			$this->write(target: $target, paramsDigest: $paramsDigest, resultSummary: $summarise($result), result: $result);
+			$result = ($invocation->call)();
+			$outcome = new ToolInvocationOutcome(paramsDigest: $paramsDigest, resultSummary: ($invocation->summarise)($result), result: $result);
+			$this->write(target: $target, outcome: $outcome);
 
 			return $result;
 		} catch (Throwable $e) {
-			$this->write(target: $target, paramsDigest: $paramsDigest, resultSummary: ToolInvocationDigest::errorSummary(error: $e), result: null);
+			$outcome = new ToolInvocationOutcome(paramsDigest: $paramsDigest, resultSummary: ToolInvocationDigest::errorSummary(error: $e), result: null);
+			$this->write(target: $target, outcome: $outcome);
 
 			throw $e;
 		}
@@ -81,20 +82,20 @@ final class ToolInvocationAudit {
 	/**
 	 * Write the audit record; a failed write is logged, never thrown.
 	 *
-	 * @param ToolAuditTarget           $target        What the record is about.
-	 * @param string                    $paramsDigest  SHA-256 hex digest of the arguments.
-	 * @param array<string, mixed>      $resultSummary Structured outcome summary.
-	 * @param array<string, mixed>|null $result        The result, or null on failure.
+	 * @param ToolAuditTarget       $target  What the record is about.
+	 * @param ToolInvocationOutcome $outcome What happened, digest included.
 	 *
 	 * @return void
 	 */
-	private function write(ToolAuditTarget $target, string $paramsDigest, array $resultSummary, ?array $result): void {
+	private function write(ToolAuditTarget $target, ToolInvocationOutcome $outcome): void {
 		try {
-			$this->auditTrailMapper->createToolInvocationEntry(
-				toolId: $target->toolId,
-				paramsDigest: $paramsDigest,
-				resultSummary: $resultSummary,
-				about: new AuditedObject(register: $target->register, schema: $target->schema, objectUuid: ToolInvocationDigest::resultId(result: $result))
+			$this->auditTrailMapper->recordToolInvocation(
+				invocation: new ToolInvocation(
+					toolId: $target->toolId,
+					paramsDigest: $outcome->paramsDigest,
+					resultSummary: $outcome->resultSummary,
+					about: new AuditedObject(register: $target->register, schema: $target->schema, objectUuid: $outcome->objectUuid())
+				)
 			);
 		} catch (Throwable $e) {
 			$message = '[' . $this->source . '] Failed to write invocation audit record';

@@ -70,7 +70,7 @@ class ScheduledReportServiceValidationTest extends TestCase {
 		$this->mapper->method('insert')->willReturnArgument(0);
 
 		$this->service = new ScheduledReportService(
-			new ScheduledReportStores($this->mapper, $this->registerMapper, $this->schemaMapper),
+			new ScheduledReportStores($this->mapper, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
 			new ScheduledReportExporters($this->createMock(ExportService::class), null, null),
 			new ScheduledReportDelivery(
 				new ScheduledReportOwnerServices($this->createMock(IUserManager::class), $this->createMock(IUserSession::class), $this->createMock(IRootFolder::class), $this->createMock(IManager::class)),

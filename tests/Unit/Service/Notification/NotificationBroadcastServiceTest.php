@@ -12,6 +12,7 @@ use OCA\OpenRegister\Notifications\Db\NotificationBroadcastMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcastReceipt;
 use OCA\OpenRegister\Notifications\Db\NotificationBroadcastReceiptMapper;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationBroadcastService;
+use OCA\OpenRegister\Notifications\Service\Notification\OutgoingBroadcast;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -48,19 +49,14 @@ class NotificationBroadcastServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->broadcasts->method('record')->willReturnCallback(
-			function (
-				string $uuid,
-				string $sender,
-				BroadcastMessage $message,
-				BroadcastWindow $window,
-			): NotificationBroadcast {
+			function (string $uuid, OutgoingBroadcast $outgoing): NotificationBroadcast {
 				$entity = new NotificationBroadcast();
 				$entity->setUuid($uuid);
-				$entity->setSubject($message->subject);
-				$entity->setBody($message->body);
-				$entity->setSender($sender);
-				$entity->setStartsAt($window->startsAt);
-				$entity->setEndsAt($window->endsAt);
+				$entity->setSubject($outgoing->message->subject);
+				$entity->setBody($outgoing->message->body);
+				$entity->setSender($outgoing->sender);
+				$entity->setStartsAt($outgoing->window->startsAt);
+				$entity->setEndsAt($outgoing->window->endsAt);
 				$entity->setCreated(new DateTime());
 				$this->stored[$uuid] = $entity;
 

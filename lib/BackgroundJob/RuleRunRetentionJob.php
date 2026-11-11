@@ -84,17 +84,8 @@ class RuleRunRetentionJob extends TimedJob {
 	protected function run($argument): void {
 		$days = $this->recorder->retentionDays();
 
-		try {
-			$deleted = $this->runs->pruneBefore(before: new DateTime('-' . $days . ' days'));
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[RuleRunRetention] Sweep failed: ' . $e->getMessage(),
-				['file' => __FILE__, 'line' => __LINE__]
-			);
-			return;
-		}
-
-		if ($deleted === 0) {
+		$deleted = $this->prunedRows(days: $days);
+		if ($deleted === null || $deleted === 0) {
 			return;
 		}
 
@@ -103,4 +94,23 @@ class RuleRunRetentionJob extends TimedJob {
 			['file' => __FILE__, 'line' => __LINE__]
 		);
 	}//end run()
+
+	/**
+	 * Prune the rule runs older than the retention period.
+	 *
+	 * @param int $days The retention period.
+	 *
+	 * @return int|null How many rows were removed; null, logged, when the prune failed.
+	 */
+	private function prunedRows(int $days): ?int {
+		try {
+			return $this->runs->pruneBefore(before: new DateTime('-' . $days . ' days'));
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'[RuleRunRetention] Sweep failed: ' . $e->getMessage(),
+				['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+	}//end prunedRows()
 }//end class

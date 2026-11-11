@@ -92,6 +92,7 @@ trait EntityRbacTrait {
 			return true;
 		}
 
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return SystemOperationContext::isActive() === true;
 	}//end isTrustedSystemCaller()
 
@@ -128,7 +129,8 @@ trait EntityRbacTrait {
 			return true;
 		}
 
-		return $this->sessionGroupsMayAct(activeOrg: $activeOrg, action: $action, entityType: $entityType);
+		$rule = ($activeOrg->getAuthorization()[$entityType][$action] ?? null);
+		return $this->sessionGroupsMayAct(allowedGroups: $this->allowedGroups(rule: $rule));
 	}//end organisationPolicyAllows()
 
 	/**
@@ -156,22 +158,21 @@ trait EntityRbacTrait {
 	 *
 	 * The `$user === null` branch is unreachable today (hasRbacPermission()
 	 * already returned for a session without a user); it is kept so the two
-	 * blocks cannot drift if that early return is ever relaxed.
+	 * blocks cannot drift if that early return is ever relaxed. It still runs
+	 * before the unrestricted (null) rule is honoured.
 	 *
-	 * @param Organisation $activeOrg  The organisation whose config applies.
-	 * @param string       $action     The action to check
-	 * @param string       $entityType The type of entity
+	 * @param mixed $allowedGroups The groups the organisation's config allows
+	 *                             for this action, or null when it does not restrict it.
 	 *
 	 * @return bool
 	 */
-	private function sessionGroupsMayAct(Organisation $activeOrg, string $action, string $entityType): bool {
+	private function sessionGroupsMayAct(mixed $allowedGroups): bool {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return $this->isTrustedSystemCaller();
 		}
 
 		$userGroups = $this->groupManager->getUserGroupIds($user);
-		$allowedGroups = $this->allowedGroups(authorization: $activeOrg->getAuthorization(), action: $action, entityType: $entityType);
 		if ($allowedGroups === null) {
 			return true;
 		}
@@ -183,25 +184,19 @@ trait EntityRbacTrait {
 	 * The groups allowed to act, or null when the config does not restrict this action.
 	 *
 	 * No config, an entity type or action that is not configured, and an empty
-	 * group list all mean no restriction (backward compatibility).
+	 * group list all mean no restriction (backward compatibility): each leaves
+	 * the config's entry for the entity type and action empty.
 	 *
-	 * @param array  $authorization The organisation's authorization config.
-	 * @param string $action        The action to check
-	 * @param string $entityType    The type of entity
+	 * @param mixed $rule The config's entry for the entity type and action, or null.
 	 *
 	 * @return mixed The allowed groups, or null.
 	 */
-	private function allowedGroups(array $authorization, string $action, string $entityType): mixed {
-		if (empty($authorization) === true) {
+	private function allowedGroups(mixed $rule): mixed {
+		if (empty($rule) === true) {
 			return null;
 		}
 
-		$allowedGroups = ($authorization[$entityType][$action] ?? null);
-		if (empty($allowedGroups) === true) {
-			return null;
-		}
-
-		return $allowedGroups;
+		return $rule;
 	}//end allowedGroups()
 
 	/**

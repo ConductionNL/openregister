@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
+use OCA\OpenRegister\AppHost\Store\StoreActionCheck;
 use OCP\IGroupManager;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
@@ -124,7 +125,7 @@ class StoreActionAuthorizerTest extends TestCase {
 		$authorizer = $this->authorizer(new FakeActionAuthService(true));
 
 		$this->assertTrue(
-			$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class))
+			$authorizer->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $this->createMock(IUser::class)))
 		);
 	}
 
@@ -137,8 +138,21 @@ class StoreActionAuthorizerTest extends TestCase {
 		$authorizer = $this->authorizer(new FakeActionAuthService(false));
 
 		$this->assertFalse(
-			$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class))
+			$authorizer->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $this->createMock(IUser::class)))
 		);
+	}
+
+	/**
+	 * permits() answers as can() does: yes on a yes, no on a no or a throwing matrix.
+	 *
+	 * @return void
+	 */
+	public function testPermitsTakesTheCheckObject(): void {
+		$user = $this->createMock(IUser::class);
+
+		$this->assertTrue($this->authorizer(new FakeActionAuthService(true))->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $user)));
+		$this->assertFalse($this->authorizer(new FakeActionAuthService(false))->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $user)));
+		$this->assertFalse($this->authorizer(new ThrowingActionAuthService())->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $user)));
 	}
 
 	/**
@@ -150,7 +164,7 @@ class StoreActionAuthorizerTest extends TestCase {
 		$authorizer = $this->authorizer(new RuntimeException('not found'));
 
 		$this->assertFalse(
-			$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class)),
+			$authorizer->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $this->createMock(IUser::class))),
 			'An unresolvable authorizer must refuse, never silently permit.'
 		);
 	}
@@ -167,7 +181,7 @@ class StoreActionAuthorizerTest extends TestCase {
 		$authorizer = $this->authorizer(new ShapelessActionAuthService());
 
 		$this->assertFalse(
-			$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class))
+			$authorizer->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $this->createMock(IUser::class)))
 		);
 	}
 
@@ -183,7 +197,7 @@ class StoreActionAuthorizerTest extends TestCase {
 		$authorizer = $this->authorizer(new ThrowingActionAuthService());
 
 		$this->assertFalse(
-			$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class))
+			$authorizer->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $this->createMock(IUser::class)))
 		);
 	}
 
@@ -205,7 +219,7 @@ class StoreActionAuthorizerTest extends TestCase {
 			->with($this->stringContains('catalog.instantiate'), $this->anything());
 
 		$authorizer = new StoreActionAuthorizer($container, $logger, $this->createMock(IGroupManager::class));
-		$authorizer->can('integriq', 'catalog.instantiate', $this->createMock(IUser::class));
+		$authorizer->permits(new StoreActionCheck('integriq', 'catalog.instantiate', $this->createMock(IUser::class)));
 	}
 
 	/**

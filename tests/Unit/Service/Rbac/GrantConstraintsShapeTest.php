@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Rbac\ConstraintPoint;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
 use PHPUnit\Framework\TestCase;
 
@@ -68,14 +69,14 @@ class GrantConstraintsShapeTest extends TestCase {
 		$constraints = new GrantConstraints();
 		$area        = ['register' => 'zaken', 'schema' => 'zaak'];
 
-		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => 'zaken'], area: $area, now: $this->now()));
-		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => []], area: $area, now: $this->now()));
-		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => ['registers' => [], 'other' => ['x']]], area: $area, now: $this->now()));
-		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => ['registers' => ['zaken']]], area: ['register' => ['', null]], now: $this->now()));
-		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'until' => ' '], area: $area, now: $this->now()));
-		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'until' => 20260601], area: $area, now: $this->now()));
-		$this->assertTrue($constraints->reaches(entry: 'staff', area: $area, now: $this->now()));
-		$this->assertTrue($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => ['registers' => ['zaken', 7]]], area: $area, now: $this->now()));
+		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => 'zaken'], point: new ConstraintPoint(area: $area, now: $this->now())));
+		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => []], point: new ConstraintPoint(area: $area, now: $this->now())));
+		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => ['registers' => [], 'other' => ['x']]], point: new ConstraintPoint(area: $area, now: $this->now())));
+		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => ['registers' => ['zaken']]], point: new ConstraintPoint(area: ['register' => ['', null]], now: $this->now())));
+		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'until' => ' '], point: new ConstraintPoint(area: $area, now: $this->now())));
+		$this->assertFalse($constraints->reaches(entry: ['group' => 'g', 'until' => 20260601], point: new ConstraintPoint(area: $area, now: $this->now())));
+		$this->assertTrue($constraints->reaches(entry: 'staff', point: new ConstraintPoint(area: $area, now: $this->now())));
+		$this->assertTrue($constraints->reaches(entry: ['group' => 'g', 'scopedTo' => ['registers' => ['zaken', 7]]], point: new ConstraintPoint(area: $area, now: $this->now())));
 	}//end testMalformedConstraintsFailClosed()
 
 	/**
@@ -85,7 +86,7 @@ class GrantConstraintsShapeTest extends TestCase {
 	 * @return void
 	 */
 	public function testPassThroughAndRoleHolders(): void {
-		$applied = (new GrantConstraints())->apply(
+		$applied = (new GrantConstraints())->applyAt(
 			authorization: [
 				'public'  => [['group' => 'g', 'until' => '2020-01-01T00:00:00+00:00']],
 				'scope'   => 'private',
@@ -97,8 +98,7 @@ class GrantConstraintsShapeTest extends TestCase {
 					'legacy' => 'staff',
 				],
 			],
-			area: [],
-			now: $this->now()
+			point: new ConstraintPoint(area: [], now: $this->now())
 		);
 
 		$this->assertSame([['group' => 'g', 'until' => '2020-01-01T00:00:00+00:00']], $applied['public']);

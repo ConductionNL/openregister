@@ -103,8 +103,11 @@ class ExampleSetCasePlans extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'a case plan'),
-				fn (): string => $rules->missingRefusal(data: $data, required: ['object' => 'the object it is on'], row: 'a case plan'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a case plan', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(
+					data: $data,
+					shape: new ExampleSetRowShape(row: 'a case plan', required: ['object' => 'the object it is on'])
+				),
 				fn (): string => $this->definitionRefusal(definition: ($data['definition'] ?? null)),
 				fn (): string => $this->historyRefusal(data: $data),
 			]

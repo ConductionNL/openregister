@@ -86,7 +86,7 @@ class ViewGroupShareWriteTest extends TestCase {
 				new ViewService(viewMapper: $this->mapper, logger: $logger, schemaMapper: $this->createMock(SchemaMapper::class)),
 				$this->createMock(ViewPresentationService::class),
 				$logger,
-				new ViewerReachResolver(userSession: $session, groupManager: $groups, logger: $logger)
+				new ViewerReachResolver(caller: new \OCA\OpenRegister\Service\Rbac\CallerContext($session, $groups), logger: $logger)
 			)
 		);
 	}//end setUp()

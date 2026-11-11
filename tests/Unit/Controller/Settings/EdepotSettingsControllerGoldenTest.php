@@ -49,7 +49,7 @@ use TypeError;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\Settings\EdepotSettingsController
- * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\ConnectionReporting
  * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsDomain
  * @uses \OCA\OpenRegister\Controller\Support\EdepotSettingsControllerServices
  */

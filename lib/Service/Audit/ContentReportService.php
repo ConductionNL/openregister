@@ -127,18 +127,31 @@ class ContentReportService implements ContentReportServiceInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function file(ObjectEntity $object, string $reason, ?string $reporter): ContentReport {
-		$copy = $this->snapshot(object: $object);
+		return $this->fileReport(filing: new ContentReportFiling(object: $object, reason: $reason, reporter: $reporter));
+	}//end file()
+
+	/**
+	 * File one report: take the copy, pin the reviewer group and the retention, and persist it.
+	 *
+	 * @param ContentReportFiling $filing The object, the reason and the reporter.
+	 *
+	 * @return ContentReport The persisted report, with the copy already taken.
+	 *
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
+	 */
+	private function fileReport(ContentReportFiling $filing): ContentReport {
+		$copy = $this->snapshot(object: $filing->object);
 
 		$report = new ContentReport();
-		$report->setObjectUuid($object->getUuid());
-		$report->setRegister((string)$object->getRegister());
-		$report->setSchema((string)$object->getSchema());
-		$report->setReason($reason);
-		$report->setReportedBy($reporter);
+		$report->setObjectUuid($filing->object->getUuid());
+		$report->setRegister((string)$filing->object->getRegister());
+		$report->setSchema((string)$filing->object->getSchema());
+		$report->setReason($filing->reason);
+		$report->setReportedBy($filing->reporter);
 		$report->setStatus(ContentReport::STATUS_OPEN);
 		$report->setCopy($copy);
 		$report->setCopyHash(ContentReport::hashCopy(copy: $copy));
-		$report->setOrganisationId($object->getOrganisation());
+		$report->setOrganisationId($filing->object->getOrganisation());
 
 		// Pinned onto the row rather than read at review time. An administrator
 		// widening the configured group later must not retroactively widen who
@@ -150,7 +163,7 @@ class ContentReportService implements ContentReportServiceInterface {
 		$report->setExpires((new DateTime())->modify('+' . $days . ' days'));
 
 		return $this->reports->insert($report);
-	}//end file()
+	}//end fileReport()
 
 	/**
 	 * The frozen content, as it read when the report was filed.
@@ -194,10 +207,7 @@ class ContentReportService implements ContentReportServiceInterface {
 			return false;
 		}
 
-		$group = $report->getReviewerGroup();
-		if ($group === null || $group === '') {
-			$group = $this->reviewerGroup();
-		}
+		$group = $this->reviewerGroupOf(report: $report);
 
 		try {
 			$groups = $this->groupManager->getUserGroupIds($user);
@@ -210,6 +220,23 @@ class ContentReportService implements ContentReportServiceInterface {
 
 		return in_array(needle: $group, haystack: $groups, strict: true);
 	}//end mayReadCopy()
+
+	/**
+	 * The group whose members may read a report's copy: the one fixed on the
+	 * report, or the configured reviewer group when the report names none.
+	 *
+	 * @param ContentReport $report The report.
+	 *
+	 * @return string The group id.
+	 */
+	private function reviewerGroupOf(ContentReport $report): string {
+		$group = $report->getReviewerGroup();
+		if ($group === null || $group === '') {
+			return $this->reviewerGroup();
+		}
+
+		return $group;
+	}//end reviewerGroupOf()
 
 	/**
 	 * Read the copy, when the caller is a reviewer.
@@ -250,8 +277,21 @@ class ContentReportService implements ContentReportServiceInterface {
 			return [];
 		}
 
+		$reports = $this->reportsOf(objectUuid: $objectUuid);
+
+		return $this->noteRemovalOn(reports: $reports, removal: new ReportRemoval(at: new DateTime(), auditUuid: $auditUuid));
+	}//end noteRemoval()
+
+	/**
+	 * The reports on a removed object; none, with a warning, when the lookup fails.
+	 *
+	 * @param string $objectUuid The removed object's uuid.
+	 *
+	 * @return ContentReport[] The reports.
+	 */
+	private function reportsOf(string $objectUuid): array {
 		try {
-			$reports = $this->reports->findByObjectUuid(objectUuid: $objectUuid);
+			return $this->reports->findByObjectUuid(objectUuid: $objectUuid);
 		} catch (Throwable $lookupFailed) {
 			$this->logger->warning(
 				message: '[ContentReportService] Could not look up reports for a removed object: '
@@ -261,40 +301,74 @@ class ContentReportService implements ContentReportServiceInterface {
 
 			return [];
 		}
+	}//end reportsOf()
 
+	/**
+	 * Note a removal on each report, and name the copies it was noted on.
+	 *
+	 * @param ContentReport[] $reports The reports on the removed object.
+	 * @param ReportRemoval   $removal The instant and the audit entry of the removal.
+	 *
+	 * @return string[] The uuids of the copies the removal should name.
+	 */
+	private function noteRemovalOn(array $reports, ReportRemoval $removal): array {
 		$named = [];
-		$now = new DateTime();
 		foreach ($reports as $report) {
-			if ($report->isRemoved() === true) {
-				// Already recorded. A second delete of the same uuid must not
-				// move the instant the first one established.
+			if ($this->isNotedOn(report: $report, removal: $removal) === true) {
 				$named[] = (string)$report->getUuid();
-				continue;
 			}
-
-			$report->setRemovedAt($now);
-			$report->setRemovalAudit($auditUuid);
-
-			try {
-				$this->reports->update($report);
-			} catch (Throwable $writeFailed) {
-				// FAIL-SOFT IN ONE DIRECTION ONLY. The copy itself is already
-				// safe; what failed is the note beside it. Stopping the delete
-				// here would let a failed bookkeeping write block a removal
-				// somebody may be legally required to make.
-				$this->logger->warning(
-					message: '[ContentReportService] Could not note a removal on a report: '
-						. $writeFailed->getMessage(),
-					context: ['app' => 'openregister', 'report' => $report->getUuid()]
-				);
-				continue;
-			}
-
-			$named[] = (string)$report->getUuid();
-		}//end foreach
+		}
 
 		return $named;
-	}//end noteRemoval()
+	}//end noteRemovalOn()
+
+	/**
+	 * Whether a report carries the removal: it already did, or the note was written now.
+	 *
+	 * @param ContentReport $report  The report.
+	 * @param ReportRemoval $removal The instant and the audit entry of the removal.
+	 *
+	 * @return bool False when writing the note failed.
+	 */
+	private function isNotedOn(ContentReport $report, ReportRemoval $removal): bool {
+		if ($report->isRemoved() === true) {
+			// Already recorded. A second delete of the same uuid must not
+			// move the instant the first one established.
+			return true;
+		}
+
+		return $this->recordRemoval(report: $report, removal: $removal);
+	}//end isNotedOn()
+
+	/**
+	 * Write the removal onto an open report.
+	 *
+	 * @param ContentReport $report  The open report.
+	 * @param ReportRemoval $removal The instant and the audit entry of the removal.
+	 *
+	 * @return bool True when the note was written.
+	 */
+	private function recordRemoval(ContentReport $report, ReportRemoval $removal): bool {
+		$report->setRemovedAt($removal->at);
+		$report->setRemovalAudit($removal->auditUuid);
+
+		try {
+			$this->reports->update($report);
+		} catch (Throwable $writeFailed) {
+			// FAIL-SOFT IN ONE DIRECTION ONLY. The copy itself is already
+			// safe; what failed is the note beside it. Stopping the delete
+			// here would let a failed bookkeeping write block a removal
+			// somebody may be legally required to make.
+			$this->logger->warning(
+				message: '[ContentReportService] Could not note a removal on a report: '
+					. $writeFailed->getMessage(),
+				context: ['app' => 'openregister', 'report' => $report->getUuid()]
+			);
+			return false;
+		}
+
+		return true;
+	}//end recordRemoval()
 
 	/**
 	 * The configured reviewer group.

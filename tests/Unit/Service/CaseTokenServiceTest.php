@@ -49,6 +49,7 @@ use OCA\OpenRegister\Service\CaseTokenIssuance;
 use OCA\OpenRegister\Service\CaseTokenService;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimelineInterface;
+use OCA\OpenRegister\Service\CaseTokenTarget;
 use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -154,11 +155,7 @@ class CaseTokenServiceTest extends TestCase {
 
 			public function renderEntity(
 				object $entity,
-				?array $_extend = [],
-				?int $depth = 0,
-				?array $filter = [],
-				?array $fields = [],
-				?array $unset = [],
+				?object $selection = null,
 				bool $_rbac = true,
 				bool $_multitenancy = true,
 			): array {
@@ -193,7 +190,7 @@ class CaseTokenServiceTest extends TestCase {
 			container: $this->buildContainer([]),
 		);
 
-		$result = $service->mint(objectUuid: 'obj-1', registerId: 3, schemaId: 9, label: 'Track your case', ttlSeconds: 3600);
+		$result = $service->mintFor(target: new CaseTokenTarget(objectUuid: 'obj-1', registerId: 3, schemaId: 9, label: 'Track your case'), ttlSeconds: 3600);
 
 		$this->assertSame('TOKEN-ABC', $result['token']);
 		$this->assertSame('obj-1', $result['objectUuid']);
@@ -220,7 +217,7 @@ class CaseTokenServiceTest extends TestCase {
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->mint(objectUuid: 'obj-1');
+		$service->mintFor(target: new CaseTokenTarget(objectUuid: 'obj-1'));
 	}//end testMintRejectsAnonymousMinter()
 
 	/**
@@ -241,7 +238,7 @@ class CaseTokenServiceTest extends TestCase {
 		);
 
 		$this->expectException(InvalidArgumentException::class);
-		$service->mint(objectUuid: '  ');
+		$service->mintFor(target: new CaseTokenTarget(objectUuid: '  '));
 	}//end testMintRejectsEmptyObjectUuid()
 
 	/**

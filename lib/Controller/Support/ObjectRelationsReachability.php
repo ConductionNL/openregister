@@ -37,28 +37,51 @@ final class ObjectRelationsReachability {
 	 * @return array<string, mixed> The graph.
 	 */
 	public function reachableFromRoot(array $graph, array $refused): array {
-		$edges = array_values(
-			array_filter(
-				$this->rowsIn(value: ($graph['edges'] ?? null)),
-				static fn (array $edge): bool => self::touches(edge: $edge, uuids: $refused) === false
-			)
-		);
+		$edges = $this->edgesAvoiding(edges: ($graph['edges'] ?? null), uuids: $refused);
 
 		$reached = $this->reached(root: (string)($graph['root'] ?? ''), edges: $edges);
 
-		$graph['nodes'] = array_values(
-			array_filter(
-				$this->rowsIn(value: ($graph['nodes'] ?? null)),
-				static fn (array $node): bool => isset($reached[(string)($node['uuid'] ?? '')]) === true
-					&& isset($refused[(string)($node['uuid'] ?? '')]) === false
-			)
-		);
+		$graph['nodes'] = $this->nodesAmong(nodes: ($graph['nodes'] ?? null), uuids: array_diff_key($reached, $refused));
 		$graph['edges'] = array_values(
 			array_filter($edges, static fn (array $edge): bool => self::joins(edge: $edge, uuids: $reached) === true)
 		);
 
 		return $graph;
 	}//end reachableFromRoot()
+
+	/**
+	 * The well-formed edges that touch none of some objects.
+	 *
+	 * @param mixed               $edges The graph's edges.
+	 * @param array<string, true> $uuids The objects, as a set.
+	 *
+	 * @return list<array<string, mixed>> The edges.
+	 */
+	private function edgesAvoiding(mixed $edges, array $uuids): array {
+		return array_values(
+			array_filter(
+				$this->rowsIn(value: $edges),
+				static fn (array $edge): bool => self::touches(edge: $edge, uuids: $uuids) === false
+			)
+		);
+	}//end edgesAvoiding()
+
+	/**
+	 * The well-formed nodes that are among some objects.
+	 *
+	 * @param mixed               $nodes The graph's nodes.
+	 * @param array<string, true> $uuids The objects, as a set.
+	 *
+	 * @return list<array<string, mixed>> The nodes.
+	 */
+	private function nodesAmong(mixed $nodes, array $uuids): array {
+		return array_values(
+			array_filter(
+				$this->rowsIn(value: $nodes),
+				static fn (array $node): bool => isset($uuids[(string)($node['uuid'] ?? '')]) === true
+			)
+		);
+	}//end nodesAmong()
 
 	/**
 	 * Whether either end of an edge is in a set of uuids.

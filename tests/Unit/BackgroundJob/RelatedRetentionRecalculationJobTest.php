@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\RelatedRetentionRecalculationListener;
@@ -42,7 +43,6 @@ use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
-use OCA\OpenRegister\Service\Archival\SelectielijstStores;
 use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\RetentionStores;
@@ -54,6 +54,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\SelectielijstStorage;
+use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\RelatedRetentionRecalculationJob
@@ -119,16 +121,14 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 		$settings = $this->createMock(ObjectRetentionHandler::class);
 		$retention = new RetentionService(
 			new RetentionStores(
-				$this->objectMapper,
-				$this->schemaMapper,
-				$this->registerMapper,
+				new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper),
 				$this->createMock(AuditTrailMapper::class)
 			),
 			new RetentionRules(
 				$settings,
 				$this->createMock(RetentionRowScanner::class),
 				$calculator,
-				new SelectielijstResolver(new SelectielijstStores($this->objectMapper, $this->schemaMapper, $this->registerMapper), $settings, $logger)
+				new SelectielijstResolver(new SelectielijstStorage(settings: $settings, catalog: new SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->objectMapper), writer: $this->createMock(SaveObjectWriterInterface::class)), $logger)
 			),
 			$this->createMock(IUserSession::class),
 			$logger
@@ -136,7 +136,7 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 
 		$this->job = new RelatedRetentionRecalculationJob(
 			$this->createMock(ITimeFactory::class),
-			new RelatedRetentionLookup($this->objectMapper, $this->schemaMapper, $this->registerMapper),
+			new RelatedRetentionLookup(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper)),
 			new RelatedRetentionRules($this->index, $calculator, $retention),
 			$logger,
 		);

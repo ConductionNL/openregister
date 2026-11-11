@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\ImportPreview;
+use OCA\OpenRegister\Service\Import\ImportCommit;
 use OCA\OpenRegister\Db\ImportPreviewFinderInterface;
 use OCA\OpenRegister\Service\Import\ImportPreviewServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -145,7 +146,7 @@ class ImportPreviewRunner extends QueuedJob {
 	 */
 	private function runPhase(ImportPreview $preview, mixed $argument): void {
 		if ($this->phase(argument: $argument) === self::PHASE_COMMIT) {
-			$this->service->commit(preview: $preview, sourceHash: ($argument['source_hash'] ?? null));
+			$this->service->commit(preview: $preview, commit: new ImportCommit(sourceHash: ($argument['source_hash'] ?? null)));
 			return;
 		}
 

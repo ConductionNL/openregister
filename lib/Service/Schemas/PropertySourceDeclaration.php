@@ -80,27 +80,6 @@ final class PropertySourceDeclaration {
 	public const PROVIDER_PATTERN = '/^[a-z0-9][a-z0-9._-]{0,63}$/i';
 
 	/**
-	 * The provider this property's values come from.
-	 *
-	 * @var string
-	 */
-	public readonly string $provider;
-
-	/**
-	 * How the provider's value is used.
-	 *
-	 * @var string
-	 */
-	public readonly string $mode;
-
-	/**
-	 * What the provider is given.
-	 *
-	 * @var array<string, mixed>
-	 */
-	public readonly array $config;
-
-	/**
 	 * The refusal for a block that is not an object: annotation, path.
 	 */
 	private const MSG_NOT_AN_OBJECT = '\'%s\' at \'%s\' must be an object naming a provider, and it is not.';
@@ -138,14 +117,15 @@ final class PropertySourceDeclaration {
 	/**
 	 * Build a declaration.
 	 *
-	 * @param string               $provider The provider id.
-	 * @param string               $mode     The mode.
-	 * @param array<string, mixed> $config   The provider's configuration.
+	 * @param string               $provider The provider this property's values come from.
+	 * @param string               $mode     How the provider's value is used.
+	 * @param array<string, mixed> $config   What the provider is given.
 	 */
-	private function __construct(string $provider, string $mode, array $config) {
-		$this->provider = $provider;
-		$this->mode = $mode;
-		$this->config = $config;
+	private function __construct(
+		public readonly string $provider,
+		public readonly string $mode,
+		public readonly array $config,
+	) {
 	}//end __construct()
 
 	/**
@@ -175,7 +155,7 @@ final class PropertySourceDeclaration {
 		// carrying both is a schema whose author meant one of them. Picking one
 		// would be right about half the time and silent the rest.
 		if (array_key_exists(self::NOT_THIS_ONE, $property) === true) {
-			throw self::refusal(format: self::MSG_BOTH_KEYS, path: $path, values: [self::ANNOTATION, self::NOT_THIS_ONE]);
+			throw self::refusal(format: self::MSG_BOTH_KEYS, values: [$path, self::ANNOTATION, self::NOT_THIS_ONE]);
 		}
 
 		return new self(provider: $provider, mode: $mode, config: $config);
@@ -198,7 +178,7 @@ final class PropertySourceDeclaration {
 
 		$raw = $property[self::ANNOTATION];
 		if (is_array($raw) === false || $raw === []) {
-			throw self::refusal(format: self::MSG_NOT_AN_OBJECT, path: $path);
+			throw self::refusal(format: self::MSG_NOT_AN_OBJECT, values: [$path]);
 		}
 
 		return $raw;
@@ -217,7 +197,7 @@ final class PropertySourceDeclaration {
 	private static function validConfig(array $raw, string $path): array {
 		$config = ($raw['config'] ?? []);
 		if (is_array($config) === false) {
-			throw self::refusal(format: self::MSG_BAD_CONFIG, path: $path);
+			throw self::refusal(format: self::MSG_BAD_CONFIG, values: [$path]);
 		}
 
 		return $config;
@@ -238,12 +218,12 @@ final class PropertySourceDeclaration {
 	private static function validProvider(array $raw, string $path): string {
 		$provider = ($raw['provider'] ?? null);
 		if (is_string($provider) === false || trim($provider) === '') {
-			throw self::refusal(format: self::MSG_NO_PROVIDER, path: $path);
+			throw self::refusal(format: self::MSG_NO_PROVIDER, values: [$path]);
 		}
 
 		$provider = trim($provider);
 		if (preg_match(self::PROVIDER_PATTERN, $provider) !== 1) {
-			throw self::refusal(format: self::MSG_BAD_PROVIDER, path: $path, values: [$provider]);
+			throw self::refusal(format: self::MSG_BAD_PROVIDER, values: [$path, $provider]);
 		}
 
 		return $provider;
@@ -276,20 +256,19 @@ final class PropertySourceDeclaration {
 			$shownMode = (string)$mode;
 		}
 
-		throw self::refusal(format: self::MSG_BAD_MODE, path: $path, values: [$shownMode, implode(', ', self::MODES)]);
+		throw self::refusal(format: self::MSG_BAD_MODE, values: [$path, $shownMode, implode(', ', self::MODES)]);
 	}//end validMode()
 
 	/**
 	 * A refusal whose sentence starts with the annotation and the path.
 	 *
 	 * @param string             $format The sentence, its first two placeholders the annotation and the path.
-	 * @param string             $path   Where the property sits.
-	 * @param array<int, string> $values The values for the placeholders after those two.
+	 * @param array<int, string> $values Where the property sits, then the values for the placeholders after it.
 	 *
 	 * @return PropertySourceException The refusal.
 	 */
-	private static function refusal(string $format, string $path, array $values = []): PropertySourceException {
-		return new PropertySourceException(sprintf($format, self::ANNOTATION, $path, ...$values));
+	private static function refusal(string $format, array $values): PropertySourceException {
+		return new PropertySourceException(sprintf($format, self::ANNOTATION, ...$values));
 	}//end refusal()
 
 	/**
