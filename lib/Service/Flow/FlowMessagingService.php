@@ -382,10 +382,9 @@ class FlowMessagingService {
 		$mode = $this->addresses->externalRecipientMode(config: $send->config);
 		foreach ($send->items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-			$resolved = $this->addresses->resolveRecipients(
+			$resolved = $this->addresses->resolveAll(
 				recipients: ($send->config['recipients'] ?? []),
-				json: $json,
-				acceptAddresses: $send->acceptsAddresses()
+				lookup: new RecipientLookup(json: $json, acceptAddresses: $send->acceptsAddresses())
 			);
 			$screened = $this->addresses->screenAddresses(addresses: $resolved['addresses'], json: $json, mode: $mode);
 			$send->perItem[$index] = new FlowSendItem(json: $json, uids: $resolved['uids'], addresses: $screened['allowed']);

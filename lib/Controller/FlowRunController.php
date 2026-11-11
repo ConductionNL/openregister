@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunnableGuardInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSignalInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunSignals;
+use OCA\OpenRegister\Service\Flow\RunSignal;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -981,7 +982,7 @@ class FlowRunController extends Controller {
 		// The guard and the delivery are ONE seam — the same one a PHP consumer
 		// calls — so who may answer is decided in exactly one place.
 		try {
-			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
+			$signalled = $this->signals()->answer(run: $run, signal: new RunSignal(payload: $payload, actorUid: $this->callerUid()));
 		} catch (FlowSignalRefused $refused) {
 			return $this->refusalResponse(refused: $refused, conflict: $this->notSuspended(run: $run, verb: 'resumed'));
 		}
@@ -1039,7 +1040,7 @@ class FlowRunController extends Controller {
 
 		// Same seam as resume() and as every PHP consumer: one guard.
 		try {
-			$signalled = $this->signals()->signalRunAs(run: $run, payload: $payload, actorUid: $this->callerUid());
+			$signalled = $this->signals()->answer(run: $run, signal: new RunSignal(payload: $payload, actorUid: $this->callerUid()));
 		} catch (FlowSignalRefused $refused) {
 			return $this->refusalResponse(refused: $refused, conflict: $this->notSuspended(run: $run, verb: 'signalled'));
 		}

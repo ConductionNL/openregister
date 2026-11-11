@@ -407,10 +407,9 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	private function jsonLdObjectResponse(array $renderedObject, array $resolved): JSONResponse {
-		$document = $this->linkedData->jsonLdSerializer->serialize(
+		$document = $this->linkedData->jsonLdSerializer->serializeIn(
 			renderedObject: $renderedObject,
-			schema: $resolved['schemaEntity'],
-			register: $resolved['registerEntity']
+			table: new RegisterSchema(register: $resolved['registerEntity'], schema: $resolved['schemaEntity'])
 		);
 
 		return $this->withJsonLdHeaders(response: new JSONResponse(data: $document));
@@ -427,10 +426,9 @@ class ObjectsController extends Controller {
 	 * @spec openspec/specs/json-ld-output/spec.md
 	 */
 	private function jsonLdCollectionResponse(array $result, array $resolved): JSONResponse {
-		$document = $this->linkedData->jsonLdSerializer->serializeCollection(
+		$document = $this->linkedData->jsonLdSerializer->serializeCollectionIn(
 			paginatedResult: $result,
-			schema: $resolved['schemaEntity'],
-			register: $resolved['registerEntity']
+			table: new RegisterSchema(register: $resolved['registerEntity'], schema: $resolved['schemaEntity'])
 		);
 
 		return $this->withJsonLdHeaders(response: new JSONResponse(data: $document));
