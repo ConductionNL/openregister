@@ -91,10 +91,12 @@ final class FlowTimerDeadlines {
 	public function landed(FlowTimerScope $scope): DateTimeInterface {
 		$timer = $scope->timer;
 		return $this->calculator->add(
-			from: $timer->getRunningSince(),
-			value: max(0.0, ((float)$timer->getBudgetValue() - (float)$timer->getConsumedValue())),
-			unit: (string)$timer->getBudgetUnit(),
-			calendar: $scope->calendar
+			addition: new SlaAddition(
+				start: DateTimeImmutable::createFromInterface($timer->getRunningSince()),
+				value: max(0.0, ((float)$timer->getBudgetValue() - (float)$timer->getConsumedValue())),
+				unit: (string)$timer->getBudgetUnit(),
+				calendar: $scope->calendar
+			)
 		);
 	}//end landed()
 

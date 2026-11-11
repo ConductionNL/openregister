@@ -132,36 +132,91 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	private ?RbacMatchSql $matchSql = null;
 
 	/**
-	 * Constructor for MagicRbacHandler
+	 * User session for current user context.
 	 *
-	 * @param IUserSession $userSession User session for current user context
-	 * @param IGroupManager $groupManager Group manager for user group operations
-	 * @param IUserManager $userManager User manager for user operations
-	 * @param IAppConfig $appConfig App configuration for RBAC settings
-	 * @param ConditionMatcher $conditionMatcher Shared PHP-side match evaluator (ADR-011; SQL emitter stays here).
-	 * @param ContainerInterface $container Container for service injection
-	 * @param LoggerInterface $logger Logger for debugging
-	 * @param RbacResolvers|null $resolvers The shared object-scope, per-object grant and deny-grammar resolvers,
-	 *                                      bundled together; nullable so adding them is not a fatal at existing
-	 *                                      construction sites.
-	 * @param DenyEnforcementModeInterface|null $denyEnforcementMode The staging switch; nullable for the same reason.
-	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not be healed still lacks.
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group manager for user group operations.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection; the optional
-	 * collaborators are nullable so existing construction sites keep working.
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * User manager for user operations.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * App configuration for RBAC settings.
+	 *
+	 * @var IAppConfig
+	 */
+	private readonly IAppConfig $appConfig;
+
+	/**
+	 * The deny staging switch.
+	 *
+	 * @var DenyEnforcementModeInterface|null
+	 */
+	private readonly ?DenyEnforcementModeInterface $denyEnforcementMode;
+
+	/**
+	 * Knows which metadata columns a table that could not be healed still lacks.
+	 *
+	 * @var MagicMetadataColumnHealer|null
+	 */
+	private readonly ?MagicMetadataColumnHealer $metadataColumns;
+
+	/**
+	 * Shared PHP-side match evaluator (ADR-011; SQL emitter stays here).
+	 *
+	 * @var ConditionMatcher
+	 */
+	private readonly ConditionMatcher $conditionMatcher;
+
+	/**
+	 * Container for service injection.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
+	 * Logger for debugging.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param MagicMapperIdentity $identity  The user session, group manager and user manager.
+	 * @param MagicRbacSettings   $settings  The app config, the deny staging switch and the metadata column healer.
+	 * @param MagicRbacSupport    $support   The condition matcher, the container and the logger.
+	 * @param RbacResolvers|null  $resolvers The shared object-scope, per-object grant and deny-grammar resolvers.
 	 */
 	public function __construct(
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
-		private readonly IAppConfig $appConfig,
-		private readonly ConditionMatcher $conditionMatcher,
-		private readonly ContainerInterface $container,
-		private readonly LoggerInterface $logger,
+		MagicMapperIdentity $identity,
+		MagicRbacSettings $settings,
+		MagicRbacSupport $support,
 		private readonly ?RbacResolvers $resolvers = null,
-		private readonly ?DenyEnforcementModeInterface $denyEnforcementMode = null,
-		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
 	) {
+		$this->userSession = $identity->userSession;
+		$this->groupManager = $identity->groupManager;
+		$this->userManager = $identity->userManager;
+		$this->appConfig = $settings->appConfig;
+		$this->denyEnforcementMode = $settings->denyEnforcementMode;
+		$this->metadataColumns = $settings->metadataColumns;
+		$this->conditionMatcher = $support->conditionMatcher;
+		$this->container = $support->container;
+		$this->logger = $support->logger;
 	}//end __construct()
 
 	/**

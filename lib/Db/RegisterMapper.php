@@ -139,6 +139,13 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	private readonly \Psr\Container\ContainerInterface $container;
 
 	/**
+	 * Structured logger for the resolution diagnostics.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Organisation mapper for multi-tenancy (from trait)
 	 *
 	 * Used to get active organisation and apply organisation filters.
@@ -172,13 +179,10 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * Initializes mapper with database connection and required dependencies
 	 * for multi-tenancy, RBAC, and event dispatching.
 	 *
-	 * @param IDBConnection $db Database connection for queries
-	 * @param SchemaMapperInterface $schemaMapper Schema mapper for schema operations
-	 * @param IEventDispatcher $eventDispatcher Event dispatcher for register events
-	 * @param \Psr\Container\ContainerInterface $container Container for lazy MagicMapper resolution
-	 * @param TenancyServices $tenancy The organisation mapper, user session and group manager the tenancy and RBAC checks read
-	 * @param IAppConfig $appConfig App configuration for multitenancy settings
-	 * @param LoggerInterface $logger Structured logger for the resolution diagnostics.
+	 * @param IDBConnection          $db        Database connection for queries
+	 * @param TenancyServices        $tenancy   The organisation mapper, user session and group manager the tenancy and RBAC checks read
+	 * @param IAppConfig             $appConfig App configuration for multitenancy settings
+	 * @param RegisterMapperServices $services  The schema mapper, the container, the event dispatcher and the logger
 	 *
 	 * This class carried four `if (isset($this->logger))` logging sites, plus the
 	 * ones it inherits from {@see MultiTenancyTrait}, and never declared or
@@ -198,20 +202,18 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 */
 	public function __construct(
 		IDBConnection $db,
-		SchemaMapperInterface $schemaMapper,
-		IEventDispatcher $eventDispatcher,
-		\Psr\Container\ContainerInterface $container,
 		TenancyServices $tenancy,
 		IAppConfig $appConfig,
-		private readonly LoggerInterface $logger,
+		RegisterMapperServices $services,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_registers', entityClass: Register::class);
 
 		// Store dependencies for use in mapper methods.
-		$this->schemaMapper = $schemaMapper;
-		$this->eventDispatcher = $eventDispatcher;
-		$this->container = $container;
+		$this->schemaMapper = $services->schemaMapper;
+		$this->eventDispatcher = $services->eventDispatcher;
+		$this->container = $services->container;
+		$this->logger = $services->logger;
 		$this->organisationMapper = $tenancy->organisationMapper;
 		$this->userSession = $tenancy->userSession;
 		$this->groupManager = $tenancy->groupManager;

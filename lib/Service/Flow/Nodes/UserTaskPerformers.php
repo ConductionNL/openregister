@@ -34,7 +34,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Event\AgentRunDispatch;
+use OCA\OpenRegister\Event\AgentRunInstruction;
 use OCA\OpenRegister\Event\AgentRunRequestedEvent;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Flow\Principal\AgentPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalReference;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;
@@ -178,19 +181,25 @@ class UserTaskPerformers {
 
 		$this->events->dispatchTyped(
 			new AgentRunRequestedEvent(
-				subjectUuid: (string)$task->getUuid(),
-				subjectRegister: trim((string)($config['subjectRegister'] ?? '')),
-				subjectSchema: trim((string)($config['subjectSchema'] ?? '')),
-				agent: $agent->id,
-				skill: ($config['skill'] ?? null),
-				// A person gets fields to fill in; an agent gets a prompt. An
-				// agent asked nothing at all cannot know what the step wanted,
-				// so the title stands in rather than an empty string.
-				prompt: trim((string)($config['prompt'] ?? ($config['title'] ?? ''))),
-				resultField: trim((string)($config['outcomeKey'] ?? '')),
-				requiresApproval: (bool)($config['requiresApproval'] ?? false),
-				mode: trim((string)($config['mode'] ?? 'task')),
-				flowName: trim((string)($context['flowName'] ?? ''))
+				subject: new ObjectRef(
+					register: trim((string)($config['subjectRegister'] ?? '')),
+					schema: trim((string)($config['subjectSchema'] ?? '')),
+					id: (string)$task->getUuid()
+				),
+				instruction: new AgentRunInstruction(
+					agent: $agent->id,
+					skill: ($config['skill'] ?? null),
+					// A person gets fields to fill in; an agent gets a prompt. An
+					// agent asked nothing at all cannot know what the step wanted,
+					// so the title stands in rather than an empty string.
+					prompt: trim((string)($config['prompt'] ?? ($config['title'] ?? ''))),
+					resultField: trim((string)($config['outcomeKey'] ?? ''))
+				),
+				dispatch: new AgentRunDispatch(
+					requiresApproval: (bool)($config['requiresApproval'] ?? false),
+					mode: trim((string)($config['mode'] ?? 'task')),
+					flowName: trim((string)($context['flowName'] ?? ''))
+				)
 			)
 		);
 

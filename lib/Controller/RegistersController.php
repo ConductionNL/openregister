@@ -32,6 +32,7 @@ use OCA\OpenRegister\Controller\Support\RegisterGitHubPublisher;
 use OCA\OpenRegister\Controller\Support\RegistersControllerServices;
 use OCA\OpenRegister\Controller\Support\RegisterStatistics;
 use OCA\OpenRegister\Controller\Support\RegisterUpdate;
+use OCA\OpenRegister\Controller\Support\RequestListPage;
 use OCA\OpenRegister\Db\AuditTrail\AuditStatisticsScope;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -409,21 +410,9 @@ class RegistersController extends Controller {
 	 * @return array{limit: int|null, offset: int|null}
 	 */
 	private function listPage(array $params): array {
-		$limit = null;
-		if (isset($params['_limit']) === true) {
-			$limit = (int)$params['_limit'];
-		}
+		$page = new RequestListPage(params: $params);
 
-		$offset = null;
-		if (isset($params['_offset']) === true) {
-			$offset = (int)$params['_offset'];
-		}
-
-		if (isset($params['_page']) === true && $limit !== null) {
-			$offset = ((int)$params['_page'] - 1) * $limit;
-		}
-
-		return ['limit' => $limit, 'offset' => $offset];
+		return ['limit' => $page->limit(), 'offset' => $page->offset()];
 	}//end listPage()
 
 	/**

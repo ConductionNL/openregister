@@ -35,6 +35,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * @covers \OCA\OpenRegister\Db\RegisterMapper
@@ -129,13 +130,15 @@ class RegisterMapperFindGoldenTest extends TestCase {
 		}
 
 		return new RegisterMapper(
-			$db,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(ContainerInterface::class),
-			new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
-			$this->createMock(IAppConfig::class),
-			$logger
+			db: $db,
+			tenancy: new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new RegisterMapperServices(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				container: $this->createMock(ContainerInterface::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				logger: $logger
+			)
 		);
 	}//end makeMapper()
 }//end class
