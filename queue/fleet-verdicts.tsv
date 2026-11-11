@@ -2805,3 +2805,28 @@ stackiq	1622	053bb1183de578647c19fdf69e216431e3bc7ae8	GREEN	FV9-01:2	tree of 24 
 stackiq	1623	14d0368830cb5a735723d184825c4b79a4f61d3a	GREEN	FV9-01:2	tree of 24 green on c8a24e1875; unit failures only inherited (142); floor held
 stackiq	1624	f5ec7f688cd0f93c614b48dd38d052b73bea116a	GREEN	FV9-01:2	tree of 24 green on c8a24e1875; unit failures only inherited (142); floor held
 stackiq	1625	ecae570912f713d8cfa490c77276e0a058aaa79e	GREEN	FV9-01:2	tree of 24 green on c8a24e1875; unit failures only inherited (142); floor held
+buildiq	1378	341663a54e9f050a8fb9c3c1f71780ae66d83ba4	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1379	613ae50b4baef732551576d4f04b8c982a920a33	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1380	cb702c972faa61cf0c0c761c74a2284c48f6392a	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1381	ad119155aa8871f6178a9575da92965dbebd6644	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1382	fc9b064156d2352d0fd184a5336a4c4db39cb1c4	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1383	2b9e89ed9dbc5b346a78d3f626be4a9259a799e2	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1384	94b354921f067d48bc9780ea48dd6ae046bd0e3d	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1385	1969d2bc334f53b1db8aa17e990521bcaaaae8b9	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1386	358dc056b6c9905cd1e99d02e145569c1663510c	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1387	867706d32bc90f0a18971d4554caffcf745632b7	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1388	17cbe0107022352a97b5999c9bd942b26123a9cf	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1389	3b720c5c1e1832f15de44d0f380a9478c0b25aa5	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1390	ddd5a50c9d055af41372cee5dca8eb4ac12dd3ba	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1391	26bf606ad3b218b36df9ab5189d4f23f694f7f79	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1392	2395b18ea5057a994a78ef11695cf0604ee70f68	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1393	0e8e94582f440744a9e0ff1738857901411f6ae4	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1394	ed034c5a6712824c134790fce5407d2a94a5a711	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1395	1508d38c5e440a724b6414c1c3ef271cbc0edb23	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1396	f41719356e88caf4282c7900b530e45f75de2060	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1397	18fb54b45d25e76613bd5ab6abcadf3f46b87f1c	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1398	e6c0e7501425248b95a5bbdb1d23811f39a25451	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1399	58c50d5c4f9edc749e2dcef5470e294299638f6e	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1400	b10096edc1c1cb54790d320088853a0483effcb8	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1401	c682bd7ede91759644102e3b63610bc04f788747	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
+buildiq	1402	972af7a636b89edd131369878b2a1d2d3f40c511	GREEN	FV9-06:3	unit + vitest green against baseline; floor holds
