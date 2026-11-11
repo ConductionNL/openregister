@@ -2278,3 +2278,5 @@ opencatalogi	2536	3f5e8993d8061ddff5b196facd0601ecbb40ab99	GREEN	FV08:6	tree gre
 opencatalogi	2537	89efb383cc2fa1cf211d4f184eca4cfd00173d8b	GREEN	FV08:6	tree green (phpunit 5062, 56 baseline errors only; no JS changed), diff review clean
 integriq	3247	ed2a8ad21865c517aaa7692ad7811146b3d54661	GREEN	FV09:9	unit suite green on the verify tree
 integriq	3248	d090712fb2b546d5922cea6395a49ba9f4ee7318	GREEN	FV09:9	unit suite green on the verify tree
+stackiq	1529	4c9aefdd352a0b72f0214fff36c419fd5a5a4587	GREEN	FV14:2	no failures beyond baseline (149 inherited)
+stackiq	1530	32237cd1eea60dc5f732d18c9e4fedb89959e7c0	GREEN	FV14:2	no failures beyond baseline (149 inherited)
