@@ -903,10 +903,7 @@ class ContactService implements ContactServiceInterface {
 	 */
 	private function retagRole(ContactLink $link, string $role): void {
 		try {
-			$card = false;
-			if ($link->isUserLink() === false) {
-				$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
-			}
+			$card = $this->linkedCard(link: $link);
 
 			if ($card !== false) {
 				$vcard = Reader::read($card['carddata']);
@@ -919,6 +916,21 @@ class ContactService implements ContactServiceInterface {
 			$this->runtime->logger->warning('Failed to update vCard role: ' . $e->getMessage());
 		}
 	}//end retagRole()
+
+	/**
+	 * The CardDAV card behind a link; a user link has none.
+	 *
+	 * @param ContactLink $link The link row.
+	 *
+	 * @return array<string, mixed>|false The card, or false when the link is a user link or the card is gone.
+	 */
+	private function linkedCard(ContactLink $link): array|false {
+		if ($link->isUserLink() === true) {
+			return false;
+		}
+
+		return $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
+	}//end linkedCard()
 
 	/**
 	 * Remove a contact link.
@@ -949,10 +961,7 @@ class ContactService implements ContactServiceInterface {
 		// the link-row delete — orphan link rows would otherwise only
 		// be cleanable via direct DB DELETE.
 		try {
-			$card = false;
-			if ($link->isUserLink() === false) {
-				$card = $this->cardDavBackend->getCard((int)$link->getAddressbookId(), (string)$link->getContactUri());
-			}
+			$card = $this->linkedCard(link: $link);
 
 			if ($card !== false) {
 				$vcard = Reader::read($card['carddata']);

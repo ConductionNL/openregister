@@ -50,6 +50,58 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @spec openspec/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
  */
 class ExampleSetInstallCommand extends Command {
+
+	/**
+	 * The options, in declaration order: name => [mode, description]. None has a shortcut.
+	 */
+	private const OPTIONS = [
+		'check' => [
+			InputOption::VALUE_NONE,
+			'Validate every object against its schema; writes no account, group or object '
+				.'(a missing required register is still imported, and a missing cast organisation created)',
+		],
+		'adopt' => [
+			(InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY),
+			'An existing account id the set may use although it did not create it; remove leaves it in place',
+		],
+		'refresh' => [
+			InputOption::VALUE_NONE,
+			'Rewrite every object the set declares and already holds to its current values '
+				.'(dates against today, cast, lookups); objects the set did not write are left alone',
+		],
+		'daily' => [
+			InputOption::VALUE_NONE,
+			'Also refresh the set once a day from now on, so its dates follow the day it is viewed (a demo instance)',
+		],
+		'no-daily' => [
+			InputOption::VALUE_NONE,
+			'Stop the daily refresh of the set',
+		],
+		'password-from-env' => [
+			InputOption::VALUE_NONE,
+			'Use the environment variable OC_PASS as the password of every new account instead of making one each',
+		],
+	];
+
+	/**
+	 * The report's parts, in print order, with the word each line starts with.
+	 */
+	private const REPORT_PARTS = [
+		'registers'   => 'Register',
+		'groups'      => 'Group',
+		'users'       => 'Account',
+		'memberships' => 'Membership',
+		'changes'     => 'Change',
+		'appConfig'   => 'App config',
+		'userPreferences' => 'User preference',
+		'tasks'       => 'Task',
+		'views'       => 'View',
+		'watchers'    => 'Watcher',
+		'parties'     => 'Party',
+		'notes'       => 'Note',
+		'readStates'  => 'Read state',
+		'flows'       => 'Flow',
+	];
 	/**
 	 * Exit code when something did not arrive.
 	 */
@@ -82,45 +134,10 @@ class ExampleSetInstallCommand extends Command {
 	protected function configure(): void {
 		$this->setName(name: 'openregister:example-set:install')
 			->setDescription(description: 'Install a story example set across every enabled app, for a demo or test instance')
-			->addArgument(name: 'set', mode: InputArgument::REQUIRED, description: 'The set id; openregister:example-set:list shows them')
-			->addOption(
-				name: 'check',
-				shortcut: null,
-				mode: InputOption::VALUE_NONE,
-				description: 'Validate every object against its schema; writes no account, group or object '
-					.'(a missing required register is still imported, and a missing cast organisation created)'
-			)
-			->addOption(
-				name: 'adopt',
-				shortcut: null,
-				mode: (InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY),
-				description: 'An existing account id the set may use although it did not create it; remove leaves it in place'
-			)
-			->addOption(
-				name: 'refresh',
-				shortcut: null,
-				mode: InputOption::VALUE_NONE,
-				description: 'Rewrite every object the set declares and already holds to its current values '
-					.'(dates against today, cast, lookups); objects the set did not write are left alone'
-			)
-			->addOption(
-				name: 'daily',
-				shortcut: null,
-				mode: InputOption::VALUE_NONE,
-				description: 'Also refresh the set once a day from now on, so its dates follow the day it is viewed (a demo instance)'
-			)
-			->addOption(
-				name: 'no-daily',
-				shortcut: null,
-				mode: InputOption::VALUE_NONE,
-				description: 'Stop the daily refresh of the set'
-			)
-			->addOption(
-				name: 'password-from-env',
-				shortcut: null,
-				mode: InputOption::VALUE_NONE,
-				description: 'Use the environment variable OC_PASS as the password of every new account instead of making one each'
-			);
+			->addArgument(name: 'set', mode: InputArgument::REQUIRED, description: 'The set id; openregister:example-set:list shows them');
+		foreach (self::OPTIONS as $name => [$mode, $description]) {
+			$this->addOption(name: $name, shortcut: null, mode: $mode, description: $description);
+		}
 	}//end configure()
 
 	/**
@@ -215,17 +232,7 @@ class ExampleSetInstallCommand extends Command {
 	 * @return int 0 when nothing is refused, 1 otherwise.
 	 */
 	private function reportCheck(array $result, OutputInterface $output): int {
-		foreach ($result['registers'] as $slug => $outcome) {
-			$output->writeln('Register '.$slug.': '.self::word(outcome: $outcome));
-		}
-
-		foreach ($result['checked'] as $type => $count) {
-			$output->writeln($type.': '.$count.' checked');
-		}
-
-		foreach ($result['checkedChanges'] as $type => $count) {
-			$output->writeln($type.': '.$count.' change(s) checked');
-		}
+		$this->printChecked(result: $result, output: $output);
 
 		if ($result['refusals'] !== []) {
 			$this->printRefusals(refusals: $result['refusals'], output: $output);
@@ -240,6 +247,28 @@ class ExampleSetInstallCommand extends Command {
 
 		return self::SUCCESS;
 	}//end reportCheck()
+
+	/**
+	 * Print what the check covered: each required register, and the objects and changes checked per type.
+	 *
+	 * @param array<string, mixed> $result The installer's check result.
+	 * @param OutputInterface      $output The command output.
+	 *
+	 * @return void
+	 */
+	private function printChecked(array $result, OutputInterface $output): void {
+		foreach ($result['registers'] as $slug => $outcome) {
+			$output->writeln('Register '.$slug.': '.self::word(outcome: $outcome));
+		}
+
+		foreach ($result['checked'] as $type => $count) {
+			$output->writeln($type.': '.$count.' checked');
+		}
+
+		foreach ($result['checkedChanges'] as $type => $count) {
+			$output->writeln($type.': '.$count.' change(s) checked');
+		}
+	}//end printChecked()
 
 	/**
 	 * Print refusals, one per line.
@@ -264,28 +293,7 @@ class ExampleSetInstallCommand extends Command {
 	 * @return void
 	 */
 	private function printReport(array $report, OutputInterface $output): void {
-		$parts = [
-			'registers'   => 'Register',
-			'groups'      => 'Group',
-			'users'       => 'Account',
-			'memberships' => 'Membership',
-			'changes'     => 'Change',
-			'appConfig'   => 'App config',
-			'userPreferences' => 'User preference',
-			'tasks'       => 'Task',
-			'views'       => 'View',
-			'watchers'    => 'Watcher',
-			'parties'     => 'Party',
-			'notes'       => 'Note',
-			'readStates'  => 'Read state',
-			'flows'       => 'Flow',
-		];
-		foreach ($parts as $part => $word) {
-			foreach (($report[$part] ?? []) as $name => $outcome) {
-				$output->writeln($word.' '.$name.': '.self::word(outcome: $outcome));
-			}
-		}
-
+		$this->printParts(report: $report, output: $output);
 		$this->printTypes(types: $report['types'], output: $output);
 
 		if ($report['files'] > 0) {
@@ -293,14 +301,43 @@ class ExampleSetInstallCommand extends Command {
 		}
 
 		$this->printOutstanding(report: $report, output: $output);
+		$this->printPasswords(passwords: $report['passwords'], output: $output);
+	}//end printReport()
 
-		if ($report['passwords'] !== []) {
-			$output->writeln('New passwords, shown once and stored nowhere:');
-			foreach ($report['passwords'] as $uid => $password) {
-				$output->writeln('  '.$uid.': '.$password);
+	/**
+	 * Print the outcome of every register, group, account and other part the set wrote, part by part.
+	 *
+	 * @param array<string, mixed> $report The installer's report.
+	 * @param OutputInterface      $output The command output.
+	 *
+	 * @return void
+	 */
+	private function printParts(array $report, OutputInterface $output): void {
+		foreach (self::REPORT_PARTS as $part => $word) {
+			foreach (($report[$part] ?? []) as $name => $outcome) {
+				$output->writeln($word.' '.$name.': '.self::word(outcome: $outcome));
 			}
 		}
-	}//end printReport()
+	}//end printParts()
+
+	/**
+	 * Print the passwords of the accounts this install made, once.
+	 *
+	 * @param array<string, string> $passwords The new passwords by uid.
+	 * @param OutputInterface       $output    The command output.
+	 *
+	 * @return void
+	 */
+	private function printPasswords(array $passwords, OutputInterface $output): void {
+		if ($passwords === []) {
+			return;
+		}
+
+		$output->writeln('New passwords, shown once and stored nowhere:');
+		foreach ($passwords as $uid => $password) {
+			$output->writeln('  '.$uid.': '.$password);
+		}
+	}//end printPasswords()
 
 	/**
 	 * Print the counts per register and schema.

@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\AppHost\Store\Source;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -257,17 +258,7 @@ class GitHubStoreSource implements StoreSourceInterface {
 	 */
 	private function fetchTopic(GitHubSearchRun $run, string $topic): array {
 		try {
-			$response = $run->client->get(
-				self::API_HOST . '/search/repositories',
-				[
-					'query' => ['q' => $run->termFor(topic: $topic), 'per_page' => self::MAX_HITS],
-					'headers' => ['Accept' => 'application/vnd.github+json'],
-					'timeout' => self::TIMEOUT,
-					'connect_timeout' => self::TIMEOUT,
-					'allow_redirects' => false,
-					'http_errors' => false,
-				]
-			);
+			$response = $this->searchTopic(run: $run, topic: $topic);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[store/github] search failed: ' . $e->getMessage(),
@@ -281,6 +272,42 @@ class GitHubStoreSource implements StoreSourceInterface {
 			return ['outcome' => $outcome, 'cards' => []];
 		}
 
+		return $this->cardsOf(response: $response, topic: $topic);
+	}//end fetchTopic()
+
+	/**
+	 * Ask GitHub's repository search for one topic.
+	 *
+	 * @param GitHubSearchRun $run   The client and the free-text query of this search.
+	 * @param string          $topic The topic searched.
+	 *
+	 * @return IResponse
+	 *
+	 * @throws Throwable When the request cannot be made.
+	 */
+	private function searchTopic(GitHubSearchRun $run, string $topic): IResponse {
+		return $run->client->get(
+			self::API_HOST . '/search/repositories',
+			[
+				'query' => ['q' => $run->termFor(topic: $topic), 'per_page' => self::MAX_HITS],
+				'headers' => ['Accept' => 'application/vnd.github+json'],
+				'timeout' => self::TIMEOUT,
+				'connect_timeout' => self::TIMEOUT,
+				'allow_redirects' => false,
+				'http_errors' => false,
+			]
+		);
+	}//end searchTopic()
+
+	/**
+	 * The cards of a successful search response; invalid when it lists no items.
+	 *
+	 * @param IResponse $response The search response.
+	 * @param string    $topic    The topic searched.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 */
+	private function cardsOf(IResponse $response, string $topic): array {
 		$body = json_decode((string)$response->getBody(), true);
 		if (is_array($body) === false || is_array(($body['items'] ?? null)) === false) {
 			return ['outcome' => GenericStoreService::OUTCOME_INVALID, 'cards' => []];
@@ -294,7 +321,7 @@ class GitHubStoreSource implements StoreSourceInterface {
 		}
 
 		return ['outcome' => GenericStoreService::OUTCOME_OK, 'cards' => $cards];
-	}//end fetchTopic()
+	}//end cardsOf()
 
 	/**
 	 * Map an HTTP status onto a store outcome.

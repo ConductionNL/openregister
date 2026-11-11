@@ -1,0 +1,254 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`OperationsConsoleIndex.load falls back to empty panes and a 24-hour window 1`] = `
+{
+  "ctx": {
+    "acting": null,
+    "bulkJobs": [],
+    "error": "",
+    "facts": {},
+    "loading": false,
+    "maintenance": {
+      "actor": null,
+      "holds": false,
+      "message": "",
+    },
+    "panes": [],
+    "rulesHoldingAnError": [],
+    "runOutcome": "",
+    "runWindowHours": 24,
+    "runs": [],
+    "unobserved": [],
+    "windowHours": 24,
+  },
+  "log": [
+    [
+      "get",
+      "/gen/apps/openregister/api/operations/console",
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/operations/jobs",
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/operations/rule-runs",
+      true,
+      "",
+    ],
+    [
+      "loadRuns",
+      true,
+      0,
+    ],
+    [
+      "loadMaintenance",
+      true,
+      0,
+    ],
+    [
+      "loadFacts",
+      true,
+      0,
+    ],
+  ],
+}
+`;
+
+exports[`OperationsConsoleIndex.load fills the panes, then loads the runs, maintenance and facts 1`] = `
+{
+  "ctx": {
+    "acting": null,
+    "bulkJobs": [
+      {
+        "id": "j",
+      },
+    ],
+    "error": "",
+    "facts": {},
+    "loading": false,
+    "maintenance": {
+      "actor": null,
+      "holds": false,
+      "message": "",
+    },
+    "panes": [
+      {
+        "id": "p",
+      },
+    ],
+    "rulesHoldingAnError": [
+      {
+        "id": "r",
+      },
+    ],
+    "runOutcome": "",
+    "runWindowHours": 24,
+    "runs": [],
+    "unobserved": [
+      {
+        "id": "u",
+      },
+    ],
+    "windowHours": 48,
+  },
+  "log": [
+    [
+      "get",
+      "/gen/apps/openregister/api/operations/console",
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/operations/jobs",
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/operations/rule-runs",
+      true,
+      "",
+    ],
+    [
+      "loadRuns",
+      true,
+      1,
+    ],
+    [
+      "loadMaintenance",
+      true,
+      1,
+    ],
+    [
+      "loadFacts",
+      true,
+      1,
+    ],
+  ],
+}
+`;
+
+exports[`OperationsConsoleIndex.load shows the error and loads no further pane when a read fails 1`] = `
+{
+  "ctx": {
+    "acting": null,
+    "bulkJobs": [],
+    "error": "t:The console could not be read. Try again, or check the server log.",
+    "facts": {},
+    "loading": false,
+    "maintenance": {
+      "actor": null,
+      "holds": false,
+      "message": "",
+    },
+    "panes": [],
+    "rulesHoldingAnError": [],
+    "runOutcome": "",
+    "runWindowHours": 24,
+    "runs": [],
+    "unobserved": [],
+    "windowHours": 24,
+  },
+  "log": [
+    [
+      "get",
+      "/gen/apps/openregister/api/operations/console",
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/operations/jobs",
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/operations/rule-runs",
+      true,
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`OperationsConsoleIndex.load shows the error when a further pane fails 1`] = `
+{
+  "ctx": {
+    "acting": null,
+    "bulkJobs": [
+      {
+        "id": "j",
+      },
+    ],
+    "error": "t:The console could not be read. Try again, or check the server log.",
+    "facts": {},
+    "loading": false,
+    "maintenance": {
+      "actor": null,
+      "holds": false,
+      "message": "",
+    },
+    "panes": [
+      {
+        "id": "p",
+      },
+    ],
+    "rulesHoldingAnError": [
+      {
+        "id": "r",
+      },
+    ],
+    "runOutcome": "",
+    "runWindowHours": 24,
+    "runs": [],
+    "unobserved": [
+      {
+        "id": "u",
+      },
+    ],
+    "windowHours": 48,
+  },
+  "log": [
+    [
+      "get",
+      "/gen/apps/openregister/api/operations/console",
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/operations/jobs",
+      true,
+      "",
+    ],
+    [
+      "get",
+      "/gen/apps/openregister/api/operations/rule-runs",
+      true,
+      "",
+    ],
+    [
+      "loadRuns",
+      true,
+      1,
+    ],
+    [
+      "loadMaintenance",
+      true,
+      1,
+    ],
+    [
+      "loadFacts",
+      true,
+      1,
+    ],
+  ],
+}
+`;

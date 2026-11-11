@@ -79,28 +79,13 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 	/**
 	 * Switch one rule of a schema.
 	 *
-	 * @param Schema $schema The schema the rule is declared on.
-	 * @param string $ruleId The derived rule id.
-	 * @param bool $enabled What to switch it to.
+	 * @param RuleSwitch $switch The schema the rule is declared on, the derived rule id and what to switch it to.
 	 *
 	 * @return array{ok: bool, rule?: array<string, mixed>, audit?: array<string, mixed>, error?: array{code: string, message: string}} The outcome.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
-	public function setEnabled(Schema $schema, string $ruleId, bool $enabled): array {
-		return $this->apply(switch: new RuleSwitch(schema: $schema, ruleId: $ruleId, enabled: $enabled));
-	}//end setEnabled()
-
-	/**
-	 * Apply one switch.
-	 *
-	 * @param RuleSwitch $switch The rule and what to switch it to.
-	 *
-	 * @return array{ok: bool, rule?: array<string, mixed>, audit?: array<string, mixed>, error?: array{code: string, message: string}} The outcome.
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
-	 */
-	private function apply(RuleSwitch $switch): array {
+	public function setEnabled(RuleSwitch $switch): array {
 		$rule = $this->targets->rules->find(schema: $switch->schema, ruleId: $switch->ruleId);
 		if ($rule === null) {
 			$message = sprintf('Schema "%s" declares no rule "%s".', (string)($switch->schema->getSlug() ?? ''), $switch->ruleId);
@@ -117,7 +102,7 @@ final class RuleEnablementService implements RuleEnablementServiceInterface {
 		$after = $this->targets->rules->find(schema: $updated, ruleId: $switch->ruleId);
 
 		return ['ok' => true, 'rule' => ($after?->jsonSerialize() ?? $rule->jsonSerialize()), 'audit' => $audit];
-	}//end apply()
+	}//end setEnabled()
 
 	/**
 	 * Write the switch into whichever declaration owns the rule.

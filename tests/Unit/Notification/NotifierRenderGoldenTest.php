@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notification;
 
 use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
+use OCA\OpenRegister\Kernel\Contracts\TemplateRendering;
 use OCA\OpenRegister\Notification\Notifier;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -214,10 +215,10 @@ class NotifierRenderGoldenTest extends TestCase {
 		$templates = $this->createMock(NotificationTemplatesInterface::class);
 		$templates->method('knows')->willReturnCallback(static fn (string $event): bool => self::TEMPLATES[$event]['known'] ?? false);
 		$templates->method('hasEdit')->willReturnCallback(static fn (string $event): bool => self::TEMPLATES[$event]['edited'] ?? false);
-		$templates->method('render')->willReturnCallback(
-			static function (string $event, string $locale, array $variables) use ($record): ?array {
-				$record('templates', 'render', [$event, $locale, $variables]);
-				return self::TEMPLATES[$event]['rendered'] ?? null;
+		$templates->method('renderFor')->willReturnCallback(
+			static function (TemplateRendering $rendering) use ($record): ?array {
+				$record('templates', 'render', [$rendering->event, $rendering->locale, $rendering->variables]);
+				return self::TEMPLATES[$rendering->event]['rendered'] ?? null;
 			}
 		);
 
