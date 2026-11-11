@@ -2276,3 +2276,4 @@ humaniq	1004	feb685a2b813fc4537969422837f1c370f5aa991	GREEN	FV14:1	tree green 36
 humaniq	1005	ea90316cb6234f355482bf3225575b94ae0cfa61	GREEN	FV14:1	tree green 3618 tests, baseline 0 failures
 opencatalogi	2536	3f5e8993d8061ddff5b196facd0601ecbb40ab99	GREEN	FV08:6	tree green (phpunit 5062, 56 baseline errors only; no JS changed), diff review clean
 opencatalogi	2537	89efb383cc2fa1cf211d4f184eca4cfd00173d8b	GREEN	FV08:6	tree green (phpunit 5062, 56 baseline errors only; no JS changed), diff review clean
+integriq	3247	ed2a8ad21865c517aaa7692ad7811146b3d54661	GREEN	FV09:9	unit suite green on the verify tree
