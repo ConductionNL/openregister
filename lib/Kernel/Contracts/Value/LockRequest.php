@@ -24,7 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
-use OCA\OpenRegister\Service\Object\LockRunStep;
 
 /**
  * The arguments of LockHandler::lock(), carried together through its steps.

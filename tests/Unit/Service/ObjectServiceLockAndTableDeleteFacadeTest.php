@@ -26,7 +26,7 @@ use OCA\OpenRegister\Service\TableDeletionOptions;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
-use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
 use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SchemaDeletionService;
