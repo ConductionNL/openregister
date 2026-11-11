@@ -38,13 +38,12 @@ interface OrganisationEditAuditorInterface {
 	/**
 	 * Record an edit of an organisation's details.
 	 *
-	 * @param Organisation         $organisation The organisation, after the edit.
-	 * @param array<string, mixed> $before       The edited fields as they were, by name.
-	 * @param array<string, mixed> $after        The same fields as they are now.
+	 * @param Organisation     $organisation The organisation, after the edit.
+	 * @param OrganisationEdit $edit         The edited fields as they were and as they are now, by name.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
-	public function recordUpdate(Organisation $organisation, array $before, array $after): void;
+	public function recordUpdate(Organisation $organisation, OrganisationEdit $edit): void;
 }//end interface

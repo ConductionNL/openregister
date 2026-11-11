@@ -806,7 +806,7 @@ class CacheHandlerCoverageTest extends TestCase {
 		$handler = $this->createHandler(false, false);
 
 		$this->organisationMapper->method('findAllWithUserCount')->willReturn([]);
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 
 		$result = $handler->getAllObjectNames();
 		$this->assertIsArray($result);
@@ -819,7 +819,7 @@ class CacheHandlerCoverageTest extends TestCase {
 		$this->setProperty($handler, 'nameCache', ['uuid-1' => 'Name 1']);
 
 		$this->organisationMapper->method('findAllWithUserCount')->willReturn([]);
-		$this->objectMapper->method('findAll')->willReturn([]);
+		$this->objectMapper->method('findAllListed')->willReturn([]);
 
 		$result = $handler->getAllObjectNames(true);
 		$this->assertIsArray($result);

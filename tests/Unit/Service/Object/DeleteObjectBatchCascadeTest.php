@@ -254,7 +254,7 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		// Children: one built audit row each, persisted with ONE bulk insert.
 		$this->auditTrailMapper
 			->expects($this->exactly(2))
-			->method('buildAuditTrail')
+			->method('buildEntry')
 			->willReturn(new AuditTrail());
 		$this->auditTrailMapper
 			->expects($this->once())

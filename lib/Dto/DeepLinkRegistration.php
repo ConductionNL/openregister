@@ -78,6 +78,27 @@ class DeepLinkRegistration {
 	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
 	 */
 	public function resolveUrl(array $objectData, array $contactContext = []): string {
+		$replacements = $this->objectReplacements(objectData: $objectData);
+
+		// Apply contact context placeholders (after object placeholders).
+		if (empty($contactContext) === false) {
+			$replacements = array_merge(
+				$replacements,
+				$this->contactReplacements(contactContext: $contactContext, objectData: $objectData)
+			);
+		}
+
+		return strtr($this->urlTemplate, $replacements);
+	}//end resolveUrl()
+
+	/**
+	 * The object placeholders: uuid, id, register and schema, then every scalar top-level key.
+	 *
+	 * @param array<string, mixed> $objectData The object data.
+	 *
+	 * @return array<string, string> Placeholder to value.
+	 */
+	private function objectReplacements(array $objectData): array {
 		$replacements = [
 			'{uuid}' => $objectData['uuid'] ?? '',
 			'{id}' => (string)($objectData['id'] ?? ''),
@@ -92,14 +113,23 @@ class DeepLinkRegistration {
 			}
 		}
 
-		// Apply contact context placeholders (after object placeholders).
-		if (empty($contactContext) === false) {
-			$replacements['{contactId}'] = urlencode((string)($contactContext['contactId'] ?? ''));
-			$replacements['{contactEmail}'] = urlencode((string)($contactContext['contactEmail'] ?? ''));
-			$replacements['{contactName}'] = urlencode((string)($contactContext['contactName'] ?? ''));
-			$replacements['{entityId}'] = $objectData['uuid'] ?? '';
-		}
+		return $replacements;
+	}//end objectReplacements()
 
-		return strtr($this->urlTemplate, $replacements);
-	}//end resolveUrl()
+	/**
+	 * The contact placeholders, URL-encoded, and the entity id.
+	 *
+	 * @param array<string, mixed> $contactContext The contact context.
+	 * @param array<string, mixed> $objectData     The object data.
+	 *
+	 * @return array<string, string> Placeholder to value.
+	 */
+	private function contactReplacements(array $contactContext, array $objectData): array {
+		return [
+			'{contactId}' => urlencode((string)($contactContext['contactId'] ?? '')),
+			'{contactEmail}' => urlencode((string)($contactContext['contactEmail'] ?? '')),
+			'{contactName}' => urlencode((string)($contactContext['contactName'] ?? '')),
+			'{entityId}' => $objectData['uuid'] ?? '',
+		];
+	}//end contactReplacements()
 }//end class

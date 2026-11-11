@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\FreezeTerms;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -73,29 +74,6 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 	}//end __construct()
 
 	/**
-	 * Archive an object.
-	 *
-	 * Kept for the apps that call it by class name; archiveWith takes the request.
-	 *
-	 * @param string      $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason     Why it is being archived.
-	 * @param string|null $register   The register the url names.
-	 * @param string|null $schema     The schema the url names.
-	 *
-	 * @return array{uuid: string|null, archived: array|null} The stored marker.
-	 *
-	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
-	 */
-	public function archive(
-		string $identifier,
-		?string $reason = null,
-		?string $register = null,
-		?string $schema = null,
-	): array {
-		return $this->archiveWith(request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema));
-	}//end archive()
-
-	/**
 	 * Archive the object a request names.
 	 *
 	 * @param ObjectStateRequest $request The object, its address and the reason.
@@ -133,29 +111,6 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 			'archived' => $saved->getArchived(),
 		];
 	}//end archiveWith()
-
-	/**
-	 * Restore an object from the archive.
-	 *
-	 * Kept for the apps that call it by class name; unarchiveWith takes the request.
-	 *
-	 * @param string      $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason     Why it is being restored.
-	 * @param string|null $register   The register the url names.
-	 * @param string|null $schema     The schema the url names.
-	 *
-	 * @return array{uuid: string|null, archived: null} The cleared marker.
-	 *
-	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
-	 */
-	public function unarchive(
-		string $identifier,
-		?string $reason = null,
-		?string $register = null,
-		?string $schema = null,
-	): array {
-		return $this->unarchiveWith(request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema));
-	}//end unarchive()
 
 	/**
 	 * Take the object a request names out of the archive.
@@ -229,7 +184,7 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		}
 
 		$before = clone $object;
-		$object->freeze(userSession: $this->userSession, reason: $request->reason, state: $state);
+		$object->freezeWith(userSession: $this->userSession, terms: new FreezeTerms(reason: $request->reason, state: $state));
 
 		$saved = $this->persist(context: $context, transition: new ObjectStateTransition(action: 'freeze', before: $before));
 
@@ -238,29 +193,6 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 			'frozen' => $saved->getFrozen(),
 		];
 	}//end freeze()
-
-	/**
-	 * Unfreeze an object.
-	 *
-	 * Kept for the apps that call it by class name; unfreezeWith takes the request.
-	 *
-	 * @param string      $identifier Object id, uuid, slug or uri.
-	 * @param string|null $reason     Why it is being unfrozen.
-	 * @param string|null $register   The register the url names.
-	 * @param string|null $schema     The schema the url names.
-	 *
-	 * @return array{uuid: string|null, frozen: null} The cleared marker.
-	 *
-	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
-	 */
-	public function unfreeze(
-		string $identifier,
-		?string $reason = null,
-		?string $register = null,
-		?string $schema = null,
-	): array {
-		return $this->unfreezeWith(request: new ObjectStateRequest(identifier: $identifier, reason: $reason, register: $register, schema: $schema));
-	}//end unfreeze()
 
 	/**
 	 * Unfreeze the object a request names.
@@ -352,10 +284,12 @@ class ArchiveHandler implements ArchiveHandlerInterface {
 		$this->permissionHandler->checkPermission(
 			schema: $schemaEntity,
 			action: 'update',
-			userId: $this->userSession->getUser()?->getUID(),
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			options: new PermissionCheckOptions(
+				userId: $this->userSession->getUser()?->getUID(),
+				objectOwner: $object->getOwner(),
+				object: $object
+			),
+			_rbac: true
 		);
 
 		return [

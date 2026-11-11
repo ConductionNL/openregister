@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject;
 
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
@@ -47,7 +48,7 @@ class ComputedFieldEvaluationGoldenTest extends TestCase {
 		$schema = new Schema();
 		$schema->setProperties(['out' => ['type' => 'string', 'computed' => ['expression' => $expression]]]);
 
-		$result = $this->handler()->evaluateComputedFields($input, $schema);
+		$result = $this->handler()->evaluateComputedFields($input, new ComputedPass(schema: $schema));
 		$this->assertArrayHasKey('out', $result);
 
 		return $result['out'];
@@ -120,7 +121,10 @@ class ComputedFieldEvaluationGoldenTest extends TestCase {
 		$schema = new Schema();
 		$schema->setProperties(['out' => ['computed' => ['expression' => '{{ a|capitalize }}']]]);
 
-		$this->assertSame(['a' => 'x', 'out' => null], $this->handler($logger)->evaluateComputedFields(['a' => 'x'], $schema));
+		$this->assertSame(['a' => 'x', 'out' => null], $this->handler($logger)->evaluateComputedFields(
+			['a' => 'x'],
+			new ComputedPass(schema: $schema)
+		));
 	}//end testAFailingExpressionIsLoggedAndNull()
 
 	public function testModesSelectionAndOrder(): void {
@@ -139,9 +143,12 @@ class ComputedFieldEvaluationGoldenTest extends TestCase {
 
 		$this->assertSame(
 			['base' => 5, 'first' => 10, 'second' => 11],
-			$handler->evaluateComputedFields(['base' => 5], $schema)
+			$handler->evaluateComputedFields(['base' => 5], new ComputedPass(schema: $schema))
 		);
-		$this->assertSame(['base' => 5, 'onRead' => '5r'], $handler->evaluateComputedFields(['base' => 5], $schema, 'read'));
+		$this->assertSame(['base' => 5, 'onRead' => '5r'], $handler->evaluateComputedFields(
+			['base' => 5],
+			new ComputedPass(schema: $schema, evaluateOn: 'read')
+		));
 		$this->assertSame(['first', 'second', 'blank', 'zero', 'noExpression'], $handler->getComputedPropertyNames($schema));
 		$this->assertSame(['onRead'], $handler->getComputedPropertyNames($schema, 'read'));
 		$this->assertSame([], $handler->getComputedPropertyNames($schema, 'other'));
@@ -155,7 +162,7 @@ class ComputedFieldEvaluationGoldenTest extends TestCase {
 
 		$this->assertFalse($handler->hasComputedProperties($schema));
 		$this->assertSame([], $handler->getComputedPropertyNames($schema));
-		$this->assertSame(['a' => 1], $handler->evaluateComputedFields(['a' => 1], $schema));
+		$this->assertSame(['a' => 1], $handler->evaluateComputedFields(['a' => 1], new ComputedPass(schema: $schema)));
 		$this->assertFalse($handler->hasComputedProperties(new Schema()));
 	}//end testWithoutComputedProperties()
 

@@ -18,6 +18,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
+use OCA\OpenRegister\Service\ProtectedCarryForward;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -180,7 +183,12 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 		$method = new ReflectionMethod(SaveObject::class, 'prepareObjectForUpdate');
 		$method->setAccessible(true);
 
-		return $method->invokeArgs($handler, [$existing, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, ['organisation' => 'org-a']), null])->getObject();
+		$preparation = new UpdatePreparation(
+			existingObject: $existing,
+			schema: $schema,
+			payload: new ObjectPayload(data: $data, selfData: ['organisation' => 'org-a'])
+		);
+		return $method->invokeArgs($handler, [$preparation])->getObject();
 	}//end prepareUpdate()
 
 	/**
@@ -313,11 +321,11 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 
 		$this->assertSame(
 			['restricted'],
-			$this->rbac->collectOmittedProtectedProperties(schema: $schema, incoming: ['title' => 'x'], stored: ['title' => 'x', 'restricted' => true])
+			$this->rbac->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: ['title' => 'x'], stored: ['title' => 'x', 'restricted' => true]))
 		);
 		$this->assertSame(
 			[],
-			$this->rbac->collectOmittedProtectedProperties(schema: $schema, incoming: ['title' => 'x', 'restricted' => true], stored: ['restricted' => true])
+			$this->rbac->collectOmittedProtectedProperties(update: new ProtectedCarryForward(schema: $schema, incoming: ['title' => 'x', 'restricted' => true], stored: ['restricted' => true]))
 		);
 	}//end testTheHandlerNamesOnlyStoredPropertiesTheCallerMayNotUpdate()
 }//end class

@@ -21,9 +21,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ProcessingLogEntry;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
 use OCA\OpenRegister\Db\ProcessingLogReadScope;
+use OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -237,11 +239,9 @@ class ProcessingLogMapperWritesAndCountsTest extends TestCase {
 	 * @return void
 	 */
 	public function testFindFilteredAppliesFilledColumnFiltersAndPaging(): void {
-		$this->mapper()->findFiltered(
-			['register_id' => 3, 'schema_id' => '', 'activity_id' => 'act-2', 'actor' => null, 'action' => 'export'],
-			new ProcessingLogReadScope(null, null, 'org-4', true),
-			25,
-			50
+		$this->mapper()->findListed(
+			new ListQuery(limit: 25, offset: 50, filters: ['register_id' => 3, 'schema_id' => '', 'activity_id' => 'act-2', 'actor' => null, 'action' => 'export']),
+			new ProcessingLogReadScope(null, null, 'org-4', true)
 		);
 
 		$log = $this->log();
@@ -264,7 +264,7 @@ class ProcessingLogMapperWritesAndCountsTest extends TestCase {
 	 * @return void
 	 */
 	public function testADefaultReadExcludesConfidentialEntries(): void {
-		$this->mapper()->findBySubject('BSN', '111');
+		$this->mapper()->findForSubject(new ProcessingLogSubject('BSN', '111'));
 
 		$log = $this->log();
 		$this->assertStringContainsString('eq(confidential', $log);
@@ -281,7 +281,7 @@ class ProcessingLogMapperWritesAndCountsTest extends TestCase {
 	 */
 	public function testAPeriodBoundsTheReadOnBothSides(): void {
 		$scope = new ProcessingLogReadScope(new DateTime('2026-01-01T00:00:00+00:00'), new DateTime('2026-02-01T00:00:00+00:00'));
-		$this->mapper()->findFiltered([], $scope);
+		$this->mapper()->findListed(new ListQuery(limit: 100, offset: 0), $scope);
 
 		$log = $this->log();
 		$this->assertStringContainsString('gte(created', $log);
@@ -334,7 +334,7 @@ class ProcessingLogMapperWritesAndCountsTest extends TestCase {
 	 * @return void
 	 */
 	public function testANumericSubjectValueFiltersAsAString(): void {
-		$this->mapper()->findFiltered(['subject_id_value' => 111]);
+		$this->mapper()->findListed(new ListQuery(limit: 100, offset: 0, filters: ['subject_id_value' => 111]));
 
 		$log = $this->log();
 		$this->assertStringContainsString('param :p1 = 111, 2', $log);
@@ -354,7 +354,7 @@ class ProcessingLogMapperWritesAndCountsTest extends TestCase {
 			['id' => 2, 'object_uuid' => 'b', 'subject_id_type' => 'BSN', 'subject_id_value' => '111', 'query_params' => '{"q":"x"}'],
 		]];
 
-		$entries = $this->mapper()->findBySubject('BSN', '111');
+		$entries = $this->mapper()->findForSubject(new ProcessingLogSubject('BSN', '111'));
 
 		$this->assertCount(2, $entries);
 		$this->assertSame([['type' => 'BSN', 'value' => '111']], $entries[0]->getSubjectIds());

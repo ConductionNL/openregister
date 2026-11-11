@@ -22,7 +22,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ConversationStores;
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
 /**
  * Pins the observable outcomes of title generation, unique-title numbering
@@ -157,7 +157,7 @@ class ConversationManagementHandlerCharacterisationTest extends TestCase
     public function testUniqueTitleReturnsBaseWhenNoMatches(): void
     {
         $this->conversationMapper->expects($this->once())->method('findTitlesByUserAgent')
-            ->with('u1', 3, 'Title%')->willReturn([]);
+            ->with(new TitleClaim('Title', 'u1', 3))->willReturn([]);
         $this->assertSame('Title', $this->handler([])->ensureUniqueTitle(new TitleClaim('Title', 'u1', 3)));
     }
 

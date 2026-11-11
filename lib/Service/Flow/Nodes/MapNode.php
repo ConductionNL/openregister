@@ -32,7 +32,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\MappingMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
@@ -151,9 +153,7 @@ class MapNode extends LogicNodeBase implements IFlowNode, MapNodeInterface, IFlo
 	 * transformed, and a downstream step reading the un-mapped shape would fail
 	 * somewhere else entirely — the error would surface far from its cause.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array The transformed items.
 	 *
@@ -162,11 +162,11 @@ class MapNode extends LogicNodeBase implements IFlowNode, MapNodeInterface, IFlo
 	 * `$context` is part of the IFlowNode contract and unused here — a mapping
 	 * transforms the item, not the run.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 *
 	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		return $this->mapAll(items: $items, reference: trim((string)($config['mapping'] ?? '')));
 	}//end execute()
 
@@ -199,7 +199,7 @@ class MapNode extends LogicNodeBase implements IFlowNode, MapNodeInterface, IFlo
 				throw new RuntimeException(sprintf('Mapping "%s" failed on item %d: %s', $reference, $index, $e->getMessage()), 0, $e);
 			}
 
-			$mapped[] = FlowItems::item(json: $result, binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index);
+			$mapped[] = FlowItems::item(json: $result, options: new FlowItemOptions(binary: (array)($item[FlowItems::BINARY] ?? []), fromItemIndex: $index));
 		}
 
 		return $mapped;

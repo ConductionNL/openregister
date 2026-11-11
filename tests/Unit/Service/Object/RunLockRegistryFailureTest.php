@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RunObjectLock;
 use OCA\OpenRegister\Db\RunObjectLockMapperInterface;
-use OCA\OpenRegister\Service\Object\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;

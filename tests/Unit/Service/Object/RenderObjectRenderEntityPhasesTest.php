@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -113,9 +114,7 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		return new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
 				mappers: new \OCA\OpenRegister\Service\Object\RenderMappers(
-					objectEntityMapper: $this->createMock(MagicMapper::class),
-					registerMapper: $this->registers,
-					schemaMapper: $this->schemaMapper,
+					catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registers, schemas: $this->schemaMapper, tables: $this->createMock(MagicMapper::class)),
 					objectCacheService: $this->createMock(CacheHandler::class)
 				),
 				files: new \OCA\OpenRegister\Service\Object\RenderFileSources(
@@ -399,8 +398,8 @@ class RenderObjectRenderEntityPhasesTest extends TestCase {
 		$seen = [];
 		$this->translationHandler = $this->createMock(TranslationHandler::class);
 		$this->translationHandler->method('resolveTranslationsForRender')->willReturnCallback(
-			static function (array $objectData, Schema $schema, ?Register $register) use (&$seen): array {
-				$seen[] = [$schema, $register];
+			static function (array $objectData, TranslationScope $scope) use (&$seen): array {
+				$seen[] = [$scope->schema, $scope->register];
 				$objectData['translated'] = true;
 
 				return $objectData;

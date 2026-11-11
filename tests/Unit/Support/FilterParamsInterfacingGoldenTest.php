@@ -21,7 +21,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Support;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Support\AggregationFilterRequest;
 use OCA\OpenRegister\Support\FilterParams;
+use OCA\OpenRegister\Support\UnknownFilterKeys;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -38,9 +41,11 @@ class FilterParamsInterfacingGoldenTest extends TestCase {
 	 */
 	public function testForAggregationKeepsOrderOverridesAndReportsEachUnknownOnce(): void {
 		$normalised = FilterParams::forAggregation(
-			bracket: ['hours' => '8', 'ghost' => 'x', '_meta' => 'm', 'id' => 'u-1', 0 => 'zero', 'origni' => 'b'],
-			params: ['origin' => 'manual', 'hours' => '1', 'origni' => 'a', 'metric' => 'sum', 'schema' => 's', '_x' => 1, 5 => 'n'],
-			controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value'],
+			request: new AggregationFilterRequest(
+				bracket: ['hours' => '8', 'ghost' => 'x', '_meta' => 'm', 'id' => 'u-1', 0 => 'zero', 'origni' => 'b'],
+				params: ['origin' => 'manual', 'hours' => '1', 'origni' => 'a', 'metric' => 'sum', 'schema' => 's', '_x' => 1, 5 => 'n'],
+				controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value']
+			),
 			properties: ['origin' => [], 'hours' => []]
 		);
 
@@ -61,7 +66,7 @@ class FilterParamsInterfacingGoldenTest extends TestCase {
 	public function testForAggregationWithNothingGivesAnEmptyFilter(): void {
 		$this->assertSame(
 			['filter' => [], 'unknown' => []],
-			FilterParams::forAggregation(bracket: [], params: [], controlParams: [], properties: [])
+			FilterParams::forAggregation(request: new AggregationFilterRequest(bracket: [], params: [], controlParams: []), properties: [])
 		);
 	}//end testForAggregationWithNothingGivesAnEmptyFilter()
 
@@ -78,7 +83,7 @@ class FilterParamsInterfacingGoldenTest extends TestCase {
 			['app' => 'openregister', 'endpoint' => 'aggregations#value', 'register' => 'reg', 'schema' => 'sch', 'keys' => ['a', 'b']]
 		);
 
-		FilterParams::warnUnknownKeys(logger: $logger, keys: [3 => 'a', 7 => 'b'], endpoint: 'aggregations#value', register: 'reg', schema: 'sch');
+		FilterParams::warnUnknownKeys(logger: $logger, unknown: new UnknownFilterKeys(keys: [3 => 'a', 7 => 'b'], endpoint: 'aggregations#value', table: new RegisterSchemaRef(register: 'reg', schema: 'sch')));
 	}//end testWarnUnknownKeysWritesTheExactLineAndContext()
 
 	/**
@@ -87,7 +92,7 @@ class FilterParamsInterfacingGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testWarnUnknownKeysWithoutALoggerDoesNothing(): void {
-		FilterParams::warnUnknownKeys(logger: null, keys: ['a'], endpoint: 'objects#index', register: 'r', schema: 's');
+		FilterParams::warnUnknownKeys(logger: null, unknown: new UnknownFilterKeys(keys: ['a'], endpoint: 'objects#index', table: new RegisterSchemaRef(register: 'r', schema: 's')));
 
 		$this->addToAssertionCount(1);
 	}//end testWarnUnknownKeysWithoutALoggerDoesNothing()

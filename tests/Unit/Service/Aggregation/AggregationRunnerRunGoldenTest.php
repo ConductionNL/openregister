@@ -7,18 +7,22 @@ declare(strict_types=1);
 
 namespace Unit\Service\Aggregation;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -136,11 +140,8 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 		$runner = $this->runner(case: $case);
 		try {
 			$result = $runner->run(
-				registerRef: 'reg',
-				schemaRef: 'things',
-				name: $case['name'],
-				bypassRbac: $case['bypass'],
-				extraFilter: $case['extra']
+				ref: new NamedAggregationRef(register: 'reg', schema: 'things', name: $case['name']),
+				options: new NamedAggregationOptions(bypassRbac: $case['bypass'], extraFilter: $case['extra'])
 			);
 			$outcome = ['result' => $result];
 		} catch (Throwable $e) {
@@ -181,7 +182,8 @@ class AggregationRunnerRunGoldenTest extends TestCase {
 			}
 		);
 		$magic->method('findAllInRegisterSchemaTable')->willReturnCallback(
-			function (Register $register, Schema $schema, ?int $limit = null) use ($case): array {
+			function (RegisterSchema $table, ListQuery $listing) use ($case): array {
+				[$register, $schema, $limit] = [$table->register, $table->schema, $listing->limitOrNull()];
 				$this->calls[] = ['table' => [$register->getSlug(), $schema->getSlug(), $limit]];
 				$entities = [];
 				foreach ($case['rows'] as $row) {

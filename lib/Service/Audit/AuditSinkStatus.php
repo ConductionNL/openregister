@@ -75,19 +75,7 @@ class AuditSinkStatus implements AuditSinkStatusInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function read(): array {
-		$stored = [];
-
-		try {
-			$raw = $this->appConfig->getValueString(self::APP, self::KEY, '');
-			if ($raw !== '') {
-				$decoded = json_decode($raw, true);
-				if (is_array($decoded) === true) {
-					$stored = $decoded;
-				}
-			}
-		} catch (Throwable $e) {
-			$stored = [];
-		}
+		$stored = $this->storedState();
 
 		return [
 			'healthy' => (bool)($stored['healthy'] ?? true),
@@ -98,6 +86,27 @@ class AuditSinkStatus implements AuditSinkStatusInterface {
 			'acknowledgedAt' => ($stored['acknowledgedAt'] ?? null),
 		];
 	}//end read()
+
+	/**
+	 * The stored state, decoded; empty when nothing is stored or it cannot be read.
+	 *
+	 * @return array<string, mixed> The stored state.
+	 */
+	private function storedState(): array {
+		try {
+			$raw = $this->appConfig->getValueString(self::APP, self::KEY, '');
+			if ($raw !== '') {
+				$decoded = json_decode($raw, true);
+				if (is_array($decoded) === true) {
+					return $decoded;
+				}
+			}
+		} catch (Throwable $e) {
+			return [];
+		}
+
+		return [];
+	}//end storedState()
 
 	/**
 	 * Record that an entry reached the sink.

@@ -120,8 +120,8 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 		$rules = new ExampleSetFieldRules();
 		return $rules->firstRefusal(
 			checks: [
-				fn (): string => $rules->unknownRefusal(data: $data, fields: self::FIELDS, row: 'a deck card'),
-				fn (): string => $rules->missingRefusal(data: $data, required: self::REQUIRED, row: 'a deck card'),
+				fn (): string => $rules->unknownRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a deck card', fields: self::FIELDS)),
+				fn (): string => $rules->missingRefusal(data: $data, shape: new ExampleSetRowShape(row: 'a deck card', required: self::REQUIRED)),
 				fn (): string => $rules->strangerRefusal(people: $this->people(data: $data), users: $users),
 				fn (): string => $rules->datesRefusal(data: $data, fields: ['due', 'done']),
 			]
@@ -289,10 +289,12 @@ class ExampleSetDeckCards extends ExampleSetEngineRows {
 	 */
 	private function place(ExampleSetDeckStore $store, array $data): array {
 		$board = $store->board(
-			owner: (string) $data['owner'],
-			title: (string) $data['board'],
-			color: (string) ($data['color'] ?? self::DEFAULT_COLOR),
-			groups: array_map('strval', (array) ($data['shareWith'] ?? []))
+			board: new DeckBoardRequest(
+				owner: (string) $data['owner'],
+				title: (string) $data['board'],
+				color: (string) ($data['color'] ?? self::DEFAULT_COLOR),
+				groups: array_map('strval', (array) ($data['shareWith'] ?? []))
+			)
 		);
 		$stack = $store->stack(board: $board['id'], title: (string) $data['list']);
 

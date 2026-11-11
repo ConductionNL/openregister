@@ -31,6 +31,8 @@ use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use OCA\OpenRegister\Search\Service\Reporting\ReportWriters;
 use OCA\OpenRegister\Search\Service\Reporting\SpreadsheetReportWriter;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
+use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -65,12 +67,13 @@ class ReportRenderServiceCharacterisationTest extends TestCase {
 	private function service(?LoggerInterface $logger = null): ReportRenderService {
 		$runner = $this->createMock(AggregationRunnerInterface::class);
 		$runner->method('run')->willReturnCallback(
-			function (string $registerRef, string $schemaRef, string $name, bool $bypassRbac = false): array {
-				if ($registerRef === 'kapot') {
+			function (NamedAggregationRef $ref, ?NamedAggregationOptions $options = null): array {
+				if ($ref->register === 'kapot') {
 					throw new RuntimeException('boom');
 				}
 
-				return ['name' => $name, 'metric' => 'count', 'value' => ($bypassRbac === true ? 7 : -1), 'register' => $registerRef, 'schema' => $schemaRef];
+				$bypassRbac = $options?->bypassRbac ?? false;
+				return ['name' => $ref->name, 'metric' => 'count', 'value' => ($bypassRbac === true ? 7 : -1), 'register' => $ref->register, 'schema' => $ref->schema];
 			}
 		);
 		$graphql = $this->createMock(GraphQLService::class);
@@ -139,6 +142,27 @@ class ReportRenderServiceCharacterisationTest extends TestCase {
 		$this->assertSame('application/vnd.oasis.opendocument.spreadsheet', $service->render($this->dashboard(), 'ods')['mime']);
 		$this->assertSame('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', $service->render($this->dashboard(), 'xlsx')['mime']);
 	}//end testHtmlAndSpreadsheetFormats()
+
+	public function testIncompleteDataSourcesResolveToNoDataWithoutACall(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('warning');
+		$dashboard = [
+			'titel' => null,
+			'title' => 'Fallback Title',
+			'widgets' => [
+				['dataSource' => ['register' => 'zaken', 'schema' => 'zaak', 'aggregation' => '']],
+				['dataSource' => ['mode' => 'aggregation', 'register' => '', 'schema' => 'zaak', 'aggregation' => 'x']],
+				['dataSource' => ['mode' => 'graphql', 'graphqlQuery' => '']],
+				['dataSource' => ['mode' => 'graphql']],
+				['dataSource' => 'not-an-array'],
+			],
+		];
+
+		$rendered = $this->service($logger)->render($dashboard, 'pdf');
+
+		$this->assertMatchesRegularExpression('/^fallback-title_\d{4}-\d{2}-\d{2}_\d{6}\.pdf$/', $rendered['filename']);
+		$this->assertSame('%PDF ' . json_encode([null, [null, null, null, null, null]]), $rendered['bytes']);
+	}//end testIncompleteDataSourcesResolveToNoDataWithoutACall()
 
 	public function testUntitledDashboardIsNamedDashboard(): void {
 		$rendered = $this->service()->render(['widgets' => []], 'csv');

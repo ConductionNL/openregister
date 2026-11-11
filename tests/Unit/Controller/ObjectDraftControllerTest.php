@@ -20,9 +20,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Object\UserDraftActivation;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
 use OCA\OpenRegister\Controller\ObjectDraftController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -31,6 +33,7 @@ use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -115,7 +118,7 @@ class ObjectDraftControllerTest extends TestCase {
 		$this->objects = $this->createMock(ObjectService::class);
 		// The render boundary: takes the `writeOnly` property `secret` out of the entity, as the real one does for the schema that declares it.
 		$this->objects->method('renderEntity')->willReturnCallback(
-			function (ObjectEntity $entity, ?array $_extend = [], ?int $depth = 0, ?array $filter = [], ?array $fields = [], ?array $unset = [], bool $_rbac = true): array {
+			function (ObjectEntity $entity, ?RenderSelection $selection = null, bool $_rbac = true): array {
 				if ($this->renderFails === true) {
 					throw new RuntimeException('render boundary down');
 				}
@@ -128,15 +131,8 @@ class ObjectDraftControllerTest extends TestCase {
 			}
 		);
 		$this->objects->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				$register = null,
-				$schema = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-			): ?ObjectEntity {
+			function (...$args): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy] = FindCallShape::find(args: $args);
 				$this->reads[] = ['id' => $id, 'register' => $register, 'schema' => $schema, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy];
 
 				return $this->readable;
@@ -214,8 +210,9 @@ class ObjectDraftControllerTest extends TestCase {
 	 */
 	private function activationAnswers(ObjectEntity|\Throwable $answer): void {
 		$this->activation->method('activateAsUser')->willReturnCallback(
-			function (DraftAddress $address, IUser $user, array $changes = []) use ($answer): ObjectEntity {
-				$this->activations[] = ['register' => $address->register, 'schema' => $address->schema, 'draftId' => $address->draftId, 'user' => $user, 'changes' => $changes];
+			function (UserDraftActivation $activation) use ($answer): ObjectEntity {
+				$address             = $activation->address;
+				$this->activations[] = ['register' => $address->register, 'schema' => $address->schema, 'draftId' => $address->draftId, 'user' => $activation->user, 'changes' => $activation->changes];
 				if ($answer instanceof \Throwable) {
 					throw $answer;
 				}

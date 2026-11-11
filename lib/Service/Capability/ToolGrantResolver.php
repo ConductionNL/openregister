@@ -432,15 +432,40 @@ class ToolGrantResolver {
 				continue;
 			}
 
-			$parsed = [];
+			$sets[$base][] = $this->constraintSetOf(query: $query);
 			if ($query !== null) {
-				$parsed = $this->parseConstraints(query: $query);
 				$constrained[$base] = true;
 			}
-
-			$sets[$base][] = $parsed;
 		}
 
+		return self::onlyConstrained(sets: $sets, constrained: $constrained);
+	}//end argumentConstraints()
+
+	/**
+	 * The constraint set one grant contributes: its parsed query, or the empty
+	 * set of a bare grant.
+	 *
+	 * @param string|null $query The grant's constraint query, null when it has none.
+	 *
+	 * @return array<string, array{mode:string, values:array<int,string>}>
+	 */
+	private function constraintSetOf(?string $query): array {
+		if ($query === null) {
+			return [];
+		}
+
+		return $this->parseConstraints(query: $query);
+	}//end constraintSetOf()
+
+	/**
+	 * Keep the alternative sets of the ids at least one grant constrains, in order.
+	 *
+	 * @param array<string, array<int, array<string, array{mode:string, values:array<int,string>}>>> $sets        Tool id => alternatives.
+	 * @param array<string, true>                                                                    $constrained Ids some grant constrains.
+	 *
+	 * @return array<string, array<int, array<string, array{mode:string, values:array<int,string>}>>>
+	 */
+	private static function onlyConstrained(array $sets, array $constrained): array {
 		$out = [];
 		foreach ($sets as $id => $alternatives) {
 			if (isset($constrained[$id]) === false) {
@@ -451,7 +476,7 @@ class ToolGrantResolver {
 		}
 
 		return $out;
-	}//end argumentConstraints()
+	}//end onlyConstrained()
 
 	/**
 	 * Check an invocation's arguments against a tool's alternative constraint sets.
@@ -480,7 +505,7 @@ class ToolGrantResolver {
 			return null;
 		}
 
-		$firstViolation = null;
+		$violations = [];
 		foreach ($constraintSets as $set) {
 			$violation = self::violationForSet(set: $set, arguments: $arguments);
 			if ($violation === null) {
@@ -488,12 +513,11 @@ class ToolGrantResolver {
 				return null;
 			}
 
-			if ($firstViolation === null) {
-				$firstViolation = $violation;
-			}
+			$violations[] = $violation;
 		}
 
-		return $firstViolation;
+		// Every alternative is violated: report the first one's.
+		return $violations[0];
 	}//end violationFor()
 
 	/**
@@ -510,26 +534,33 @@ class ToolGrantResolver {
 	 */
 	private static function violationForSet(array $set, array $arguments): ?array {
 		foreach ($set as $argument => $constraint) {
-			$values = $constraint['values'];
-
-			if (array_key_exists($argument, $arguments) === false) {
-				return ['argument' => $argument, 'mode' => $constraint['mode'], 'values' => $values];
-			}
-
-			$value = $arguments[$argument];
-			if (is_scalar($value) === false && $value !== null) {
-				// A structured value cannot satisfy a scalar constraint — fail closed
-				// rather than stringify it into an accidental match.
-				return ['argument' => $argument, 'mode' => $constraint['mode'], 'values' => $values];
-			}
-
-			if (in_array(self::scalarToString(value: $value), $values, true) === false) {
-				return ['argument' => $argument, 'mode' => $constraint['mode'], 'values' => $values];
+			if (array_key_exists($argument, $arguments) === false
+				|| self::valueConforms(value: $arguments[$argument], values: $constraint['values']) === false
+			) {
+				return ['argument' => $argument, 'mode' => $constraint['mode'], 'values' => $constraint['values']];
 			}
 		}
 
 		return null;
 	}//end violationForSet()
+
+	/**
+	 * Whether one present argument value is among a constraint's permitted values.
+	 *
+	 * @param mixed              $value  The argument value.
+	 * @param array<int, string> $values The permitted values.
+	 *
+	 * @return bool
+	 */
+	private static function valueConforms(mixed $value, array $values): bool {
+		if (is_scalar($value) === false && $value !== null) {
+			// A structured value cannot satisfy a scalar constraint — fail closed
+			// rather than stringify it into an accidental match.
+			return false;
+		}
+
+		return in_array(self::scalarToString(value: $value), $values, true);
+	}//end valueConforms()
 
 	/**
 	 * Render a scalar argument value as the string a constraint compares against.
@@ -678,22 +709,21 @@ class ToolGrantResolver {
 	 * a per-grant opt-in and start being the default. The two questions share a
 	 * return value and mean opposite things; this guard is where they separate.
 	 *
-	 * @param array<string, array<int, array<string, array>>> $waivedSets From `waivedConstraintSets()`.
-	 * @param string $toolId The invoked tool id.
-	 * @param array<string, mixed> $arguments The decoded tool-call arguments.
+	 * @param array<int, array<string, array>> $alternatives The invoked tool's entry in `waivedConstraintSets()`,
+	 *                                                       or `[]` when the tool has none.
+	 * @param array<string, mixed>             $arguments    The decoded tool-call arguments.
 	 *
 	 * @return bool True when a waived entry covers this exact invocation.
 	 *
 	 * @spec openspec/specs/agent-capability-reach/spec.md#scenario-a-waived-granted-conforming-invocation-runs-without-an-approval
 	 */
-	public static function waives(array $waivedSets, string $toolId, array $arguments): bool {
-		$alternatives = ($waivedSets[$toolId] ?? []);
+	public static function waivedBy(array $alternatives, array $arguments): bool {
 		if ($alternatives === []) {
 			return false;
 		}
 
 		return (self::violationFor(constraintSets: $alternatives, arguments: $arguments) === null);
-	}//end waives()
+	}//end waivedBy()
 
 	/**
 	 * Parse a grant's raw constraint query into an `argument => constraint` map.
@@ -882,20 +912,55 @@ class ToolGrantResolver {
 	 *                   falls back to the verb-suffix/fail-closed rules).
 	 */
 	private static function classifyFromHints(array $descriptor): ?bool {
-		if (isset($descriptor['scope']) === true && is_string($descriptor['scope']) === true) {
-			return in_array($descriptor['scope'], self::WRITE_VERBS, true);
+		$fromScope = self::scopeVerdict(descriptor: $descriptor);
+		if ($fromScope !== null) {
+			return $fromScope;
 		}
 
-		if (array_key_exists('destructiveHint', $descriptor) === true && is_bool($descriptor['destructiveHint']) === true) {
-			return ($descriptor['destructiveHint'] === true);
+		$destructive = self::boolHint(descriptor: $descriptor, key: 'destructiveHint');
+		if ($destructive !== null) {
+			return ($destructive === true);
 		}
 
-		if (array_key_exists('readOnlyHint', $descriptor) === true && is_bool($descriptor['readOnlyHint']) === true) {
-			return ($descriptor['readOnlyHint'] === false);
+		$readOnly = self::boolHint(descriptor: $descriptor, key: 'readOnlyHint');
+		if ($readOnly !== null) {
+			return ($readOnly === false);
 		}
 
 		return null;
 	}//end classifyFromHints()
+
+	/**
+	 * Classify from the descriptor's `scope` alone: a write verb is a write, any
+	 * other string is not; null when `scope` is absent or not a string.
+	 *
+	 * @param array<string,mixed> $descriptor The catalog descriptor.
+	 *
+	 * @return bool|null
+	 */
+	private static function scopeVerdict(array $descriptor): ?bool {
+		if (isset($descriptor['scope']) === true && is_string($descriptor['scope']) === true) {
+			return in_array($descriptor['scope'], self::WRITE_VERBS, true);
+		}
+
+		return null;
+	}//end scopeVerdict()
+
+	/**
+	 * A boolean hint the descriptor sets, or null when the key is absent or not a bool.
+	 *
+	 * @param array<string,mixed> $descriptor The catalog descriptor.
+	 * @param string              $key        The hint key.
+	 *
+	 * @return bool|null
+	 */
+	private static function boolHint(array $descriptor, string $key): ?bool {
+		if (array_key_exists($key, $descriptor) === false || is_bool($descriptor[$key]) === false) {
+			return null;
+		}
+
+		return $descriptor[$key];
+	}//end boolHint()
 
 	/**
 	 * Expand one grant entry into zero or more concrete catalog ids.
@@ -1014,8 +1079,8 @@ class ToolGrantResolver {
 			//
 			// Indexing both keys the resolver to the same id space the facade
 			// enforces, which is the only way the two cannot drift.
-			foreach ([($descriptor['mcpId'] ?? null), ($descriptor['name'] ?? null)] as $id) {
-				if (is_string($id) === true && $id !== '' && isset($byId[$id]) === false) {
+			foreach (self::usableIdsOf(descriptor: $descriptor) as $id) {
+				if (isset($byId[$id]) === false) {
 					$byId[$id] = $descriptor;
 				}
 			}
@@ -1023,6 +1088,24 @@ class ToolGrantResolver {
 
 		return $byId;
 	}//end descriptorsById()
+
+	/**
+	 * The descriptor's `mcpId` and `name`, in that order, where each is a non-empty string.
+	 *
+	 * @param array<mixed> $descriptor The catalog descriptor.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function usableIdsOf(array $descriptor): array {
+		$ids = [];
+		foreach ([($descriptor['mcpId'] ?? null), ($descriptor['name'] ?? null)] as $id) {
+			if (is_string($id) === true && $id !== '') {
+				$ids[] = $id;
+			}
+		}
+
+		return $ids;
+	}//end usableIdsOf()
 
 	/**
 	 * Drop non-string / empty grant entries.

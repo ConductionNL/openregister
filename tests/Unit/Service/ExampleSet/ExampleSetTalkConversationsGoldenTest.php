@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Party\PartyService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\ExampleSet\HeldTalkCall;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
@@ -117,10 +118,10 @@ class ExampleSetTalkConversationsGoldenTest extends TestCase {
 
 			return ['token' => 'tok-'.$name, 'id' => 41, 'created' => ($this->world['created'] ?? true)];
 		});
-		$store->method('heldCall')->willReturnCallback(function (string $token, string $owner, array $call, array $joined): void {
-			$start = new DateTime((string) $call['start']);
-			$end   = new DateTime((string) $call['end']);
-			$this->calls[] = ['heldCall', $token, $owner, $start->format('c'), $end->format('c'), $joined];
+		$store->method('heldCall')->willReturnCallback(function (HeldTalkCall $held): void {
+			$start = new DateTime((string) $held->call['start']);
+			$end   = new DateTime((string) $held->call['end']);
+			$this->calls[] = ['heldCall', $held->token, $held->owner, $start->format('c'), $end->format('c'), $held->joined];
 		});
 		$store->method('roomExists')->willReturnCallback(function (string $token): bool {
 			$this->calls[] = ['roomExists', $token];

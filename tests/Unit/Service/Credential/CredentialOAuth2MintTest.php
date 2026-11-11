@@ -36,6 +36,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialMint;
 use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\OAuth2TokenSet;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
@@ -45,6 +48,7 @@ use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
@@ -66,14 +70,12 @@ class CredentialOAuth2MintTest extends TestCase {
 
 	public function testAnOAuth2MintWritesConnectionMetadataAndNoToken(): void {
 		$broker = $this->makeBroker();
-		$tokenSet = OAuth2TokenSet::fromTokenResponse(
-			response: [
+		$tokenSet = OAuth2TokenSet::fromResponse(response: [
 				'access_token' => 'ACCESS_TOKEN_HERE',
 				'refresh_token' => 'REFRESH_TOKEN_HERE',
 				'expires_in' => 3600,
 				'scope' => 'read:accounts write:statuses',
-			]
-		)->withAccount(id: '42', handle: '@example@mastodon.example', displayName: 'Example');
+			])->withAccount(id: '42', handle: '@example@mastodon.example', displayName: 'Example');
 
 		$broker->mintCredential(
 			mint: new CredentialMint(
@@ -169,7 +171,7 @@ class CredentialOAuth2MintTest extends TestCase {
 	private function makeBroker(): CredentialBrokerService {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array | ObjectEntity $object): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$this->savedObject = (is_array($object) === true ? $object : $object->getObject());
 				$saved = new ObjectEntity();
 				$saved->setUuid('minted-uuid');
@@ -186,13 +188,19 @@ class CredentialOAuth2MintTest extends TestCase {
 		);
 
 		return new CredentialBrokerService(
-			$objectService,
-			$store,
-			$this->createMock(ProviderCatalogue::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IClientService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(OrganisationService::class)
+			sources: new CredentialSources(
+				objectService: $objectService,
+				credentialStore: $store,
+				catalogue: $this->createMock(ProviderCatalogue::class)
+			),
+			principals: new CredentialPrincipals(
+				userSession: $this->createMock(IUserSession::class),
+				organisationService: $this->createMock(OrganisationService::class)
+			),
+			outbound: new CredentialOutbound(
+				clientService: $this->createMock(IClientService::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}
 }

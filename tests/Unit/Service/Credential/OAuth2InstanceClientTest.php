@@ -235,7 +235,7 @@ class OAuth2InstanceClientTest extends TestCase {
 		$broker = $this->createMock(CredentialBrokerService::class);
 		$broker->method('mintCredential')->willReturnCallback(
 			function (CredentialMint $mint, CredentialMintOptions $options): ObjectEntity {
-				$this->mints[] = ['provider' => $mint->provider, 'allowedApps' => $options->allowedApps, 'secret' => $options->secret];
+				$this->mints[] = ['provider' => $mint->provider, 'allowedApps' => $options->allowedApps, 'secret' => $options->secret()];
 				$minted = new ObjectEntity();
 				$minted->setUuid('minted-uuid');
 				return $minted;

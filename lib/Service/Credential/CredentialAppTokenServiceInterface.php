@@ -68,9 +68,8 @@ interface CredentialAppTokenServiceInterface {
 	 * enforced. Any structural, signature, or expiry failure throws (fail-closed);
 	 * the caller maps every failure to a single static 403.
 	 *
-	 * @param string $token The `payload.signature` token to verify.
-	 * @param string|null $method The actual request HTTP method, matched against a request-bound token.
-	 * @param string|null $path The actual request path, matched against a request-bound token.
+	 * @param string             $token   The `payload.signature` token to verify.
+	 * @param BrokerTokenBinding $request The actual request's HTTP method and path, matched against a request-bound token.
 	 *
 	 * @return array{appId: string, credentialId: string} The authenticated claims.
 	 *
@@ -78,5 +77,5 @@ interface CredentialAppTokenServiceInterface {
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	public function verify(string $token, ?string $method = null, ?string $path = null): array;
+	public function verify(string $token, BrokerTokenBinding $request = new BrokerTokenBinding()): array;
 }//end interface

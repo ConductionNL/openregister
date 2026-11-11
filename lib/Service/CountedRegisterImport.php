@@ -52,26 +52,6 @@ class CountedRegisterImport {
 	}//end __construct()
 
 	/**
-	 * Run an import under the administrator's decision, and count what it changed.
-	 *
-	 * @param string             $slug      The register slug the caller named.
-	 * @param array<int, string> $slugs     Every register slug the imported document declares.
-	 * @param string             $version   The version of the imported document.
-	 * @param int                $fragments How many register.d fragments it carries.
-	 * @param string             $via       Who asked, for the audit trail.
-	 * @param callable           $import    Runs the import; returns success, path, via, message, and importJobId and
-	 *                                      importAppId when it recorded an import job.
-	 *
-	 * @return array<string, mixed> The reimport() result.
-	 *
-	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
-	 */
-	public function run(string $slug, array $slugs, string $version, int $fragments, string $via, callable $import): array {
-		$document = (new RegisterImportDocument(slug: $slug, slugs: $slugs))->release(version: $version, fragments: $fragments);
-		return $this->runCall(document: $document, call: new RegisterImportCall(via: $via, operation: $import(...)));
-	}//end run()
-
-	/**
 	 * Run one import call under the administrator's decision, and count what it changed.
 	 *
 	 * @param RegisterImportDocument $document The imported document: the slug, its declared slugs, version and fragments.
@@ -271,8 +251,9 @@ class CountedRegisterImport {
 		$schemas = array_map('strval', array_filter($register->getSchemas(), 'is_scalar'));
 		sort($schemas);
 
-		return md5(
-			(string)json_encode(
+		return hash(
+			algo: 'xxh128',
+			data: (string)json_encode(
 				[$register->getVersion(), $register->getTitle(), $register->getDescription(), $schemas]
 			)
 		);
@@ -286,8 +267,9 @@ class CountedRegisterImport {
 	 * @return string The fingerprint.
 	 */
 	private function schemaFingerprint(Schema $schema): string {
-		return md5(
-			(string)json_encode(
+		return hash(
+			algo: 'xxh128',
+			data: (string)json_encode(
 				[
 					$schema->getVersion(),
 					$schema->getTitle(),

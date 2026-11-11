@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowResumeState;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
@@ -93,7 +94,7 @@ class WaitNodeBehaviourTest extends TestCase {
 		$context = ['resume' => $state->forNode('wait-1')];
 
 		try {
-			$this->node()->execute([['id' => 1]], ['until' => '2030-01-02T03:04:05+00:00', 'for' => '60'], $context);
+			$this->node()->execute(new FlowNodeCall(items: [['id' => 1]], config: ['until' => '2030-01-02T03:04:05+00:00', 'for' => '60'], context: $context));
 			$this->fail('The wait did not suspend.');
 		} catch (FlowSuspension $suspension) {
 			$this->assertSame(1893553445, $suspension->getResumeAt()?->getTimestamp());
@@ -107,7 +108,7 @@ class WaitNodeBehaviourTest extends TestCase {
 		foreach (['90' => 90, '+2 hours' => 7200, '2 hours' => 7200] as $for => $seconds) {
 			$before = time();
 			try {
-				$this->node()->execute([['id' => 1]], ['for' => (string)$for], []);
+				$this->node()->execute(new FlowNodeCall(items: [['id' => 1]], config: ['for' => (string)$for], context: []));
 				$this->fail('The wait did not suspend.');
 			} catch (FlowSuspension $suspension) {
 				$at = $suspension->getResumeAt()?->getTimestamp();
@@ -121,19 +122,19 @@ class WaitNodeBehaviourTest extends TestCase {
 		$items = [['id' => 1]];
 		$resuming = (new FlowResumeState(['wait-1' => ['waitingUntil' => 'x']]))->forNode('wait-1');
 
-		$this->assertSame($items, $this->node()->execute($items, ['for' => '60'], ['resume' => $resuming]));
-		$this->assertSame($items, $this->node()->execute($items, ['for' => '60'], ['resuming' => true]));
+		$this->assertSame($items, $this->node()->execute(new FlowNodeCall(items: $items, config: ['for' => '60'], context: ['resume' => $resuming])));
+		$this->assertSame($items, $this->node()->execute(new FlowNodeCall(items: $items, config: ['for' => '60'], context: ['resuming' => true])));
 	}//end testAResumingRunLetsTheItemsThrough()
 
 	public function testNoItemsOrNoReadableMomentLetsTheRunContinue(): void {
-		$this->assertSame([], $this->node()->execute([], ['for' => '60'], []));
-		$this->assertSame([['id' => 1]], $this->node()->execute([['id' => 1]], ['until' => 'never ever'], []));
-		$this->assertSame([['id' => 1]], $this->node()->execute([['id' => 1]], [], ['resuming' => 'yes']));
+		$this->assertSame([], $this->node()->execute(new FlowNodeCall(items: [], config: ['for' => '60'], context: [])));
+		$this->assertSame([['id' => 1]], $this->node()->execute(new FlowNodeCall(items: [['id' => 1]], config: ['until' => 'never ever'], context: [])));
+		$this->assertSame([['id' => 1]], $this->node()->execute(new FlowNodeCall(items: [['id' => 1]], config: [], context: ['resuming' => 'yes'])));
 	}//end testNoItemsOrNoReadableMomentLetsTheRunContinue()
 
 	public function testANonResumingSlotOrAnAbsentSlotStillSuspends(): void {
 		$this->expectException(FlowSuspension::class);
 
-		$this->node()->execute([['id' => 1]], ['for' => '5'], ['resume' => (new FlowResumeState())->forNode('wait-1'), 'resuming' => false]);
+		$this->node()->execute(new FlowNodeCall(items: [['id' => 1]], config: ['for' => '5'], context: ['resume' => (new FlowResumeState())->forNode('wait-1'), 'resuming' => false]));
 	}//end testANonResumingSlotOrAnAbsentSlotStillSuspends()
 }//end class

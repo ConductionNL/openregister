@@ -74,6 +74,19 @@ class ShippedConfigurationGuard {
 	public const ACTION_DECIDED = 'configuration.conflict.decided';
 
 	/**
+	 * The divergence answer for a schema with no shipped baseline recorded.
+	 *
+	 * @var array{baseline: false, app: '', appVersion: '', recordedAt: '', divergences: array{}}
+	 */
+	private const NO_BASELINE_DIVERGENCE = [
+		'baseline' => false,
+		'app' => '',
+		'appVersion' => '',
+		'recordedAt' => '',
+		'divergences' => [],
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ShippedBaselineStore   $baselines  Where the shipped definitions are kept.
@@ -388,13 +401,7 @@ class ShippedConfigurationGuard {
 		$baseline = $this->baselines->read(subject: $this->baselines->schemaSubject(slug: $slug));
 
 		if ($this->comparator->hasBaseline(baseline: ($baseline['definition'] ?? null)) === false) {
-			return [
-				'baseline' => false,
-				'app' => '',
-				'appVersion' => '',
-				'recordedAt' => '',
-				'divergences' => [],
-			];
+			return self::NO_BASELINE_DIVERGENCE;
 		}
 
 		return [
@@ -555,30 +562,64 @@ class ShippedConfigurationGuard {
 	public function resetToBaseline(string $slug, array $live, string $path, bool $record = true): array {
 		$user = $this->session->getUser();
 		if ($user === null) {
-			return [
-				'applied' => false,
-				'reason' => 'a reset needs an actor, and there is no session; it is never done by an unattended path',
-				'from' => null,
-				'to' => null,
-				'definition' => $live,
-			];
+			return self::refusedWithoutActor(live: $live);
 		}
 
 		$preview = $this->previewPartReset(request: new ResetRequest(slug: $slug, live: $live, path: $path));
 		if ($preview['applicable'] === false) {
-			return [
-				'applied' => false,
-				'reason' => $preview['reason'],
-				'from' => $preview['from'],
-				'to' => $preview['to'],
-				'definition' => $live,
-			];
+			return self::refusedReset(preview: $preview, live: $live);
 		}
 
 		if ($record === true) {
 			$this->recordPartReset(slug: $slug, reset: new PartReset(path: $path, from: $preview['from'], to: $preview['to']));
 		}
 
+		return self::appliedReset(preview: $preview);
+	}//end resetToBaseline()
+
+	/**
+	 * The outcome of a reset asked for without a signed-in actor.
+	 *
+	 * @param array<string, mixed> $live What the instance runs, left as it is.
+	 *
+	 * @return array{applied: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>}
+	 */
+	private static function refusedWithoutActor(array $live): array {
+		return [
+			'applied' => false,
+			'reason' => 'a reset needs an actor, and there is no session; it is never done by an unattended path',
+			'from' => null,
+			'to' => null,
+			'definition' => $live,
+		];
+	}//end refusedWithoutActor()
+
+	/**
+	 * The outcome of a reset whose preview is not applicable, carrying the preview's reason.
+	 *
+	 * @param array<string, mixed> $preview The preview of the reset.
+	 * @param array<string, mixed> $live    What the instance runs, left as it is.
+	 *
+	 * @return array{applied: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>}
+	 */
+	private static function refusedReset(array $preview, array $live): array {
+		return [
+			'applied' => false,
+			'reason' => $preview['reason'],
+			'from' => $preview['from'],
+			'to' => $preview['to'],
+			'definition' => $live,
+		];
+	}//end refusedReset()
+
+	/**
+	 * The outcome of an applied reset: the preview's change and its reset definition.
+	 *
+	 * @param array<string, mixed> $preview The applicable preview of the reset.
+	 *
+	 * @return array{applied: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>}
+	 */
+	private static function appliedReset(array $preview): array {
 		return [
 			'applied' => true,
 			'reason' => '',
@@ -586,7 +627,7 @@ class ShippedConfigurationGuard {
 			'to' => $preview['to'],
 			'definition' => $preview['definition'],
 		];
-	}//end resetToBaseline()
+	}//end appliedReset()
 
 	/**
 	 * Put a reset on the trail: who, which schema, which part, from what, to what.

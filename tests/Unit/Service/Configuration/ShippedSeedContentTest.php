@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Service\Configuration\ShippedSeedContent;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Configuration\ShippedSeed;
 
 /**
  * The content hash and the update a stored seed receives.
@@ -56,12 +57,12 @@ class ShippedSeedContentTest extends TestCase {
 	public function testWithoutAHashOnlyMissingFieldsAreFilled(): void {
 		$stored = ['@self' => ['id' => 'u-1'], 'id' => 'u-1', 'phase' => null, 'name' => 'Binnengekomen', 'order' => 1];
 
-		$update = (new ShippedSeedContent())->update(stored: $stored, shipped: self::shipped(), remembered: null);
+		$update = (new ShippedSeedContent())->updateFrom(stored: $stored, shipped: new ShippedSeed(content: self::shipped(), remembered: null));
 
 		$this->assertSame('Ontvangst', $update['phase']);
 		$this->assertSame('Binnengekomen', $update['name']);
 		$this->assertSame(self::shipped()['@self'], $update['@self']);
-		$this->assertNull((new ShippedSeedContent())->update(stored: $update, shipped: self::shipped(), remembered: null));
+		$this->assertNull((new ShippedSeedContent())->updateFrom(stored: $update, shipped: new ShippedSeed(content: self::shipped(), remembered: null)));
 	}//end testWithoutAHashOnlyMissingFieldsAreFilled()
 
 	/**
@@ -73,8 +74,8 @@ class ShippedSeedContentTest extends TestCase {
 		$content = new ShippedSeedContent();
 		$stored  = ['@self' => ['id' => 'u-1'], 'name' => 'Binnengekomen'];
 
-		$this->assertSame(self::shipped(), $content->update(stored: $stored, shipped: self::shipped(), remembered: 'older'));
-		$this->assertNull($content->update(stored: ['phase' => 'Ontvangst', 'order' => 1] + $stored, shipped: self::shipped(), remembered: $content->hash(shipped: self::shipped())));
+		$this->assertSame(self::shipped(), $content->updateFrom(stored: $stored, shipped: new ShippedSeed(content: self::shipped(), remembered: 'older')));
+		$this->assertNull($content->updateFrom(stored: ['phase' => 'Ontvangst', 'order' => 1] + $stored, shipped: new ShippedSeed(content: self::shipped(), remembered: $content->hash(shipped: self::shipped()))));
 	}//end testARememberedHashDecides()
 
 	/**
@@ -87,7 +88,7 @@ class ShippedSeedContentTest extends TestCase {
 		$content = new ShippedSeedContent();
 		$stored  = ['@self' => ['id' => 'u-1'], 'phase' => null, 'name' => 'Binnengekomen', 'order' => 1];
 
-		$update = $content->update(stored: $stored, shipped: self::shipped(), remembered: $content->hash(shipped: self::shipped()));
+		$update = $content->updateFrom(stored: $stored, shipped: new ShippedSeed(content: self::shipped(), remembered: $content->hash(shipped: self::shipped())));
 
 		$this->assertSame(['Ontvangst', 'Binnengekomen'], [$update['phase'], $update['name']]);
 	}//end testUnchangedContentStillFillsAMissingField()

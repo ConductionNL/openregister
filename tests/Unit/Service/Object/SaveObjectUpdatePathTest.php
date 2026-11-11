@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\RecordUpdate;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -23,6 +24,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectFileWrite;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -293,14 +295,14 @@ final class SaveObjectUpdatePathTest extends TestCase {
 			return $entity;
 		});
 		$files = $this->createMock(FilePropertyHandler::class);
-		$files->method('isFileProperty')->willReturnCallback(static fn ($value, $schema = null, $propertyName = null): bool => $propertyName === 'doc');
-		$files->method('handleFileProperty')->willReturnCallback(function (ObjectEntity $objectEntity, array &$object, string $propertyName) use ($case): void {
-			$this->trace[] = ['file', $propertyName, $object[$propertyName]];
+		$files->method('isFileInSchema')->willReturnCallback(static fn ($schema, $propertyName): bool => $propertyName === 'doc');
+		$files->method('handleFileProperty')->willReturnCallback(function (ObjectFileWrite $write, string $propertyName) use ($case): void {
+			$this->trace[] = ['file', $propertyName, $write->data[$propertyName]];
 			if (($case['fileFails'] ?? false) === true) {
 				throw new \RuntimeException('disk full');
 			}
 
-			$object[$propertyName] = 42;
+			$write->data[$propertyName] = 42;
 		});
 		$unified = $this->createMock(MagicMapper::class);
 		$unified->method('find')->willReturn($stored);
@@ -335,9 +337,9 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$retention->method('guardClassificationOverride')->willReturnCallback(function (Schema $schema, array $data): void {
 			$this->trace[] = ['retentionGuard', $schema->getId(), array_key_exists('title', $data)];
 		});
-		$retention->method('applyClassificationOnUpdate')->willReturnCallback(function (ObjectEntity $object, Schema $schema, array $previousData): ObjectEntity {
-			$this->trace[] = ['classification', $previousData];
-			return $object;
+		$retention->method('applyClassification')->willReturnCallback(function (RecordUpdate $update): ObjectEntity {
+			$this->trace[] = ['classification', $update->previousData];
+			return $update->object;
 		});
 		$retention->method('applyArchivalMetadata')->willReturnCallback(function (ObjectEntity $object): ObjectEntity {
 			$this->trace[] = ['archival'];
@@ -346,8 +348,8 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		});
 		$container = $this->createMock(ContainerInterface::class);
 		$hints = $this->createMock(\OCA\OpenRegister\Service\Quality\UniqueHintChecker::class);
-		$hints->method('check')->willReturnCallback(function (array $configuration, \OCA\OpenRegister\Service\Quality\UniqueHintScope $scope, array $data, ?string $selfUuid = null): void {
-			$this->trace[] = ['hints', $scope->register, $scope->schema, $selfUuid];
+		$hints->method('check')->willReturnCallback(function (array $configuration, \OCA\OpenRegister\Service\Quality\UniqueHintCandidate $candidate): void {
+			$this->trace[] = ['hints', $candidate->scope->register, $candidate->scope->schema, $candidate->selfUuid];
 		});
 		$services = [RetentionServiceInterface::class => $retention, \OCA\OpenRegister\Service\Quality\UniqueHintChecker::class => $hints];
 		$container->method('get')->willReturnCallback(static fn (string $id): object => $services[$id] ?? throw new \RuntimeException('no ' . $id));

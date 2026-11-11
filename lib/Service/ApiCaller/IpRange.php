@@ -62,12 +62,36 @@ final class IpRange {
 
 		$trimmedRange = trim($range);
 		if (str_contains($trimmedRange, '/') === false) {
-			$packedRange = self::pack(value: $trimmedRange);
-
-			return ($packedRange !== null && hash_equals($packedRange, $packedAddress));
+			return self::matchesLiteral(packedAddress: $packedAddress, literal: $trimmedRange);
 		}
 
-		[$network, $prefix] = explode('/', $trimmedRange, 2);
+		return self::matchesCidr(packedAddress: $packedAddress, cidr: $trimmedRange);
+	}//end matches()
+
+	/**
+	 * Whether an address is one literal address.
+	 *
+	 * @param string $packedAddress The packed address.
+	 * @param string $literal       The literal address, trimmed.
+	 *
+	 * @return bool True when they are the same address.
+	 */
+	private static function matchesLiteral(string $packedAddress, string $literal): bool {
+		$packedRange = self::pack(value: $literal);
+
+		return ($packedRange !== null && hash_equals($packedRange, $packedAddress));
+	}//end matchesLiteral()
+
+	/**
+	 * Whether an address falls inside a CIDR range of its own family.
+	 *
+	 * @param string $packedAddress The packed address.
+	 * @param string $cidr          The range in CIDR notation, trimmed.
+	 *
+	 * @return bool True when the address is inside the range.
+	 */
+	private static function matchesCidr(string $packedAddress, string $cidr): bool {
+		[$network, $prefix] = explode('/', $cidr, 2);
 
 		$packedNetwork = self::pack(value: trim($network));
 		if ($packedNetwork === null) {
@@ -87,8 +111,7 @@ final class IpRange {
 		}
 
 		return self::prefix(packed: $packedAddress, bits: $bits) === self::prefix(packed: $packedNetwork, bits: $bits);
-
-	}//end matches()
+	}//end matchesCidr()
 
 	/**
 	 * Pack an address into its binary form, normalising the IPv4-mapped shape.

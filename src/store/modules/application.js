@@ -99,7 +99,8 @@ export const useApplicationStore = defineStore('application', {
 		 */
 		/* istanbul ignore next */
 		async refreshApplicationList(search = null, soft = false) {
-			const request = itemRequest(this, {
+			return itemRequest(this, {
+				clearsError: true,
 				soft,
 				log: (error) => console.error('Error fetching applications:', error),
 				run: async () => {
@@ -111,8 +112,6 @@ export const useApplicationStore = defineStore('application', {
 					return { response, data }
 				},
 			})
-			this.error = null
-			return request
 		},
 
 		/**

@@ -182,7 +182,7 @@ class CaseTypeAuthorizationService {
 	 *
 	 * Mapping (per the rbac-zaaktype spec "ZGW Autorisaties API concepts" req):
 	 *   - Each ZGW `scope` (e.g. `zaken.lezen`) maps to an OpenRegister action
-	 *     (`read`) granted to the supplied `$group` (the Nextcloud group that
+	 *     (`read`) granted to the grant's `group` (the Nextcloud group that
 	 *     represents the ZGW Applicatie's identity / scope).
 	 *   - A `maxVertrouwelijkheidaanduiding` (when present) attaches an `$in`
 	 *     conditional match to EVERY mapped action so the engine filters objects
@@ -191,28 +191,6 @@ class CaseTypeAuthorizationService {
 	 * The returned block is purely the existing group / conditional vocabulary —
 	 * it can be merged into a schema's `authorization` and enforced unchanged.
 	 * Unknown scope suffixes are skipped (fail closed: they grant nothing).
-	 *
-	 * @param array<int, string> $scopes ZGW scopes, e.g. ['zaken.lezen', 'zaken.aanmaken'].
-	 * @param string $group The Nextcloud group representing the ZGW Applicatie.
-	 * @param string|null $maxLevel Optional maxVertrouwelijkheidaanduiding.
-	 * @param string $property Confidentiality property name on the schema.
-	 *
-	 * @return array<string, array<int, mixed>> An `authorization`-shaped block.
-	 *
-	 * @spec openspec/specs/rbac-zaaktype/spec.md
-	 */
-	public function mapZgwAutorisatie(
-		array $scopes,
-		string $group,
-		?string $maxLevel = null,
-		string $property = 'vertrouwelijkheidaanduiding',
-	): array {
-		$grant = new ZgwAutorisatieGrant(scopes: $scopes, group: $group, maxLevel: $maxLevel, property: $property);
-		return $this->mapGrant(grant: $grant);
-	}//end mapZgwAutorisatie()
-
-	/**
-	 * Map one ZGW Applicatie grant to an OpenRegister `authorization` block.
 	 *
 	 * @param ZgwAutorisatieGrant $grant The scopes, group, clearance limit and confidentiality property.
 	 *

@@ -131,21 +131,10 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
 	private function removeHeld(string $set): array {
-		$run         = new ExampleSetRemovalRun(set: $set, record: $this->objects->record->read(set: $set));
-		$run->report = [
-			'installed' => ($this->objects->record->isEmpty(record: $run->record) === false),
-			'removed'   => self::REMOVED,
-			'left'      => [],
-			'failed'    => [],
-		];
+		$run = $this->startRemoval(set: $set);
 
 		// First: a task is on an object the set wrote, and goes before it.
-		($this->engineRows ?? new ExampleSetEngineKinds())->delete(
-			record: $run->record,
-			report: $run->report,
-			written: fn (array $now) => $this->objects->record->write(set: $set, record: $now)
-		);
-
+		$this->deleteEngineRows(run: $run);
 		$this->deleteObjects(run: $run);
 		$this->revertChanges(run: $run);
 		$appConfig = fn (array $entry): string => $this->settings->appConfig->revert(entry: $entry);
@@ -158,6 +147,41 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 
 		return $run->report;
 	}//end removeHeld()
+
+	/**
+	 * A removal of the set's held record, its report opened.
+	 *
+	 * @param string $set The set's slug.
+	 *
+	 * @return ExampleSetRemovalRun The run.
+	 */
+	private function startRemoval(string $set): ExampleSetRemovalRun {
+		$run         = new ExampleSetRemovalRun(set: $set, record: $this->objects->record->read(set: $set));
+		$run->report = [
+			'installed' => ($this->objects->record->isEmpty(record: $run->record) === false),
+			'removed'   => self::REMOVED,
+			'left'      => [],
+			'failed'    => [],
+		];
+
+		return $run;
+	}//end startRemoval()
+
+	/**
+	 * Delete the engine rows (tasks and their kin) the set wrote, keeping the record current.
+	 *
+	 * @param ExampleSetRemovalRun $run The removal in progress.
+	 *
+	 * @return void
+	 */
+	private function deleteEngineRows(ExampleSetRemovalRun $run): void {
+		$set = $run->set;
+		($this->engineRows ?? new ExampleSetEngineKinds())->delete(
+			record: $run->record,
+			report: $run->report,
+			written: fn (array $now) => $this->objects->record->write(set: $set, record: $now)
+		);
+	}//end deleteEngineRows()
 
 	/**
 	 * Delete the groups and accounts, then (last: the set's own objects may point into a register it imported, and
@@ -362,7 +386,8 @@ class ExampleSetRemover implements ExampleSetRemoverInterface {
 	private function deleteFilesOf(ExampleSetRemovalRun $run, ExampleSetRecordedObject $held): array {
 		$left = [];
 		foreach (($run->record['files'][$held->name] ?? []) as $file) {
-			$why = $this->objects->files->delete(fileId: (string) $file['id'], name: (string) $file['name'], objectId: (string) $held->entry['id']);
+			$attached = new AttachedFile(id: (string) $file['id'], name: (string) $file['name']);
+			$why      = $this->objects->files->deleteAttached(file: $attached, objectId: (string) $held->entry['id']);
 			if ($why !== '') {
 				$run->report['failed'][] = 'file '.$file['name'].' on '.$held->name.': '.$why;
 				$left[] = $file;

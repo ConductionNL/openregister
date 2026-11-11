@@ -24,6 +24,9 @@
 
 namespace OCA\OpenRegister\Service\GraphQL;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\PropertyWriteCheck;
+use OCA\OpenRegister\Service\Object\TranslationScope;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use GraphQL\Deferred;
 use GraphQL\Error\Error;
@@ -36,6 +39,8 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RelationLookup;
@@ -43,6 +48,9 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Resolves GraphQL queries, mutations, and fields by delegating to OpenRegister services.
@@ -120,7 +128,10 @@ class GraphQLResolver {
 			$this->objects->objectService->setRegister($register);
 			$this->objects->objectService->setSchema($schema);
 
-			$object = $this->objects->getObject->find($id, $register, $schema);
+			$object = $this->objects->getObject->find(
+				request: new ObjectFindRequest(id: $id, extend: [], files: false, rbac: true, multitenancy: true, audit: true),
+				scope: new ReadScope(register: $register, schema: $schema)
+			);
 
 			// Apply property-level RBAC filtering.
 			return $this->filterProperties(schema: $schema, item: $object);
@@ -212,12 +223,17 @@ class GraphQLResolver {
 		$this->checkSchemaPermission(schema: $schema, action: 'create');
 
 		$input = $args['input'];
-		$this->refuseForbiddenFields(fields: $this->rights->propertyRbac->getUnauthorizedProperties($schema, [], $input, true));
+		$this->refuseForbiddenFields(
+			fields: $this->rights->propertyRbac->getUnauthorizedProperties(new PropertyWriteCheck($schema, new PropertyAccessRequest([], true), $input))
+		);
 
 		$register = $this->findRegisterForSchema(schema: $schema);
 
 		try {
-			return $this->objectToArray(object: $this->objects->objectService->saveObject($input, [], $register, $schema));
+			return $this->objectToArray(object: $this->objects->objectService->saveObject(
+				object: $input,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
+			));
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
 			throw $this->validationError(cause: $e);
 		}
@@ -245,10 +261,20 @@ class GraphQLResolver {
 
 		try {
 			// Check property-level write RBAC against the stored record.
-			$stored = $this->objects->getObject->find(id: $id, register: $register, schema: $schema, _audit: false);
-			$this->refuseForbiddenFields(fields: $this->rights->propertyRbac->getUnauthorizedProperties($schema, $stored->getMatchEnvelope(), $input, false));
+			$stored = $this->objects->getObject->find(
+				request: new ObjectFindRequest(id: $id, extend: [], files: false, rbac: true, multitenancy: true, audit: false),
+				scope: new ReadScope(register: $register, schema: $schema)
+			);
+			$this->refuseForbiddenFields(
+				fields: $this->rights->propertyRbac->getUnauthorizedProperties(
+					new PropertyWriteCheck($schema, new PropertyAccessRequest($stored->getMatchEnvelope(), false), $input)
+				)
+			);
 
-			return $this->objectToArray(object: $this->objects->objectService->saveObject($input, [], $register, $schema, $id));
+			return $this->objectToArray(object: $this->objects->objectService->saveObject(
+				object: $input,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
+			));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			throw $this->notFoundError(schema: $schema, id: $id);
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
@@ -300,7 +326,7 @@ class GraphQLResolver {
 		$this->checkSchemaPermission(schema: $schema, action: 'delete');
 
 		try {
-			return $this->objects->objectService->deleteObject($args['id']);
+			return $this->objects->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $args['id']));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			throw $this->notFoundError(schema: $schema, id: $args['id']);
 		}
@@ -473,8 +499,7 @@ class GraphQLResolver {
 
 		return $this->shaping->translationHandler->resolveTranslationsForRender(
 			objectData: $data,
-			schema: $schema,
-			register: $register
+			scope: new TranslationScope(schema: $schema, register: $register)
 		);
 	}//end filterProperties()
 

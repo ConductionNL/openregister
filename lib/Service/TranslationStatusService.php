@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\Translation\LanguageCoverageCheck;
 use OCA\OpenRegister\Db\TranslationFilter;
 use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\TranslationEdit;
@@ -110,7 +111,7 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 	 * @throws InvalidArgumentException When no slot exists.
 	 */
 	private function requireSlot(TranslationSlot $slot): Translation {
-		$existing = $this->translationMapper->findOne($slot->objectUuid, $slot->property, $slot->language);
+		$existing = $this->translationMapper->findOne($slot);
 		if ($existing !== null) {
 			return $existing;
 		}
@@ -253,7 +254,7 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 
 		$key = $uuid . '|' . $prop . '|' . $source;
 		if (isset($cache[$key]) === false) {
-			$cache[$key] = $this->translationMapper->findOne($uuid, $prop, $source)?->getValue();
+			$cache[$key] = $this->translationMapper->findOne(new TranslationSlot(objectUuid: $uuid, property: $prop, language: $source))?->getValue();
 		}
 
 		return $cache[$key];
@@ -275,25 +276,25 @@ class TranslationStatusService implements TranslationStatusServiceInterface {
 			return 0;
 		}
 
-		return $this->translationMapper->markDerivedOutdated($source->objectUuid, $source->property, $source->language);
+		return $this->translationMapper->markDerivedOutdated($source);
 	}//end markDerivedTranslationsOutdated()
 
 	/**
 	 * Find objects missing translation slots in a language.
 	 *
-	 * Returns the subset of `$candidateUuids` missing at least one
-	 * translatable-property value in `$language`.
+	 * Returns the subset of the scan's candidates missing at least one
+	 * translatable-property value in the scan's language.
 	 *
-	 * @param string $language The language code to check.
-	 * @param Schema $schema The schema describing translatable properties.
-	 * @param string[] $candidateUuids List of object UUIDs to consider.
+	 * @param Schema          $schema The schema describing translatable properties.
+	 * @param LanguageGapScan $scan   The language code to check and the object UUIDs to consider.
 	 *
-	 * @return string[] Subset of `$candidateUuids` lacking the language.
+	 * @return string[] Subset of the candidates lacking the language.
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
-	public function findObjectsMissingLanguage(string $language, Schema $schema, array $candidateUuids): array {
+	public function findObjectsMissingLanguage(Schema $schema, LanguageGapScan $scan): array {
 		$properties = $this->translationHandler->getTranslatableProperties($schema);
-		return $this->translationMapper->findObjectsMissingLanguage($language, $properties, $candidateUuids);
+		$check = new LanguageCoverageCheck(language: $scan->language, properties: $properties, candidateUuids: $scan->candidateUuids);
+		return $this->translationMapper->findObjectsMissingLanguage($check);
 	}//end findObjectsMissingLanguage()
 }//end class

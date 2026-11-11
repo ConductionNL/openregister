@@ -183,7 +183,7 @@ class OAuth2InstanceClientMintGoldenTest extends TestCase {
 					'provider' => $mint->provider,
 					'owner' => $mint->owner,
 					'allowedApps' => $options->allowedApps,
-					'secret' => $options->secret,
+					'secret' => $options->secret(),
 					'scope' => $options->scope,
 					'organisation' => $options->organisation,
 				];

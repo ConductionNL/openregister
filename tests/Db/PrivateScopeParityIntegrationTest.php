@@ -50,6 +50,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Db;
 
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
+use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ScopeChange;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\Rbac\GrantTerms;
@@ -323,8 +326,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 					object: $entity
 				),
 				'hasPermission' => $this->rbacHandler->hasRowPermission(
-					schema: $schema,
-					action: 'read',
+					ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 					row: $entity
 				),
 				'list (QueryBuilder)' => in_array($key, $queryBuilderVisible, true),
@@ -505,7 +507,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * (task 9.1). The flow engine never runs in the caller's authority: it runs a
 	 * flow AS ITS OWNER, and triggers, scheduled runs and background jobs have no
 	 * session at all to evaluate against. So all four OpenRegisterFlowResolver
-	 * paths — resolveFlow(), resolveSubject(), scheduledFlows() and
+	 * paths — resolveFlow(), resolveObject(), scheduledFlows() and
 	 * buildTriggerIndex() — load with `_rbac: false` on purpose.
 	 *
 	 * If the scope predicate were applied OUTSIDE that gate, making flows private
@@ -637,8 +639,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 
 		$this->assertTrue(
 			$this->rbacHandler->hasRowPermission(
-				schema: $schema,
-				action: 'read',
+				ask: new RbacPermissionAsk(schema: $schema, action: 'read'),
 				row: $entities['granted']
 			),
 			'the relation-path verdict must honour the grant'
@@ -1159,7 +1160,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 			'a custom verb must map to no core permission bit'
 		);
 		$this->assertFalse(
-			$this->grantResolver()->isGranted($this->testUid, $entity->getUuid(), 'besluit_nemen'),
+			$this->grantResolver()->isGranted(new GrantLookup($this->testUid, $entity->getUuid()), 'besluit_nemen'),
 			'a grant must not admit a verb it cannot carry'
 		);
 	}//end testAGrantCannotAdmitACustomVerb()
@@ -1593,7 +1594,7 @@ class PrivateScopeParityIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	private function assertRawEmitterCarriesTheScopePredicate(Schema $schema): void {
-		$result = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+		$result = $this->rbacHandler->buildRbacConditionsSql((new RbacAccessCall(schema: $schema))->forAction('read'));
 		$joined = implode(' ', $result['conditions']);
 
 		$this->assertStringContainsString(

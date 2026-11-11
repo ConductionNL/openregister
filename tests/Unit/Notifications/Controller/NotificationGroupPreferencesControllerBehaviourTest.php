@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Controller;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
+use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Controller\NotificationGroupPreferencesController;
 use OCA\OpenRegister\Notifications\Controller\Support\NotificationGroupPreferencesControllerServices;
 use OCP\Group\ISubAdmin;
@@ -130,7 +132,7 @@ class NotificationGroupPreferencesControllerBehaviourTest extends TestCase {
 		$this->group->method('inGroup')->willReturn(false);
 		$this->groups->method('isAdmin')->willReturn(false);
 		$this->subAdmin->method('isSubAdminOfGroup')->willReturn(false);
-		$this->prefs->expects($this->never())->method('getGroupDefault');
+		$this->prefs->expects($this->never())->method('groupDefaultAt');
 		$response = $this->controller(['group' => 'staff'])->index();
 		$this->assertSame(403, $response->getStatus());
 		$this->assertSame(['error' => 'Not a member of that group'], $response->getData());
@@ -173,10 +175,10 @@ class NotificationGroupPreferencesControllerBehaviourTest extends TestCase {
 			]
 		);
 		$asked = [];
-		$this->prefs->method('getGroupDefault')->willReturnCallback(
-			static function (string $groupId, string $schemaSlug, string $notificationKey, ?string $scope) use (&$asked): ?array {
-				$asked[] = [$groupId, $schemaSlug, $notificationKey, $scope];
-				return match ($notificationKey) {
+		$this->prefs->method('groupDefaultAt')->willReturnCallback(
+			static function (string $groupId, PreferenceAddress $address) use (&$asked): ?array {
+				$asked[] = [$groupId, $address->schemaSlug, $address->notificationKey, $address->scope];
+				return match ($address->notificationKey) {
 					'quiet'  => null,
 					'done'   => ['enabled' => false, 'channels' => ['push']],
 					default  => [],
@@ -206,7 +208,7 @@ class NotificationGroupPreferencesControllerBehaviourTest extends TestCase {
 	public function testIndexWithoutScopeAnswersGlobal(): void {
 		$this->group->method('inGroup')->willReturn(true);
 		$this->schemas->method('findAll')->willReturn([$this->schema(3, 'case', 'Case', ['assigned' => []])]);
-		$this->prefs->expects($this->once())->method('getGroupDefault')->with('staff', 'case', 'assigned', null)->willReturn(['enabled' => true]);
+		$this->prefs->expects($this->once())->method('groupDefaultAt')->with('staff', new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned'))->willReturn(['enabled' => true]);
 		$data = $this->controller(['group' => 'staff'])->index()->getData();
 		$this->assertSame('global', $data['results'][0]['scope']);
 	}
@@ -214,25 +216,25 @@ class NotificationGroupPreferencesControllerBehaviourTest extends TestCase {
 	public function testIndexAnswersEmptyWhenSchemasCannotBeRead(): void {
 		$this->group->method('inGroup')->willReturn(true);
 		$this->schemas->method('findAll')->willThrowException(new RuntimeException('db down'));
-		$this->prefs->expects($this->never())->method('getGroupDefault');
+		$this->prefs->expects($this->never())->method('groupDefaultAt');
 		$this->assertSame(['results' => [], 'total' => 0], $this->controller(['group' => 'staff'])->index()->getData());
 	}
 
 	public function testUpdateAnonymousIsRefusedWith401(): void {
 		$this->user = null;
-		$this->prefs->expects($this->never())->method('setGroupDefault');
+		$this->prefs->expects($this->never())->method('storeGroupDefault');
 		$this->assertSame(401, $this->controller(['group' => 'staff', 'schema' => 'case', 'notification' => 'n'])->update()->getStatus());
 	}
 
 	public function testUpdateWithMissingFieldIs422(): void {
-		$this->prefs->expects($this->never())->method('setGroupDefault');
+		$this->prefs->expects($this->never())->method('storeGroupDefault');
 		$response = $this->controller(['group' => 'staff', 'schema' => 'case'])->update();
 		$this->assertSame(422, $response->getStatus());
 		$this->assertSame(['error' => 'A "group", a "schema" and a "notification" are required'], $response->getData());
 	}
 
 	public function testUpdateUnknownGroupIs404(): void {
-		$this->prefs->expects($this->never())->method('setGroupDefault');
+		$this->prefs->expects($this->never())->method('storeGroupDefault');
 		$response = $this->controller(['group' => 'ghost', 'schema' => 'case', 'notification' => 'n'])->update();
 		$this->assertSame(404, $response->getStatus());
 	}
@@ -241,7 +243,7 @@ class NotificationGroupPreferencesControllerBehaviourTest extends TestCase {
 		$this->group->method('inGroup')->willReturn(true);
 		$this->groups->method('isAdmin')->willReturn(false);
 		$this->subAdmin->method('isSubAdminOfGroup')->willReturn(false);
-		$this->prefs->expects($this->never())->method('setGroupDefault');
+		$this->prefs->expects($this->never())->method('storeGroupDefault');
 		$response = $this->controller(['group' => 'staff', 'schema' => 'case', 'notification' => 'n'])->update();
 		$this->assertSame(403, $response->getStatus());
 		$this->assertSame(['error' => 'You do not administer that group'], $response->getData());
@@ -259,10 +261,10 @@ class NotificationGroupPreferencesControllerBehaviourTest extends TestCase {
 	public function testUpdateBySubAdminStoresDefaultAndAnswersStoredValue(): void {
 		$this->groups->method('isAdmin')->willReturn(false);
 		$this->subAdmin->method('isSubAdminOfGroup')->willReturn(true);
-		$this->prefs->expects($this->once())->method('setGroupDefault')
-			->with('staff', 'case', 'assigned', ['enabled' => false, 'channels' => ['push']], null);
-		$this->prefs->expects($this->once())->method('getGroupDefault')
-			->with('staff', 'case', 'assigned', null)->willReturn(['enabled' => false]);
+		$this->prefs->expects($this->once())->method('storeGroupDefault')
+			->with(new PreferenceWrite(party: 'staff', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned'), value: ['enabled' => false, 'channels' => ['push']]));
+		$this->prefs->expects($this->once())->method('groupDefaultAt')
+			->with('staff', new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned'))->willReturn(['enabled' => false]);
 
 		$response = $this->controller(['group' => 'staff', 'schema' => 'case', 'notification' => 'assigned', 'enabled' => '0', 'channels' => ['push']])->update();
 
@@ -275,8 +277,8 @@ class NotificationGroupPreferencesControllerBehaviourTest extends TestCase {
 
 	public function testUpdateWithResetClearsTheDefault(): void {
 		$this->groups->method('isAdmin')->willReturn(true);
-		$this->prefs->expects($this->once())->method('setGroupDefault')->with('staff', 'case', 'assigned', null, 's');
-		$this->prefs->method('getGroupDefault')->willReturn(null);
+		$this->prefs->expects($this->once())->method('storeGroupDefault')->with(new PreferenceWrite(party: 'staff', address: new PreferenceAddress(schemaSlug: 'case', notificationKey: 'assigned', scope: 's'), value: null));
+		$this->prefs->method('groupDefaultAt')->willReturn(null);
 		$response = $this->controller(['group' => 'staff', 'schema' => 'case', 'notification' => 'assigned', 'reset' => 'true', 'scope' => 's'])->update();
 		$this->assertSame(
 			['group' => 'staff', 'schema' => 'case', 'notification' => 'assigned', 'scope' => 's', 'default' => null],

@@ -32,19 +32,6 @@ namespace OCA\OpenRegister\Db\Schema;
 final class PropertyFacetBlock {
 
 	/**
-	 * The facet block for the facetable properties; null when the schema has no properties.
-	 *
-	 * @param array       $properties  The schema's properties.
-	 * @param string|null $version     The schema's version.
-	 * @param int         $generatedAt When the block is generated, as a Unix timestamp.
-	 *
-	 * @return array|null
-	 */
-	public function built(array $properties, ?string $version, int $generatedAt): ?array {
-		return $this->builtFor(properties: $properties, stamp: new FacetBlockStamp(version: $version, generatedAt: $generatedAt));
-	}//end built()
-
-	/**
 	 * The facet block for the facetable properties, stamped; null when the schema has no properties.
 	 *
 	 * @param array           $properties The schema's properties.

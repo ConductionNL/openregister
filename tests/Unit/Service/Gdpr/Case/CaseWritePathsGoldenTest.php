@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceProvider;
 use OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry;
 use OCA\OpenRegister\Service\Gdpr\Redaction\FieldRedaction;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -287,6 +288,7 @@ class CaseWritePathsGoldenTest extends TestCase {
 
 		$objectService->method('find')->willReturnCallback(
 			function (...$args) use (&$finds, $entities) {
+				$args    = FindCallShape::find(args: $args);
 				$finds[] = [$args[0], $args[3], $args[4], $args[5], $args[6]];
 				return ($entities[$args[0]] ?? null);
 			}

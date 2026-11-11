@@ -54,6 +54,14 @@ use Throwable;
 class SourceRecordResolver implements SourceRecordResolverInterface {
 
 	/**
+	 * The warning for a reverse-FK source link that cannot be resolved.
+	 *
+	 * @var string
+	 */
+	private const INCOMPLETE_SOURCE_LINK = 'x-openregister source resolution: reverseFk sourceLink is missing sourceSchema or referenceField; '
+		.'falling back to embedded mode.';
+
+	/**
 	 * Cross-request cache of source-schema reference (slug/uuid) => numeric
 	 * schema id. Populated only from successful resolutions (a mid-save slug
 	 * lookup that throws never poisons it). Lets the reverse-FK query pass a
@@ -88,25 +96,22 @@ class SourceRecordResolver implements SourceRecordResolverInterface {
 	 * Resolve the competing source records for a master, honouring the
 	 * annotation's `sourceLink.mode`.
 	 *
-	 * @param array<string, mixed> $masterData Master object payload.
-	 * @param string $masterUuid Master object uuid (needed for reverse-FK).
+	 * @param MasterRecord         $master The master: its payload, uuid (needed for reverse-FK) and register ref,
+	 *                                     the reverse-FK source register when the annotation omits one.
 	 * @param array<string, mixed> $config `x-openregister-survivorship` (or `-merge`) config.
-	 * @param string $masterRegister Master's register ref, used as the reverse-FK
-	 *                               source register when the annotation omits one
-	 *                               (the magic-table query needs a register + schema).
 	 *
 	 * @return array<int, array<string, mixed>> Resolved source-record payloads.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
-	public function resolveSources(array $masterData, string $masterUuid, array $config, string $masterRegister = ''): array {
+	public function resolveSources(MasterRecord $master, array $config): array {
 		$reverseFk = $this->reverseFkConfig(config: $config);
 		if ($reverseFk === null) {
-			return $this->embeddedSources(data: $masterData, config: $config);
+			return $this->embeddedSources(data: $master->data, config: $config);
 		}
 
-		$reverseFk = $this->withSourceRegister(reverseFk: $reverseFk, masterRegister: $masterRegister);
-		return $this->resolveReverseFk(query: $this->reverseFkQuery(reverseFk: $reverseFk, masterUuid: $masterUuid));
+		$reverseFk = $this->withSourceRegister(reverseFk: $reverseFk, masterRegister: $master->register);
+		return $this->resolveReverseFk(query: $this->reverseFkQuery(reverseFk: $reverseFk, masterUuid: $master->uuid));
 	}//end resolveSources()
 
 	/**
@@ -279,21 +284,28 @@ class SourceRecordResolver implements SourceRecordResolverInterface {
 			return null;
 		}
 
-		$sourceSchema   = (string)($sourceLink['sourceSchema'] ?? '');
-		$referenceField = (string)($sourceLink['referenceField'] ?? '');
-		if ($sourceSchema === '' || $referenceField === '') {
-			$this->logger->warning(
-				'x-openregister source resolution: reverseFk sourceLink is missing sourceSchema or referenceField; falling back to embedded mode.'
-			);
+		$fkConfig = self::fkConfigOf(sourceLink: $sourceLink);
+		if ($fkConfig['sourceSchema'] === '' || $fkConfig['referenceField'] === '') {
+			$this->logger->warning(message: self::INCOMPLETE_SOURCE_LINK);
 			return null;
 		}
 
-		return [
-			'sourceSchema' => $sourceSchema,
-			'referenceField' => $referenceField,
-			'sourceRegister' => (string)($sourceLink['sourceRegister'] ?? ''),
-		];
+		return $fkConfig + ['sourceRegister' => (string)($sourceLink['sourceRegister'] ?? '')];
 	}//end reverseFkConfig()
+
+	/**
+	 * The two required reverse-FK fields of a `sourceLink` block, as text.
+	 *
+	 * @param array<string, mixed> $sourceLink The block.
+	 *
+	 * @return array{sourceSchema: string, referenceField: string}
+	 */
+	private static function fkConfigOf(array $sourceLink): array {
+		return [
+			'sourceSchema' => (string)($sourceLink['sourceSchema'] ?? ''),
+			'referenceField' => (string)($sourceLink['referenceField'] ?? ''),
+		];
+	}//end fkConfigOf()
 
 	/**
 	 * The config's `sourceLink` block when it selects reverse-FK mode.

@@ -42,8 +42,10 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Object\DraftActivationInterface;
 use OCA\OpenRegister\Service\Object\DraftAddress;
+use OCA\OpenRegister\Service\Object\UserDraftActivation;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -206,7 +208,10 @@ class ObjectDraftController extends Controller {
 		try {
 			$registerEntity = $this->registers->find(id: $route->register, _rbac: false, _multitenancy: false);
 			$schemaEntity = $this->schemas->find(id: $route->schema, _rbac: false, _multitenancy: false);
-			$readable = $this->objects->find(id: $route->id, register: $registerEntity, schema: $schemaEntity, _render: false, _audit: false);
+			$readable = $this->objects->find(
+				id: $route->id,
+				options: new ObjectFindOptions(register: $registerEntity, schema: $schemaEntity, render: false, audit: false)
+			);
 		} catch (Throwable) {
 			return null;
 		}
@@ -273,9 +278,11 @@ class ObjectDraftController extends Controller {
 	 */
 	private function activateDraft(array $draft, IUser $user): ObjectEntity {
 		return $this->activation->activateAsUser(
-			address: new DraftAddress(register: $draft['register'], schema: $draft['schema'], draftId: $draft['id']),
-			user: $user,
-			changes: $this->changesFromRequest()
+			activation: new UserDraftActivation(
+				address: new DraftAddress(register: $draft['register'], schema: $draft['schema'], draftId: $draft['id']),
+				user: $user,
+				changes: $this->changesFromRequest()
+			)
 		);
 	}//end activateDraft()
 

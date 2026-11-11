@@ -75,19 +75,6 @@ class StoreActionAuthorizer {
 	/**
 	 * Whether the user may perform the action the store declared.
 	 *
-	 * @param string $appId  The declaring leaf app id.
-	 * @param string $action The dot-separated action name.
-	 * @param IUser  $user   The signed-in user.
-	 *
-	 * @return bool True only when the leaf app's own matrix says yes.
-	 */
-	public function can(string $appId, string $action, IUser $user): bool {
-		return $this->permits(check: new StoreActionCheck(appId: $appId, action: $action, user: $user));
-	}//end can()
-
-	/**
-	 * Whether the user may perform the action the store declared.
-	 *
 	 * @param StoreActionCheck $check The declaring leaf app id, the action and the signed-in user.
 	 *
 	 * @return bool True only when the leaf app's own matrix says yes.
@@ -182,7 +169,24 @@ class StoreActionAuthorizer {
 			return true;
 		}
 
-		foreach ($groups as $group) {
+		return $this->isInANamedPublishGroup(descriptor: $descriptor, uid: $uid);
+	}//end canPublish()
+
+	/**
+	 * Whether the user is in one of the descriptor's named publish groups.
+	 *
+	 * A named group that does not exist admits nobody, and is logged so
+	 * "nobody may publish" has a trace of why.
+	 *
+	 * @param StoreDescriptor $descriptor The consuming app's store descriptor.
+	 * @param string          $uid        The signed-in user's uid.
+	 *
+	 * @return bool True when an existing named group has the user as a member.
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-only-a-user-the-apps-named-groups-admit-may-publish
+	 */
+	private function isInANamedPublishGroup(StoreDescriptor $descriptor, string $uid): bool {
+		foreach ($descriptor->namedPublishGroups() as $group) {
 			if ($this->groupManager->groupExists($group) === false) {
 				// A group nothing answers to admits nobody. Logged, so "nobody
 				// may publish" has a trace of why.
@@ -199,7 +203,7 @@ class StoreActionAuthorizer {
 		}
 
 		return false;
-	}//end canPublish()
+	}//end isInANamedPublishGroup()
 
 	/**
 	 * Log a refused install action with the reason it could not be decided.

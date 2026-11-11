@@ -59,8 +59,8 @@ final class B15ControllerHelpersGoldenTest extends TestCase {
 		$connect = $this->createMock(OAuth2ConnectService::class);
 		$connect->method('oauth2Provider')->willReturn(['oauth2' => ['defaultScopes' => ['read', 'write']]]);
 		$connect->method('ensureInstanceClient')->willReturnCallback(
-			static function (array $provider, array $claims, string $redirectUri) use (&$captured): array {
-				$captured = $claims;
+			static function (\OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration $registration) use (&$captured): array {
+				$captured = $registration->claims;
 				throw new RuntimeException('stop after the claims');
 			}
 		);
@@ -160,7 +160,7 @@ final class B15ControllerHelpersGoldenTest extends TestCase {
 			$permissions->method('hasPermission')->willReturn($situation === 'allowed');
 			$personLinks = $this->createMock(PersonLinkService::class);
 			$personLinks->method('listForObject')->willReturn([]);
-			$personLinks->method('link')->willReturn(new ContactLink());
+			$personLinks->method('linkPerson')->willReturn(new ContactLink());
 			$request = $this->createMock(IRequest::class);
 			$request->method('getParams')->willReturn(['userId' => 'bob']);
 			$controller = ContactsControllerFactory::create(

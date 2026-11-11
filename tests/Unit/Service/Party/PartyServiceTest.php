@@ -10,7 +10,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Party;
 
 use Exception;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Service\Party\PartyAddressSelection;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
@@ -154,8 +156,8 @@ class PartyServiceTest extends TestCase {
 		$this->assertSame('correspondence', $addresses[0]['kind']);
 		$this->assertSame('email', $addresses[0]['type']);
 		$this->assertSame('oud@example.org', $addresses[0]['value']);
-		$this->assertCount(1, $this->service->addressesOfKind(party: $party, kind: 'case'));
-		$this->assertCount(2, $this->service->addressesOfKind(party: $party, kind: 'correspondence'));
+		$this->assertCount(1, $this->service->addressesOfKind(party: $party, selection: new PartyAddressSelection(kind: 'case')));
+		$this->assertCount(2, $this->service->addressesOfKind(party: $party, selection: new PartyAddressSelection(kind: 'correspondence')));
 	}//end testAddressesCarryAKindAndABareStringStillReads()
 
 	/**
@@ -350,17 +352,12 @@ class PartyServiceTest extends TestCase {
 	private function scopedService(array &$calls, ?ObjectEntity $inPartyTable, ?ObjectEntity $elsewhere): PartyService {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				mixed $register = null,
-				mixed $schema = null
-			) use (
+			function (...$args) use (
 				&$calls,
 				$inPartyTable,
 				$elsewhere
 			): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema] = FindCallShape::find(args: $args);
 				$calls[] = ['id' => (string)$id, 'register' => $register, 'schema' => $schema];
 				if ($schema === null) {
 					return $elsewhere;

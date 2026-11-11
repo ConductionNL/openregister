@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Service\ExecutedDestruction;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
@@ -337,7 +339,7 @@ final class DestructionListRun {
 			'classification' => $objRef['classification'] ?? null,
 			'approvedBy' => array_column($this->listData['approvals'] ?? [], 'userId'),
 		];
-		$this->auditMapper->createAuditTrailEntry($object, 'archival.destroyed', $context);
+		$this->auditMapper->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: 'archival.destroyed', context: $context));
 	}//end audit()
 
 	/**
@@ -373,7 +375,7 @@ final class DestructionListRun {
 	 */
 	private function saveCertificate(): void {
 		$data        = $this->listData;
-		$certificate = $this->retentionService->generateDestructionCertificate($data, $this->count['destroyed'], $data['executedAt']);
+		$certificate = $this->retentionService->certify(new ExecutedDestruction($data, $this->count['destroyed'], $data['executedAt']));
 		if (empty($this->settings['archivalRegister']) === true || empty($this->settings['destructionListSchema']) === true) {
 			return;
 		}

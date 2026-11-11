@@ -39,6 +39,88 @@ import ObjectDetails from './ObjectDetails.vue'
 import ObjectsList from './ObjectsList.vue'
 import { openAddObjectModal } from '../../composables/openAddObject.js'
 
+/**
+ * Prime filter state up-front so the surrounding ObjectsList component (which
+ * mounts in the same NcAppContent #list slot) has the (register, schema) pair
+ * its refreshObjectList action needs — otherwise it throws 'Register and
+ * schema are required.' mid-mount.
+ *
+ * @param {string} register The register from the route
+ * @param {string} schema The schema from the route
+ * @return {void}
+ */
+function primeListFilters(register, schema) {
+	if (typeof objectStore.setFilters === 'function') {
+		objectStore.setFilters({ register, schema })
+	}
+}
+
+/**
+ * Load the surrounding context the detail panel and the object list both
+ * need. Without this a deep-link renders an empty object list ("No objects
+ * defined yet") and leaves the detail panel without register/schema context.
+ * Order matters: the list's `currentType` is derived from the register/schema
+ * stores, so those must be primed before refreshObjectList runs. Non-fatal: a
+ * context load failure must not block the object itself from rendering.
+ *
+ * @param {string} register The register from the route
+ * @param {string} schema The schema from the route
+ * @return {Promise<void>}
+ */
+async function loadListContext(register, schema) {
+	await Promise.allSettled([
+		registerStore.getRegister(register),
+		schemaStore.getSchema(schema, { setItem: true }),
+	])
+	await objectStore.refreshObjectList().catch(() => {})
+}
+
+/**
+ * The API URL of the object a deep link names.
+ *
+ * @param {{register: string, schema: string, id: string}} params The route params
+ * @return {string} The URL
+ */
+function linkedObjectUrl(params) {
+	const { register, schema, id } = params
+	return `/index.php/apps/openregister/api/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}/${encodeURIComponent(id)}`
+}
+
+/**
+ * Fetch a JSON API URL as the signed-in user.
+ *
+ * @param {string} url The URL
+ * @return {Promise<Response>} The response
+ */
+function fetchAsUser(url) {
+	return fetch(url, {
+		headers: {
+			Accept: 'application/json',
+			'OCS-APIRequest': 'true',
+			requesttoken: OC?.requestToken,
+		},
+	})
+}
+
+/**
+ * Fetch the object a deep link names and open it, or log why the server
+ * refused it.
+ *
+ * @param {{register: string, schema: string, id: string}} params The route params
+ * @return {Promise<void>}
+ */
+async function openLinkedObject(params) {
+	const url = linkedObjectUrl(params)
+	const response = await fetchAsUser(url)
+	if (!response.ok) {
+		console.error(
+			`[ObjectsIndex] deep-link fetch ${url} returned ${response.status}`,
+		)
+		return
+	}
+	objectStore.setObjectItem(await response.json())
+}
+
 export default {
 	name: 'ObjectsIndex',
 	components: {
@@ -95,48 +177,15 @@ export default {
 		// — a deterministic URL beats clicking through the registers ⇒
 		// schemas ⇒ objects nav chain.
 		async loadFromRoute() {
-			const { register, schema, id } = this.$route.params || {}
+			const params = this.$route.params || {}
+			const { register, schema, id } = params
 			if (!register || !schema || !id) {
 				return
 			}
 			try {
-				// Prime filter state up-front so the surrounding ObjectsList
-				// component (which mounts in the same NcAppContent #list
-				// slot) has the (register, schema) pair its refreshObjectList
-				// action needs — otherwise it throws 'Register and schema
-				// are required.' mid-mount.
-				if (typeof objectStore.setFilters === 'function') {
-					objectStore.setFilters({ register, schema })
-				}
-				// Load the surrounding context the detail panel and the object
-				// list both need. Without this a deep-link renders an empty
-				// object list ("No objects defined yet") and leaves the detail
-				// panel without register/schema context. Order matters: the
-				// list's `currentType` is derived from the register/schema
-				// stores, so those must be primed before refreshObjectList
-				// runs. Non-fatal: a context load failure must not block the
-				// object itself from rendering.
-				await Promise.allSettled([
-					registerStore.getRegister(register),
-					schemaStore.getSchema(schema, { setItem: true }),
-				])
-				await objectStore.refreshObjectList().catch(() => {})
-				const url = `/index.php/apps/openregister/api/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}/${encodeURIComponent(id)}`
-				const response = await fetch(url, {
-					headers: {
-						Accept: 'application/json',
-						'OCS-APIRequest': 'true',
-						requesttoken: OC?.requestToken,
-					},
-				})
-				if (!response.ok) {
-					console.error(
-						`[ObjectsIndex] deep-link fetch ${url} returned ${response.status}`,
-					)
-					return
-				}
-				const item = await response.json()
-				objectStore.setObjectItem(item)
+				primeListFilters(register, schema)
+				await loadListContext(register, schema)
+				await openLinkedObject(params)
 			} catch (e) {
 				console.error('[ObjectsIndex] deep-link fetch failed', e)
 			}

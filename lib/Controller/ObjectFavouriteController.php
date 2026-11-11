@@ -43,6 +43,7 @@ use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Notifications\Db\Watcher;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -122,7 +123,7 @@ class ObjectFavouriteController extends Controller {
 			return $object;
 		}
 
-		$star = fn (): Watcher => $this->services->favourites->star(object: $object, register: (string)$ref->register, schema: (string)$ref->schema);
+		$star = fn (): Watcher => $this->services->favourites->star(target: new AddressedObject(object: $object, register: (string)$ref->register, schema: (string)$ref->schema));
 		$favourite = $this->endpoint->run(operation: $star, context: 'star');
 		if ($favourite instanceof JSONResponse) {
 			return $favourite;
