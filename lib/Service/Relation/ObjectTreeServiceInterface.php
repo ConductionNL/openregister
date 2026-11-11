@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Relation;
 
-use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
  * The bounded tree read along a schema's parent property.
@@ -61,9 +60,8 @@ interface ObjectTreeServiceInterface {
 	 * A node the caller may not read is left out, and so is everything reached
 	 * only through it.
 	 *
-	 * @param ObjectEntity         $root  The object to walk from, already read under the caller's RBAC.
-	 * @param ObjectTreeQuery|null $query The direction, the depth and the fields asked for; null walks down to the declared bound.
-	 * @param bool                 $_rbac Whether to apply the caller's read access to every node.
+	 * @param ObjectTreeQuery $query The root, the direction, the depth and the fields asked for.
+	 * @param bool            $_rbac Whether to apply the caller's read access to every node.
 	 *
 	 * @return array{root: string, register: int, schema: int, parentProperty: string|null,
 	 *     direction: string, depth: int, requestedDepth: int|null, maxDepth: int,
@@ -72,5 +70,5 @@ interface ObjectTreeServiceInterface {
 	 *
 	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
 	 */
-	public function tree(ObjectEntity $root, ?ObjectTreeQuery $query = null, bool $_rbac = true): array;
+	public function tree(ObjectTreeQuery $query, bool $_rbac = true): array;
 }//end interface

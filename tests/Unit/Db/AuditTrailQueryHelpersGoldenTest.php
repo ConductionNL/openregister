@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditPageRequest;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use OCA\OpenRegister\Db\AuditTrailPageQuery;
 use OCA\OpenRegister\Db\AuditTrailPayloadHelper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -213,7 +215,7 @@ final class AuditTrailQueryHelpersGoldenTest extends TestCase {
 
 		$outcome = [];
 		try {
-			$page = (new AuditTrailPageQuery(db: $db))->page(filters: $filters, search: $search, limit: $limit, beforeId: $beforeId);
+			$page = (new AuditTrailPageQuery(db: $db))->page(new AuditPageRequest(new AuditTrailCriteria($filters, $search), $limit, $beforeId));
 			$outcome['ids'] = array_map(static fn (AuditTrail $entry): int => (int)$entry->getId(), $page['results']);
 			$outcome['nextCursor'] = $page['nextCursor'];
 		} catch (\Throwable $e) {

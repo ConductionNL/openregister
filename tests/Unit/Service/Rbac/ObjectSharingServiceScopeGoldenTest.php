@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\InheritedGrantLister;
 use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
+use OCA\OpenRegister\Service\Rbac\AuthorizationAssignment;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantRecords;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
@@ -101,8 +102,8 @@ final class ObjectSharingServiceScopeGoldenTest extends TestCase {
 		$writes = [];
 		$writer = $this->createMock(ObjectAuthorizationWriter::class);
 		$writer->method('writeAuthorizationBlock')->willReturnCallback(
-			function (Register $register, Schema $schema, string $objectUuid, array $block) use (&$writes): void {
-				$writes[] = [$register->getSlug(), $schema->getSlug(), $objectUuid, $block];
+			function (RegisterSchema $table, AuthorizationAssignment $assignment) use (&$writes): void {
+				$writes[] = [$table->register->getSlug(), $table->schema->getSlug(), $assignment->objectUuid, $assignment->block];
 			}
 		);
 

@@ -390,7 +390,7 @@ class NoteServiceTest extends TestCase {
 		// kept BEFORE the comment is saved: afterwards it exists nowhere.
 		$this->versions->expects($this->once())
 			->method('record')
-			->with(1, $this->callback(self::noteReading(message: 'Applicant called', actor: 'a')), 'a');
+			->with($this->callback(self::noteReading(message: 'Applicant called', actor: 'a')), 'a');
 		$comment->expects($this->once())
 			->method('setMessage')
 			->with('Applicant called, will send documents');
@@ -408,7 +408,7 @@ class NoteServiceTest extends TestCase {
 
 		$this->versions->expects($this->once())
 			->method('record')
-			->with(1, $this->callback(self::noteReading(message: 'msg', actor: 'handler')), 'supervisor');
+			->with($this->callback(self::noteReading(message: 'msg', actor: 'handler')), 'supervisor');
 
 		$this->service->updateNote(1, 'rewritten', null, true);
 	}

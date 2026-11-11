@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Task\WriteBack\WriteBackAttempt;
 use OCA\OpenRegister\Service\Task\WriteBack\WriteBackRefusal;
 use OCA\OpenRegister\Service\Task\WriteBack\WriteBackTaskResolver;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * The write-back gate.
@@ -260,7 +261,7 @@ class TaskVtodoWriteBackGate implements TaskVtodoWriteBackGateInterface {
 	 */
 	private function perform(WriteBackAttempt $attempt): Task {
 		if ($attempt->verb === 'cancel') {
-			return $this->tasks->cancel(uuid: $attempt->taskUuid, reason: 'Cancelled from the calendar.', actor: $attempt->actor);
+			return $this->tasks->cancel(ref: new TaskActorRef(uuid: $attempt->taskUuid, actor: $attempt->actor), reason: 'Cancelled from the calendar.');
 		}
 
 		return $this->tasks->completeWithAnswer(uuid: $attempt->taskUuid, answer: new TaskAnswer(outcome: 'done'), actor: $attempt->actor);

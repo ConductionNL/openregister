@@ -22,6 +22,7 @@ use OCA\OpenRegister\BackgroundJob\AuditExportDelivery;
 use OCA\OpenRegister\BackgroundJob\AuditExportSource;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailCriteria;
 use OCA\OpenRegister\Db\AuditTrailPageQuery;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -69,7 +70,7 @@ class AuditTrailExportJobTest extends TestCase {
 	public function testTheFileCarriesTheChainAndTheRequesterIsNotified(): void {
 		$pageQuery = $this->createMock(AuditTrailPageQuery::class);
 		$pageQuery->expects($this->once())->method('collect')
-			->with(['actor' => 'anna'], null, AuditTrailExportJob::JOB_LIMIT)
+			->with(new AuditTrailCriteria(['actor' => 'anna'], null), AuditTrailExportJob::JOB_LIMIT)
 			->willReturn(['results' => [$this->row(12), $this->row(11)], 'truncated' => false]);
 
 		$logService = new LogService(

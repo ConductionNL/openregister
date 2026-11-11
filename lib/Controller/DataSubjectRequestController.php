@@ -31,7 +31,9 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\ErasureRequest;
 use OCA\OpenRegister\Service\Gdpr\ProcessingFlag;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -79,9 +81,11 @@ class DataSubjectRequestController extends Controller {
 		}
 
 		$results = $this->service->findSubjectData(
-			subjectId: $subject,
-			type: $this->optionalType(),
-			mode: (string)($this->request->getParam(key: 'mode') ?? 'exact')
+			query: new SubjectQuery(
+				subjectId: $subject,
+				type: $this->optionalType(),
+				mode: (string)($this->request->getParam(key: 'mode') ?? 'exact')
+			)
 		);
 
 		return new JSONResponse(
@@ -174,10 +178,12 @@ class DataSubjectRequestController extends Controller {
 		}
 
 		$summary = $this->service->erase(
-			subjectId: $subject,
-			type: $this->optionalType(),
-			eraseMode: (string)($this->request->getParam(key: 'eraseMode') ?? DataSubjectRequestServiceInterface::ERASE_MODE_PSEUDONYMISE),
-			dryRun: filter_var($this->request->getParam(key: 'dryRun'), FILTER_VALIDATE_BOOLEAN)
+			request: new ErasureRequest(
+				subjectId: $subject,
+				type: $this->optionalType(),
+				eraseMode: (string)($this->request->getParam(key: 'eraseMode') ?? DataSubjectRequestServiceInterface::ERASE_MODE_PSEUDONYMISE),
+				dryRun: filter_var($this->request->getParam(key: 'dryRun'), FILTER_VALIDATE_BOOLEAN)
+			)
 		);
 
 		return new JSONResponse(data: $summary);

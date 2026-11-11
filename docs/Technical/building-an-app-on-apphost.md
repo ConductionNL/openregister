@@ -62,6 +62,7 @@ declare(strict_types=1);
 namespace OCA\PetStore\AppInfo;
 
 use OCA\OpenRegister\AppHost\Bootstrap;
+use OCA\OpenRegister\AppHost\LeafAdoption;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -78,14 +79,14 @@ class Application extends App implements IBootstrap
 
     public function register(IRegistrationContext $context): void
     {
-        Bootstrap::register($context, self::APP_ID, [
+        Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: self::APP_ID, options: [
             // Required in practice: the fleet's namespaces are not derivable
             // from the app id (petstore → PetStore, opencatalogi → OpenCatalogi).
             'namespace'        => 'OCA\\PetStore',
             'sectionName'      => 'Pet Store',
             'dashboardWidgets' => [\OCA\PetStore\Dashboard\ExampleWidget::class],
             'mcpProvider'      => \OCA\PetStore\Mcp\ExampleToolProvider::class,
-        ]);
+        ]));
     }
 
     public function boot(IBootContext $context): void {}
@@ -115,6 +116,8 @@ an `$extra` route whose name matches a canonical one **overrides** the canonical
 entry (the documented way to re-point a single endpoint at a local controller).
 
 ## `Bootstrap::register()` options
+
+These are the keys of the `options` array on `LeafAdoption`. `Bootstrap::aliasStoreController()` takes the same `LeafAdoption` and reads only `namespace` (or `controllerNamespace`).
 
 | Option | Default | Purpose |
 |---|---|---|
@@ -191,7 +194,7 @@ Then, in `Application::register()`, register your subclass *after*
 `Bootstrap::register()` so it wins:
 
 ```php
-Bootstrap::register($context, self::APP_ID, ['namespace' => 'OCA\\PetStore']);
+Bootstrap::register(context: $context, adoption: new LeafAdoption(appId: self::APP_ID, options: ['namespace' => 'OCA\\PetStore']));
 $context->registerServiceAlias(
     \OCA\PetStore\Controller\DashboardController::class,
     \OCA\PetStore\Controller\DashboardController::class // your concrete subclass

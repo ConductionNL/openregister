@@ -30,7 +30,7 @@ OpenRegister runs inside a Nextcloud server as an app, in PHP on the server and 
 | `scripts/`, `tools/`, `vendor-bin/` | Developer tooling: translation, quality and release scripts. Not shipped as app logic. |
 | `openspec/` | Specifications and change proposals (Markdown). |
 | `docs/` | Documentation site (Docusaurus). |
-| `docker/`, `docker-compose*.yml`, `exapps/`, `n8n-templates/`, `n8n-mcp/` | Local development and demo environments, and example workflow templates. |
+| `docker/`, `docker-compose*.yml`, `exapps/`, `n8n-templates/` | Local development and demo environments, and example workflow templates. |
 | `patches/` | Patches applied to third-party Composer packages at install time. |
 
 ## Components

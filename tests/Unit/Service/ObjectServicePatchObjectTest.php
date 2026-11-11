@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -66,6 +67,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Throwable;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests for ObjectService::patchObject() and its merge rules.
@@ -127,7 +129,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 		$this->schema = new Schema();
 		$this->schema->setId(2);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->createMock(DeleteObject::class),
 			$this->createMock(GetObject::class),
@@ -166,7 +168,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->container,
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 
@@ -517,7 +519,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		$seen = [];
 		$this->permissionHandler->method('checkPermission')->willReturnCallback(
-			static function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true) use (&$seen): void {
+			static function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true) use (&$seen): void {
 				$seen[] = $_rbac;
 			}
 		);
@@ -611,7 +613,8 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		$seen = null;
 		$this->permissionHandler->method('checkPermission')->willReturnCallback(
-			static function (Schema $schema, string $action, ?string $userId = null) use (&$seen): void {
+			static function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true) use (&$seen): void {
+				$userId = $options->userId;
 				$seen = ['action' => $action, 'userId' => $userId];
 			}
 		);
@@ -647,7 +650,8 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		$seen = 'untouched';
 		$this->permissionHandler->method('checkPermission')->willReturnCallback(
-			static function (Schema $schema, string $action, ?string $userId = null) use (&$seen): void {
+			static function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true) use (&$seen): void {
+				$userId = $options->userId;
 				$seen = $userId;
 			}
 		);

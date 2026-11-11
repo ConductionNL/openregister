@@ -22,10 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Db;
 
+use OCA\OpenRegister\Db\DecisionMetadataEdit;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
 use OCP\AppFramework\Db\Entity;
-use OCP\IUser;
 use OCA\OpenRegister\Db\EntityRelation;
 
 /**
@@ -293,19 +293,17 @@ interface EntityRelationMapperInterface {
 	 * timestamp, the subject (table + row id), and only the fields that
 	 * actually changed.
 	 *
-	 * @param EntityRelation $relation Pre-loaded relation row (callers handle find/404).
-	 * @param array $fields Subset of whitelist keys with new values.
-	 * @param IUser|null $actingUser Optional explicit acting user; falls back
-	 *                               to the session user. If null and no
-	 *                               session user, the audit entry records the
-	 *                               actor as 'system'.
+	 * @param DecisionMetadataEdit $edit The pre-loaded relation row (callers handle find/404), the
+	 *                                   whitelist keys with new values and the optional explicit acting
+	 *                                   user; without one it falls back to the session user, and without
+	 *                                   a session user the audit entry records the actor as 'system'.
 	 *
 	 * @return EntityRelation The (possibly unchanged) row.
 	 *
 	 * @throws CustomValidationException When a whitelist or shape violation
 	 *                                   is detected.
 	 */
-	public function updateDecisionMetadata(EntityRelation $relation, array $fields, ?IUser $actingUser = null): EntityRelation;
+	public function updateDecisionMetadata(DecisionMetadataEdit $edit): EntityRelation;
 
 	/**
 	 * Link a relation to its current decision object.

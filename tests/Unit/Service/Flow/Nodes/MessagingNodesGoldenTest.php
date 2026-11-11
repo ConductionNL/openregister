@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowMessagingService;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\MessageSend;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
@@ -68,9 +69,9 @@ final class MessagingNodesGoldenTest extends TestCase {
 	public function testMessagingNodesMatchTheirRecording(): void {
 		$calls = [];
 		$messaging = $this->createMock(FlowMessagingService::class);
-		$messaging->method('previewMessages')->willReturnCallback(
-			static function (string $channel, array $config, array $items, array $context) use (&$calls): array {
-				$calls[] = ['previewMessages', $channel, $config, $items, $context];
+		$messaging->method('preview')->willReturnCallback(
+			static function (string $channel, MessageSend $step) use (&$calls): array {
+				$calls[] = ['previewMessages', $channel, $step->config, $step->items, $step->context];
 				return [['to' => 'bob'], ['to' => 'eve']];
 			}
 		);
@@ -98,8 +99,8 @@ final class MessagingNodesGoldenTest extends TestCase {
 		foreach ($nodes as $node) {
 			$calls = [];
 			$surface = $this->surface(node: $node, configs: $this->configs());
-			$surface['preview'] = $node->preview($items, $config, $context);
-			$surface['execute'] = $node->execute($items, $config, $context);
+			$surface['preview'] = $node->preview(new FlowNodeCall(items: $items, config: $config, context: $context));
+			$surface['execute'] = $node->execute(new FlowNodeCall(items: $items, config: $config, context: $context));
 			$surface['calls'] = $calls;
 			$actual[] = $surface;
 		}

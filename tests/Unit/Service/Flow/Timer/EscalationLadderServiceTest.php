@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Db\FlowTimer;
@@ -167,7 +168,7 @@ class EscalationLadderServiceTest extends TestCase {
 		// SLA 2 calendarDays, preBreach 24 hours: 24h is inside 2 days. The raw
 		// integer comparison (24 > 2) would have refused this.
 		$anchor = $this->at('2026-09-03 10:00');
-		$fireAt = (new SlaCalculator())->add(from: $anchor, value: 2, unit: 'calendarDays', calendar: $this->calendar);
+		$fireAt = (new SlaCalculator())->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($anchor), value: 2, unit: 'calendarDays', calendar: $this->calendar));
 		$rungs = $this->ladder->normaliseRules(rules: [['trigger' => 'preBreach', 'offset' => 24, 'offsetUnit' => 'hours']], sla: ['value' => 2, 'unit' => 'calendarDays']);
 		$this->ladder->validateAgainstTimeline(timeline: new RungTimeline(rungs: $rungs, fireAt: $fireAt, firedKeys: [], calendar: $this->calendar), anchorAt: $anchor);
 		self::assertSame('2026-09-04 10:00', $this->ladder->rungInstant(rung: $rungs[0], timeline: new RungTimeline(rungs: [], fireAt: $fireAt, firedKeys: [], calendar: $this->calendar))->format('Y-m-d H:i'));
@@ -177,7 +178,7 @@ class EscalationLadderServiceTest extends TestCase {
 		// SLA 48 hours, preBreach 5 businessDays: the raw comparison (5 > 48 is
 		// false) would have ACCEPTED this.
 		$anchor = $this->at('2026-09-03 10:00');
-		$fireAt = (new SlaCalculator())->add(from: $anchor, value: 48, unit: 'hours', calendar: $this->calendar);
+		$fireAt = (new SlaCalculator())->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($anchor), value: 48, unit: 'hours', calendar: $this->calendar));
 		$rungs = $this->ladder->normaliseRules(rules: [['trigger' => 'preBreach', 'offset' => 5, 'offsetUnit' => 'businessDays']], sla: ['value' => 48, 'unit' => 'hours']);
 		$this->expectException(FlowTimerValidationException::class);
 		$this->expectExceptionMessage('exceeds the SLA');

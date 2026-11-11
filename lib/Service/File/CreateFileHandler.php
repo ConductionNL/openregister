@@ -358,7 +358,7 @@ class CreateFileHandler {
 	 */
 	private function shareIfRequested(File $file, bool $share): void {
 		if ($share === true) {
-			$this->fileService->createShareLink(path: $file->getPath());
+			$this->fileService->createShareLink(request: new ShareLinkRequest(path: $file->getPath()));
 		}
 	}//end shareIfRequested()
 

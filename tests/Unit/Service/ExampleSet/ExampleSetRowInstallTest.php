@@ -25,9 +25,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows;
+use OCA\OpenRegister\Service\ExampleSet\RecordLedger;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentWrite;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRowInstall;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
+use OCA\OpenRegister\Service\ExampleSet\FilledRow;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -48,8 +51,8 @@ class ExampleSetRowInstallTest extends TestCase {
 		$asked   = [];
 		$install = new ExampleSetRowInstall(
 			rows: $rows,
-			refusal: function (array $data, array $users, array $context) use (&$asked): string {
-				$asked[] = [$data, $users, $context];
+			refusal: function (FilledRow $row, array $context) use (&$asked): string {
+				$asked[] = [$row->data, $row->users, $context];
 				return 'no';
 			},
 			fill: function (array $context) use (&$asked): array {
@@ -61,7 +64,7 @@ class ExampleSetRowInstallTest extends TestCase {
 		$report  = [];
 		$record  = ['users' => ['alice' => 'created']];
 		$fragment = ['app' => 'demo', 'file' => 'f.json', 'notes' => [['key' => 'n', 'data' => ['by' => 'alice']]]];
-		$this->assertFalse($install->fragment(fragment: $fragment, context: ['x' => 1], report: $report, record: $record));
+		$this->assertFalse($install->fragment(write: new ExampleSetFragmentWrite(fragment: $fragment, context: ['x' => 1], values: new ExampleSetValues()), ledger: new RecordLedger(report: $report, record: $record)));
 		$this->assertSame([['fill', ['x' => 1]], [['by' => 'alice'], ['alice'], ['x' => 1]]], $asked);
 		$this->assertSame(['notes' => ['demo/n' => 'failed'], 'dropped' => ['f.json: note "n": no']], $report);
 	}//end testRefusalAndFillContextAreAskedAndARefusedRowIsNotWritten()
@@ -78,14 +81,14 @@ class ExampleSetRowInstallTest extends TestCase {
 		$rows->expects($this->once())->method('write')->with(new ExampleSetRow(app: 'demo', key: 'n', data: ['text' => 'hi']))->willReturn(['error' => '', 'entry' => ['id' => 9]]);
 		$install = new ExampleSetRowInstall(
 			rows: $rows,
-			refusal: static fn (array $data, array $users, array $context): string => '',
+			refusal: static fn (FilledRow $row, array $context): string => '',
 			fill: static fn (array $context): array => $context,
 			values: new ExampleSetValues()
 		);
 		$report  = [];
 		$record  = ['users' => []];
 		$fragment = ['app' => 'demo', 'file' => 'f.json', 'notes' => [['key' => 'n', 'data' => ['text' => 'hi']]]];
-		$this->assertTrue($install->fragment(fragment: $fragment, context: [], report: $report, record: $record));
+		$this->assertTrue($install->fragment(write: new ExampleSetFragmentWrite(fragment: $fragment, context: [], values: new ExampleSetValues()), ledger: new RecordLedger(report: $report, record: $record)));
 		$this->assertSame(['notes' => ['demo/n' => 'created']], $report);
 		$this->assertSame(['users' => [], 'notes' => ['demo/n' => ['id' => 9]]], $record);
 	}//end testAnAcceptedRowIsWrittenAndHeld()

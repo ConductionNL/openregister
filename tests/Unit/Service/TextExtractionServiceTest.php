@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Files\Service\FileExtractionOptions;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership;
@@ -853,7 +854,7 @@ class TextExtractionServiceTest extends TestCase {
 		// Should NOT call rootFolder (no extraction happens).
 		$this->rootFolder->expects($this->never())->method('getById');
 
-		$this->service->extractFile(1, false);
+		$this->service->extractFile(1, new FileExtractionOptions(forceReExtract: false));
 	}
 
 	public function testExtractFileProcessesTextFile(): void {
@@ -915,7 +916,7 @@ class TextExtractionServiceTest extends TestCase {
 			'entityRecognitionEnabled' => false,
 		]);
 
-		$this->service->extractFile(1, true);
+		$this->service->extractFile(1, new FileExtractionOptions(forceReExtract: true));
 	}
 
 	public function testExtractFileWithEntityRecognitionEnabled(): void {

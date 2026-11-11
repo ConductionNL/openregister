@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Relation\Derivation;
 use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationStores;
+use OCA\OpenRegister\Service\Relation\ParentInheritance;
 use OCA\OpenRegister\Service\Relation\ProvenanceLink;
 use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\RelationEndpoint;
@@ -139,14 +140,12 @@ class ObjectRelationServiceTest extends TestCase {
 			]
 		);
 
-		$applied = $this->service->applyInheritance(
-			parent: $parent,
-			childData: ['onderwerp' => 'Deelzaak'],
-			inherits: [
-				'classification' => 'classificatie',
-				'confidentiality' => 'vertrouwelijkheid',
-				'responsible' => 'behandelaar',
-			]
+		$applied = $this->service->inherit(
+			inheritance: new ParentInheritance(parent: $parent, childData: ['onderwerp' => 'Deelzaak'], inherits: [
+					'classification' => 'classificatie',
+					'confidentiality' => 'vertrouwelijkheid',
+					'responsible' => 'behandelaar',
+				])
 		);
 
 		$this->assertSame('intern', $applied['data']['classificatie']);
@@ -212,10 +211,8 @@ class ObjectRelationServiceTest extends TestCase {
 	public function testReclassifyingTheParentDoesNotReclassifyTheChild(): void {
 		$parent = $this->object('uuid-parent', ['classificatie' => 'intern']);
 
-		$applied = $this->service->applyInheritance(
-			parent: $parent,
-			childData: [],
-			inherits: ['classification' => 'classificatie']
+		$applied = $this->service->inherit(
+			inheritance: new ParentInheritance(parent: $parent, childData: [], inherits: ['classification' => 'classificatie'])
 		);
 
 		$this->assertSame('intern', $applied['data']['classificatie']);
@@ -234,10 +231,8 @@ class ObjectRelationServiceTest extends TestCase {
 	 * the same afterwards.
 	 */
 	public function testARoleTheParentDoesNotCarryInheritsNothing(): void {
-		$applied = $this->service->applyInheritance(
-			parent: $this->object('uuid-parent', ['classificatie' => 'intern']),
-			childData: [],
-			inherits: ['classification' => 'classificatie', 'confidentiality' => 'vertrouwelijkheid']
+		$applied = $this->service->inherit(
+			inheritance: new ParentInheritance(parent: $this->object('uuid-parent', ['classificatie' => 'intern']), childData: [], inherits: ['classification' => 'classificatie', 'confidentiality' => 'vertrouwelijkheid'])
 		);
 
 		$this->assertArrayNotHasKey('vertrouwelijkheid', $applied['data']);
@@ -249,10 +244,8 @@ class ObjectRelationServiceTest extends TestCase {
 	 * A value the child already carries is the child's own.
 	 */
 	public function testInheritanceDoesNotOverruleAValueTheChildAlreadyHas(): void {
-		$applied = $this->service->applyInheritance(
-			parent: $this->object('uuid-parent', ['classificatie' => 'intern']),
-			childData: ['classificatie' => 'openbaar'],
-			inherits: ['classification' => 'classificatie']
+		$applied = $this->service->inherit(
+			inheritance: new ParentInheritance(parent: $this->object('uuid-parent', ['classificatie' => 'intern']), childData: ['classificatie' => 'openbaar'], inherits: ['classification' => 'classificatie'])
 		);
 
 		$this->assertSame('openbaar', $applied['data']['classificatie']);

@@ -97,21 +97,33 @@ class OrganisationHaltService implements OrganisationHaltServiceInterface {
 
 		$this->assertEngageable(request: $request);
 
-		$halt = [
-			'id' => Uuid::v4()->toRfc4122(),
-			'organisation' => $request->organisation,
-			'app' => $request->app,
-			'nodeTypePrefix' => $request->prefix(),
-			'reason' => $request->reason,
-			'engagedBy' => $user->getUID(),
-			'engagedAt' => (new DateTime())->format(DateTimeInterface::ATOM),
-		];
+		$halt = self::newHalt(request: $request, actor: $user->getUID());
 
 		$this->store(halts: array_merge($this->list(), [$halt]));
 		$this->record(action: self::ACTION_ENGAGED, changed: $halt);
 
 		return $halt;
 	}//end engage()
+
+	/**
+	 * A new halt for the request, engaged now by the actor.
+	 *
+	 * @param HaltRequest $request The trimmed request.
+	 * @param string      $actor   The uid engaging it.
+	 *
+	 * @return array<string, string> The halt.
+	 */
+	private static function newHalt(HaltRequest $request, string $actor): array {
+		return [
+			'id' => Uuid::v4()->toRfc4122(),
+			'organisation' => $request->organisation,
+			'app' => $request->app,
+			'nodeTypePrefix' => $request->prefix(),
+			'reason' => $request->reason,
+			'engagedBy' => $actor,
+			'engagedAt' => (new DateTime())->format(DateTimeInterface::ATOM),
+		];
+	}//end newHalt()
 
 	/**
 	 * Release a halt as the signed-in user.
@@ -129,26 +141,55 @@ class OrganisationHaltService implements OrganisationHaltServiceInterface {
 			throw new InvalidArgumentException('Releasing a halt needs an actor, and there is no session.');
 		}
 
-		$kept = [];
-		$released = null;
-		foreach ($this->list() as $halt) {
-			if ($halt['id'] === $id) {
-				$released = $halt;
-				continue;
-			}
-
-			$kept[] = $halt;
-		}
-
+		$halts = $this->list();
+		$released = self::lastWithId(halts: $halts, id: $id);
 		if ($released === null) {
 			return false;
 		}
 
-		$this->store(halts: $kept);
+		$this->store(halts: self::withoutId(halts: $halts, id: $id));
 		$this->record(action: self::ACTION_RELEASED, changed: $released);
 
 		return true;
 	}//end release()
+
+	/**
+	 * The last halt with this id, or null.
+	 *
+	 * @param array<int, array<string, mixed>> $halts The halts.
+	 * @param string                           $id    The halt id.
+	 *
+	 * @return array<string, mixed>|null The halt.
+	 */
+	private static function lastWithId(array $halts, string $id): ?array {
+		$found = null;
+		foreach ($halts as $halt) {
+			if ($halt['id'] === $id) {
+				$found = $halt;
+			}
+		}
+
+		return $found;
+	}//end lastWithId()
+
+	/**
+	 * The halts without the ones carrying this id, in order.
+	 *
+	 * @param array<int, array<string, mixed>> $halts The halts.
+	 * @param string                           $id    The halt id.
+	 *
+	 * @return array<int, array<string, mixed>> The kept halts.
+	 */
+	private static function withoutId(array $halts, string $id): array {
+		$kept = [];
+		foreach ($halts as $halt) {
+			if ($halt['id'] !== $id) {
+				$kept[] = $halt;
+			}
+		}
+
+		return $kept;
+	}//end withoutId()
 
 	/**
 	 * The engaged halts, optionally for one organisation.

@@ -55,6 +55,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\TaskActorRef;
 
 /**
  * Every branch of handleWrite(), request() and isProjected(), pinned.
@@ -126,7 +127,7 @@ final class TaskVtodoWriteBackGateGoldenTest extends TestCase {
 			)
 		);
 		$tasks->method('cancel')->willReturnCallback(
-			static fn (string $uuid, ?string $reason, ?string $actor): Task => $answer(['cancel', $uuid, $reason, $actor])
+			static fn (TaskActorRef $ref, ?string $reason): Task => $answer(['cancel', $ref->uuid, $reason, $ref->actor])
 		);
 
 		return $tasks;

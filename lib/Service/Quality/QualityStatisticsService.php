@@ -140,51 +140,66 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	 */
 	public function statisticsFor($register, $schema): array {
 		$quality = $this->loadAnnotation(register: $register, schema: $schema);
-		$field = $this->scoreField(quality: $quality);
-		$thresholds = $this->thresholds(quality: $quality);
+		$run = new QualityStatisticsRun(
+			reading: new QualityScoreReading(field: $this->scoreField(quality: $quality), thresholds: $this->thresholds(quality: $quality))
+		);
 
 		$objects = $this->loadObjects(register: $register, schema: $schema);
 
-		$histogram = $this->emptyHistogram();
-		$buckets = [
-			'good' => 0,
-			'fair' => 0,
-			'poor' => 0,
-		];
-
-		$sum = 0.0;
-		$total = 0;
-
+		$run->histogram = $this->emptyHistogram();
 		foreach ($objects as $object) {
-			$score = $this->scoreOf(object: $object, field: $field);
-			if ($score === null) {
-				continue;
-			}
+			$this->tally(run: $run, object: $object);
+		}
 
-			$total++;
-			$sum += $score;
+		return self::summary(run: $run);
+	}//end statisticsFor()
 
-			$status = $this->scorer->status(score: $score, thresholds: $thresholds);
-			if (isset($buckets[$status]) === true) {
-				$buckets[$status]++;
-			}
+	/**
+	 * Count one object's score into the run, when it has one.
+	 *
+	 * @param QualityStatisticsRun $run    The pass being counted.
+	 * @param ObjectEntity         $object The object.
+	 *
+	 * @return void
+	 */
+	private function tally(QualityStatisticsRun $run, ObjectEntity $object): void {
+		$score = $this->scoreOf(object: $object, field: $run->reading->field);
+		if ($score === null) {
+			return;
+		}
 
-			$index = $this->histogramIndex(score: $score);
-			$histogram[$index]['count']++;
-		}//end foreach
+		$run->total++;
+		$run->sum += $score;
 
+		$status = $this->scorer->status(score: $score, thresholds: $run->reading->thresholds);
+		if (isset($run->buckets[$status]) === true) {
+			$run->buckets[$status]++;
+		}
+
+		$index = $this->histogramIndex(score: $score);
+		$run->histogram[$index]['count']++;
+	}//end tally()
+
+	/**
+	 * The statistics a finished run reports.
+	 *
+	 * @param QualityStatisticsRun $run The counted pass.
+	 *
+	 * @return array{average: float|null, total: int, buckets: array<string, int>, histogram: array<int, array<string, mixed>>}
+	 */
+	private static function summary(QualityStatisticsRun $run): array {
 		$average = null;
-		if ($total > 0) {
-			$average = round(($sum / $total), 4);
+		if ($run->total > 0) {
+			$average = round(($run->sum / $run->total), 4);
 		}
 
 		return [
 			'average' => $average,
-			'total' => $total,
-			'buckets' => $buckets,
-			'histogram' => array_values($histogram),
+			'total' => $run->total,
+			'buckets' => $run->buckets,
+			'histogram' => array_values($run->histogram),
 		];
-	}//end statisticsFor()
+	}//end summary()
 
 	/**
 	 * List objects of a register/schema ascending by quality score.
@@ -403,29 +418,32 @@ class QualityStatisticsService implements QualityStatisticsServiceInterface {
 	 */
 	private function loadObjects($register, $schema): array {
 		try {
-			$objects = $this->objectService->findAll(
-				[
-					'filters' => [
-						'register' => $register,
-						'schema' => $schema,
-					],
-					'limit' => self::MAX_OBJECTS,
-				]
-			);
+			$objects = $this->objectService->findAll(self::objectsQuery(register: $register, schema: $schema));
 		} catch (Throwable $e) {
 			$this->logger->warning('Quality statistics object load failed: ' . $e->getMessage());
 			return [];
 		}
 
-		$entities = [];
-		foreach ($objects as $object) {
-			if ($object instanceof ObjectEntity) {
-				$entities[] = $object;
-			}
-		}
-
-		return $entities;
+		return ObjectEntities::in(objects: $objects);
 	}//end loadObjects()
+
+	/**
+	 * The object-service query for a register/schema's objects, capped at MAX_OBJECTS.
+	 *
+	 * @param int|string $register Register reference.
+	 * @param int|string $schema   Schema reference.
+	 *
+	 * @return array<string, mixed> The query.
+	 */
+	private static function objectsQuery($register, $schema): array {
+		return [
+			'filters' => [
+				'register' => $register,
+				'schema' => $schema,
+			],
+			'limit' => self::MAX_OBJECTS,
+		];
+	}//end objectsQuery()
 
 	/**
 	 * Read the `x-openregister-quality` annotation off a schema.

@@ -39,7 +39,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
@@ -139,20 +141,17 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 	 * path holds a SCALAR is a different matter — that is a mis-authored flow,
 	 * and it fails.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array One item per element, across all input items.
 	 *
 	 * @throws UnexpectedValueException When the path holds a scalar.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$context` is part of the
-	 *   IFlowNode contract; this node needs no run metadata to fan out a list.
-	 *
 	 * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
 	 */
-	public function execute(array $items, array $config, array $context): array {
+	public function execute(FlowNodeCall $call): array {
+		$items = $call->items;
+		$config = $call->config;
 		// `validateConfig()` runs only when a flow is SAVED, and a seeded or
 		// imported flow reaches here unvalidated — at which point returning the
 		// items unchanged would make this a silent pass-through that looks
@@ -181,7 +180,7 @@ class ExplodeNode extends LogicNodeBase implements IFlowNode, ExplodeNodeInterfa
 		foreach ($items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
 			foreach ($this->recordsFrom(json: $json, config: $config) as $record) {
-				$out[] = FlowItems::item(json: $record, fromItemIndex: $index);
+				$out[] = FlowItems::item(json: $record, options: new FlowItemOptions(fromItemIndex: $index));
 			}
 		}
 

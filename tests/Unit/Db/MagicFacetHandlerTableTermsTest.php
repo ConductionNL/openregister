@@ -24,7 +24,9 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableTarget;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -132,9 +134,9 @@ class MagicFacetHandlerTableTermsTest extends TestCase {
 		if (($world['filtered'] ?? false) === true) {
 			$searchHandler = $this->createMock(MagicSearchHandler::class);
 			$searchHandler->method('buildFilteredQuery')->willReturnCallback(
-				function (array $query, Schema $schema, string $tableName, ?int $registerId = null) {
+				function (array $query, MagicReadTable $table) {
 					$qb = $this->recordingBuilder();
-					$this->queryLog[] = '#' . $this->builderCount . ' buildFilteredQuery(' . $this->renderArgs([$query, $schema->getId(), $tableName, $registerId]) . ')';
+					$this->queryLog[] = '#' . $this->builderCount . ' buildFilteredQuery(' . $this->renderArgs([$query, $table->schema->getId(), $table->tableName, $table->registerId]) . ')';
 					return $qb;
 				}
 			);
@@ -223,16 +225,14 @@ class MagicFacetHandlerTableTermsTest extends TestCase {
 				],
 			]
 		)->getSimpleFacets(
-			'openregister_table_7_3',
+			self::facetTarget('openregister_table_7_3', $this->register(), $schema),
 			[
 				'_facets' => ['status' => ['type' => 'terms', 'title' => 'Status']],
 				'@self' => ['owner' => 'alice', 'missing' => 'x', 'organisation' => ['o1', 'o2']],
 				'tags' => 'red',
 				'title' => ['a', 'b'],
 				'_search' => ' Zaak ',
-			],
-			$this->register(),
-			$schema
+			]
 		);
 
 		$this->assertSame(
@@ -298,7 +298,7 @@ class MagicFacetHandlerTableTermsTest extends TestCase {
 				'filtered' => true,
 				'rows' => [[['facet_value' => 'open', 'doc_count' => '6'], ['facet_value' => 'closed', 'doc_count' => '2']]],
 			]
-		)->getSimpleFacets('openregister_table_7_3', ['_facets' => ['status' => ['type' => 'terms']], 'q' => 1], $this->register(), $schema);
+		)->getSimpleFacets(self::facetTarget('openregister_table_7_3', $this->register(), $schema), ['_facets' => ['status' => ['type' => 'terms']], 'q' => 1]);
 
 		$this->assertSame(
 			[
@@ -352,8 +352,8 @@ class MagicFacetHandlerTableTermsTest extends TestCase {
 			]
 		);
 		$query = ['_facets' => ['@self' => ['owner' => ['type' => 'terms']]]];
-		$first = $handler->getSimpleFacets('openregister_table_7_3', $query, $this->register(), $this->schema([]));
-		$second = $handler->getSimpleFacets('openregister_table_7_3', $query, $this->register(), $this->schema([]));
+		$first = $handler->getSimpleFacets(self::facetTarget('openregister_table_7_3', $this->register(), $this->schema([])), $query);
+		$second = $handler->getSimpleFacets(self::facetTarget('openregister_table_7_3', $this->register(), $this->schema([])), $query);
 
 		$expected = [
 			'@self' => [
@@ -400,7 +400,7 @@ class MagicFacetHandlerTableTermsTest extends TestCase {
 				'columns' => ['nc_openregister_table_7_3' => ['group']],
 				'rows' => [[['facet_value' => self::KNOWN, 'doc_count' => '1']]],
 			]
-		)->getSimpleFacets('openregister_table_7_3', ['_facets' => ['group' => ['type' => 'terms']]], $this->register(), $schema);
+		)->getSimpleFacets(self::facetTarget('openregister_table_7_3', $this->register(), $schema), ['_facets' => ['group' => ['type' => 'terms']]]);
 
 		$this->assertSame(
 			['group' => ['type' => 'terms', 'buckets' => [['key' => self::KNOWN, 'results' => 1, 'label' => self::KNOWN]], 'missing' => ['results' => 0]]],
@@ -432,8 +432,8 @@ class MagicFacetHandlerTableTermsTest extends TestCase {
 	public function testAMissingColumnGivesAnEmptyFacetWithoutAQuery(): void {
 		$handler = $this->handler(['columns' => ['nc_openregister_table_7_3' => ['title']]]);
 		$query = ['_facets' => ['status' => ['type' => 'terms']]];
-		$first = $handler->getSimpleFacets('openregister_table_7_3', $query, $this->register(), $this->schema([]));
-		$second = $handler->getSimpleFacets('openregister_table_7_3', $query, $this->register(), $this->schema([]));
+		$first = $handler->getSimpleFacets(self::facetTarget('openregister_table_7_3', $this->register(), $this->schema([])), $query);
+		$second = $handler->getSimpleFacets(self::facetTarget('openregister_table_7_3', $this->register(), $this->schema([])), $query);
 
 		$expected = ['status' => ['type' => 'terms', 'buckets' => [], 'missing' => ['results' => 0]]];
 		$this->assertSame($expected, $this->withoutMetrics($first));
@@ -441,4 +441,15 @@ class MagicFacetHandlerTableTermsTest extends TestCase {
 		$this->assertSame([], $this->queryLog);
 		$this->assertSame(['debug: [MagicFacetHandler] Column does not exist for facet'], $this->messages);
 	}//end testAMissingColumnGivesAnEmptyFacetWithoutAQuery()
+
+	/**
+	 * The facet target of one magic table.
+	 *
+	 * @return MagicTableTarget
+	 */
+	private static function facetTarget(string $tableName, Register $register, Schema $schema): MagicTableTarget {
+		$target            = new MagicTableTarget(register: $register, schema: $schema);
+		$target->tableName = $tableName;
+		return $target;
+	}//end facetTarget()
 }//end class
