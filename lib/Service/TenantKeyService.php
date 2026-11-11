@@ -3,7 +3,9 @@
 /**
  * Tenant HMAC Key Service
  *
- * Manages per-tenant HMAC signing keys for the audit-trail hash-chain.
+ * Manages per-tenant HMAC keys, kept for audit-trail evidence signing.
+ * The audit-trail hash chain itself (AuditHashService) is not keyed with
+ * them: it is a plain SHA-256 chain.
  * Each tenant has exactly one active 256-bit key at a time. On first
  * access a fresh key is generated, encrypted at rest via ICrypto, and
  * persisted. Annual rotation is driven by admin action or cron; this
@@ -11,8 +13,8 @@
  *
  * Security design:
  * - Keys are NEVER exposed through any REST endpoint.
- * - Storage is encrypted via OCP\Security\ICrypto (AES-256-GCM + HMAC
- *   with the instance secret as the wrapping key).
+ * - Storage is encrypted via OCP\Security\ICrypto (AES-CBC with an
+ *   HMAC-SHA512, keyed off the instance secret).
  * - This service is an internal server-side API only; it is not wired
  *   into any HTTP controller.
  *

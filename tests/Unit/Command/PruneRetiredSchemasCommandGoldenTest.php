@@ -283,7 +283,7 @@ class PruneRetiredSchemasCommandGoldenTest extends TestCase {
 			[9 => true]
 		);
 
-		self::assertSame(Command::SUCCESS, $code);
+		self::assertSame(Command::FAILURE, $code);
 		self::assertSame(
 			"\"doc\": app \"app1\" owns 3 rows under this slug. All of them are handled below.\n"
 			."doc (id=1, app=app1): 1 object(s), referenced by 0 register(s)\n"
@@ -296,7 +296,8 @@ class PruneRetiredSchemasCommandGoldenTest extends TestCase {
 			."  unlinked from register id=10 (reg10)\n"
 			."  DELETED (objects removed=6, table dropped=no)\n"
 			."  COUNT MISMATCH: the guard saw 0 object(s), the delete removed 6. The guard was wrong about what it was protecting.\n"
-			."Done. Pruned=2, skipped=1, not-found=0\n",
+			."Done. Pruned=2, skipped=1, not-found=0\n"
+			."1 register(s) still list a removed schema; fix them and update each register.\n",
 			$display
 		);
 		self::assertSame(
@@ -312,6 +313,32 @@ class PruneRetiredSchemasCommandGoldenTest extends TestCase {
 			$calls
 		);
 	}//end testApplyMatrix()
+
+	/**
+	 * A register left listing a removed schema fails the run; mutation: the same run with every update passing succeeds.
+	 *
+	 * @return void
+	 */
+	public function testARegisterLeftListingARemovedSchemaFailsTheRun(): void {
+		$world = fn (array $failUpdates): array => [
+			['--app' => 'a', '--slug' => ['doc'], '--apply' => true],
+			['doc' => [$this->schema(4)]],
+			[$this->register(7, [4])],
+			[],
+			[],
+			[],
+			$failUpdates,
+		];
+
+		[$failed, $failedDisplay] = $this->runPrune(...$world([7 => true]));
+		self::assertSame(Command::FAILURE, $failed);
+		self::assertStringContainsString('NOT UNLINKED: register id=7', $failedDisplay);
+		self::assertStringContainsString('Pruned=1', $failedDisplay);
+
+		[$passed, $passedDisplay] = $this->runPrune(...$world([]));
+		self::assertSame(Command::SUCCESS, $passed);
+		self::assertStringNotContainsString('still list a removed schema', $passedDisplay);
+	}//end testARegisterLeftListingARemovedSchemaFailsTheRun()
 
 	/**
 	 * Apply without --force refuses a schema with objects; mutation: --force allows it.
