@@ -23,3 +23,4 @@ fleet6-03 2026-11-11T14:08:44Z dossiq#5809,#5813,#5845,#5847,#5849,#5851,#5853
 fleet6-15 2026-11-11T14:10Z integriq#3248 integriq#3254 integriq#3256 integriq#3257
 fleet6-14 2026-11-11T14:14:30Z integriq#3247 integriq#3255 integriq#3258
 fleet6-18 2026-11-11T14:15:55Z learniq#2167 learniq#2169 learniq#2170 learniq#2173 learniq#2175
+fleet6-17 2026-11-11T14:16:38Z learniq#2168 learniq#2172 learniq#2178
