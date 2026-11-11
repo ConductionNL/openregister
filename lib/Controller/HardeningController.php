@@ -280,15 +280,7 @@ class HardeningController extends Controller {
 			// down is what lets the next control be weakened. REQ-IHC-002.
 			$this->elevation->requireElevated();
 
-			$applied = [];
-			foreach ($requested as $control => $floor) {
-				$applied[$control] = $this->settingsService->setFloor(
-					control: (string)$control,
-					floor: (int)$floor
-				);
-			}
-
-			return new JSONResponse(data: ['floors' => $applied]);
+			return new JSONResponse(data: ['floors' => $this->appliedFloors(requested: $requested)]);
 		} catch (ElevationRequiredExceptionInterface $stale) {
 			return new JSONResponse(data: $stale->toArray(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (HardeningFloorExceptionInterface $refusal) {
@@ -298,6 +290,28 @@ class HardeningController extends Controller {
 		}//end try
 
 	}//end updateFloors()
+
+	/**
+	 * Store each requested floor.
+	 *
+	 * @param array<string, mixed> $requested The floors of the body, by control
+	 *
+	 * @return array<string, int> Each control with the floor as stored
+	 *
+	 * @throws HardeningFloorExceptionInterface When a floor would breach the declared minimum
+	 * @throws InvalidArgumentException When a control is not valid
+	 */
+	private function appliedFloors(array $requested): array {
+		$applied = [];
+		foreach ($requested as $control => $floor) {
+			$applied[$control] = $this->settingsService->setFloor(
+				control: (string)$control,
+				floor: (int)$floor
+			);
+		}
+
+		return $applied;
+	}//end appliedFloors()
 	/**
 	 * Start an elevated administration period by confirming the password.
 	 *
