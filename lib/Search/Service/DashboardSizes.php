@@ -24,6 +24,7 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -133,7 +134,7 @@ class DashboardSizes {
 	 * @return void
 	 */
 	private function resaveObjects(RegisterSchemaPair $pair, SizeTally $tally): void {
-		$objects = $this->objectMapper->findAllInRegisterSchemaTable(register: $pair->register, schema: $pair->schema);
+		$objects = $this->objectMapper->findAllInRegisterSchemaTable(table: new RegisterSchema(register: $pair->register, schema: $pair->schema));
 
 		foreach ($objects as $object) {
 			try {

@@ -85,37 +85,99 @@ class QueryHandler implements QueryHandlerInterface {
 	public const DEFAULT_PAGE_SIZE = 20;
 
 	/**
-	 * Constructor for QueryHandler.
+	 * Unified mapper for objects.
 	 *
-	 * @param MagicMapperInterface $objectMapper Unified mapper for objects.
-	 * @param RenderObject $renderHandler Render handler.
-	 * @param SearchQueryHandler $searchQueryHandler Search handler.
-	 * @param FacetHandler $facetHandler Facet handler.
-	 * @param PerformanceOptimizationHandler $performanceHandler Performance handler.
-	 * @param ContentSearchHandler $contentSearchHandler Opt-in `_content_search` chunk fan-out handler.
-	 * @param IAppContainer $container App container.
-	 * @param HistoryNarrowing|null $historyNarrowing Resolves a history predicate to the ids the query keeps.
-	 * @param SearchDictionaryProvider|null $dictionary The administered synonym and stopword dictionary.
-	 * @param SearchReferenceResolver|null $referenceResolver Resolves a register/schema slug or uuid on a ready-made query.
+	 * @var MagicMapperInterface
+	 */
+	private readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Render handler.
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+	 * @var RenderObject
+	 */
+	private readonly RenderObject $renderHandler;
+
+	/**
+	 * App container.
+	 *
+	 * @var IAppContainer
+	 */
+	private readonly IAppContainer $container;
+
+	/**
+	 * Search handler.
+	 *
+	 * @var SearchQueryHandler
+	 */
+	private readonly SearchQueryHandler $searchQueryHandler;
+
+	/**
+	 * Facet handler.
+	 *
+	 * @var FacetHandler
+	 */
+	private readonly FacetHandler $facetHandler;
+
+	/**
+	 * Performance handler.
+	 *
+	 * @var PerformanceOptimizationHandler
+	 */
+	private readonly PerformanceOptimizationHandler $performanceHandler;
+
+	/**
+	 * Opt-in `_content_search` chunk fan-out handler.
+	 *
+	 * @var ContentSearchHandler
+	 */
+	private readonly ContentSearchHandler $contentSearchHandler;
+
+	/**
+	 * Resolves a history predicate to the ids the query keeps.
+	 *
+	 * @var HistoryNarrowing|null
+	 */
+	private readonly ?HistoryNarrowing $historyNarrowing;
+
+	/**
+	 * The administered synonym and stopword dictionary.
+	 *
+	 * @var SearchDictionaryProvider|null
+	 */
+	private readonly ?SearchDictionaryProvider $dictionary;
+
+	/**
+	 * Resolves a register/schema slug or uuid on a ready-made query.
+	 *
+	 * @var SearchReferenceResolver|null
+	 */
+	private readonly ?SearchReferenceResolver $referenceResolver;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param QueryPlatform    $platform    The object mapper, render handler and app container.
+	 * @param QueryHandlers    $handlers    The search, facet, performance and content-search handlers.
+	 * @param QueryRefinements $refinements The optional history narrowing, search dictionary and reference resolver; none by default.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
-		private readonly MagicMapperInterface $objectMapper,
-		private readonly RenderObject $renderHandler,
-		private readonly SearchQueryHandler $searchQueryHandler,
-		private readonly FacetHandler $facetHandler,
-		private readonly PerformanceOptimizationHandler $performanceHandler,
-		private readonly ContentSearchHandler $contentSearchHandler,
-		private readonly IAppContainer $container,
-		// LAST AND NULLABLE on purpose: every existing construction of this
-		// handler, in production wiring and in tests, keeps working unchanged.
-		private readonly ?HistoryNarrowing $historyNarrowing = null,
-		private readonly ?SearchDictionaryProvider $dictionary = null,
-		private readonly ?SearchReferenceResolver $referenceResolver = null,
+		QueryPlatform $platform,
+		QueryHandlers $handlers,
+		QueryRefinements $refinements = new QueryRefinements(),
 	) {
+		$this->objectMapper = $platform->objectMapper;
+		$this->renderHandler = $platform->renderHandler;
+		$this->container = $platform->container;
+		$this->searchQueryHandler = $handlers->searchQueryHandler;
+		$this->facetHandler = $handlers->facetHandler;
+		$this->performanceHandler = $handlers->performanceHandler;
+		$this->contentSearchHandler = $handlers->contentSearchHandler;
+		$this->historyNarrowing = $refinements->historyNarrowing;
+		$this->dictionary = $refinements->dictionary;
+		$this->referenceResolver = $refinements->referenceResolver;
 	}//end __construct()
 
 	/**

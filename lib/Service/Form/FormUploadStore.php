@@ -301,6 +301,18 @@ class FormUploadStore implements FormUploadStoreInterface {
 	}//end liveMeta()
 
 	/**
+	 * Whether claiming a token leaves a record: only a draft claim of a token that was live does.
+	 *
+	 * @param string|null               $draftId The draft the files now sit on; null for a final submit.
+	 * @param array<string, mixed>|null $meta    The token's record before it was deleted; null when unknown.
+	 *
+	 * @return bool
+	 */
+	private static function leavesClaimRecord(?string $draftId, ?array $meta): bool {
+		return $draftId !== null && $meta !== null;
+	}//end leavesClaimRecord()
+
+	/**
 	 * Delete claimed tokens: their bytes now live on the destination object.
 	 *
 	 * A token claimed for a draft leaves a small record behind (which form,
@@ -325,7 +337,7 @@ class FormUploadStore implements FormUploadStoreInterface {
 		foreach ($tokens as $token) {
 			$meta = $this->meta(token: $token);
 			$this->deleteToken(folder: $folder, token: $token);
-			if ($draftId !== null && $meta !== null) {
+			if (self::leavesClaimRecord(draftId: $draftId, meta: $meta) === true) {
 				$claims->record(token: $token, claim: new FormUploadClaim(formId: $meta['formId'], property: $meta['property'], draftId: $draftId));
 			}
 		}

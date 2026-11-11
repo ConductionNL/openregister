@@ -66,6 +66,8 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
@@ -200,13 +202,19 @@ class OrganisationContextTenancyTest extends TestCase {
 		);
 
 		$this->rbac = new MagicRbacHandler(
-			$userSession,
-			$groupManager,
-			$this->createMock(IUserManager::class),
-			$appConfig,
-			$conditionMatcher,
-			$container,
-			$logger
+			identity: new MagicMapperIdentity(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $conditionMatcher,
+				container: $container,
+				logger: $logger
+			)
 		);
 		$this->organisations = new MagicOrganizationHandler(new MagicMapperIdentity($userSession, $groupManager, $this->createMock(IUserManager::class)), $appConfig, $container, $logger);
 		$this->db = $this->sqlite();

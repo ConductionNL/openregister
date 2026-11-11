@@ -540,8 +540,8 @@ interface ObjectServiceInterface {
 	 *
 	 * @param string $objectId      The object UUID.
 	 * @param array  $data          The object's COMPLETE new data. Anything omitted is dropped.
-	 * @param bool   $_rbac         Apply register RBAC.
-	 * @param bool   $_multitenancy Apply organisation scoping.
+	 * @param bool   $_rbac         Apply register RBAC; false lifts it for this save, as with saveObject().
+	 * @param bool   $_multitenancy Apply organisation scoping; false lifts it for this save, as with saveObject().
 	 *
 	 * @return ObjectEntityInterface The replaced object.
 	 *

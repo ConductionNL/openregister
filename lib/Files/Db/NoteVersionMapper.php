@@ -47,6 +47,17 @@ use OCP\IDBConnection;
 class NoteVersionMapper extends QBMapper {
 
 	/**
+	 * The summary of a comment before its first edit is read.
+	 *
+	 * @var array{editedAt: null, editedBy: null, versionCount: 0}
+	 */
+	private const NO_EDITS = [
+		'editedAt' => null,
+		'editedBy' => null,
+		'versionCount' => 0,
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db Database connection.
@@ -100,6 +111,26 @@ class NoteVersionMapper extends QBMapper {
 			return [];
 		}
 
+		$result = $this->selectEditsOf(ids: $ids)->executeQuery();
+		$summaries = [];
+		while (($row = $result->fetch()) !== false) {
+			$commentId = (int)$row['comment_id'];
+			$summaries[$commentId] = $this->withEdit(summary: ($summaries[$commentId] ?? self::NO_EDITS), row: $row);
+		}
+
+		$result->closeCursor();
+
+		return $summaries;
+	}//end summariesFor()
+
+	/**
+	 * The edits of some comments, oldest first.
+	 *
+	 * @param list<int> $ids The comment ids.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private function selectEditsOf(array $ids): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('comment_id', 'edited_by', 'edited_at')
 			->from($this->getTableName())
@@ -107,27 +138,24 @@ class NoteVersionMapper extends QBMapper {
 			->orderBy('edited_at', 'ASC')
 			->addOrderBy('id', 'ASC');
 
-		$result = $qb->executeQuery();
-		$summaries = [];
-		while (($row = $result->fetch()) !== false) {
-			$commentId = (int)$row['comment_id'];
-			if (isset($summaries[$commentId]) === false) {
-				$summaries[$commentId] = [
-					'editedAt' => null,
-					'editedBy' => null,
-					'versionCount' => 0,
-				];
-			}
+		return $qb;
+	}//end selectEditsOf()
 
-			$summaries[$commentId]['versionCount']++;
-			$summaries[$commentId]['editedBy'] = $row['edited_by'];
-			$summaries[$commentId]['editedAt'] = $this->formatMoment(value: $row['edited_at']);
-		}
+	/**
+	 * A comment's summary with one more edit: counted, and its editor and time as the latest.
+	 *
+	 * @param array{editedAt: ?string, editedBy: mixed, versionCount: int} $summary The summary so far.
+	 * @param array<string, mixed>                                          $row     The edit row.
+	 *
+	 * @return array{editedAt: ?string, editedBy: mixed, versionCount: int}
+	 */
+	private function withEdit(array $summary, array $row): array {
+		$summary['versionCount']++;
+		$summary['editedBy'] = $row['edited_by'];
+		$summary['editedAt'] = $this->formatMoment(value: $row['edited_at']);
 
-		$result->closeCursor();
-
-		return $summaries;
-	}//end summariesFor()
+		return $summary;
+	}//end withEdit()
 
 	/**
 	 * Delete every version of the given notes.

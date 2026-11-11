@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ObjectRelationItem renders {"name":"Gemeente Utrecht","subname":"organisation"} 1`] = `"<li data-name="Gemeente Utrecht" data-bold="false" data-force-display-actions="true"><span class="icon"><i class="cube" data-size="44" data-disable-menu=""></i></span><span class="subname">organisation</span></li>"`;
+
+exports[`ObjectRelationItem renders {} 1`] = `"<li data-name="" data-bold="false" data-force-display-actions="true"><span class="icon"><i class="cube" data-size="44" data-disable-menu=""></i></span><span class="subname"></span></li>"`;

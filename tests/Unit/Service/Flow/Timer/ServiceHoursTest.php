@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow\Timer;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
 use OCA\OpenRegister\Service\Flow\Timer\ServiceHours;
 use OCA\OpenRegister\Service\Flow\Timer\ServiceHoursClock;
@@ -113,7 +114,7 @@ class ServiceHoursTest extends TestCase {
 	 * @return void
 	 */
 	public function testFourHoursFromFridayAfternoonLandOnMondayMorning(): void {
-		$windows = ServiceHours::fromArray(value: $this->nineToFive(), workingWeekdays: $this->weekdays(), slug: 'gemeente');
+		$windows = ServiceHours::fromDeclaration(value: $this->nineToFive(), declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()));
 
 		$due = $this->clock->frame(calendar: $this->calendar(), windows: $windows)->due(from: new DateTimeImmutable('2026-09-18 16:00:00', new \DateTimeZone('Europe/Amsterdam')), hours: 4.0);
 
@@ -126,7 +127,7 @@ class ServiceHoursTest extends TestCase {
 	 * @return void
 	 */
 	public function testATermThatFitsInTheDayStaysOnIt(): void {
-		$windows = ServiceHours::fromArray(value: $this->nineToFive(), workingWeekdays: $this->weekdays(), slug: 'gemeente');
+		$windows = ServiceHours::fromDeclaration(value: $this->nineToFive(), declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()));
 
 		$due = $this->clock->frame(calendar: $this->calendar(), windows: $windows)->due(from: new DateTimeImmutable('2026-09-16 10:00:00', new \DateTimeZone('Europe/Amsterdam')), hours: 3.0);
 
@@ -140,7 +141,7 @@ class ServiceHoursTest extends TestCase {
 	 * @return void
 	 */
 	public function testATermArmedBeforeOpeningWaitsForTheCounterToOpen(): void {
-		$windows = ServiceHours::fromArray(value: $this->nineToFive(), workingWeekdays: $this->weekdays(), slug: 'gemeente');
+		$windows = ServiceHours::fromDeclaration(value: $this->nineToFive(), declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()));
 
 		$due = $this->clock->frame(calendar: $this->calendar(), windows: $windows)->due(from: new DateTimeImmutable('2026-09-16 06:00:00', new \DateTimeZone('Europe/Amsterdam')), hours: 1.0);
 
@@ -162,7 +163,7 @@ class ServiceHoursTest extends TestCase {
 			$declared[$day] = [['start' => '09:00', 'end' => '12:30'], ['start' => '13:30', 'end' => '17:00']];
 		}
 
-		$windows = ServiceHours::fromArray(value: $declared, workingWeekdays: $this->weekdays(), slug: 'gemeente');
+		$windows = ServiceHours::fromDeclaration(value: $declared, declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()));
 
 		$due = $this->clock->frame(calendar: $this->calendar(), windows: $windows)->due(from: new DateTimeImmutable('2026-09-16 09:00:00', new \DateTimeZone('Europe/Amsterdam')), hours: 6.0);
 
@@ -181,8 +182,8 @@ class ServiceHoursTest extends TestCase {
 			$short[$day] = [['start' => '09:00', 'end' => '12:30']];
 		}
 
-		$counter = ServiceHours::fromArray(value: $short, workingWeekdays: $this->weekdays(), slug: 'balie');
-		$backOffice = ServiceHours::fromArray(value: $this->nineToFive(), workingWeekdays: $this->weekdays(), slug: 'gemeente');
+		$counter = ServiceHours::fromDeclaration(value: $short, declaration: new ServiceHoursDeclaration(slug: 'balie', workingWeekdays: $this->weekdays()));
+		$backOffice = ServiceHours::fromDeclaration(value: $this->nineToFive(), declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()));
 		$armed = new DateTimeImmutable('2026-09-16 09:00:00', new \DateTimeZone('Europe/Amsterdam'));
 
 		$atCounter = $this->clock->frame(calendar: $this->calendar(), windows: $counter)->due(from: $armed, hours: 6.0);
@@ -198,7 +199,7 @@ class ServiceHoursTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheDiagnosticNamesTheCalendarAndTheWindows(): void {
-		$windows = ServiceHours::fromArray(value: $this->nineToFive(), workingWeekdays: $this->weekdays(), slug: 'gemeente');
+		$windows = ServiceHours::fromDeclaration(value: $this->nineToFive(), declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()));
 
 		$diagnostic = $this->clock->diagnostic(calendar: $this->calendar(), windows: $windows);
 
@@ -215,7 +216,7 @@ class ServiceHoursTest extends TestCase {
 	 * @return void
 	 */
 	public function testACalendarWithoutWindowsDeclaresNone(): void {
-		$this->assertFalse(ServiceHours::fromArray(value: null, workingWeekdays: $this->weekdays(), slug: 'gemeente')->areDeclared());
+		$this->assertFalse(ServiceHours::fromDeclaration(value: null, declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()))->areDeclared());
 		$this->assertFalse(ServiceHours::none()->areDeclared());
 	}//end testACalendarWithoutWindowsDeclaresNone()
 
@@ -229,11 +230,7 @@ class ServiceHoursTest extends TestCase {
 		$this->expectException(FlowTimerValidationException::class);
 		$this->expectExceptionMessageMatches('/Monday/');
 
-		ServiceHours::fromArray(
-			value: ['monday' => [['start' => '09:00', 'end' => '13:00'], ['start' => '12:00', 'end' => '17:00']]],
-			workingWeekdays: $this->weekdays(),
-			slug: 'gemeente'
-		);
+		ServiceHours::fromDeclaration(value: ['monday' => [['start' => '09:00', 'end' => '13:00'], ['start' => '12:00', 'end' => '17:00']]], declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()));
 	}//end testOverlappingWindowsAreRefusedNamingTheWeekday()
 
 	/**
@@ -243,11 +240,7 @@ class ServiceHoursTest extends TestCase {
 	 * @return void
 	 */
 	public function testTwoWindowsThatOnlyTouchAreAccepted(): void {
-		$windows = ServiceHours::fromArray(
-			value: ['monday' => [['start' => '09:00', 'end' => '12:30'], ['start' => '12:30', 'end' => '17:00']]],
-			workingWeekdays: $this->weekdays(),
-			slug: 'gemeente'
-		);
+		$windows = ServiceHours::fromDeclaration(value: ['monday' => [['start' => '09:00', 'end' => '12:30'], ['start' => '12:30', 'end' => '17:00']]], declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()));
 
 		// 09:00 to 12:30 and 12:30 to 17:00 is eight hours with no gap.
 		$this->assertSame((8 * 60), $windows->minutesOn(iso: 1));
@@ -262,11 +255,7 @@ class ServiceHoursTest extends TestCase {
 		$this->expectException(FlowTimerValidationException::class);
 		$this->expectExceptionMessageMatches('/Tuesday/');
 
-		ServiceHours::fromArray(
-			value: ['tuesday' => [['start' => '17:00', 'end' => '09:00']]],
-			workingWeekdays: $this->weekdays(),
-			slug: 'gemeente'
-		);
+		ServiceHours::fromDeclaration(value: ['tuesday' => [['start' => '17:00', 'end' => '09:00']]], declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()));
 	}//end testABackwardsWindowIsRefused()
 
 	/**
@@ -280,11 +269,7 @@ class ServiceHoursTest extends TestCase {
 		$this->expectException(FlowTimerValidationException::class);
 		$this->expectExceptionMessageMatches('/Saturday/');
 
-		ServiceHours::fromArray(
-			value: ['saturday' => [['start' => '09:00', 'end' => '13:00']]],
-			workingWeekdays: $this->weekdays(),
-			slug: 'gemeente'
-		);
+		ServiceHours::fromDeclaration(value: ['saturday' => [['start' => '09:00', 'end' => '13:00']]], declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()));
 	}//end testAWindowOnANonWorkingWeekdayIsRefused()
 
 	/**
@@ -296,11 +281,7 @@ class ServiceHoursTest extends TestCase {
 	public function testAnUnreadableWindowIsRefused(): void {
 		$this->expectException(FlowTimerValidationException::class);
 
-		ServiceHours::fromArray(
-			value: ['monday' => [['start' => 'ochtend', 'end' => 'avond']]],
-			workingWeekdays: $this->weekdays(),
-			slug: 'gemeente'
-		);
+		ServiceHours::fromDeclaration(value: ['monday' => [['start' => 'ochtend', 'end' => 'avond']]], declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()));
 	}//end testAnUnreadableWindowIsRefused()
 
 	/**
@@ -312,7 +293,7 @@ class ServiceHoursTest extends TestCase {
 	public function testHoursPerWorkingDayIsDerivedFromTheWindows(): void {
 		$declared = ['monday' => [['start' => '09:00', 'end' => '12:30'], ['start' => '13:30', 'end' => '17:00']]];
 
-		$windows = ServiceHours::fromArray(value: $declared, workingWeekdays: $this->weekdays(), slug: 'gemeente');
+		$windows = ServiceHours::fromDeclaration(value: $declared, declaration: new ServiceHoursDeclaration(slug: 'gemeente', workingWeekdays: $this->weekdays()));
 
 		$this->assertSame(7.0, $windows->derivedHoursPerWorkingDay());
 	}//end testHoursPerWorkingDayIsDerivedFromTheWindows()

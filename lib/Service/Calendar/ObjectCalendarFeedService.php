@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IDateTimeZone;
+use OCP\IUser;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -117,6 +118,18 @@ class ObjectCalendarFeedService {
 			return null;
 		}
 
+		return $this->renderAs(user: $user, token: $token);
+	}//end render()
+
+	/**
+	 * Render a feed as the principal its token names; a failure is logged and answers nothing.
+	 *
+	 * @param IUser             $user  The principal the token names.
+	 * @param CalendarFeedToken $token The token.
+	 *
+	 * @return string|null The calendar, or null.
+	 */
+	private function renderAs(IUser $user, CalendarFeedToken $token): ?string {
 		try {
 			return $this->sources->objects->runAs(
 				$user,
@@ -131,7 +144,7 @@ class ObjectCalendarFeedService {
 			);
 			return null;
 		}
-	}//end render()
+	}//end renderAs()
 
 	/**
 	 * Render the feed as whoever the session currently is.
@@ -210,16 +223,30 @@ class ObjectCalendarFeedService {
 				)
 			);
 
-			if ($event === null) {
-				continue;
-			}
-
-			$events['lines'] = array_merge($events['lines'], $event['lines']);
-			$events['years'] = array_merge($events['years'], $event['years']);
+			$events = $this->withEvent(events: $events, event: $event);
 		}
 
 		return $events;
 	}//end objectEvents()
+
+	/**
+	 * Events with one more event's lines and years added; a date that publishes nothing adds nothing.
+	 *
+	 * @param array{lines: array<int, string>, years: array<int, int>}      $events The events so far.
+	 * @param array{lines: array<int, string>, years: array<int, int>}|null $event  The built event, or null.
+	 *
+	 * @return array{lines: array<int, string>, years: array<int, int>} The events.
+	 */
+	private function withEvent(array $events, ?array $event): array {
+		if ($event === null) {
+			return $events;
+		}
+
+		$events['lines'] = array_merge($events['lines'], $event['lines']);
+		$events['years'] = array_merge($events['years'], $event['years']);
+
+		return $events;
+	}//end withEvent()
 
 	/**
 	 * Resolve what a token covers: one schema, or one saved view.
@@ -234,20 +261,10 @@ class ObjectCalendarFeedService {
 
 		try {
 			if ($token->getScopeType() === CalendarFeedToken::SCOPE_VIEW) {
-				$view = $this->sources->views->find($scopeId);
-				return [
-					'name' => $this->displayName(candidate: (string)$view->getName()),
-					'schemaId' => null,
-					'viewId' => $scopeId,
-				];
+				return $this->viewScope(viewId: $scopeId);
 			}
 
-			$schema = $this->sources->schemas->find($scopeId);
-			return [
-				'name' => $this->displayName(candidate: (string)$schema->getTitle()),
-				'schemaId' => (string)$schema->getId(),
-				'viewId' => null,
-			];
+			return $this->schemaScope(schemaId: $scopeId);
 		} catch (Throwable $missing) {
 			$this->logger->warning(
 				'[ObjectCalendarFeedService] Feed scope no longer resolves: ' . $missing->getMessage()
@@ -255,6 +272,40 @@ class ObjectCalendarFeedService {
 			return null;
 		}
 	}//end resolveScope()
+
+	/**
+	 * The scope of a feed over a saved view.
+	 *
+	 * @param string $viewId The view.
+	 *
+	 * @return array{name: string, schemaId: null, viewId: string} The scope.
+	 */
+	private function viewScope(string $viewId): array {
+		$view = $this->sources->views->find($viewId);
+
+		return [
+			'name' => $this->displayName(candidate: (string)$view->getName()),
+			'schemaId' => null,
+			'viewId' => $viewId,
+		];
+	}//end viewScope()
+
+	/**
+	 * The scope of a feed over a schema.
+	 *
+	 * @param string $schemaId The schema.
+	 *
+	 * @return array{name: string, schemaId: string, viewId: null} The scope.
+	 */
+	private function schemaScope(string $schemaId): array {
+		$schema = $this->sources->schemas->find($schemaId);
+
+		return [
+			'name' => $this->displayName(candidate: (string)$schema->getTitle()),
+			'schemaId' => (string)$schema->getId(),
+			'viewId' => null,
+		];
+	}//end schemaScope()
 
 	/**
 	 * The name a client shows for the feed, never an empty string.
@@ -349,19 +400,30 @@ class ObjectCalendarFeedService {
 		}
 
 		$this->declarationCache[$schemaId] = [];
+		$this->declarationCache[$schemaId] = $this->readDeclarations(schemaId: $schemaId);
 
+		return $this->declarationCache[$schemaId];
+	}//end declarationsFor()
+
+	/**
+	 * The date declarations of a schema, read from it; none (logged) when it cannot be read.
+	 *
+	 * @param string $schemaId The schema.
+	 *
+	 * @return array<int, ObjectDateDeclaration> The declarations.
+	 */
+	private function readDeclarations(string $schemaId): array {
 		try {
 			$schema = $this->sources->schemas->find($schemaId);
-			$this->declarationCache[$schemaId] = $this->declarationsOn(schema: $schema);
+			return $this->declarationsOn(schema: $schema);
 		} catch (Throwable $failure) {
 			$this->logger->warning(
 				'[ObjectCalendarFeedService] Could not read date declarations for schema '
 				. $schemaId . ': ' . $failure->getMessage()
 			);
+			return [];
 		}
-
-		return $this->declarationCache[$schemaId];
-	}//end declarationsFor()
+	}//end readDeclarations()
 
 	/**
 	 * The declarations a schema carries, or none when it is not calendar-enabled.

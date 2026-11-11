@@ -81,6 +81,7 @@ class AdvisoryLockStore {
 	 * @return string The namespaced app-config key.
 	 */
 	private function key(string $identifier): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		return self::PREFIX . md5($identifier);
 	}//end key()
 

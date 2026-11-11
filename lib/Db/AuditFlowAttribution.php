@@ -84,17 +84,7 @@ class AuditFlowAttribution extends QBMapper implements AuditFlowAttributionInter
 	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
 	 */
 	public function apply(AuditTrail $auditTrail): void {
-		try {
-			$context = $this->container->get(FlowRunContextInterface::class);
-		} catch (Throwable $e) {
-			return;
-		}
-
-		if (($context instanceof FlowRunContextInterface) === false) {
-			return;
-		}
-
-		$frame = $context->current();
+		$frame = $this->currentFrame();
 		if ($frame === null) {
 			return;
 		}
@@ -103,6 +93,25 @@ class AuditFlowAttribution extends QBMapper implements AuditFlowAttributionInter
 		$auditTrail->setFlowNode($frame['node']);
 		$auditTrail->setFlowStep($frame['step']);
 	}//end apply()
+
+	/**
+	 * The innermost flow step executing now, or null outside a run or without a usable run context.
+	 *
+	 * @return array{run: string, node: string, step: int}|null The frame.
+	 */
+	private function currentFrame(): ?array {
+		try {
+			$context = $this->container->get(FlowRunContextInterface::class);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		if (($context instanceof FlowRunContextInterface) === false) {
+			return null;
+		}
+
+		return $context->current();
+	}//end currentFrame()
 
 	/**
 	 * Every write attributed to one flow run, oldest first. Hop rows are left

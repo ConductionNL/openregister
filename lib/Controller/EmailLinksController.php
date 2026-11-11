@@ -178,32 +178,54 @@ class EmailLinksController extends Controller {
 
 		return $this->onLinkedObject(
 			route: $this->routeOf(ref: $ref),
-			action: function (ObjectEntity $object): JSONResponse {
-				if ($this->mayUpdate(object: $object) === false) {
-					return $this->updateRefused();
-				}
-
-				$mailAccountId = (int)$this->request->getParam('mailAccountId', 0);
-				$messageId = (string)$this->request->getParam('messageId', '');
-				$messageUid = (string)$this->request->getParam('messageUid', '');
-
-				if ($mailAccountId === 0 || $messageId === '') {
-					return new JSONResponse(
-						['error' => 'mailAccountId and messageId are required'],
-						400
-					);
-				}
-
-				$link = $this->emailLinkService->linkEmail(
-					target: $this->linkTargetOf(object: $object),
-					message: (new EmailMessageRef(mailAccountId: $mailAccountId, messageId: $messageId))
-						->withUid(uid: $messageUid)
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
+			action: fn (ObjectEntity $object): JSONResponse => $this->linkEmailTo(object: $object)
 		);
 	}//end linkFor()
+
+	/**
+	 * Link the requested message to the object, once the caller may update it.
+	 *
+	 * @param ObjectEntity $object The object the message is linked to.
+	 *
+	 * @return JSONResponse 201 with the link, 403 without the update right, or 400 for a missing account or message.
+	 */
+	private function linkEmailTo(ObjectEntity $object): JSONResponse {
+		if ($this->mayUpdate(object: $object) === false) {
+			return $this->updateRefused();
+		}
+
+		$message = $this->requestedMessage();
+		if ($message instanceof JSONResponse) {
+			return $message;
+		}
+
+		$link = $this->emailLinkService->linkEmail(
+			target: $this->linkTargetOf(object: $object),
+			message: $message
+		);
+
+		return new JSONResponse($link->jsonSerialize(), 201);
+	}//end linkEmailTo()
+
+	/**
+	 * The mail message the request names.
+	 *
+	 * @return EmailMessageRef|JSONResponse The message with its uid, or a 400 when the account or message id is missing.
+	 */
+	private function requestedMessage(): EmailMessageRef|JSONResponse {
+		$mailAccountId = (int)$this->request->getParam('mailAccountId', 0);
+		$messageId = (string)$this->request->getParam('messageId', '');
+		$messageUid = (string)$this->request->getParam('messageUid', '');
+
+		if ($mailAccountId === 0 || $messageId === '') {
+			return new JSONResponse(
+				['error' => 'mailAccountId and messageId are required'],
+				400
+			);
+		}
+
+		return (new EmailMessageRef(mailAccountId: $mailAccountId, messageId: $messageId))->withUid(uid: $messageUid);
+	}//end requestedMessage()
 
 	/**
 	 * Unlink a Mail message from an object.
