@@ -154,8 +154,21 @@ class OAuth2ClientResolver {
 			return null;
 		}
 
+		return $this->broker()->resolveInjectableFor(
+			request: new InjectableSecretRequest(credentialId: $clientRef, appId: self::BROKER_APP_ID, actingUserId: $actingUserId)
+		);
+	}//end secretFor()
+
+	/**
+	 * The credential broker, resolved lazily.
+	 *
+	 * @return CredentialBrokerService The broker.
+	 *
+	 * @throws CredentialAccessDeniedException When it cannot be resolved.
+	 */
+	private function broker(): CredentialBrokerService {
 		try {
-			$broker = $this->container->get(CredentialBrokerService::class);
+			return $this->container->get(CredentialBrokerService::class);
 		} catch (Throwable $unresolvable) {
 			// Fail CLOSED. A client secret that cannot be resolved is not "no
 			// secret needed"; treating it as one would send an unauthenticated
@@ -165,9 +178,5 @@ class OAuth2ClientResolver {
 				previous: $unresolvable
 			);
 		}
-
-		return $broker->resolveInjectableFor(
-			request: new InjectableSecretRequest(credentialId: $clientRef, appId: self::BROKER_APP_ID, actingUserId: $actingUserId)
-		);
-	}//end secretFor()
+	}//end broker()
 }//end class

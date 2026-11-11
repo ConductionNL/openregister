@@ -1,0 +1,49 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`the yes/no choices of the migration-pack editor renders a row holding false 1`] = `
+"<select aria-label="Stored value of row 1" value="false">
+  <!--v-if-->
+  <option value="true">Yes</option>
+  <option value="false">No</option>
+</select>"
+`;
+
+exports[`the yes/no choices of the migration-pack editor renders a row holding maybe 1`] = `
+"<select aria-label="Stored value of row 1" value="">
+  <option disabled="" value="">Choose yes or no</option>
+  <option value="true">Yes</option>
+  <option value="false">No</option>
+</select>"
+`;
+
+exports[`the yes/no choices of the migration-pack editor renders a row holding true 1`] = `
+"<select aria-label="Stored value of row 1" value="true">
+  <!--v-if-->
+  <option value="true">Yes</option>
+  <option value="false">No</option>
+</select>"
+`;
+
+exports[`the yes/no choices of the migration-pack editor renders the value for other values false 1`] = `
+"<select id="migration-pack-transform-2-default-value" value="false">
+  <!--v-if-->
+  <option value="true">Yes</option>
+  <option value="false">No</option>
+</select>"
+`;
+
+exports[`the yes/no choices of the migration-pack editor renders the value for other values maybe 1`] = `
+"<select id="migration-pack-transform-3-default-value" value="">
+  <option disabled="" value="">Choose yes or no</option>
+  <option value="true">Yes</option>
+  <option value="false">No</option>
+</select>"
+`;
+
+exports[`the yes/no choices of the migration-pack editor renders the value for other values true 1`] = `
+"<select id="migration-pack-transform-1-default-value" value="true">
+  <!--v-if-->
+  <option value="true">Yes</option>
+  <option value="false">No</option>
+</select>"
+`;

@@ -72,13 +72,7 @@ class PortalTaskDeliveryMapper extends QBMapper {
 			throw new InvalidArgumentException('PortalTaskDeliveryMapper stores PortalTaskDelivery rows only.');
 		}
 
-		if ($entity->getUuid() === null) {
-			$entity->setUuid(Uuid::v4()->toRfc4122());
-		}
-
-		if ($entity->getState() === null) {
-			$entity->setState(PortalTaskDelivery::STATE_REQUESTED);
-		}
+		$this->fillIdentityAndState(delivery: $entity);
 
 		$now = new DateTime();
 		if ($entity->getRequestedAt() === null) {
@@ -89,6 +83,24 @@ class PortalTaskDeliveryMapper extends QBMapper {
 
 		return parent::insert(entity: $entity);
 	}//end insert()
+
+	/**
+	 * Give a new delivery a uuid and the requested state when it has none.
+	 *
+	 * @param PortalTaskDelivery $delivery The delivery to insert.
+	 *
+	 * @return void
+	 *
+	 */
+	private function fillIdentityAndState(PortalTaskDelivery $delivery): void {
+		if ($delivery->getUuid() === null) {
+			$delivery->setUuid(Uuid::v4()->toRfc4122());
+		}
+
+		if ($delivery->getState() === null) {
+			$delivery->setState(PortalTaskDelivery::STATE_REQUESTED);
+		}
+	}//end fillIdentityAndState()
 
 	/**
 	 * One delivery by uuid.

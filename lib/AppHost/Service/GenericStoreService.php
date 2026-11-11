@@ -443,6 +443,18 @@ class GenericStoreService {
 			) ?? ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
 		}
 
+		return $this->fetchRemote(descriptor: $descriptor, params: $params);
+	}//end fetch()
+
+	/**
+	 * GET the registry and decode its answer.
+	 *
+	 * @param StoreDescriptor      $descriptor The calling app's store descriptor.
+	 * @param array<string, mixed> $params     The query.
+	 *
+	 * @return array{outcome: string, results: array}
+	 */
+	private function fetchRemote(StoreDescriptor $descriptor, array $params): array {
 		$response = $this->send(descriptor: $descriptor, call: new RegistryCall(method: 'GET', options: ['query' => $params]));
 		if ($response === null) {
 			return ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
@@ -457,7 +469,7 @@ class GenericStoreService {
 		}
 
 		return $this->decodeBody(descriptor: $descriptor, body: (string)$response->getBody());
-	}//end fetch()
+	}//end fetchRemote()
 
 	/**
 	 * Whether the registry is this instance's own register.
@@ -528,12 +540,7 @@ class GenericStoreService {
 		$options = $this->transportOptions(descriptor: $descriptor, options: $call->options);
 
 		try {
-			$client = $this->registry->clientService->newClient();
-			if ($call->method === 'POST') {
-				return $client->post($url, $options);
-			}
-
-			return $client->get($url, $options);
+			return $this->dispatch(url: $url, call: new RegistryCall(method: $call->method, options: $options));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'AppHost store (' . $descriptor->appId . '): registry ' . $call->method . ' failed: ' . $e->getMessage()
@@ -541,6 +548,25 @@ class GenericStoreService {
 			return null;
 		}
 	}//end send()
+
+	/**
+	 * Make the HTTP request of a registry call.
+	 *
+	 * @param string       $url  The checked registry URL.
+	 * @param RegistryCall $call The method and the transport options.
+	 *
+	 * @return IResponse
+	 *
+	 * @throws Throwable When the request cannot be made.
+	 */
+	private function dispatch(string $url, RegistryCall $call): IResponse {
+		$client = $this->registry->clientService->newClient();
+		if ($call->method === 'POST') {
+			return $client->post($url, $call->options);
+		}
+
+		return $client->get($url, $call->options);
+	}//end dispatch()
 
 	/**
 	 * The registry URL once the SSRF guard has passed it, or null.
@@ -621,21 +647,32 @@ class GenericStoreService {
 			return ['outcome' => self::OUTCOME_OK, 'results' => $results];
 		}
 
-		// Some OpenRegister responses are a bare list; accept that too.
-		// A non-list decode is treated as no results rather than passed through:
-		// callers iterate this, and handing them an associative array would
-		// iterate its VALUES as if they were records.
+		return [
+			'outcome' => self::OUTCOME_OK,
+			'results' => self::bareListResults(decoded: $decoded),
+		];
+	}//end decodeBody()
+
+	/**
+	 * The results of a body that is a bare list; none for any other shape.
+	 *
+	 * Some OpenRegister responses are a bare list; accept that too. A non-list
+	 * decode is treated as no results rather than passed through: callers
+	 * iterate this, and handing them an associative array would iterate its
+	 * VALUES as if they were records.
+	 *
+	 * @param array $decoded The decoded body, without a `results` list.
+	 *
+	 * @return array
+	 */
+	private static function bareListResults(array $decoded): array {
 		$results = [];
 		if (array_is_list($decoded) === true) {
 			$results = $decoded;
 		}
 
-		return [
-			'outcome' => self::OUTCOME_OK,
-			'results' => $results,
-		];
-
-	}//end decodeBody()
+		return $results;
+	}//end bareListResults()
 
 	/**
 	 * Build the remote objects-API URL for this store's schema.

@@ -517,6 +517,42 @@ import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
+/**
+ * How many objects a run validates: all of them, or the configured maximum
+ * when that is lower; a maximum of 0 means no maximum.
+ *
+ * @param {number} maxObjects The configured maximum
+ * @param {number} totalObjects The objects there are
+ * @return {number} The objects to validate
+ */
+function objectsToValidate(maxObjects, totalObjects) {
+	return maxObjects === 0
+		? totalObjects
+		: Math.min(
+				maxObjects,
+				totalObjects,
+			)
+}
+
+/**
+ * A rough duration in seconds, minutes, or hours and minutes.
+ *
+ * @param {number} totalSeconds The duration
+ * @return {string} The wording
+ */
+function roughDuration(totalSeconds) {
+	if (totalSeconds < 60) {
+		return `~${Math.ceil(totalSeconds)} seconds`
+	} else if (totalSeconds < 3600) {
+		const minutes = Math.ceil(totalSeconds / 60)
+		return `~${minutes} minute${minutes !== 1 ? 's' : ''}`
+	} else {
+		const hours = Math.floor(totalSeconds / 3600)
+		const minutes = Math.ceil((totalSeconds % 3600) / 60)
+		return `~${hours}h ${minutes}m`
+	}
+}
+
 export default {
 	name: 'MassValidateModal',
 
@@ -653,31 +689,17 @@ export default {
 				return 'Unknown'
 			}
 
-			const totalObjects =
-				this.localConfig.maxObjects === 0
-					? this.objectStats.totalObjects
-					: Math.min(
-							this.localConfig.maxObjects,
-							this.objectStats.totalObjects,
-						)
+			const totalObjects = objectsToValidate(
+				this.localConfig.maxObjects,
+				this.objectStats.totalObjects,
+			)
 
 			const batches = Math.ceil(totalObjects / this.localConfig.batchSize)
 
 			// Rough estimates based on mode and batch size
 			// Serial: ~3-6 seconds per batch, Parallel: ~1.5-3 seconds per batch
 			const secondsPerBatch = this.localConfig.mode === 'serial' ? 4 : 2
-			const totalSeconds = batches * secondsPerBatch
-
-			if (totalSeconds < 60) {
-				return `~${Math.ceil(totalSeconds)} seconds`
-			} else if (totalSeconds < 3600) {
-				const minutes = Math.ceil(totalSeconds / 60)
-				return `~${minutes} minute${minutes !== 1 ? 's' : ''}`
-			} else {
-				const hours = Math.floor(totalSeconds / 3600)
-				const minutes = Math.ceil((totalSeconds % 3600) / 60)
-				return `~${hours}h ${minutes}m`
-			}
+			return roughDuration(batches * secondsPerBatch)
 		},
 
 		/**

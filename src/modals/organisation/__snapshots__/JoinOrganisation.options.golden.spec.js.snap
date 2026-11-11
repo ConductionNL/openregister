@@ -1,5 +1,133 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`JoinOrganisation joining (golden) adds a user without an id as nobody 1`] = `
+{
+  "before": {
+    "closes": 0,
+  },
+  "closes": 1,
+  "during": {
+    "error": null,
+    "joining": true,
+  },
+  "error": null,
+  "joined": [
+    [
+      "o-1",
+      null,
+    ],
+  ],
+  "joinedOrganisationName": "One",
+  "joining": false,
+  "success": true,
+}
+`;
+
+exports[`JoinOrganisation joining (golden) adds the user 1`] = `
+{
+  "before": {
+    "closes": 0,
+  },
+  "closes": 1,
+  "during": {
+    "error": null,
+    "joining": true,
+  },
+  "error": null,
+  "joined": [
+    [
+      "o-1",
+      "ann",
+    ],
+  ],
+  "joinedOrganisationName": "One",
+  "joining": false,
+  "success": true,
+}
+`;
+
+exports[`JoinOrganisation joining (golden) refuses without a user 1`] = `
+{
+  "before": {
+    "closes": 0,
+  },
+  "closes": 0,
+  "during": {
+    "error": "Please select a user",
+    "joining": false,
+  },
+  "error": "Please select a user",
+  "joined": [],
+  "joinedOrganisationName": "",
+  "joining": false,
+  "success": false,
+}
+`;
+
+exports[`JoinOrganisation joining (golden) refuses without an organisation 1`] = `
+{
+  "before": {
+    "closes": 0,
+  },
+  "closes": 0,
+  "during": {
+    "error": "Please select an organisation",
+    "joining": false,
+  },
+  "error": "Please select an organisation",
+  "joined": [],
+  "joinedOrganisationName": "",
+  "joining": false,
+  "success": false,
+}
+`;
+
+exports[`JoinOrganisation joining (golden) reports a failure without a message 1`] = `
+{
+  "before": {
+    "closes": 0,
+  },
+  "closes": 0,
+  "during": {
+    "error": null,
+    "joining": true,
+  },
+  "error": "Failed to add user to organisation",
+  "joined": [
+    [
+      "o-1",
+      "ann",
+    ],
+  ],
+  "joinedOrganisationName": "",
+  "joining": false,
+  "success": false,
+}
+`;
+
+exports[`JoinOrganisation joining (golden) reports a refusal 1`] = `
+{
+  "before": {
+    "closes": 0,
+  },
+  "closes": 0,
+  "during": {
+    "error": null,
+    "joining": true,
+  },
+  "error": "Already a member",
+  "joined": [
+    [
+      "o-1",
+      "ann",
+    ],
+  ],
+  "joinedOrganisationName": "",
+  "joining": false,
+  "success": false,
+}
+`;
+
 exports[`JoinOrganisation option loading (golden) loads and searches organisations 1`] = `
 [
   [

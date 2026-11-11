@@ -3315,6 +3315,18 @@ class ImportHandler {
 			return;
 		}
 
+		$this->recordStoredListedObject(run: $run, stored: $this->storeListedObject(seed: $seed, objectData: $objectData));
+	}//end importListedObject()
+
+	/**
+	 * Create a listed object, or update the stored one; null when the stored one is left unchanged.
+	 *
+	 * @param ListedSeed $seed       The resolved seed.
+	 * @param array      $objectData The listed object.
+	 *
+	 * @return ObjectEntity|null The created or updated object, or null when unchanged.
+	 */
+	private function storeListedObject(ListedSeed $seed, array $objectData): ?ObjectEntity {
 		$existingObject = $this->existingListedObject(seed: $seed);
 
 		// Integer ids, not slugs, in @self, so no internal lookup uses a slug.
@@ -3330,29 +3342,52 @@ class ImportHandler {
 		$objectData = $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $seed->schema);
 
 		if ($existingObject === null) {
-			$run->result['objects'][] = $this->createListedObject(seed: $seed, listed: ['data' => $objectData, 'uuid' => $listedUuid]);
-			return;
+			return $this->createListedObject(seed: $seed, listed: ['data' => $objectData, 'uuid' => $listedUuid]);
 		}
 
-		// A search returns arrays or ObjectEntity instances. The array check
-		// comes first: calling jsonSerialize() on an array result threw, and
-		// the per-object catch reported it as a failed seed.
-		if (is_array($existingObject) === false) {
-			$existingObject = $existingObject->jsonSerialize();
+		$existing = $this->serialisedListedObject(existing: $existingObject);
+		return $this->updateListedObject(seed: $seed, listed: ['data' => $objectData, 'existing' => $existing]);
+	}//end storeListedObject()
+
+	/**
+	 * A stored listed object as an array.
+	 *
+	 * A search returns arrays or ObjectEntity instances. The array check
+	 * comes first: calling jsonSerialize() on an array result threw, and
+	 * the per-object catch reported it as a failed seed.
+	 *
+	 * @param mixed $existing The search result.
+	 *
+	 * @return array The stored object.
+	 */
+	private function serialisedListedObject(mixed $existing): array {
+		if (is_array($existing) === false) {
+			return $existing->jsonSerialize();
 		}
 
-		$updated = $this->updateListedObject(seed: $seed, listed: ['data' => $objectData, 'existing' => $existingObject]);
-		if ($updated === null) {
-			// COUNTED, not just logged. Skipping an unchanged object is the
-			// DESIGNED behaviour of a re-import, but a debug line is invisible
-			// to the caller, and the caller is the one that has to tell an
-			// operator whether the import worked.
+		return $existing;
+	}//end serialisedListedObject()
+
+	/**
+	 * Count a listed object as imported, or as unchanged when it was left as stored.
+	 *
+	 * Skipping an unchanged object is the DESIGNED behaviour of a re-import, but
+	 * a debug line is invisible to the caller, and the caller is the one that has
+	 * to tell an operator whether the import worked: so it is COUNTED, not just logged.
+	 *
+	 * @param ImportRun         $run    The import.
+	 * @param ObjectEntity|null $stored The created or updated object, or null when unchanged.
+	 *
+	 * @return void
+	 */
+	private function recordStoredListedObject(ImportRun $run, ?ObjectEntity $stored): void {
+		if ($stored === null) {
 			$run->result['unchanged']['objects']++;
 			return;
 		}
 
-		$run->result['objects'][] = $updated;
-	}//end importListedObject()
+		$run->result['objects'][] = $stored;
+	}//end recordStoredListedObject()
 
 	/**
 	 * The register, schema and context a listed object is imported into, or null when either is missing.
@@ -3801,29 +3836,68 @@ class ImportHandler {
 	 */
 	private function resolveSeedReferenceTokens(array $data, ?string $appId = null): array {
 		$objects = ($data['components']['objects'] ?? null);
-		if (is_array($objects) === false) {
+		$index = $this->seedReferenceIndex(objects: $objects);
+		if ($index === null) {
 			return $data;
 		}
 
-		// Only genuine reference targets get a pre-resolved identity, and the
-		// work is skipped entirely when no object references another.
-		$index = new SeedReferenceIndex(logger: $this->logger);
-		$index->collectFromObjects(objects: $objects);
-		if ($index->isEmpty() === true) {
-			return $data;
-		}
-
-		foreach ($this->referencedSeeds(objects: $objects, index: $index) as $position => $targetData) {
-			$uuid = $this->seedReferenceTargetUuid(targetData: $targetData, appId: $appId);
-			if ($uuid !== null) {
-				$objects[$position]['@self']['id'] = $uuid;
-				$index->record(self: $objects[$position]['@self']);
-			}
+		$targetIds = $this->referenceTargetIds(targets: $this->referencedSeeds(objects: $objects, index: $index), appId: $appId);
+		foreach ($targetIds as $position => $uuid) {
+			$objects[$position]['@self']['id'] = $uuid;
+			$index->record(self: $objects[$position]['@self']);
 		}
 
 		$data['components']['objects'] = $index->replaceInObjects(objects: $objects);
 		return $data;
 	}//end resolveSeedReferenceTokens()
+
+	/**
+	 * The reference index of the listed seed objects, or null when there is nothing to resolve.
+	 *
+	 * Only genuine reference targets get a pre-resolved identity, and the
+	 * work is skipped entirely when no object references another.
+	 *
+	 * @param mixed $objects The raw `components.objects` list.
+	 *
+	 * @return SeedReferenceIndex|null The index, or null when the list is absent or references nothing.
+	 */
+	private function seedReferenceIndex(mixed $objects): ?SeedReferenceIndex {
+		if (is_array($objects) === false) {
+			return null;
+		}
+
+		$index = new SeedReferenceIndex(logger: $this->logger);
+		$index->collectFromObjects(objects: $objects);
+		if ($index->isEmpty() === true) {
+			return null;
+		}
+
+		return $index;
+	}//end seedReferenceIndex()
+
+	/**
+	 * The UUID each referenced seed target is stored under, by its position in the list.
+	 *
+	 * A target that resolves to no UUID is left out. The index is not read
+	 * here, so resolving every target before recording them gives the same
+	 * UUIDs, in the same order, as resolving and recording one by one.
+	 *
+	 * @param array       $targets The referenced seed objects, by position.
+	 * @param string|null $appId   The importing app, for the foreign-schema guard.
+	 *
+	 * @return array<int|string, mixed> The UUIDs, by position.
+	 */
+	private function referenceTargetIds(array $targets, ?string $appId): array {
+		$targetIds = [];
+		foreach ($targets as $position => $targetData) {
+			$uuid = $this->seedReferenceTargetUuid(targetData: $targetData, appId: $appId);
+			if ($uuid !== null) {
+				$targetIds[$position] = $uuid;
+			}
+		}
+
+		return $targetIds;
+	}//end referenceTargetIds()
 
 	/**
 	 * The seed objects another seed refers to, under their list positions.
@@ -4841,42 +4915,96 @@ class ImportHandler {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function unshadowedSchemaIds(Register $register, array $details): array {
+		$newSlugToId = $this->importedSchemaIdsBySlug(schemas: $details['schemas']);
+
+		$kept = [];
+		foreach ($register->getSchemas() ?? [] as $currentId) {
+			$currentId = (int)$currentId;
+			$shadowed = $this->shadowedListing(schemaId: $currentId, newSlugToId: $newSlugToId);
+			if ($shadowed === null) {
+				$kept[] = $currentId;
+				continue;
+			}
+
+			$this->logPrunedShadowedSchema(registerSlug: $details['slug'], shadowed: $shadowed);
+		}
+
+		return $kept;
+	}//end unshadowedSchemaIds()
+
+	/**
+	 * The imported schema ids by lower-cased slug, for the schemas that have both.
+	 *
+	 * @param array $schemas The imported schemas.
+	 *
+	 * @return array<string, int> Lower(slug) => id.
+	 */
+	private function importedSchemaIdsBySlug(array $schemas): array {
 		$newSlugToId = [];
-		foreach ($details['schemas'] as $schema) {
+		foreach ($schemas as $schema) {
 			if ($schema instanceof Schema && $schema->getId() !== null && $schema->getSlug() !== null) {
 				$newSlugToId[strtolower($schema->getSlug())] = (int)$schema->getId();
 			}
 		}
 
-		$kept = [];
-		foreach ($register->getSchemas() ?? [] as $currentId) {
-			$currentId = (int)$currentId;
-			try {
-				$existingSlug = $this->schemaMapper->find($currentId, _multitenancy: false)->getSlug();
-			} catch (\Throwable $ignore) {
-				$existingSlug = null;
-			}
+		return $newSlugToId;
+	}//end importedSchemaIdsBySlug()
 
-			$shadowedBy = $newSlugToId[strtolower((string)$existingSlug)] ?? null;
-			if ($existingSlug === null || $shadowedBy === null || $shadowedBy === $currentId) {
-				$kept[] = $currentId;
-				continue;
-			}
+	/**
+	 * A listed schema id a freshly imported schema shadows: same slug (case-insensitively), other id.
+	 *
+	 * An id whose schema cannot be loaded is kept: there is nothing to compare it against.
+	 *
+	 * @param int                $schemaId    The listed schema id.
+	 * @param array<string, int> $newSlugToId The imported schema ids by lower-cased slug.
+	 *
+	 * @return array{id: int, slug: string, by: int}|null The shadowed listing, or null when the id is kept.
+	 */
+	private function shadowedListing(int $schemaId, array $newSlugToId): ?array {
+		$existingSlug = $this->listedSchemaSlug(schemaId: $schemaId);
+		$shadowedBy = $newSlugToId[strtolower((string)$existingSlug)] ?? null;
+		if ($existingSlug === null || $shadowedBy === null || $shadowedBy === $schemaId) {
+			return null;
+		}
 
-			$this->logger->debug(
-				message: sprintf(
-					"[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
-					$details['slug'],
-					$currentId,
-					$existingSlug,
-					$shadowedBy
-				),
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-		}//end foreach
+		return ['id' => $schemaId, 'slug' => $existingSlug, 'by' => $shadowedBy];
+	}//end shadowedListing()
 
-		return $kept;
-	}//end unshadowedSchemaIds()
+	/**
+	 * The slug of a listed schema, or null when it cannot be loaded.
+	 *
+	 * @param int $schemaId The listed schema id.
+	 *
+	 * @return string|null The slug.
+	 */
+	private function listedSchemaSlug(int $schemaId): ?string {
+		try {
+			return $this->schemaMapper->find($schemaId, _multitenancy: false)->getSlug();
+		} catch (\Throwable $ignore) {
+			return null;
+		}
+	}//end listedSchemaSlug()
+
+	/**
+	 * Log a listed schema id pruned in favour of the app-owned schema that shadows it.
+	 *
+	 * @param mixed                                  $registerSlug The application register slug.
+	 * @param array{id: int, slug: string, by: int} $shadowed     The shadowed listing.
+	 *
+	 * @return void
+	 */
+	private function logPrunedShadowedSchema(mixed $registerSlug, array $shadowed): void {
+		$this->logger->debug(
+			message: sprintf(
+				"[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
+				$registerSlug,
+				$shadowed['id'],
+				$shadowed['slug'],
+				$shadowed['by']
+			),
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end logPrunedShadowedSchema()
 
 	/**
 	 * A result's registers with the given one added, unless a register with its id is already there.

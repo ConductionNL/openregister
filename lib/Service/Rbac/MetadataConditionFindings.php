@@ -198,26 +198,44 @@ class MetadataConditionFindings implements MetadataConditionFindingsInterface {
 	 */
 	private function unknownConditions(?array $authorization): array {
 		$conditions = [];
-		foreach ($this->ruleLists(authorization: $authorization) as $label => $rules) {
-			foreach ($rules as $rule) {
-				if (is_array($rule) === false || is_array(($rule['match'] ?? null)) === false) {
-					continue;
-				}
-
-				$principal = $this->principalOf(rule: $rule);
-				foreach ($this->conditions->unknownKeys(match: $rule['match']) as $key) {
-					$conditions[] = [
-						'label'       => $label,
-						'principal'   => $principal,
-						'key'         => $key,
-						'fingerprint' => $label.'|'.$principal.'|'.$key.'|'.json_encode($rule['match'][$key]),
-					];
-				}
+		foreach ($this->matchRules(authorization: $authorization) as $rule) {
+			foreach ($this->conditions->unknownKeys(match: $rule['match']) as $key) {
+				$conditions[] = [
+					'label'       => $rule['label'],
+					'principal'   => $rule['principal'],
+					'key'         => $key,
+					'fingerprint' => $rule['label'].'|'.$rule['principal'].'|'.$key.'|'.json_encode($rule['match'][$key]),
+				];
 			}
 		}
 
 		return $conditions;
 	}//end unknownConditions()
+
+	/**
+	 * Every rule of a block that carries a `match` object, with its rule list and principal.
+	 *
+	 * Shared with {@see UnknownRuleKeyFindings}, which fingerprints every key of
+	 * the same rules where this class fingerprints only the unknown metadata ones.
+	 *
+	 * @param array|null $authorization The block.
+	 *
+	 * @return array<int, array{label: int|string, principal: string, match: array<int|string, mixed>}> The rules, in block order.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function matchRules(?array $authorization): array {
+		$found = [];
+		foreach ($this->ruleLists(authorization: $authorization) as $label => $rules) {
+			foreach ($rules as $rule) {
+				if (is_array($rule) === true && is_array(($rule['match'] ?? null)) === true) {
+					$found[] = ['label' => $label, 'principal' => $this->principalOf(rule: $rule), 'match' => $rule['match']];
+				}
+			}
+		}
+
+		return $found;
+	}//end matchRules()
 
 	/**
 	 * Refuse a save that carries findings.
