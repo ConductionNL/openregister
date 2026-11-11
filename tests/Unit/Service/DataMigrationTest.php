@@ -54,29 +54,80 @@ class DataMigrationTest extends TestCase {
 	 * Test 6.1: Existing Data Migration to Default Organisation
 	 */
 	public function testExistingDataMigrationToDefaultOrganisation(): void {
-		// Arrange: Mock existing entities without organisation.
-		$existingRegisters = [
-			['id' => 1, 'title' => 'Legacy Register 1', 'organisation' => null],
-			['id' => 2, 'title' => 'Legacy Register 2', 'organisation' => null]
-		];
-
-		$defaultOrg = new Organisation();
-		$defaultOrg->setUuid('default-uuid-123');
-
-		// Mock database queries.
-		$queryBuilder = $this->createMock(\Doctrine\DBAL\Query\QueryBuilder::class);
-		$this->connection->method('getQueryBuilder')->willReturn($queryBuilder);
+		// Arrange: an organisations table from before the multi-tenancy columns.
+		[$schema, $added, $indexes] = $this->organisationsTableWith(['id', 'uuid', 'name']);
 
 		// Act: Run migration.
-		$schema = $this->createMock(ISchemaWrapper::class);
-		$schema->method('hasTable')->willReturn(true);
-		$schema->method('getTable')->willReturn($this->createTableMock());
+		$result = $this->migration->changeSchema($this->output, \Closure::fromCallable(function () use ($schema) {
+			return $schema;
+		}), []);
+
+		// Assert: the three tenancy columns and both unique keys are added, to the same schema.
+		$this->assertSame($schema, $result);
+		$this->assertSame(['users' => 'json', 'owner' => 'string', 'slug' => 'string'], $added->getArrayCopy());
+		$this->assertSame(
+			['organisations_uuid_unique' => ['uuid'], 'organisations_slug_unique' => ['slug']],
+			$indexes->getArrayCopy()
+		);
+	}
+
+	/**
+	 * The pair of the test above: a table that already has the columns and keys
+	 * is left alone, so the migration can run twice.
+	 *
+	 * @return void
+	 */
+	public function testAnAlreadyMigratedOrganisationsTableIsLeftAlone(): void {
+		[$schema, $added, $indexes] = $this->organisationsTableWith(
+			['id', 'uuid', 'name', 'users', 'owner', 'slug'],
+			['organisations_uuid_unique', 'organisations_slug_unique']
+		);
+
 		$this->migration->changeSchema($this->output, \Closure::fromCallable(function () use ($schema) {
 			return $schema;
 		}), []);
 
-		// Assert: Migration schema changes applied.
-		$this->addToAssertionCount(1);
+		$this->assertSame([], $added->getArrayCopy());
+		$this->assertSame([], $indexes->getArrayCopy());
+	}
+
+	/**
+	 * A schema whose organisations table has the given columns and indexes, and
+	 * records what the migration adds to it.
+	 *
+	 * @param string[] $columns The columns the table starts with.
+	 * @param string[] $indexNames The indexes the table starts with.
+	 *
+	 * @return array{0: ISchemaWrapper, 1: \ArrayObject, 2: \ArrayObject}
+	 */
+	private function organisationsTableWith(array $columns, array $indexNames = []): array {
+		$added = new \ArrayObject();
+		$indexes = new \ArrayObject();
+		$table = $this->createTableMock();
+		$table->method('hasColumn')->willReturnCallback(
+			fn (string $name): bool => in_array($name, $columns, true) || $added->offsetExists($name)
+		);
+		$table->method('hasIndex')->willReturnCallback(
+			fn (string $name): bool => in_array($name, $indexNames, true) || $indexes->offsetExists($name)
+		);
+		$table->method('addColumn')->willReturnCallback(
+			function (string $name, string $type) use ($added) {
+				$added[$name] = $type;
+				return $this->createColumnMock();
+			}
+		);
+		$table->method('addUniqueIndex')->willReturnCallback(
+			function (array $cols, ?string $name = null) use ($indexes, $table) {
+				$indexes[(string) $name] = $cols;
+				return $table;
+			}
+		);
+
+		$schema = $this->createMock(ISchemaWrapper::class);
+		$schema->method('hasTable')->willReturnCallback(fn (string $name): bool => $name === 'openregister_organisations');
+		$schema->method('getTable')->with('openregister_organisations')->willReturn($table);
+
+		return [$schema, $added, $indexes];
 	}
 
 	/**

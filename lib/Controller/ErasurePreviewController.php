@@ -30,11 +30,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
-use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService;
-use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\ErasurePreviewControllerServices;
+use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewServiceInterface;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStoreInterface;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRefusedException;
-use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunner;
+use OCA\OpenRegister\Service\Gdpr\Erasure\ErasureRunnerInterface;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -45,22 +48,40 @@ use OCP\IRequest;
  */
 class ErasurePreviewController extends Controller {
 	/**
+	 * The preview.
+	 *
+	 * @var ErasurePreviewServiceInterface
+	 */
+	private readonly ErasurePreviewServiceInterface $previewService;
+
+	/**
+	 * The recorded preview and its approval.
+	 *
+	 * @var ErasurePreviewStoreInterface
+	 */
+	private readonly ErasurePreviewStoreInterface $store;
+
+	/**
+	 * The run.
+	 *
+	 * @var ErasureRunnerInterface
+	 */
+	private readonly ErasureRunnerInterface $runner;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string                $appName        The app name.
 	 * @param IRequest              $request        The request.
-	 * @param ErasurePreviewService $previewService The preview.
-	 * @param ErasurePreviewStore   $store          The recorded preview and its approval.
-	 * @param ErasureRunner         $runner         The run.
+	 * @param ErasurePreviewControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly ErasurePreviewService $previewService,
-		private readonly ErasurePreviewStore $store,
-		private readonly ErasureRunner $runner,
+		ErasurePreviewControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->previewService = $services->previewService;
+		$this->store = $services->store;
+		$this->runner = $services->runner;
 
 	}//end __construct()
 
@@ -83,7 +104,7 @@ class ErasurePreviewController extends Controller {
 	 *   DataSubjectRequestService::findSubjectObjects, which loads every object via
 	 *   MagicMapper::find(_rbac:true,_multitenancy:true), so a caller only ever counts objects it may read.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function create(): JSONResponse {
 		$subject = trim((string)($this->request->getParam(key: 'subject') ?? ''));
@@ -95,10 +116,9 @@ class ErasurePreviewController extends Controller {
 		}
 
 		$preview = $this->previewService->preview(
-			subjectId: $subject,
-			type: $this->optionalType(),
+			subject: new SubjectQuery(subjectId: $subject, type: $this->optionalType()),
 			eraseMode: (string)($this->request->getParam(key: 'eraseMode')
-				?? DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE)
+				?? DataSubjectRequestServiceInterface::ERASE_MODE_PSEUDONYMISE)
 		);
 
 		$record = $this->store->record(
@@ -122,7 +142,7 @@ class ErasurePreviewController extends Controller {
 	 *   create, unless they are an administrator, and answers `unknown` rather than `forbidden` so the existence
 	 *   of a request about a data subject is not disclosed.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function show(string $id): JSONResponse {
 		try {
@@ -143,7 +163,7 @@ class ErasurePreviewController extends Controller {
 	 * @NoCSRFRequired
 	 * @no-admin-idor-exempt Guarded in-body: as show(), through ErasurePreviewStore::load.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function approve(string $id): JSONResponse {
 		try {
@@ -170,7 +190,7 @@ class ErasurePreviewController extends Controller {
 	 *   preview the caller did not create, and every destruction is re-checked per object by
 	 *   DestroyRightService::refusalFor and RetentionClockService::refusalFor.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function run(string $id): JSONResponse {
 		try {

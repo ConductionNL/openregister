@@ -1,0 +1,451 @@
+{
+    "no active organisation": {
+        "calls": [
+            {
+                "organisationService.getActiveOrganisation": "carol"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "total_agents": 0,
+            "total_conversations": 0,
+            "total_messages": 0
+        }
+    },
+    "no active organisation, forged identity": {
+        "calls": [
+            {
+                "organisationService.getActiveOrganisation": "carol"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "total_agents": 0,
+            "total_conversations": 0,
+            "total_messages": 0
+        }
+    },
+    "organisation with conversations": {
+        "calls": [
+            {
+                "organisationService.getActiveOrganisation": "alice"
+            },
+            {
+                "qb1.select": [
+                    "COUNT(id) AS total"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_agents",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    "org-a",
+                    2
+                ]
+            },
+            {
+                "qb1.where": [
+                    "eq(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "qb2.select": [
+                    "COUNT(id) AS total"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_conversations",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p2",
+                    "org-a",
+                    2
+                ]
+            },
+            {
+                "qb2.where": [
+                    "eq(organisation, :p2)"
+                ]
+            },
+            {
+                "qb2.executeQuery": true
+            },
+            {
+                "qb3.select": [
+                    "id"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_conversations",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p3",
+                    "org-a",
+                    2
+                ]
+            },
+            {
+                "qb3.where": [
+                    "eq(organisation, :p3)"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb4.select": [
+                    "COUNT(id) AS total"
+                ]
+            },
+            {
+                "qb4.from": [
+                    "openregister_messages",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p4",
+                    [
+                        7,
+                        9
+                    ],
+                    101
+                ]
+            },
+            {
+                "qb4.where": [
+                    "in(conversation_id, :p4)"
+                ]
+            },
+            {
+                "qb4.executeQuery": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "total_agents": 3,
+            "total_conversations": 2,
+            "total_messages": 11
+        }
+    },
+    "organisation with conversations, forged identity": {
+        "calls": [
+            {
+                "organisationService.getActiveOrganisation": "alice"
+            },
+            {
+                "qb1.select": [
+                    "COUNT(id) AS total"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_agents",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    "org-a",
+                    2
+                ]
+            },
+            {
+                "qb1.where": [
+                    "eq(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "qb2.select": [
+                    "COUNT(id) AS total"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_conversations",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p2",
+                    "org-a",
+                    2
+                ]
+            },
+            {
+                "qb2.where": [
+                    "eq(organisation, :p2)"
+                ]
+            },
+            {
+                "qb2.executeQuery": true
+            },
+            {
+                "qb3.select": [
+                    "id"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_conversations",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p3",
+                    "org-a",
+                    2
+                ]
+            },
+            {
+                "qb3.where": [
+                    "eq(organisation, :p3)"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            },
+            {
+                "qb4.select": [
+                    "COUNT(id) AS total"
+                ]
+            },
+            {
+                "qb4.from": [
+                    "openregister_messages",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p4",
+                    [
+                        7,
+                        9
+                    ],
+                    101
+                ]
+            },
+            {
+                "qb4.where": [
+                    "in(conversation_id, :p4)"
+                ]
+            },
+            {
+                "qb4.executeQuery": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "total_agents": 3,
+            "total_conversations": 2,
+            "total_messages": 11
+        }
+    },
+    "organisation without conversations": {
+        "calls": [
+            {
+                "organisationService.getActiveOrganisation": "bob"
+            },
+            {
+                "qb1.select": [
+                    "COUNT(id) AS total"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_agents",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    "org-b",
+                    2
+                ]
+            },
+            {
+                "qb1.where": [
+                    "eq(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "qb2.select": [
+                    "COUNT(id) AS total"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_conversations",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p2",
+                    "org-b",
+                    2
+                ]
+            },
+            {
+                "qb2.where": [
+                    "eq(organisation, :p2)"
+                ]
+            },
+            {
+                "qb2.executeQuery": true
+            },
+            {
+                "qb3.select": [
+                    "id"
+                ]
+            },
+            {
+                "qb3.from": [
+                    "openregister_conversations",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p3",
+                    "org-b",
+                    2
+                ]
+            },
+            {
+                "qb3.where": [
+                    "eq(organisation, :p3)"
+                ]
+            },
+            {
+                "qb3.executeQuery": true
+            },
+            {
+                "closeCursor": true
+            }
+        ],
+        "status": 200,
+        "data": {
+            "total_agents": 3,
+            "total_conversations": 2,
+            "total_messages": 0
+        }
+    },
+    "organisation without uuid": {
+        "calls": [
+            {
+                "organisationService.getActiveOrganisation": "dave"
+            }
+        ],
+        "status": 200,
+        "data": {
+            "total_agents": 0,
+            "total_conversations": 0,
+            "total_messages": 0
+        }
+    },
+    "query failure": {
+        "calls": [
+            {
+                "organisationService.getActiveOrganisation": "alice"
+            },
+            {
+                "qb1.select": [
+                    "COUNT(id) AS total"
+                ]
+            },
+            {
+                "qb1.from": [
+                    "openregister_agents",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p1",
+                    "org-a",
+                    2
+                ]
+            },
+            {
+                "qb1.where": [
+                    "eq(organisation, :p1)"
+                ]
+            },
+            {
+                "qb1.executeQuery": true
+            },
+            {
+                "qb2.select": [
+                    "COUNT(id) AS total"
+                ]
+            },
+            {
+                "qb2.from": [
+                    "openregister_conversations",
+                    null
+                ]
+            },
+            {
+                "param": [
+                    ":p2",
+                    "org-a",
+                    2
+                ]
+            },
+            {
+                "qb2.where": [
+                    "eq(organisation, :p2)"
+                ]
+            },
+            {
+                "qb2.executeQuery": true
+            },
+            {
+                "logger.error": [
+                    "[ChatController] Failed to get chat stats",
+                    "db down"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "T:Failed to get chat statistics",
+            "message": "db down"
+        }
+    }
+}

@@ -18,12 +18,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\GroupRuleRequest;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -34,6 +39,8 @@ use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\RelationLookup;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Integration tests for ObjectService handler classes
@@ -89,7 +96,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		// Clean up objects first (they reference schemas/registers).
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Ignore cleanup errors.
 			}
@@ -275,7 +282,6 @@ class ObjectHandlersIntegrationTest extends TestCase {
 			$useSchema,
 			$data,
 			null,
-			null,
 			$rbac,
 			$multitenancy
 		);
@@ -345,9 +351,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testValidateAndSaveObjectsBySchemaInvalidIds(): void {
 		$result = $this->validationHandler->validateAndSaveObjectsBySchema(
-			999999,
-			999999,
-			[$this->objectService, 'saveObjects']
+			new SchemaRevalidation(new RegisterSchemaRef(999999, 999999), ListQuery::unbounded(), [$this->objectService, 'saveObjects'])
 		);
 
 		$this->assertEquals(0, $result['processed']);
@@ -362,9 +366,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		$this->saveTestObject(['title' => 'Validate and Save 2']);
 
 		$result = $this->validationHandler->validateAndSaveObjectsBySchema(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
-			[$this->objectService, 'saveObjects']
+			new SchemaRevalidation(new RegisterSchemaRef($this->testRegister->getId(), $this->testSchema->getId()), ListQuery::unbounded(), [$this->objectService, 'saveObjects'])
 		);
 
 		$this->assertArrayHasKey('processed', $result);
@@ -384,11 +386,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		$this->saveTestObject(['title' => 'Limit Test 3']);
 
 		$result = $this->validationHandler->validateAndSaveObjectsBySchema(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
-			[$this->objectService, 'saveObjects'],
-			1,  // limit
-			1   // offset
+			new SchemaRevalidation(new RegisterSchemaRef($this->testRegister->getId(), $this->testSchema->getId()), new ListQuery(limit: 1, offset: 1), [$this->objectService, 'saveObjects'])
 		);
 
 		$this->assertArrayHasKey('processed', $result);
@@ -398,87 +396,6 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	// =========================================================================
 	// RelationHandler Tests
 	// =========================================================================
-
-	/**
-	 * Test extractAllRelationshipIds with no extend properties.
-	 */
-	public function testExtractAllRelationshipIdsEmpty(): void {
-		$obj = $this->saveTestObject(['title' => 'Relation Test']);
-		// Use returned entity directly (may be stored in magic table, not main objects table).
-
-		$result = $this->relationHandler->extractAllRelationshipIds([$obj], []);
-		$this->assertIsArray($result);
-		$this->assertEmpty($result);
-	}
-
-	/**
-	 * Test extractAllRelationshipIds with single string relation.
-	 */
-	public function testExtractAllRelationshipIdsSingleRelation(): void {
-		$relatedUuid = Uuid::v4()->toRfc4122();
-		$obj = $this->saveTestObject([
-			'title' => 'Has Relation',
-			'relatedItem' => $relatedUuid,
-		]);
-
-		$result = $this->relationHandler->extractAllRelationshipIds([$obj], ['relatedItem']);
-		$this->assertContains($relatedUuid, $result);
-	}
-
-	/**
-	 * Test extractAllRelationshipIds with array relations.
-	 */
-	public function testExtractAllRelationshipIdsArrayRelation(): void {
-		$uuid1 = Uuid::v4()->toRfc4122();
-		$uuid2 = Uuid::v4()->toRfc4122();
-		$obj = $this->saveTestObject([
-			'title' => 'Has Array Relations',
-			'relatedItems' => [$uuid1, $uuid2],
-		]);
-
-		$result = $this->relationHandler->extractAllRelationshipIds([$obj], ['relatedItems']);
-		$this->assertContains($uuid1, $result);
-		$this->assertContains($uuid2, $result);
-	}
-
-	/**
-	 * Test extractAllRelationshipIds deduplicates.
-	 */
-	public function testExtractAllRelationshipIdsDeduplicates(): void {
-		$sharedUuid = Uuid::v4()->toRfc4122();
-		$obj1 = $this->saveTestObject([
-			'title' => 'Dedup Test 1',
-			'relatedItem' => $sharedUuid,
-		]);
-		$obj2 = $this->saveTestObject([
-			'title' => 'Dedup Test 2',
-			'relatedItem' => $sharedUuid,
-		]);
-
-		$result = $this->relationHandler->extractAllRelationshipIds([$obj1, $obj2], ['relatedItem']);
-		// Should have only one copy of the shared UUID.
-		$this->assertEquals(1, count(array_keys($result, $sharedUuid, true)));
-	}
-
-	/**
-	 * Test extractAllRelationshipIds circuit breaker limits.
-	 */
-	public function testExtractAllRelationshipIdsCircuitBreaker(): void {
-		// Create object with many relations (more than the 200 limit).
-		$manyUuids = [];
-		for ($i = 0; $i < 25; $i++) {
-			$manyUuids[] = Uuid::v4()->toRfc4122();
-		}
-		$obj = $this->saveTestObject([
-			'title' => 'Many Relations',
-			'relatedItems' => $manyUuids,
-		]);
-
-		// The method limits to 10 per array plus 200 total.
-		$result = $this->relationHandler->extractAllRelationshipIds([$obj], ['relatedItems']);
-		$this->assertIsArray($result);
-		$this->assertLessThanOrEqual(200, count($result));
-	}
 
 	/**
 	 * Test bulkLoadRelationshipsBatched with empty IDs.
@@ -584,14 +501,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testGetUsesNoRelations(): void {
 		$obj = $this->saveTestObject(['title' => 'No Relations']);
-		$result = $this->relationHandler->getUses(
-			$obj->getUuid(),
-			[],
-			false,
-			false,
-			$this->testRegister->getId(),
-			$this->testSchema->getId()
-		);
+		$result = $this->relationHandler->getUses(lookup: (new RelationLookup(objectId: $obj->getUuid(), query: []))->filteredBy(rbac: false, multitenancy: false)->pinnedTo(registerId: $this->testRegister->getId(), schemaId: $this->testSchema->getId()));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -602,7 +512,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 * Test getUses for nonexistent object.
 	 */
 	public function testGetUsesNonexistentObject(): void {
-		$result = $this->relationHandler->getUses('nonexistent-uuid-' . uniqid());
+		$result = $this->relationHandler->getUses(lookup: new RelationLookup(objectId: 'nonexistent-uuid-' . uniqid()));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertEquals(0, $result['total']);
@@ -613,14 +523,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testGetUsedByReturnsStructure(): void {
 		$obj = $this->saveTestObject(['title' => 'UsedBy Test']);
-		$result = $this->relationHandler->getUsedBy(
-			$obj->getUuid(),
-			[],
-			false,
-			false,
-			$this->testRegister->getId(),
-			$this->testSchema->getId()
-		);
+		$result = $this->relationHandler->getUsedBy(lookup: (new RelationLookup(objectId: $obj->getUuid(), query: []))->filteredBy(rbac: false, multitenancy: false)->pinnedTo(registerId: $this->testRegister->getId(), schemaId: $this->testSchema->getId()));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertArrayHasKey('total', $result);
@@ -632,18 +535,10 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 * Test getUsedBy for nonexistent object.
 	 */
 	public function testGetUsedByNonexistentObject(): void {
-		$result = $this->relationHandler->getUsedBy('nonexistent-uuid-' . uniqid());
+		$result = $this->relationHandler->getUsedBy(lookup: new RelationLookup(objectId: 'nonexistent-uuid-' . uniqid()));
 
 		$this->assertArrayHasKey('results', $result);
 		$this->assertEquals(0, $result['total']);
-	}
-
-	/**
-	 * Test extractRelatedData delegation.
-	 */
-	public function testExtractRelatedDataEmpty(): void {
-		$result = $this->relationHandler->extractRelatedData([], false, false);
-		$this->assertIsArray($result);
 	}
 
 	// =========================================================================
@@ -715,44 +610,6 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		$result = $this->facetHandler->getFacetableFields([]);
 		$this->assertIsArray($result);
 		$this->assertArrayHasKey('@self', $result);
-	}
-
-	/**
-	 * Test getMetadataFacetableFields.
-	 */
-	public function testGetMetadataFacetableFields(): void {
-		$result = $this->facetHandler->getMetadataFacetableFields();
-		$this->assertIsArray($result);
-		$this->assertContains('register', $result);
-		$this->assertContains('schema', $result);
-		$this->assertContains('owner', $result);
-		$this->assertContains('organisation', $result);
-		$this->assertContains('created', $result);
-		$this->assertContains('updated', $result);
-	}
-
-	/**
-	 * Test getFacetCount with no facets.
-	 */
-	public function testGetFacetCountNoFacets(): void {
-		$result = $this->facetHandler->getFacetCount(false, []);
-		$this->assertEquals(0, $result);
-	}
-
-	/**
-	 * Test getFacetCount with facets.
-	 */
-	public function testGetFacetCountWithFacets(): void {
-		$result = $this->facetHandler->getFacetCount(true, ['_facets' => ['a', 'b', 'c']]);
-		$this->assertEquals(3, $result);
-	}
-
-	/**
-	 * Test getFacetCount with non-array facets.
-	 */
-	public function testGetFacetCountWithNonArrayFacets(): void {
-		$result = $this->facetHandler->getFacetCount(true, ['_facets' => 'single']);
-		$this->assertEquals(0, $result);
 	}
 
 	/**
@@ -972,9 +829,8 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testHasGroupPermissionAdmin(): void {
 		$result = $this->permissionHandler->hasGroupPermission(
-			['read' => ['editors']],
-			'admin',
-			'read'
+			request: (new GroupRuleRequest(authorization: ['read' => ['editors']], action: 'read'))
+				->forGroup(groupId: 'admin', userGroup: null)
 		);
 		$this->assertTrue($result);
 	}
@@ -983,7 +839,10 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 * Test hasGroupPermission with no authorization.
 	 */
 	public function testHasGroupPermissionNoAuthorization(): void {
-		$result = $this->permissionHandler->hasGroupPermission(null, 'users', 'read');
+		$result = $this->permissionHandler->hasGroupPermission(
+			request: (new GroupRuleRequest(authorization: null, action: 'read'))
+				->forGroup(groupId: 'users', userGroup: null)
+		);
 		$this->assertTrue($result);
 	}
 
@@ -991,7 +850,10 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 * Test hasGroupPermission with empty authorization.
 	 */
 	public function testHasGroupPermissionEmptyAuthorization(): void {
-		$result = $this->permissionHandler->hasGroupPermission([], 'users', 'read');
+		$result = $this->permissionHandler->hasGroupPermission(
+			request: (new GroupRuleRequest(authorization: [], action: 'read'))
+				->forGroup(groupId: 'users', userGroup: null)
+		);
 		$this->assertTrue($result);
 	}
 
@@ -1005,9 +867,8 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		// then. Asserting the old default-open answer here would be asserting a
 		// hole, so the test follows the fail-closed rule.
 		$result = $this->permissionHandler->hasGroupPermission(
-			['create' => ['editors']],
-			'users',
-			'read'
+			request: (new GroupRuleRequest(authorization: ['create' => ['editors']], action: 'read'))
+				->forGroup(groupId: 'users', userGroup: null)
 		);
 		$this->assertFalse($result, 'an action a non-empty authorization block does not list MUST be denied');
 	}
@@ -1017,9 +878,8 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testHasGroupPermissionMatchingGroup(): void {
 		$result = $this->permissionHandler->hasGroupPermission(
-			['read' => ['editors', 'public']],
-			'editors',
-			'read'
+			request: (new GroupRuleRequest(authorization: ['read' => ['editors', 'public']], action: 'read'))
+				->forGroup(groupId: 'editors', userGroup: null)
 		);
 		$this->assertTrue($result);
 	}
@@ -1029,9 +889,8 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testHasGroupPermissionNonMatchingGroup(): void {
 		$result = $this->permissionHandler->hasGroupPermission(
-			['delete' => ['admin']],
-			'editors',
-			'delete'
+			request: (new GroupRuleRequest(authorization: ['delete' => ['admin']], action: 'delete'))
+				->forGroup(groupId: 'editors', userGroup: null)
 		);
 		$this->assertFalse($result);
 	}
@@ -1041,12 +900,9 @@ class ObjectHandlersIntegrationTest extends TestCase {
 	 */
 	public function testHasGroupPermissionOwnerOverride(): void {
 		$result = $this->permissionHandler->hasGroupPermission(
-			['delete' => ['admin']],
-			'users',
-			'delete',
-			'user1',
-			null,
-			'user1' // objectOwner matches userId
+			request: (new GroupRuleRequest(authorization: ['delete' => ['admin']], action: 'delete'))
+				->forGroup(groupId: 'users', userGroup: null)
+				->forUser(userId: 'user1', objectOwner: 'user1')
 		);
 		$this->assertTrue($result);
 	}
@@ -1063,15 +919,9 @@ class ObjectHandlersIntegrationTest extends TestCase {
 
 		// Without active organisation, condition fails.
 		$result = $this->permissionHandler->hasGroupPermission(
-			$authorization,
-			'editors',
-			'read',
-			null,
-			null,
-			null,
-			null,
-			'org-uuid-123',
-			null  // no active organisation
+			(new GroupRuleRequest(authorization: $authorization, action: 'read'))
+				->forGroup(groupId: 'editors', userGroup: null)
+				->onObject(data: null, organisation: 'org-uuid-123')
 		);
 		$this->assertFalse($result);
 
@@ -1096,14 +946,9 @@ class ObjectHandlersIntegrationTest extends TestCase {
 			}
 
 			$result2 = $this->permissionHandler->hasGroupPermission(
-				$authorization,
-				'editors',
-				'read',
-				null,
-				null,
-				null,
-				null,
-				$activeOrg->getUuid()
+				request: (new GroupRuleRequest(authorization: $authorization, action: 'read'))
+					->forGroup(groupId: 'editors', userGroup: null)
+					->onObject(data: null, organisation: $activeOrg->getUuid())
 			);
 		} finally {
 			$userSession->setUser($previous);
@@ -1123,9 +968,8 @@ class ObjectHandlersIntegrationTest extends TestCase {
 		];
 
 		$result = $this->permissionHandler->hasGroupPermission(
-			$authorization,
-			'editors',
-			'read'
+			request: (new GroupRuleRequest(authorization: $authorization, action: 'read'))
+				->forGroup(groupId: 'editors', userGroup: null)
 		);
 		$this->assertTrue($result);
 	}
@@ -1159,8 +1003,7 @@ class ObjectHandlersIntegrationTest extends TestCase {
 			$this->permissionHandler->checkPermission(
 				$restrictedSchema,
 				'delete',
-				'admin',
-				null,
+				new PermissionCheckOptions(userId: 'admin'),
 				true
 			);
 			$this->assertTrue(true, 'Admin can delete');

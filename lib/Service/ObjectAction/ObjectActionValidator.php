@@ -43,7 +43,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
  */
-class ObjectActionValidator {
+class ObjectActionValidator implements ObjectActionValidatorInterface {
 
 	/**
 	 * Constructor.
@@ -73,26 +73,52 @@ class ObjectActionValidator {
 	public function refusals(Schema $schema): array {
 		$configuration = ($schema->getConfiguration() ?? []);
 
-		$refusals = ObjectActionDefinition::refusals(
-			configuration: $configuration,
-			authorization: ($schema->getAuthorization() ?? [])
+		$refusals = $this->definitionRefusals(schema: $schema, configuration: $configuration);
+		if ($refusals !== []) {
+			return $refusals;
+		}
+
+		$refusals = array_merge(
+			$this->elevationRefusals(configuration: $configuration),
+			$this->selfAssignFieldRefusals(schema: $schema)
 		);
 		if ($refusals !== []) {
 			return $refusals;
 		}
 
-		$refusals = $this->elevationRefusals(configuration: $configuration);
-		if ($refusals !== []) {
-			return $refusals;
-		}
+		return $this->stepAndMacroRefusals(configuration: $configuration);
+	}//end refusals()
 
+	/**
+	 * The refusals of the declared actions themselves, read against the schema's authorization.
+	 *
+	 * @param Schema               $schema        The schema.
+	 * @param array<string, mixed> $configuration Its configuration.
+	 *
+	 * @return array<int, string> The refusals.
+	 */
+	private function definitionRefusals(Schema $schema, array $configuration): array {
+		return ObjectActionDefinition::refusals(
+			configuration: $configuration,
+			authorization: ($schema->getAuthorization() ?? [])
+		);
+	}//end definitionRefusals()
+
+	/**
+	 * The refusals of the actions' steps, or else of their macros.
+	 *
+	 * @param array<string, mixed> $configuration The schema's configuration.
+	 *
+	 * @return array<int, string> The refusals.
+	 */
+	private function stepAndMacroRefusals(array $configuration): array {
 		$refusals = ($this->steps?->refusals(configuration: $configuration) ?? []);
 		if ($refusals !== []) {
 			return $refusals;
 		}
 
 		return $this->macros->refusals(configuration: $configuration);
-	}//end refusals()
+	}//end stepAndMacroRefusals()
 
 	/**
 	 * Refuse `elevate` saved by a signed-in user who is not an administrator.
@@ -128,4 +154,35 @@ class ObjectActionValidator {
 			$elevating
 		);
 	}//end elevationRefusals()
+
+	/**
+	 * Refusals for a self-assign action whose field the schema does not declare.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return list<string> The refusals.
+	 *
+	 * @spec openspec/changes/declared-self-assign-action/specs/declared-actions/spec.md
+	 */
+	private function selfAssignFieldRefusals(Schema $schema): array {
+		$properties = ($schema->getProperties() ?? []);
+		$refusals = [];
+		foreach (ObjectActionDefinition::parse(configuration: ($schema->getConfiguration() ?? [])) as $key => $definition) {
+			$field = $definition->selfAssignField();
+			if ($field === null) {
+				continue;
+			}
+
+			if (is_array($properties[$field] ?? null) === false) {
+				$refusals[] = sprintf('Action "%s": "selfAssign" names "%s", which is not a property of this schema.', $key, $field);
+				continue;
+			}
+
+			if (($properties[$field]['type'] ?? 'string') !== 'string') {
+				$refusals[] = sprintf('Action "%s": "selfAssign" names "%s", which does not hold a string.', $key, $field);
+			}
+		}
+
+		return $refusals;
+	}//end selfAssignFieldRefusals()
 }//end class

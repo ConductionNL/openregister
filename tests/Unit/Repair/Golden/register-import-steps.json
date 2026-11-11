@@ -1,0 +1,227 @@
+{
+    "ImportCredentialBrokerRegister": {
+        "missing": [
+            "name Import OpenRegister credential-broker register (credential schema + example objects)",
+            "appPath openregister",
+            "out.warning Credential-broker register descriptor not found: <app>/lib/Settings/credential_broker_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister credential-broker register (credential schema + example objects)",
+            "appPath openregister",
+            "out.warning Credential-broker register descriptor is not valid JSON: <app>/lib/Settings/credential_broker_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister credential-broker register (credential schema + example objects)",
+            "appPath openregister",
+            "import openregister {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "out.info Credential-broker register imported (credential schema + example objects)"
+        ],
+        "failing": [
+            "name Import OpenRegister credential-broker register (credential schema + example objects)",
+            "appPath openregister",
+            "import openregister {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "log.warning [ImportCredentialBrokerRegister] import failed: importer down",
+            "out.warning Credential-broker register import skipped: importer down"
+        ]
+    },
+    "ImportDecisionTableRegister": {
+        "missing": [
+            "name Import OpenRegister decision-table register (named decision tables flows reference)",
+            "appPath openregister",
+            "out.warning Decision-table register descriptor not found: <app>/lib/Settings/decision_table_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister decision-table register (named decision tables flows reference)",
+            "appPath openregister",
+            "out.warning Decision-table register descriptor is not valid JSON: <app>/lib/Settings/decision_table_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister decision-table register (named decision tables flows reference)",
+            "appPath openregister",
+            "import openregister.decision-tables {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "out.info Decision-table register imported (decision-tables + decision-table)"
+        ],
+        "failing": [
+            "name Import OpenRegister decision-table register (named decision tables flows reference)",
+            "appPath openregister",
+            "import openregister.decision-tables {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "log.warning [ImportDecisionTableRegister] import failed: importer down",
+            "out.warning Decision-table register import skipped: importer down"
+        ]
+    },
+    "ImportDestructionListRegister": {
+        "missing": [
+            "name Import OpenRegister destruction-list register",
+            "appPath openregister",
+            "out.warning destruction-list register descriptor not found: <app>/lib/Settings/destruction_list_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister destruction-list register",
+            "appPath openregister",
+            "out.warning destruction-list register descriptor is not valid JSON: <app>/lib/Settings/destruction_list_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister destruction-list register",
+            "appPath openregister",
+            "import openregister.destruction-lists {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "out.info destruction-list register imported (destructionList)"
+        ],
+        "failing": [
+            "name Import OpenRegister destruction-list register",
+            "appPath openregister",
+            "import openregister.destruction-lists {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "log.warning [ImportDestructionListRegister] import failed: importer down",
+            "out.warning destruction-list register import skipped: importer down"
+        ]
+    },
+    "ImportDismissedPairRegister": {
+        "missing": [
+            "name Import OpenRegister dismissed-pair register (pairs reviewed as not duplicates)",
+            "appPath openregister",
+            "out.warning Dismissed-pair register descriptor not found: <app>/lib/Settings/dismissed_pair_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister dismissed-pair register (pairs reviewed as not duplicates)",
+            "appPath openregister",
+            "out.warning Dismissed-pair register descriptor is not valid JSON: <app>/lib/Settings/dismissed_pair_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister dismissed-pair register (pairs reviewed as not duplicates)",
+            "appPath openregister",
+            "import openregister.dismissed-pair {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "out.info Dismissed-pair register imported (dismissed-pair + dismissedPair)"
+        ],
+        "failing": [
+            "name Import OpenRegister dismissed-pair register (pairs reviewed as not duplicates)",
+            "appPath openregister",
+            "import openregister.dismissed-pair {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "log.warning [ImportDismissedPairRegister] import failed: importer down",
+            "out.warning Dismissed-pair register import skipped: importer down"
+        ]
+    },
+    "ImportEdepotTransferRegister": {
+        "missing": [
+            "name Import OpenRegister e-Depot transfer register (transfer lists + proof-of-transfer records)",
+            "appPath openregister",
+            "out.warning e-Depot transfer register descriptor not found: <app>/lib/Settings/edepot_transfer_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister e-Depot transfer register (transfer lists + proof-of-transfer records)",
+            "appPath openregister",
+            "out.warning e-Depot transfer register descriptor is not valid JSON: <app>/lib/Settings/edepot_transfer_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister e-Depot transfer register (transfer lists + proof-of-transfer records)",
+            "appPath openregister",
+            "import openregister.edepot-transfers {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "out.info e-Depot transfer register imported (edepotTransfer + edepotTransferProof)"
+        ],
+        "failing": [
+            "name Import OpenRegister e-Depot transfer register (transfer lists + proof-of-transfer records)",
+            "appPath openregister",
+            "import openregister.edepot-transfers {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "log.warning [ImportEdepotTransferRegister] import failed: importer down",
+            "out.warning e-Depot transfer register import skipped: importer down"
+        ]
+    },
+    "ImportFlowRegister": {
+        "missing": [
+            "name Import OpenRegister flow register (flows register + flow schema)",
+            "appPath openregister",
+            "out.warning Flow register descriptor not found: <app>/lib/Settings/flow_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister flow register (flows register + flow schema)",
+            "appPath openregister",
+            "out.warning Flow register descriptor is not valid JSON: <app>/lib/Settings/flow_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister flow register (flows register + flow schema)",
+            "appPath openregister",
+            "import openregister {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.4.0 false",
+            "out.info Flow register imported (flows register + flow schema)"
+        ],
+        "failing": [
+            "name Import OpenRegister flow register (flows register + flow schema)",
+            "appPath openregister",
+            "import openregister {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.4.0 false",
+            "log.warning [ImportFlowRegister] import failed: importer down",
+            "out.warning Flow register import skipped: importer down"
+        ]
+    },
+    "ImportMergeOperationRegister": {
+        "missing": [
+            "name Import OpenRegister merge-operation register (merge audit + reversal snapshots)",
+            "appPath openregister",
+            "out.warning Merge-operation register descriptor not found: <app>/lib/Settings/merge_operation_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister merge-operation register (merge audit + reversal snapshots)",
+            "appPath openregister",
+            "out.warning Merge-operation register descriptor is not valid JSON: <app>/lib/Settings/merge_operation_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister merge-operation register (merge audit + reversal snapshots)",
+            "appPath openregister",
+            "import openregister.merge-operation {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "out.info Merge-operation register imported (merge-operation + mergeOperation)"
+        ],
+        "failing": [
+            "name Import OpenRegister merge-operation register (merge audit + reversal snapshots)",
+            "appPath openregister",
+            "import openregister.merge-operation {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "log.warning [ImportMergeOperationRegister] import failed: importer down",
+            "out.warning Merge-operation register import skipped: importer down"
+        ]
+    },
+    "ImportSurveyRegister": {
+        "missing": [
+            "name Import OpenRegister survey register (surveys register + its four schemas)",
+            "appPath openregister",
+            "out.warning Survey register descriptor not found: <app>/lib/Settings/survey_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister survey register (surveys register + its four schemas)",
+            "appPath openregister",
+            "out.warning Survey register descriptor is not valid JSON: <app>/lib/Settings/survey_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister survey register (surveys register + its four schemas)",
+            "appPath openregister",
+            "import openregister {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "out.info Survey register imported (surveys register + survey, surveyQuestion, surveyInvitation and surveyAnswerSet)"
+        ],
+        "failing": [
+            "name Import OpenRegister survey register (surveys register + its four schemas)",
+            "appPath openregister",
+            "import openregister {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "log.warning [ImportSurveyRegister] import failed: importer down",
+            "out.warning Survey register import skipped: importer down"
+        ]
+    },
+    "ImportTrustConfigurationRegister": {
+        "missing": [
+            "name Import OpenRegister MDM trust-configuration register (source trust tiers for survivorship)",
+            "appPath openregister",
+            "out.warning Trust-configuration register descriptor not found: <app>/lib/Settings/trust_configuration_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister MDM trust-configuration register (source trust tiers for survivorship)",
+            "appPath openregister",
+            "out.warning Trust-configuration register descriptor is not valid JSON: <app>/lib/Settings/trust_configuration_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister MDM trust-configuration register (source trust tiers for survivorship)",
+            "appPath openregister",
+            "import openregister.trust-configuration {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "out.info MDM trust-configuration register imported (trustConfiguration)"
+        ],
+        "failing": [
+            "name Import OpenRegister MDM trust-configuration register (source trust tiers for survivorship)",
+            "appPath openregister",
+            "import openregister.trust-configuration {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "log.warning [ImportTrustConfigurationRegister] import failed: importer down",
+            "out.warning Trust-configuration register import skipped: importer down"
+        ]
+    }
+}

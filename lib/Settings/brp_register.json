@@ -361,7 +361,7 @@
         "searchable": true,
         "authorization": {
           "read": [
-            "public"
+            {"group": "public", "crossOrganisation": true}
           ]
         }
       }

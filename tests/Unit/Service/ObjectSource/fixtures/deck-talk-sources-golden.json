@@ -1,0 +1,678 @@
+{
+    "deck no user": {
+        "result": [],
+        "observed": []
+    },
+    "deck board service throws": {
+        "result": [],
+        "observed": [
+            [
+                "container",
+                "OCA\\Deck\\Service\\BoardService"
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:deck-source] could not resolve OCA\\Deck\\Service\\BoardService: nope"
+            ],
+            [
+                "container",
+                "OCA\\Deck\\Service\\StackService"
+            ]
+        ]
+    },
+    "deck stack service not an object": {
+        "result": [],
+        "observed": [
+            [
+                "container",
+                "OCA\\Deck\\Service\\BoardService"
+            ],
+            [
+                "container",
+                "OCA\\Deck\\Service\\StackService"
+            ]
+        ]
+    },
+    "deck boards throw": {
+        "result": null,
+        "observed": [
+            [
+                "container",
+                "OCA\\Deck\\Service\\BoardService"
+            ],
+            [
+                "container",
+                "OCA\\Deck\\Service\\StackService"
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:deck-source] could not list boards: boards down"
+            ]
+        ]
+    },
+    "deck findAll": {
+        "result": [
+            [
+                "11",
+                "21",
+                "210",
+                {
+                    "id": "11",
+                    "title": "First",
+                    "description": "Desc",
+                    "stackId": 7,
+                    "boardId": 1,
+                    "duedate": "2026-03-04T05:06:07+00:00"
+                }
+            ],
+            [
+                "",
+                "21",
+                "210",
+                {
+                    "id": "",
+                    "title": "",
+                    "description": "",
+                    "stackId": null,
+                    "boardId": 1,
+                    "duedate": null
+                }
+            ],
+            [
+                "12",
+                "21",
+                "210",
+                {
+                    "id": "12",
+                    "title": "12.5",
+                    "description": "",
+                    "stackId": null,
+                    "boardId": 3,
+                    "duedate": null
+                }
+            ],
+            [
+                "13",
+                "21",
+                "210",
+                {
+                    "id": "13",
+                    "title": "Third",
+                    "description": "",
+                    "stackId": 8,
+                    "boardId": 3,
+                    "duedate": null
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "container",
+                "OCA\\Deck\\Service\\BoardService"
+            ],
+            [
+                "container",
+                "OCA\\Deck\\Service\\StackService"
+            ],
+            [
+                "stacks",
+                1
+            ],
+            [
+                "stacks",
+                2
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:deck-source] could not list stacks for board 2: stacks down"
+            ],
+            [
+                "stacks",
+                3
+            ],
+            [
+                "log",
+                "debug",
+                "[DeckObjectSourceProvider] Card due date not readable"
+            ]
+        ]
+    },
+    "deck findAll paged": {
+        "result": [
+            [
+                "",
+                "21",
+                "210",
+                {
+                    "id": "",
+                    "title": "",
+                    "description": "",
+                    "stackId": null,
+                    "boardId": 1,
+                    "duedate": null
+                }
+            ],
+            [
+                "12",
+                "21",
+                "210",
+                {
+                    "id": "12",
+                    "title": "12.5",
+                    "description": "",
+                    "stackId": null,
+                    "boardId": 3,
+                    "duedate": null
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "container",
+                "OCA\\Deck\\Service\\BoardService"
+            ],
+            [
+                "container",
+                "OCA\\Deck\\Service\\StackService"
+            ],
+            [
+                "stacks",
+                1
+            ],
+            [
+                "stacks",
+                2
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:deck-source] could not list stacks for board 2: stacks down"
+            ],
+            [
+                "stacks",
+                3
+            ],
+            [
+                "log",
+                "debug",
+                "[DeckObjectSourceProvider] Card due date not readable"
+            ]
+        ]
+    },
+    "deck count": {
+        "result": 3,
+        "observed": [
+            [
+                "container",
+                "OCA\\Deck\\Service\\BoardService"
+            ],
+            [
+                "container",
+                "OCA\\Deck\\Service\\StackService"
+            ],
+            [
+                "stacks",
+                1
+            ],
+            [
+                "stacks",
+                2
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:deck-source] could not list stacks for board 2: stacks down"
+            ],
+            [
+                "stacks",
+                3
+            ],
+            [
+                "log",
+                "debug",
+                "[DeckObjectSourceProvider] Card due date not readable"
+            ]
+        ]
+    },
+    "deck find hit": {
+        "result": [
+            "12",
+            "21",
+            "210",
+            {
+                "id": "12",
+                "title": "12.5",
+                "description": "",
+                "stackId": null,
+                "boardId": 3,
+                "duedate": null
+            }
+        ],
+        "observed": [
+            [
+                "container",
+                "OCA\\Deck\\Service\\BoardService"
+            ],
+            [
+                "container",
+                "OCA\\Deck\\Service\\StackService"
+            ],
+            [
+                "stacks",
+                1
+            ],
+            [
+                "stacks",
+                2
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:deck-source] could not list stacks for board 2: stacks down"
+            ],
+            [
+                "stacks",
+                3
+            ],
+            [
+                "log",
+                "debug",
+                "[DeckObjectSourceProvider] Card due date not readable"
+            ]
+        ]
+    },
+    "deck find empty id": {
+        "result": [
+            "",
+            "21",
+            "210",
+            {
+                "id": "",
+                "title": "",
+                "description": "",
+                "stackId": null,
+                "boardId": 1,
+                "duedate": null
+            }
+        ],
+        "observed": [
+            [
+                "container",
+                "OCA\\Deck\\Service\\BoardService"
+            ],
+            [
+                "container",
+                "OCA\\Deck\\Service\\StackService"
+            ],
+            [
+                "stacks",
+                1
+            ],
+            [
+                "stacks",
+                2
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:deck-source] could not list stacks for board 2: stacks down"
+            ],
+            [
+                "stacks",
+                3
+            ],
+            [
+                "log",
+                "debug",
+                "[DeckObjectSourceProvider] Card due date not readable"
+            ]
+        ]
+    },
+    "deck find miss": {
+        "result": null,
+        "observed": [
+            [
+                "container",
+                "OCA\\Deck\\Service\\BoardService"
+            ],
+            [
+                "container",
+                "OCA\\Deck\\Service\\StackService"
+            ],
+            [
+                "stacks",
+                1
+            ],
+            [
+                "stacks",
+                2
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:deck-source] could not list stacks for board 2: stacks down"
+            ],
+            [
+                "stacks",
+                3
+            ],
+            [
+                "log",
+                "debug",
+                "[DeckObjectSourceProvider] Card due date not readable"
+            ]
+        ]
+    },
+    "talk no user": {
+        "result": [],
+        "observed": []
+    },
+    "talk manager throws": {
+        "result": [],
+        "observed": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:talk-source] could not resolve OCA\\Talk\\Manager: nope"
+            ]
+        ]
+    },
+    "talk rooms throw": {
+        "result": null,
+        "observed": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:talk-source] could not list rooms: rooms down"
+            ]
+        ]
+    },
+    "talk findAll counting": {
+        "result": [
+            [
+                "tok1",
+                "21",
+                "210",
+                {
+                    "id": "tok1",
+                    "name": "Room one",
+                    "displayName": "Shown to alice",
+                    "type": 2,
+                    "participantCount": 4,
+                    "lastActivity": "2026-05-06T07:08:09+00:00"
+                }
+            ],
+            [
+                "tok2",
+                "21",
+                "210",
+                {
+                    "id": "tok2",
+                    "name": "Fallback name",
+                    "displayName": "Fallback name",
+                    "type": null,
+                    "participantCount": 4,
+                    "lastActivity": null
+                }
+            ],
+            [
+                "",
+                "21",
+                "210",
+                {
+                    "id": "",
+                    "name": "",
+                    "displayName": "",
+                    "type": null,
+                    "participantCount": 4,
+                    "lastActivity": null
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "rooms",
+                "alice"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
+            ]
+        ]
+    },
+    "talk findAll no participant service": {
+        "result": [
+            [
+                "tok1",
+                "21",
+                "210",
+                {
+                    "id": "tok1",
+                    "name": "Room one",
+                    "displayName": "Shown to alice",
+                    "type": 2,
+                    "participantCount": 0,
+                    "lastActivity": "2026-05-06T07:08:09+00:00"
+                }
+            ],
+            [
+                "tok2",
+                "21",
+                "210",
+                {
+                    "id": "tok2",
+                    "name": "Fallback name",
+                    "displayName": "Fallback name",
+                    "type": null,
+                    "participantCount": 0,
+                    "lastActivity": null
+                }
+            ],
+            [
+                "",
+                "21",
+                "210",
+                {
+                    "id": "",
+                    "name": "",
+                    "displayName": "",
+                    "type": null,
+                    "participantCount": 0,
+                    "lastActivity": null
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "rooms",
+                "alice"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "warning",
+                "[ObjectSource:talk-source] could not resolve OCA\\Talk\\Service\\ParticipantService: no ps"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
+            ]
+        ]
+    },
+    "talk findAll participant count throws": {
+        "result": [
+            [
+                "tok2",
+                "21",
+                "210",
+                {
+                    "id": "tok2",
+                    "name": "Fallback name",
+                    "displayName": "Fallback name",
+                    "type": null,
+                    "participantCount": 0,
+                    "lastActivity": null
+                }
+            ]
+        ],
+        "observed": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "rooms",
+                "alice"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
+            ]
+        ]
+    },
+    "talk count": {
+        "result": 3,
+        "observed": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "rooms",
+                "alice"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
+            ]
+        ]
+    },
+    "talk find hit": {
+        "result": [
+            "tok2",
+            "21",
+            "210",
+            {
+                "id": "tok2",
+                "name": "Fallback name",
+                "displayName": "Fallback name",
+                "type": null,
+                "participantCount": 4,
+                "lastActivity": null
+            }
+        ],
+        "observed": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "rooms",
+                "alice"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
+            ]
+        ]
+    },
+    "talk find empty id": {
+        "result": [
+            "",
+            "21",
+            "210",
+            {
+                "id": "",
+                "name": "",
+                "displayName": "",
+                "type": null,
+                "participantCount": 4,
+                "lastActivity": null
+            }
+        ],
+        "observed": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "rooms",
+                "alice"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
+            ]
+        ]
+    },
+    "talk find miss": {
+        "result": null,
+        "observed": [
+            [
+                "container",
+                "OCA\\Talk\\Manager"
+            ],
+            [
+                "rooms",
+                "alice"
+            ],
+            [
+                "container",
+                "OCA\\Talk\\Service\\ParticipantService"
+            ],
+            [
+                "log",
+                "debug",
+                "[TalkObjectSourceProvider] Room last activity not readable"
+            ]
+        ]
+    }
+}

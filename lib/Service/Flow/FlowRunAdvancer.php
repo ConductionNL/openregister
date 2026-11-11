@@ -31,8 +31,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use Psr\Log\LoggerInterface;
 use stdClass;
 use Throwable;
@@ -42,22 +43,41 @@ use Throwable;
  *
  * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
  */
-class FlowRunAdvancer {
+class FlowRunAdvancer implements FlowRunAdvancerInterface {
+	/**
+	 * Executes the run.
+	 *
+	 * @var FlowRunServiceInterface
+	 */
+	private readonly FlowRunServiceInterface $runner;
+
+	/**
+	 * Resolves the flow and its subject.
+	 *
+	 * @var FlowLocator
+	 */
+	private readonly FlowLocator $resolvers;
+
+	/**
+	 * Records failures.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowRunMapper $mapper Persists a run that cannot proceed.
-	 * @param FlowRunService $runner Executes the run.
-	 * @param FlowLocator $resolvers Resolves the flow and its subject.
-	 * @param LoggerInterface $logger Records failures.
+	 * @param FlowRunMapperInterface $mapper    Persists a run that cannot proceed.
+	 * @param FlowExecution          $execution Resolves the flow and its subject, executes the run and logs.
 	 */
 	public function __construct(
-		private readonly FlowRunMapper $mapper,
-		private readonly FlowRunService $runner,
-		private readonly FlowLocator $resolvers,
-		private readonly LoggerInterface $logger,
+		private readonly FlowRunMapperInterface $mapper,
+		FlowExecution $execution,
 	) {
-
+		$this->runner    = $execution->runner;
+		$this->resolvers = $execution->resolvers;
+		$this->logger    = $execution->logger;
 	}//end __construct()
 
 	/**
@@ -89,18 +109,15 @@ class FlowRunAdvancer {
 	 */
 	public function advance(FlowRun $run, bool $rethrow = false): FlowRun {
 		try {
-			$flow = $this->resolvers->resolveFlow((string)$run->getFlowId());
-			if ($flow === null) {
-				// No installed app owns this flow — it was deleted, or the app
-				// that stored it was removed. The run cannot proceed; fail it
-				// with a clear reason rather than leaving it queued forever.
+			$pass = $this->resolvedPass(run: $run);
+			if (is_string($pass) === true) {
 				$run->setStatus(FlowRun::STATUS_FAILED);
-				$run->setError(sprintf('No app provides flow "%s" (deleted, or its app removed?).', $run->getFlowId()));
+				$run->setError($pass);
 				$this->mapper->update($run);
 				return $run;
 			}
 
-			// 🔴 THE PIN. Up to here `$flow` is the LIVE definition — which is
+			// 🔴 THE PIN. The pass carries the LIVE flow definition — which is
 			// correct for authorization (a revoked owner must stop the next
 			// hop) and wrong for the graph. A run parked on a human step for a
 			// week must finish the flow it started, not the one its author has
@@ -110,40 +127,7 @@ class FlowRunAdvancer {
 			// every path into the engine goes through. Checking it here as well
 			// would be a second copy of the rule — and the two would drift.
 
-			// A run may legitimately have no subject (a manual or webhook run
-			// seeded from its payload). Only resolve one when the run names it.
-			$subject = null;
-			if (trim((string)$run->getSubjectUuid()) !== '') {
-				$subject = $this->resolvers->resolveSubject(
-					(string)$run->getSubjectUuid(),
-					(string)$run->getSubjectRegister(),
-					(string)$run->getSubjectSchema()
-				);
-
-				// 🔴 A DELETED SUBJECT IS NOT A RESOLUTION FAILURE WHEN A
-				// SNAPSHOT RODE ALONG. `object.deleted` is the one lifecycle
-				// event whose subject can NEVER be re-resolved — the object is
-				// already gone by the time any run, inline or queued, reaches
-				// it, by definition. `FlowTriggerListener` hands such a run the
-				// object's last-known state under `payload` for exactly this
-				// case. Failing here regardless would make every
-				// `object.deleted` trigger fail on every firing, unconditionally
-				// — not a sometimes-bug, a structural one. Scoped to that one
-				// trigger deliberately: every OTHER trigger's unresolved subject
-				// is a genuine resolution failure (e.g. a sub-flow fan-out child
-				// queued against an object that gets deleted before it runs) and
-				// must still fail rather than silently run on stale data.
-				if ($subject === null && $run->hasDeletedSubjectSnapshot() === false) {
-					$run->setStatus(FlowRun::STATUS_FAILED);
-					$run->setError(sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid()));
-					$this->mapper->update($run);
-					return $run;
-				}
-			}
-
-			// A subjectless run still needs an object to carry the marking; a
-			// bare holder does, since the marking store keeps the marking on the
-			// run itself ({@see FlowRunMarkingStore}). Such a run is seeded from
+			// A subjectless run walks over a bare holder and is seeded from
 			// its payload instead of an object: a non-object trigger (a file, a
 			// user) puts what it is about under `payload` on the run context, and
 			// that becomes the first item, so the flow reads a file's path or a
@@ -151,15 +135,12 @@ class FlowRunAdvancer {
 			// named an object but could not be re-resolved (a deletion) takes the
 			// same path, on the same payload slot.
 			$seed = null;
-			if ($subject === null) {
-				$subject = new stdClass();
-				$payload = (array)(($run->getContext() ?? [])['payload'] ?? []);
-				if ($payload !== []) {
-					$seed = [FlowItems::item(json: $payload)];
-				}
+			$payload = (array)(($run->getContext() ?? [])['payload'] ?? []);
+			if ($this->walksPayload(pass: $pass) === true && $payload !== []) {
+				$seed = [FlowItems::item(json: $payload)];
 			}
 
-			return $this->runner->execute(run: $run, flow: $flow, subject: $subject, seedItems: $seed);
+			return $this->runner->executePass(pass: $pass, origin: new FlowRunOrigin(items: $seed));
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[FlowRunAdvancer] Failed to advance a run',
@@ -206,43 +187,95 @@ class FlowRunAdvancer {
 	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public function advanceStream(FlowRun $run, string $streamId, int|string $budget): FlowRun {
-		$flow = $this->resolvers->resolveFlow((string)$run->getFlowId());
-		if ($flow === null) {
+		$pass = $this->resolvedPass(run: $run);
+		if (is_string($pass) === true) {
 			$run->setStatus(FlowRun::STATUS_FAILED);
-			$run->setError(sprintf('No app provides flow "%s" (deleted, or its app removed?).', $run->getFlowId()));
+			$run->setError($pass);
 
 			return $this->mapper->update($run);
 		}
 
-		$subject = null;
-		if (trim((string)$run->getSubjectUuid()) !== '') {
-			$subject = $this->resolvers->resolveSubject(
-				(string)$run->getSubjectUuid(),
-				(string)$run->getSubjectRegister(),
-				(string)$run->getSubjectSchema()
+		// A resumed walk reads its items from the run, never from a seed.
+		return $this->runner->advanceBranch(
+			pass: $pass,
+			advance: new FlowStreamAdvance(streamId: $streamId, budget: $budget)
+		);
+	}//end advanceStream()
+
+	/**
+	 * Whether the run names a subject object.
+	 *
+	 * A run may legitimately have none: a manual or webhook run is seeded from its payload.
+	 *
+	 * @param FlowRun $run The run.
+	 *
+	 * @return bool
+	 */
+	private function hasSubject(FlowRun $run): bool {
+		return trim((string)$run->getSubjectUuid()) !== '';
+	}//end hasSubject()
+
+	/**
+	 * Whether the pass walks the run's payload instead of an object.
+	 *
+	 * True for a subjectless run, and for an object.deleted run whose subject
+	 * could not be re-resolved and so walks a bare holder (see resolvedPass()).
+	 *
+	 * @param FlowRunPass $pass The pass.
+	 *
+	 * @return bool
+	 */
+	private function walksPayload(FlowRunPass $pass): bool {
+		if ($this->hasSubject(run: $pass->run) === false) {
+			return true;
+		}
+
+		return $pass->run->hasDeletedSubjectSnapshot() === true
+			&& $pass->subject instanceof stdClass
+			&& get_object_vars($pass->subject) === [];
+	}//end walksPayload()
+
+	/**
+	 * The run's flow and subject as a pass, or why the run cannot proceed.
+	 *
+	 * A subjectless run gets a bare holder as its subject, since the marking
+	 * store keeps the marking on the run itself ({@see FlowRunMarkingStore}).
+	 *
+	 * @param FlowRun $run The run.
+	 *
+	 * @return FlowRunPass|string The pass, or the reason to fail the run with.
+	 */
+	private function resolvedPass(FlowRun $run): FlowRunPass|string {
+		$flow = $this->resolvers->resolveFlow((string)$run->getFlowId());
+		if ($flow === null) {
+			// No installed app owns this flow: it was deleted, or the app that
+			// stored it was removed. Fail the run rather than leave it queued forever.
+			return sprintf('No app provides flow "%s" (deleted, or its app removed?).', $run->getFlowId());
+		}
+
+		$subject = new stdClass();
+		if ($this->hasSubject(run: $run) === true) {
+			$subject = $this->resolvers->resolveObject(
+				ref: new ObjectRef(
+					register: (string)$run->getSubjectRegister(),
+					schema: (string)$run->getSubjectSchema(),
+					id: (string)$run->getSubjectUuid()
+				)
 			);
 
-			// Same fallback as {@see self::advance()}, scoped the same way: a
-			// deleted subject with a snapshot under `payload` is not a
-			// resolution failure, it is the one lifecycle event that can never
-			// re-resolve by design.
-			if ($subject === null && $run->hasDeletedSubjectSnapshot() === false) {
-				$run->setStatus(FlowRun::STATUS_FAILED);
-				$run->setError(sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid()));
+			// An object.deleted run can never re-resolve its subject; it walks
+			// the snapshot under `payload` instead (see FlowRun::hasDeletedSubjectSnapshot()).
+			// Every other unresolved subject still fails the run.
+			if ($subject === null && $run->hasDeletedSubjectSnapshot() === true) {
+				$subject = new stdClass();
+			}
 
-				return $this->mapper->update($run);
+			if ($subject === null) {
+				return sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid());
 			}
 		}
 
-		// A resumed walk reads its items from the run, never from a seed, so a
-		// subjectless run needs only the bare marking holder here.
-		return $this->runner->advanceStream(
-			run: $run,
-			flow: $flow,
-			subject: ($subject ?? new stdClass()),
-			streamId: $streamId,
-			budget: $budget
-		);
-	}//end advanceStream()
+		return new FlowRunPass(run: $run, flow: $flow, subject: $subject);
+	}//end resolvedPass()
 
 }//end class

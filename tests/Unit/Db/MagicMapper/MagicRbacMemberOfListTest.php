@@ -32,18 +32,24 @@ use Doctrine\DBAL\Platforms\SqlitePlatform;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\Rbac\MemberOfResolver;
+use OCA\OpenRegister\Service\Rbac\SchemaRegisterLookup;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IParameter;
@@ -58,6 +64,9 @@ use PDO;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Another administration's rows are excluded, and the count and pages agree.
@@ -109,6 +118,7 @@ class MagicRbacMemberOfListTest extends TestCase {
 		$schema = new Schema();
 		$schema->setId(61);
 		$schema->setSlug('boeking');
+		$schema->setProperties(['administrationId' => ['type' => 'string']]);
 		$schema->setAuthorization(
 			[
 				'read' => [
@@ -175,22 +185,26 @@ class MagicRbacMemberOfListTest extends TestCase {
 
 		$evaluator = new OperatorEvaluator(new NullLogger());
 		$matcher = new ConditionMatcher(
-			$session,
+			new ConditionUserResolvers($session, $groups, new MemberOfResolver(new SchemaRegisterLookup($schemas, $registers), $this->containerGiving($objects), $evaluator, new NullLogger())),
 			$this->createMock(ContainerInterface::class),
 			$evaluator,
-			new NullLogger(),
-			$groups,
-			new MemberOfResolver($schemas, $registers, $objects, $evaluator, new NullLogger())
+			new NullLogger()
 		);
 
 		return new MagicRbacHandler(
-			$session,
-			$groups,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$matcher,
-			$this->createMock(ContainerInterface::class),
-			new NullLogger()
+			identity: new MagicMapperIdentity(
+				userSession: $session,
+				groupManager: $groups,
+				userManager: $this->createMock(IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $matcher,
+				container: $this->createMock(ContainerInterface::class),
+				logger: new NullLogger()
+			)
 		);
 	}//end rbacHandler()
 
@@ -227,7 +241,7 @@ class MagicRbacMemberOfListTest extends TestCase {
 			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
 		);
 
-		return $search->buildWhereConditionsSql(query: [], schema: $this->bookingSchema());
+		return $search->buildWhereClause(request: new WhereClauseRequest(query: [], table: new MagicReadTable(schema: $this->bookingSchema())));
 	}//end listConditions()
 
 	/**
@@ -330,7 +344,7 @@ class MagicRbacMemberOfListTest extends TestCase {
 
 		$admitted = [];
 		foreach (self::BOOKINGS as $uuid => $administration) {
-			if ($rbac->hasPermission(schema: $schema, action: 'read', objectOwner: 'importer', objectData: ['administrationId' => $administration]) === true) {
+			if ($rbac->hasPermission(ask: new RbacPermissionAsk(schema: $schema, action: 'read', objectOwner: 'importer', objectData: ['administrationId' => $administration])) === true) {
 				$admitted[] = $uuid;
 			}
 		}
@@ -408,10 +422,25 @@ class MagicRbacMemberOfListTest extends TestCase {
 			}
 		);
 
-		$this->rbacHandler('anna')->applyRbacFilters(qb: $qb, schema: $this->bookingSchema(), action: 'read');
+		$this->rbacHandler('anna')->applyRbacFilters((new RbacFilterCall(qb: $qb, schema: $this->bookingSchema()))->forAction('read'));
 
 		$sql = implode(' AND ', array_map(static fn ($predicate): string => (string)$predicate, $wheres));
 		$this->assertStringContainsString('in(t.administration_id,["adm-1","adm-2"]', $sql);
 		$this->assertStringNotContainsString('adm-3', $sql);
 	}//end testTheQueryBuilderPathFiltersOnTheSameSet()
+
+	/**
+	 * A container that hands out the given MagicMapper, as the real one does on first read.
+	 *
+	 * @param MagicMapper $objects The mapper to hand out.
+	 *
+	 * @return ContainerInterface
+	 */
+	private function containerGiving(MagicMapper $objects): ContainerInterface {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static fn (string $id): mixed => ($id === \OCA\OpenRegister\Db\MagicMapperInterface::class) ? $objects : null
+		);
+		return $container;
+	}//end containerGiving()
 }//end class

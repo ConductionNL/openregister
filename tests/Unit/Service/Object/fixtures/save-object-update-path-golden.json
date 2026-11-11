@@ -1,0 +1,228 @@
+{
+    "update": {
+        "trace": [
+            [
+                "hints",
+                3,
+                7,
+                "44444444-4444-4444-4444-444444444444"
+            ],
+            [
+                "classification",
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "title": "old"
+                }
+            ],
+            [
+                "update",
+                [],
+                null,
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "title": "old"
+                }
+            ],
+            [
+                "audit",
+                "44444444-4444-4444-4444-444444444444",
+                null,
+                null
+            ]
+        ],
+        "entity": {
+            "uuid": null,
+            "register": null,
+            "schema": null,
+            "folder": null,
+            "version": null,
+            "owner": null,
+            "organisation": null,
+            "createdSet": false,
+            "lastLog": null,
+            "description": null
+        },
+        "outcome": "updated",
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "update without rbac keeps the carried version": {
+        "trace": [
+            [
+                "hints",
+                3,
+                7,
+                "44444444-4444-4444-4444-444444444444"
+            ],
+            [
+                "classification",
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "title": "old"
+                }
+            ],
+            [
+                "update",
+                [],
+                null,
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "title": "old"
+                }
+            ],
+            [
+                "audit",
+                "44444444-4444-4444-4444-444444444444",
+                null,
+                null
+            ]
+        ],
+        "entity": {
+            "uuid": null,
+            "register": null,
+            "schema": null,
+            "folder": null,
+            "version": null,
+            "owner": null,
+            "organisation": null,
+            "createdSet": false,
+            "lastLog": null,
+            "description": null
+        },
+        "outcome": "updated",
+        "log": [
+            "debug: [SaveObject] updateInverseRelations called"
+        ]
+    },
+    "destroyed in the Dutch vocabulary": {
+        "trace": [],
+        "thrown": [
+            "Cannot modify object: archival status is vernietigd (error: OBJECT_DESTROYED)",
+            409
+        ]
+    },
+    "destroyed": {
+        "trace": [],
+        "thrown": [
+            "Cannot modify object: archival status is destroyed (error: OBJECT_DESTROYED)",
+            409
+        ]
+    },
+    "transferred in the Dutch vocabulary": {
+        "trace": [],
+        "thrown": [
+            "Cannot modify object: archival status is overgebracht (error: OBJECT_TRANSFERRED)",
+            409
+        ]
+    },
+    "transferred": {
+        "trace": [],
+        "thrown": [
+            "Cannot modify object: archival status is transferred (error: OBJECT_TRANSFERRED)",
+            409
+        ]
+    },
+    "not persisted": {
+        "trace": [
+            [
+                "hints",
+                3,
+                7,
+                "44444444-4444-4444-4444-444444444444"
+            ],
+            [
+                "classification",
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "title": "old"
+                }
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "version": "1.0.1",
+            "owner": null,
+            "organisation": null,
+            "createdSet": false,
+            "lastLog": null,
+            "description": null
+        },
+        "outcome": "unchanged",
+        "log": []
+    },
+    "not persisted without rbac keeps the carried version": {
+        "trace": [
+            [
+                "hints",
+                3,
+                7,
+                "44444444-4444-4444-4444-444444444444"
+            ],
+            [
+                "classification",
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "title": "old"
+                }
+            ]
+        ],
+        "entity": {
+            "uuid": "44444444-4444-4444-4444-444444444444",
+            "register": "3",
+            "schema": "7",
+            "folder": null,
+            "version": "9.9.9",
+            "owner": null,
+            "organisation": null,
+            "createdSet": false,
+            "lastLog": null,
+            "description": null
+        },
+        "outcome": "unchanged",
+        "log": []
+    },
+    "silent": {
+        "trace": [
+            [
+                "hints",
+                3,
+                7,
+                "44444444-4444-4444-4444-444444444444"
+            ],
+            [
+                "classification",
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "title": "old"
+                }
+            ],
+            [
+                "update",
+                [],
+                null,
+                {
+                    "id": "44444444-4444-4444-4444-444444444444",
+                    "title": "old"
+                }
+            ]
+        ],
+        "entity": {
+            "uuid": null,
+            "register": null,
+            "schema": null,
+            "folder": null,
+            "version": null,
+            "owner": null,
+            "organisation": null,
+            "createdSet": false,
+            "lastLog": null,
+            "description": null
+        },
+        "outcome": "updated",
+        "log": []
+    }
+}

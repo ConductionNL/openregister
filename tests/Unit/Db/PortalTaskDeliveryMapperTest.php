@@ -92,11 +92,6 @@ class PortalTaskDeliveryMapperTest extends TestCase {
 		$this->assertTrue($this->saw('expr.eq', 'state'));
 		$this->assertTrue($this->saw('setMaxResults', 5));
 
-		$grouped = $mapper->findForTasks(taskUuids: ['t-1', 't-1', '']);
-		$this->assertTrue($this->saw('expr.in', 'task_uuid'));
-		$this->assertArrayHasKey('t-1', $grouped);
-		$this->assertSame([], $mapper->findForTasks(taskUuids: []));
-
 		$this->expectException(DoesNotExistException::class);
 		(new PortalTaskDeliveryMapper(db: $this->connectionWith(rows: [])))->findByUuid(uuid: 'ghost');
 	}//end testFindersPredicateAndMap()

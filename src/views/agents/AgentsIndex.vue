@@ -10,6 +10,7 @@
   SPDX-FileCopyrightText: 2026 Conduction B.V.
 -->
 <template>
+	<!-- eslint-disable vue/no-undef-components -- registered through pageShellComponents, which the rule cannot follow -->
 	<NcAppContent>
 		<div class="agents">
 			<h2>{{ t('openregister', 'Agents') }}</h2>
@@ -28,63 +29,54 @@
 			<NcEmptyContent
 				v-else-if="agents.length === 0"
 				:name="t('openregister', 'No agents yet')" />
-			<table v-else class="agents__table">
-				<thead>
-					<tr>
-						<th scope="col">
-							{{ t('openregister', 'Name') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Tools') }}
-						</th>
-						<th scope="col">
-							{{ t('openregister', 'Views') }}
-						</th>
-						<th scope="col">
-							<span class="hidden-visually">{{
-								t('openregister', 'Actions')
-							}}</span>
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="agent in agents" :key="agent.id">
-						<td>{{ agent.name }}</td>
-						<td>{{ labels(agent.tools, toolOptions) }}</td>
-						<td>{{ labels(agent.views, viewOptions) }}</td>
-						<td>
-							<NcButton
-								v-if="canEdit(agent)"
-								:aria-label="
-									t('openregister', 'Limits of {name}', {
-										name: agent.name,
-									})
-								"
-								@click="editing = agent">
-								{{ t('openregister', 'Edit limits') }}
-							</NcButton>
-							<span
-								v-else-if="!isListGrant(agent)"
-								class="agents__readonly">
-								{{
-									t(
-										'openregister',
-										'This agent has a grant per app. Change it through the agents API.',
-									)
-								}}
-							</span>
-							<span v-else class="agents__readonly">
-								{{
-									t(
-										'openregister',
-										"Only the agent's owner can change its limits.",
-									)
-								}}
-							</span>
-						</td>
-					</tr>
-				</tbody>
-			</table>
+			<CnDataTable
+				v-else
+				class="agents__table"
+				:columns="columns"
+				:rows="agents">
+				<template #column-name="{ value }">
+					{{ value }}
+				</template>
+				<template #column-tools="{ row: agent }">
+					{{ labels(agent.tools, toolOptions) }}
+				</template>
+				<template #column-views="{ row: agent }">
+					{{ labels(agent.views, viewOptions) }}
+				</template>
+				<template #actions-header>
+					<span class="hidden-visually">{{ t('openregister', 'Actions') }}</span>
+				</template>
+				<template #row-actions="{ row: agent }">
+					<NcButton
+						v-if="canEdit(agent)"
+						:aria-label="
+							t('openregister', 'Limits of {name}', {
+								name: agent.name,
+							})
+						"
+						@click="editing = agent">
+						{{ t('openregister', 'Edit limits') }}
+					</NcButton>
+					<span
+						v-else-if="!isListGrant(agent)"
+						class="agents__readonly">
+						{{
+							t(
+								'openregister',
+								'This agent has a grant per app. Change it through the agents API.',
+							)
+						}}
+					</span>
+					<span v-else class="agents__readonly">
+						{{
+							t(
+								'openregister',
+								"Only the agent's owner can change its limits.",
+							)
+						}}
+					</span>
+				</template>
+			</CnDataTable>
 		</div>
 		<EditAgentLimits
 			v-if="editing"
@@ -97,28 +89,59 @@
 </template>
 
 <script>
+import { CnDataTable } from '@conduction/nextcloud-vue'
 import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import {
-	NcAppContent,
-	NcButton,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
 import EditAgentLimits from '../../modals/agent/EditAgentLimits.vue'
+import { pageShellComponents } from '../pageShell.js'
+
+/**
+ * Fetch the agents, the tool catalogue and the views, in one go.
+ *
+ * @return {Promise<Array<object>>} The three axios responses.
+ */
+function fetchAgentsToolsAndViews() {
+	return Promise.all([
+		axios.get(generateUrl('/apps/openregister/api/agents')),
+		axios.get(generateUrl('/apps/openregister/api/agents/tools')),
+		axios.get(generateUrl('/apps/openregister/api/views')),
+	])
+}
+
+/**
+ * The tool catalogue as select options, named where the catalogue names them.
+ *
+ * @param {object} response The axios response.
+ * @return {Array<{id: string, label: string}>} The options.
+ */
+function toolOptionsOf(response) {
+	return Object.entries(response.data?.results || {}).map(([id, meta]) => ({
+		id,
+		label: meta?.name || id,
+	}))
+}
+
+/**
+ * The views as select options, by uuid and name.
+ *
+ * @param {object} response The axios response.
+ * @return {Array<{id: string, label: string}>} The options.
+ */
+function viewOptionsOf(response) {
+	return (response.data?.results || []).map((view) => ({
+		id: view.uuid,
+		label: view.name || view.uuid,
+	}))
+}
 
 export default {
 	name: 'AgentsIndex',
 	components: {
+		CnDataTable,
 		EditAgentLimits,
-		NcAppContent,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
+		...pageShellComponents,
 	},
 
 	data() {
@@ -130,6 +153,21 @@ export default {
 			error: '',
 			editing: null,
 		}
+	},
+
+	computed: {
+		/**
+		 * The agents table columns; the row actions add the last one.
+		 *
+		 * @return {Array<object>} The CnDataTable columns
+		 */
+		columns() {
+			return [
+				{ key: 'name', label: t('openregister', 'Name'), cellClass: 'cn-cell--wrap' },
+				{ key: 'tools', label: t('openregister', 'Tools'), cellClass: 'cn-cell--wrap' },
+				{ key: 'views', label: t('openregister', 'Views'), cellClass: 'cn-cell--wrap' },
+			]
+		},
 	},
 
 	async mounted() {
@@ -149,19 +187,10 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const [agents, tools, views] = await Promise.all([
-					axios.get(generateUrl('/apps/openregister/api/agents')),
-					axios.get(generateUrl('/apps/openregister/api/agents/tools')),
-					axios.get(generateUrl('/apps/openregister/api/views')),
-				])
+				const [agents, tools, views] = await fetchAgentsToolsAndViews()
 				this.agents = agents.data?.results || []
-				this.toolOptions = Object.entries(tools.data?.results || {}).map(
-					([id, meta]) => ({ id, label: meta?.name || id }),
-				)
-				this.viewOptions = (views.data?.results || []).map((view) => ({
-					id: view.uuid,
-					label: view.name || view.uuid,
-				}))
+				this.toolOptions = toolOptionsOf(tools)
+				this.viewOptions = viewOptionsOf(views)
 			} catch {
 				this.error = t('openregister', 'Could not load the agents')
 			} finally {
@@ -243,18 +272,6 @@ export default {
 .agents__intro {
 	color: var(--color-text-maxcontrast);
 	margin-bottom: 16px;
-}
-
-.agents__table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.agents__table th,
-.agents__table td {
-	padding: 8px;
-	text-align: start;
-	border-bottom: 1px solid var(--color-border);
 }
 
 .agents__readonly {

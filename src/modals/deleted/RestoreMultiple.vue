@@ -4,7 +4,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<BulkSelectionDialog
 		v-if="navigationStore.dialog === 'restoreMultiple'"
 		:name="
 			n(
@@ -15,143 +15,37 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 				{ count: objectsToRestore.length },
 			)
 		"
-		size="normal"
-		:canClose="false">
-		<!-- Object Selection Review -->
-		<div v-if="success === null" class="restore-step">
-			<h3 class="step-title">
-				{{ t('openregister', 'Confirm Object Restoration') }}
-			</h3>
-
-			<NcNoteCard type="info">
-				{{
-					t(
-						'openregister',
-						"Review the selected objects below. You can remove any objects you don't want to restore by clicking the remove button. Objects will be restored to their original location.",
-					)
-				}}
-			</NcNoteCard>
-
-			<div class="selected-objects-container">
-				<h4>
-					{{
-						t('openregister', 'Selected Objects ({count})', {
-							count: objectsToRestore.length,
-						})
-					}}
-				</h4>
-
-				<div v-if="objectsToRestore.length" class="selected-objects-list">
-					<div
-						v-for="obj in objectsToRestore"
-						:key="obj.id"
-						class="selected-object-item">
-						<div class="object-info">
-							<strong>{{ getObjectTitle(obj) }}</strong>
-							<p class="object-id">
-								{{ t('openregister', 'ID: {id}', { id: obj.id }) }}
-							</p>
-						</div>
-						<NcButton
-							variant="tertiary"
-							:aria-label="
-								t('openregister', 'Remove {title}', {
-									title: getObjectTitle(obj),
-								})
-							"
-							@click="removeObject(obj.id)">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-						</NcButton>
-					</div>
-				</div>
-
-				<NcEmptyContent
-					v-else
-					:name="t('openregister', 'No objects selected')">
-					<template #description>
-						{{
-							t(
-								'openregister',
-								'No objects are currently selected for restoration.',
-							)
-						}}
-					</template>
-				</NcEmptyContent>
-			</div>
-		</div>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>{{ successMessage }}</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success === null
-						? t('openregister', 'Cancel')
-						: t('openregister', 'Close')
-				}}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading || objectsToRestore.length === 0"
-				variant="primary"
-				@click="restoreMultiple()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Restore v-if="!loading" :size="20" />
-				</template>
-				{{ t('openregister', 'Restore') }}
-			</NcButton>
+		:heading="t('openregister', 'Confirm Object Restoration')"
+		:note="reviewNote"
+		noteType="info"
+		:emptyText="
+			t('openregister', 'No objects are currently selected for restoration.')
+		"
+		:submitLabel="t('openregister', 'Restore')"
+		submitVariant="primary"
+		stepClass="restore-step"
+		v-bind="reviewStateOf($data)"
+		@close="closeDialog"
+		@remove="removeObject"
+		@submit="restoreMultiple()">
+		<template #submitIcon>
+			<Restore :size="20" />
 		</template>
-	</NcDialog>
+	</BulkSelectionDialog>
 </template>
 
 <script>
-import {
-	NcButton,
-	NcDialog,
-	NcEmptyContent,
-	NcLoadingIcon,
-	NcNoteCard,
-} from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import Restore from 'vue-material-design-icons/Restore.vue'
-import eventBus from '../../eventBus.js'
+import { bulkDialog, BulkSelectionDialog, reviewStateOf, runBulkAction } from './bulkDialog.js'
 
 export default {
 	name: 'RestoreMultiple',
 	components: {
-		NcDialog,
-		NcButton,
-		NcEmptyContent,
-		NcLoadingIcon,
-		NcNoteCard,
-		// Icons
+		BulkSelectionDialog,
 		Restore,
-		Cancel,
-		Close,
 	},
 
-	data() {
-		return {
-			success: null,
-			successMessage: '',
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
-			selectedObjects: [],
-		}
-	},
+	mixins: [bulkDialog('restoreMultiple')],
 
 	computed: {
 		/**
@@ -160,67 +54,22 @@ export default {
 		objectsToRestore() {
 			return this.selectedObjects
 		},
-	},
 
-	watch: {
-		'navigationStore.dialog': function (newValue, oldValue) {
-			if (newValue === 'restoreMultiple' && oldValue !== 'restoreMultiple') {
-				this.initializeSelection()
-			}
+		/**
+		 * The note above the selection.
+		 *
+		 * @return {string} The note
+		 * @spec exclude Computed dialog text; UI plumbing.
+		 */
+		reviewNote() {
+			return t(
+				'openregister',
+				"Review the selected objects below. You can remove any objects you don't want to restore by clicking the remove button. Objects will be restored to their original location.",
+			)
 		},
-	},
-
-	mounted() {
-		this.initializeSelection()
 	},
 
 	methods: {
-		/**
-		 * Initialize selection from transfer data
-		 *
-		 * @return {void}
-		 * @spec openspec/specs/entity-management-modals/spec.md
-		 */
-		initializeSelection() {
-			const data = deletedStore.selectedForBulkAction || []
-			this.selectedObjects.splice(0, this.selectedObjects.length, ...data)
-			if (this.selectedObjects.length === 0) {
-				this.closeDialog()
-			}
-		},
-
-		/**
-		 * Remove object from selection
-		 *
-		 * @param {string} objectId - ID of object to remove
-		 * @return {void}
-		 * @spec exclude Removes one object from the local bulk-selection list; UI selection plumbing.
-		 */
-		removeObject(objectId) {
-			this.selectedObjects = this.selectedObjects.filter(
-				(obj) => obj.id !== objectId,
-			)
-			if (this.selectedObjects.length === 0) {
-				this.closeDialog()
-			}
-		},
-
-		/**
-		 * Close the dialog and reset state
-		 *
-		 * @return {void}
-		 * @spec exclude Modal close handler resetting navigationStore.dialog and local state; UI plumbing.
-		 */
-		closeDialog() {
-			navigationStore.setDialog(false)
-			deletedStore.clearSelectedForBulkAction()
-			clearTimeout(this.closeModalTimeout)
-			this.success = null
-			this.successMessage = ''
-			this.loading = false
-			this.error = false
-		},
-
 		/**
 		 * Restore multiple objects
 		 *
@@ -233,105 +82,43 @@ export default {
 				return
 			}
 
-			this.loading = true
+			await runBulkAction(this, this.restoreAction())
+		},
 
-			try {
-				const ids = this.objectsToRestore.map((obj) => obj.id)
-				await deletedStore.restoreMultiple(ids)
-
-				this.success = true
-				this.error = false
-				this.successMessage = n(
+		/**
+		 * What a restore runs and reports.
+		 *
+		 * @return {object} The bulk action
+		 * @spec exclude Bulk-restore confirm handler delegating to deletedStore.restoreMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
+		restoreAction() {
+			return {
+				run: (ids) => deletedStore.restoreMultiple(ids),
+				done: () => this.restoredMessage(),
+				event: 'deleted-objects-restored',
+				closeAfter: 2000,
+				failure: t(
 					'openregister',
-					'Successfully restored {count} object',
-					'Successfully restored {count} objects',
-					this.objectsToRestore.length,
-					{ count: this.objectsToRestore.length },
-				)
-
-				// Auto-close after 2 seconds
-				this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
-
-				// Emit event to refresh parent list
-				eventBus.emit('deleted-objects-restored', ids)
-			} catch (error) {
-				this.success = false
-				this.error =
-					error.message
-					|| t(
-						'openregister',
-						'An error occurred while restoring the objects',
-					)
-			} finally {
-				this.loading = false
+					'An error occurred while restoring the objects',
+				),
 			}
 		},
 
 		/**
-		 * Get object title from object data
+		 * The message for a finished restore.
 		 *
-		 * @param {object} object - The object
-		 * @return {string} The object title
+		 * @return {string} The message
+		 * @spec exclude Bulk-restore confirm handler delegating to deletedStore.restoreMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
-		getObjectTitle(object) {
-			return (
-				object?.title
-				|| object?.fileName
-				|| object?.name
-				|| object?.object?.title
-				|| object?.object?.name
-				|| object?.id
-				|| 'Unknown'
+		restoredMessage() {
+			return n(
+				'openregister',
+				'Successfully restored {count} object',
+				'Successfully restored {count} objects',
+				this.objectsToRestore.length,
+				{ count: this.objectsToRestore.length },
 			)
 		},
 	},
 }
 </script>
-
-<style scoped>
-.restore-step {
-	padding: 0;
-}
-
-.step-title {
-	margin-top: 0 !important;
-	margin-bottom: 16px;
-	color: var(--color-main-text);
-}
-
-.selected-objects-container {
-	margin: 20px 0;
-}
-
-.selected-objects-list {
-	max-height: 300px;
-	overflow-y: auto;
-	border: 1px solid var(--color-border);
-	border-radius: 4px;
-}
-
-.selected-object-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 12px;
-	border-bottom: 1px solid var(--color-border);
-	background-color: var(--color-background-hover);
-}
-
-.selected-object-item:last-child {
-	border-bottom: none;
-}
-
-.object-info strong {
-	display: block;
-	margin-bottom: 4px;
-	color: var(--color-main-text);
-}
-
-.object-id {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
-	margin: 0;
-}
-</style>

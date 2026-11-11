@@ -1,0 +1,667 @@
+{
+    "save linkRoles mixed": {
+        "kept": {
+            "linkRoles": [
+                {
+                    "key": "owner",
+                    "label": "owner"
+                },
+                {
+                    "key": "lead",
+                    "label": "Lead",
+                    "description": "Leads it"
+                },
+                {
+                    "key": "x",
+                    "label": "x"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "save partyKinds mixed": {
+        "kept": {
+            "partyKinds": [
+                {
+                    "key": "owner",
+                    "label": "owner"
+                },
+                {
+                    "key": "lead",
+                    "label": "Lead",
+                    "description": "Leads it"
+                },
+                {
+                    "key": "x",
+                    "label": "x"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "save linkRoles label defaults": {
+        "kept": {
+            "linkRoles": [
+                {
+                    "key": "k",
+                    "label": "k"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "save partyKinds label defaults": {
+        "kept": {
+            "partyKinds": [
+                {
+                    "key": "k",
+                    "label": "k"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "save linkRoles numeric key": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "save partyKinds numeric key": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "save linkRoles duplicate": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "save partyKinds duplicate": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "save linkRoles duplicate trim": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "save partyKinds duplicate trim": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "save linkRoles empty key": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "save partyKinds empty key": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "save linkRoles blank string": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "save partyKinds blank string": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "save linkRoles long key": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "save partyKinds long key": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "save linkRoles max key": {
+        "kept": {
+            "linkRoles": [
+                {
+                    "key": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+                    "label": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "save partyKinds max key": {
+        "kept": {
+            "partyKinds": [
+                {
+                    "key": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+                    "label": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "save linkRoles bad then dup": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "save partyKinds bad then dup": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "save linkRoles dup then bad": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "save partyKinds dup then bad": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "save linkRoles entry number": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "save partyKinds entry number": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "save linkRoles entry null": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "save partyKinds entry null": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "save linkRoles map not list": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "save partyKinds map not list": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "save linkRoles text": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "save partyKinds text": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "save linkRoles empty list": {
+        "kept": {
+            "linkRoles": []
+        },
+        "dropped": []
+    },
+    "save partyKinds empty list": {
+        "kept": {
+            "partyKinds": []
+        },
+        "dropped": []
+    },
+    "save partyKinds lists": {
+        "kept": {
+            "partyKinds": [
+                {
+                    "key": "person",
+                    "label": "person",
+                    "roles": [
+                        "owner",
+                        "lead",
+                        "3"
+                    ],
+                    "identityShapes": [
+                        "naturalPerson"
+                    ]
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "save partyKinds empty lists": {
+        "kept": {
+            "partyKinds": [
+                {
+                    "key": "org",
+                    "label": "org"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "save partyKinds string kind": {
+        "kept": {
+            "partyKinds": [
+                {
+                    "key": "person",
+                    "label": "person"
+                },
+                {
+                    "key": "org",
+                    "label": "Organisation",
+                    "roles": [
+                        "x"
+                    ]
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "save both vocabularies": {
+        "kept": {
+            "linkRoles": [
+                {
+                    "key": "owner",
+                    "label": "owner"
+                }
+            ],
+            "partyKinds": [
+                {
+                    "key": "person",
+                    "label": "person",
+                    "roles": [
+                        "owner"
+                    ]
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "save linkedTypes valid": {
+        "kept": {
+            "linkedTypes": [
+                "mail",
+                "notes",
+                "deck"
+            ]
+        },
+        "dropped": []
+    },
+    "save linkedTypes invalid": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "save linkedTypes number": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "save linkedTypes map": {
+        "kept": {
+            "linkedTypes": {
+                "a": "talk"
+            }
+        },
+        "dropped": []
+    },
+    "save linkedTypes empty": {
+        "kept": {
+            "linkedTypes": []
+        },
+        "dropped": []
+    },
+    "save mail template": {
+        "kept": {
+            "mailObjectTemplate": {
+                "title": "{{subject}}",
+                "count": 3,
+                "flag": true,
+                "none": 1.5
+            }
+        },
+        "dropped": []
+    },
+    "save mail template list": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "save mail template empty key": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "save mail template nested": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "save mail template null value": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "save mail template text": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "save calendar off": {
+        "kept": {
+            "calendarProvider": {
+                "enabled": false
+            }
+        },
+        "dropped": []
+    },
+    "save calendar on no title": {
+        "kept": null,
+        "dropped": [
+            "calendarProvider"
+        ]
+    },
+    "save calendar on empty start": {
+        "kept": null,
+        "dropped": [
+            "calendarProvider"
+        ]
+    },
+    "save calendar on": {
+        "kept": {
+            "calendarProvider": {
+                "enabled": true,
+                "dtstart": "start",
+                "titleTemplate": "{{title}}"
+            }
+        },
+        "dropped": []
+    },
+    "save calendar enabled text": {
+        "kept": {
+            "calendarProvider": {
+                "enabled": "0",
+                "dtstart": ""
+            }
+        },
+        "dropped": []
+    },
+    "save calendar not array": {
+        "kept": {
+            "calendarProvider": "on"
+        },
+        "dropped": []
+    },
+    "save allowedTags": {
+        "kept": {
+            "allowedTags": [
+                "a",
+                "b"
+            ]
+        },
+        "dropped": []
+    },
+    "save allowedTags number": {
+        "kept": null,
+        "dropped": [
+            "allowedTags"
+        ]
+    },
+    "save draft lifetime": {
+        "kept": {
+            "draftLifetimeDays": 14
+        },
+        "dropped": []
+    },
+    "save draft lifetime zero text": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": [
+            "draftLifetimeDays"
+        ]
+    },
+    "save draft lifetime false": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": []
+    },
+    "save draft lifetime float": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": [
+            "draftLifetimeDays"
+        ]
+    },
+    "save draft lifetime null": {
+        "kept": {
+            "allowFiles": true
+        },
+        "dropped": []
+    },
+    "save annotation unknown": {
+        "kept": {
+            "x-openregister-lifecycle": {
+                "states": []
+            }
+        },
+        "dropped": [
+            "x-openregister-nope"
+        ]
+    },
+    "save string fields": {
+        "kept": {
+            "objectNameField": null,
+            "objectSlugField": "slug",
+            "objectImageField": null
+        },
+        "dropped": []
+    },
+    "save string field number": {
+        "kept": null,
+        "dropped": [
+            "objectNameField"
+        ]
+    },
+    "save bool field text": {
+        "kept": {
+            "autoShare": true
+        },
+        "dropped": [
+            "allowFiles"
+        ]
+    },
+    "save pass through": {
+        "kept": {
+            "unique": [
+                "title"
+            ],
+            "jsonld": {
+                "@context": "x"
+            }
+        },
+        "dropped": []
+    },
+    "read none": {
+        "linkRoles": [],
+        "partyKinds": []
+    },
+    "read not arrays": {
+        "linkRoles": [],
+        "partyKinds": []
+    },
+    "read messy": {
+        "linkRoles": [
+            {
+                "key": "owner",
+                "label": "owner"
+            },
+            {
+                "key": "lead",
+                "label": "lead",
+                "description": "d"
+            },
+            {
+                "key": "owner",
+                "label": "owner"
+            }
+        ],
+        "partyKinds": [
+            {
+                "key": "person",
+                "label": "person"
+            },
+            {
+                "key": "org",
+                "label": "org",
+                "roles": [
+                    "a"
+                ]
+            }
+        ]
+    },
+    "read map": {
+        "linkRoles": [
+            {
+                "key": "owner",
+                "label": "owner"
+            },
+            {
+                "key": "b",
+                "label": "b"
+            }
+        ],
+        "partyKinds": [
+            {
+                "key": "k",
+                "label": "k"
+            }
+        ]
+    },
+    "direct validateLinkRolesValue text": {
+        "threw": "InvalidArgumentException: Configuration 'linkRoles' must be a list of roles"
+    },
+    "direct validateLinkRolesValue map": {
+        "threw": "InvalidArgumentException: Configuration 'linkRoles' must be a list of roles"
+    },
+    "direct validateLinkRolesValue no key": {
+        "threw": "InvalidArgumentException: Each 'linkRoles' entry needs a non-empty key of at most 64 characters"
+    },
+    "direct validateLinkRolesValue twice": {
+        "threw": "InvalidArgumentException: 'linkRoles' names the key 'a' twice"
+    },
+    "direct validateLinkRolesValue ok": {
+        "returned": [
+            {
+                "key": "a",
+                "label": "a"
+            },
+            {
+                "key": "b",
+                "label": "b"
+            }
+        ]
+    },
+    "direct validatePartyKindsValue text": {
+        "threw": "InvalidArgumentException: Configuration 'partyKinds' must be a list of party kinds"
+    },
+    "direct validatePartyKindsValue map": {
+        "threw": "InvalidArgumentException: Configuration 'partyKinds' must be a list of party kinds"
+    },
+    "direct validatePartyKindsValue no key": {
+        "threw": "InvalidArgumentException: Each 'partyKinds' entry needs a non-empty key of at most 64 characters"
+    },
+    "direct validatePartyKindsValue twice": {
+        "threw": "InvalidArgumentException: 'partyKinds' names the key 'a' twice"
+    },
+    "direct validatePartyKindsValue ok": {
+        "returned": [
+            {
+                "key": "a",
+                "label": "a"
+            },
+            {
+                "key": "b",
+                "label": "b"
+            }
+        ]
+    },
+    "direct linkedTypes text": {
+        "threw": "InvalidArgumentException: Configuration 'linkedTypes' must be an array or null"
+    },
+    "direct linkedTypes number": {
+        "threw": "InvalidArgumentException: All values in 'linkedTypes' must be strings"
+    },
+    "direct linkedTypes unknown": {
+        "threw": "InvalidArgumentException: Invalid linked type 'pigeon'. Valid values: calendar, contacts, deck, files, mail, notes, talk, todos"
+    },
+    "direct linkedTypes null": {
+        "returned": null
+    },
+    "direct mail text": {
+        "threw": "InvalidArgumentException: Configuration 'mailObjectTemplate' must be an object or null"
+    },
+    "direct mail empty key": {
+        "threw": "InvalidArgumentException: All keys in 'mailObjectTemplate' must be non-empty property names"
+    },
+    "direct mail int key": {
+        "threw": "InvalidArgumentException: All keys in 'mailObjectTemplate' must be non-empty property names"
+    },
+    "direct mail nested": {
+        "threw": "InvalidArgumentException: Value for 'title' in 'mailObjectTemplate' must be a scalar"
+    },
+    "direct mail null": {
+        "returned": null
+    },
+    "direct calendar no start": {
+        "threw": "InvalidArgumentException: calendarProvider.dtstart is required when calendar provider is enabled"
+    },
+    "direct calendar no title": {
+        "threw": "InvalidArgumentException: calendarProvider.titleTemplate is required when calendar provider is enabled"
+    },
+    "direct calendar off": {
+        "returned": null
+    },
+    "direct calendar ok": {
+        "returned": null
+    }
+}

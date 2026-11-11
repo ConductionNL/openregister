@@ -28,9 +28,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Source;
-use OCA\OpenRegister\Db\SourceMapper;
-use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
+use OCA\OpenRegister\Db\SourceMapperInterface;
+use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -52,17 +53,17 @@ class DbalIntrospectionJob extends TimedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory $time Time factory for scheduling.
-	 * @param SourceMapper $sourceMapper Loads database sources.
-	 * @param DatabaseIntrospectionService $introspectionService Re-introspects a source and applies diffs.
-	 * @param LoggerInterface $logger Secret-free diagnostics.
+	 * @param ITimeFactory                          $time                 Time factory for scheduling.
+	 * @param SourceMapperInterface                          $sourceMapper         Loads database sources.
+	 * @param DatabaseIntrospectionServiceInterface $introspectionService Re-introspects a source and applies diffs.
+	 * @param LoggerInterface                       $logger               Secret-free diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly SourceMapper $sourceMapper,
-		private readonly DatabaseIntrospectionService $introspectionService,
+		private readonly SourceMapperInterface $sourceMapper,
+		private readonly DatabaseIntrospectionServiceInterface $introspectionService,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
@@ -109,24 +110,47 @@ class DbalIntrospectionJob extends TimedJob {
 			$result = $this->introspectionService->introspect(source: $source);
 
 			if (empty($result['drift']) === false) {
-				$this->logger->info(
-					sprintf(
-						'[DbalIntrospectionJob] source %s drift: %d table(s) changed',
-						(string)($source->getUuid() ?? $source->getId()),
-						count($result['drift'])
-					)
-				);
+				$this->logDrift(source: $source, drift: $result['drift']);
 			}
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				sprintf(
 					'[DbalIntrospectionJob] source %s re-introspection failed: %s',
-					(string)($source->getUuid() ?? $source->getId()),
+					self::sourceLabel(source: $source),
 					$e->getMessage()
 				)
 			);
 		}//end try
 	}//end introspectSource()
+
+	/**
+	 * Log the tables of a source that drifted.
+	 *
+	 * @param Source $source The database source.
+	 * @param array  $drift  The changed tables.
+	 *
+	 * @return void
+	 */
+	private function logDrift(Source $source, array $drift): void {
+		$this->logger->info(
+			sprintf(
+				'[DbalIntrospectionJob] source %s drift: %d table(s) changed',
+				self::sourceLabel(source: $source),
+				count($drift)
+			)
+		);
+	}//end logDrift()
+
+	/**
+	 * How a source is named in the log: its uuid, else its id.
+	 *
+	 * @param Source $source The database source.
+	 *
+	 * @return string
+	 */
+	private static function sourceLabel(Source $source): string {
+		return (string)($source->getUuid() ?? $source->getId());
+	}//end sourceLabel()
 
 	/**
 	 * Load every `type: database` source, tolerating a mapper failure.
@@ -137,7 +161,7 @@ class DbalIntrospectionJob extends TimedJob {
 	 */
 	private function loadDatabaseSources(): array {
 		try {
-			return $this->sourceMapper->findAll(filters: ['type' => self::DATABASE_SOURCE_TYPE]);
+			return $this->sourceMapper->findList(query: ListQuery::unbounded(filters: ['type' => self::DATABASE_SOURCE_TYPE]));
 		} catch (Throwable $e) {
 			$this->logger->warning('[DbalIntrospectionJob] could not list database sources: ' . $e->getMessage());
 			return [];

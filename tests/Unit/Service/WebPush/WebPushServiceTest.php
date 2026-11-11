@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\WebPush;
 
-use OCA\OpenRegister\Db\PushSubscriptionMapper;
-use OCA\OpenRegister\Service\WebPush\WebPushService;
+use OCA\OpenRegister\Notifications\Db\PushSubscriptionMapper;
+use OCA\OpenRegister\Notifications\Service\WebPush\WebPushService;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;

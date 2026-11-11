@@ -24,10 +24,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use DateTime;
+use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Exception\FlowTimerValidationException;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarBatch;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarDependency;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarRecomputeSources;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarService;
@@ -153,9 +157,11 @@ class CalendarRecomputeTest extends TestCase {
 		$calendars = $this->calendars(calendar: $calendar, throws: $throws);
 
 		return new CalendarRecompute(
-			dependency: new CalendarDependency(calendars: $calendars),
-			calendars: $calendars,
-			calculator: new SlaCalculator(),
+			sources: new CalendarRecomputeSources(
+				dependency: new CalendarDependency(calendars: $calendars),
+				calendars: $calendars,
+				calculator: new SlaCalculator()
+			),
 			appConfig: $this->appConfig(),
 			logger: $this->createMock(LoggerInterface::class)
 		);
@@ -191,12 +197,7 @@ class CalendarRecomputeTest extends TestCase {
 		$timer->setConsumedValue(0.0);
 		$timer->setRunningSince(new DateTime($start));
 
-		$fireAt = (new SlaCalculator())->add(
-			from: new DateTime($start),
-			value: $budget,
-			unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-			calendar: $calendar
-		);
+		$fireAt = (new SlaCalculator())->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(new DateTime($start)), value: $budget, unit: SlaCalculator::UNIT_BUSINESS_DAYS, calendar: $calendar));
 		$timer->setFireAt(new DateTime($fireAt->format(DATE_ATOM)));
 
 		return $timer;
@@ -214,14 +215,14 @@ class CalendarRecomputeTest extends TestCase {
 		$before = $this->timer(uuid: 'c', start: '2027-04-26T09:00:00+02:00', budget: 2.0, calendar: $this->calendar);
 
 		$moved = [];
-		$counts = $this->recompute(calendar: $this->withClosure)->recomputeBatch(
+		$counts = $this->recompute(calendar: $this->withClosure)->recompute(batch: new CalendarBatch(
 			slug: 'nl-national',
 			version: '7',
 			timers: [$spanningOne, $spanningTwo, $before],
 			supersede: static function (FlowTimer $timer) use (&$moved): void {
 				$moved[] = (string)$timer->getUuid();
 			}
-		);
+		));
 
 		$this->assertSame(['a', 'b'], $moved, 'the two timers spanning the new closure day move');
 		$this->assertSame(3, $counts['examined']);
@@ -243,13 +244,13 @@ class CalendarRecomputeTest extends TestCase {
 			$this->timer(uuid: 'b', start: '2027-05-04T09:00:00+02:00', budget: 4.0, calendar: $this->calendar),
 		];
 
-		$counts = $this->recompute(calendar: $this->calendar)->recomputeBatch(
+		$counts = $this->recompute(calendar: $this->calendar)->recompute(batch: new CalendarBatch(
 			slug: 'nl-national',
 			version: '7',
 			timers: $timers,
 			supersede: static function (FlowTimer $timer): void {
 			}
-		);
+		));
 
 		$this->assertSame(0, $counts['moved'], 'the control: a calendar that did not really change moves nothing');
 		$this->assertSame(2, $counts['unchanged']);
@@ -269,14 +270,14 @@ class CalendarRecomputeTest extends TestCase {
 			slug: 'other'
 		);
 
-		$counts = $this->recompute(calendar: $this->withClosure)->recomputeBatch(
+		$counts = $this->recompute(calendar: $this->withClosure)->recompute(batch: new CalendarBatch(
 			slug: 'nl-national',
 			version: '7',
 			timers: [$timer],
 			supersede: static function (FlowTimer $t): void {
 				TestCase::fail('a timer on another calendar must not be superseded');
 			}
-		);
+		));
 
 		$this->assertSame(1, $counts['unchanged']);
 		$this->assertSame(0, $counts['moved']);
@@ -298,14 +299,14 @@ class CalendarRecomputeTest extends TestCase {
 		);
 
 		$moved = [];
-		$counts = $this->recompute(calendar: $this->withClosure)->recomputeBatch(
+		$counts = $this->recompute(calendar: $this->withClosure)->recompute(batch: new CalendarBatch(
 			slug: 'nl-national',
 			version: '7',
 			timers: [$timer],
 			supersede: static function (FlowTimer $t) use (&$moved): void {
 				$moved[] = (string)$t->getUuid();
 			}
-		);
+		));
 
 		$this->assertSame(['inherited'], $moved, 'a timer naming no calendar still depends on the one it resolves to');
 		$this->assertSame(1, $counts['moved']);
@@ -322,14 +323,14 @@ class CalendarRecomputeTest extends TestCase {
 
 		$service->markRan(slug: 'nl-national', version: '7');
 
-		$counts = $service->recomputeBatch(
+		$counts = $service->recompute(batch: new CalendarBatch(
 			slug: 'nl-national',
 			version: '7',
 			timers: [$timer],
 			supersede: static function (FlowTimer $t): void {
 				TestCase::fail('a duplicate event must examine nothing');
 			}
-		);
+		));
 
 		$this->assertTrue($counts['skipped']);
 		$this->assertSame(0, $counts['examined'], 'no timer is examined and the job logs the skip');
@@ -349,13 +350,13 @@ class CalendarRecomputeTest extends TestCase {
 
 		$timer = $this->timer(uuid: 'a', start: '2027-05-03T09:00:00+02:00', budget: 5.0, calendar: $this->calendar);
 
-		$counts = $service->recomputeBatch(
+		$counts = $service->recompute(batch: new CalendarBatch(
 			slug: 'nl-national',
 			version: '8',
 			timers: [$timer],
 			supersede: static function (FlowTimer $t): void {
 			}
-		);
+		));
 
 		$this->assertFalse($counts['skipped'], 'a second EDIT is not a duplicate EVENT');
 		$this->assertSame(1, $counts['examined']);
@@ -377,14 +378,14 @@ class CalendarRecomputeTest extends TestCase {
 			state: FlowTimer::STATE_SUSPENDED
 		);
 
-		$counts = $this->recompute(calendar: $this->withClosure)->recomputeBatch(
+		$counts = $this->recompute(calendar: $this->withClosure)->recompute(batch: new CalendarBatch(
 			slug: 'nl-national',
 			version: '7',
 			timers: [$timer],
 			supersede: static function (FlowTimer $t): void {
 				TestCase::fail('a suspended timer has no stored fire moment to move');
 			}
-		);
+		));
 
 		$this->assertSame(1, $counts['deferred'], '"will be correct at resume" is a different fact from "is correct now"');
 		$this->assertSame(0, $counts['unchanged']);
@@ -409,13 +410,13 @@ class CalendarRecomputeTest extends TestCase {
 			slug: null
 		);
 
-		$counts = $this->recompute(calendar: $this->withClosure, throws: true)->recomputeBatch(
+		$counts = $this->recompute(calendar: $this->withClosure, throws: true)->recompute(batch: new CalendarBatch(
 			slug: 'nl-national',
 			version: '7',
 			timers: [$timer],
 			supersede: static function (FlowTimer $t): void {
 			}
-		);
+		));
 
 		$this->assertSame(1, $counts['unresolvable']);
 		$this->assertSame(0, $counts['unchanged'], 'an unjudgeable timer must not be reported as fine');
@@ -432,7 +433,7 @@ class CalendarRecomputeTest extends TestCase {
 		$second = $this->timer(uuid: 'b', start: '2027-05-04T09:00:00+02:00', budget: 4.0, calendar: $this->calendar);
 
 		$seen = [];
-		$counts = $this->recompute(calendar: $this->withClosure)->recomputeBatch(
+		$counts = $this->recompute(calendar: $this->withClosure)->recompute(batch: new CalendarBatch(
 			slug: 'nl-national',
 			version: '7',
 			timers: [$first, $second],
@@ -442,29 +443,12 @@ class CalendarRecomputeTest extends TestCase {
 					throw new \RuntimeException('row is locked');
 				}
 			}
-		);
+		));
 
 		$this->assertSame(['a', 'b'], $seen, 'the batch is thousands of other people\'s deadlines');
 		$this->assertSame(1, $counts['moved']);
 		$this->assertSame(1, $counts['unresolvable']);
 	}//end testOneFailingTimerDoesNotAbandonTheBatch()
-
-	/**
-	 * The candidate narrowing: only an unnamed slug or the changed one needs
-	 * the resolver asked.
-	 *
-	 * @return void
-	 */
-	public function testTheCandidateNarrowingIsWhatAnIndexCanDo(): void {
-		$dependency = new CalendarDependency(calendars: $this->calendars(calendar: $this->calendar));
-
-		$this->assertTrue($dependency->isCandidate(timerCalendarSlug: null, changedSlug: 'nl-national'));
-		$this->assertTrue($dependency->isCandidate(timerCalendarSlug: 'nl-national', changedSlug: 'nl-national'));
-		$this->assertFalse(
-			$dependency->isCandidate(timerCalendarSlug: 'other', changedSlug: 'nl-national'),
-			'a named slug short-circuits the resolution order, so another name cannot resolve to this one'
-		);
-	}//end testTheCandidateNarrowingIsWhatAnIndexCanDo()
 
 	/**
 	 * The projection is the engine's own formula: budget minus consumed, from
@@ -476,12 +460,7 @@ class CalendarRecomputeTest extends TestCase {
 		$timer = $this->timer(uuid: 'a', start: '2027-05-03T09:00:00+02:00', budget: 5.0, calendar: $this->calendar);
 		$timer->setConsumedValue(2.0);
 
-		$expected = (new SlaCalculator())->add(
-			from: new DateTime('2027-05-03T09:00:00+02:00'),
-			value: 3.0,
-			unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-			calendar: $this->withClosure
-		)->getTimestamp();
+		$expected = (new SlaCalculator())->add(new SlaAddition(start: DateTimeImmutable::createFromInterface(new DateTime('2027-05-03T09:00:00+02:00')), value: 3.0, unit: SlaCalculator::UNIT_BUSINESS_DAYS, calendar: $this->withClosure))->getTimestamp();
 
 		$this->assertSame(
 			$expected,

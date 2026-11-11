@@ -21,10 +21,14 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Service\Flow\FlowExecution;
 use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
-use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
+use OCA\OpenRegister\Service\Flow\FlowRunPass;
+use OCA\OpenRegister\Service\Flow\FlowRunServiceInterface;
+use OCA\OpenRegister\Service\Flow\FlowStreamAdvance;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -32,9 +36,9 @@ use stdClass;
 
 class FlowRunAdvancerDeletedSubjectTest extends TestCase {
 
-	private FlowRunMapper&MockObject $mapper;
+	private FlowRunMapperInterface&MockObject $mapper;
 
-	private FlowRunService&MockObject $runner;
+	private FlowRunServiceInterface&MockObject $runner;
 
 	private FlowLocator&MockObject $resolvers;
 
@@ -43,17 +47,15 @@ class FlowRunAdvancerDeletedSubjectTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->mapper = $this->createMock(FlowRunMapper::class);
-		$this->runner = $this->createMock(FlowRunService::class);
+		$this->mapper = $this->createMock(FlowRunMapperInterface::class);
+		$this->runner = $this->createMock(FlowRunServiceInterface::class);
 		$this->resolvers = $this->createMock(FlowLocator::class);
 
 		$this->resolvers->method('resolveFlow')->willReturn(['id' => 'f1']);
 
 		$this->advancer = new FlowRunAdvancer(
 			$this->mapper,
-			$this->runner,
-			$this->resolvers,
-			new NullLogger()
+			new FlowExecution($this->resolvers, $this->runner, new NullLogger())
 		);
 	}
 
@@ -77,12 +79,20 @@ class FlowRunAdvancerDeletedSubjectTest extends TestCase {
 	public function testAResolvableSubjectIsUnaffected(): void {
 		$run = $this->runWithDeletedSubject([]);
 		$subject = new stdClass();
-		$this->resolvers->method('resolveSubject')->willReturn($subject);
+		$this->resolvers->method('resolveObject')->willReturn($subject);
 
 		$this->runner->expects($this->once())
-			->method('execute')
-			->with($run, ['id' => 'f1'], $subject, null, null)
-			->willReturn($run);
+			->method('executePass')
+			->willReturnCallback(
+				function (FlowRunPass $pass, FlowRunOrigin $origin) use ($run, $subject): FlowRun {
+					$this->assertSame($run, $pass->run);
+					$this->assertSame(['id' => 'f1'], $pass->flow);
+					$this->assertSame($subject, $pass->subject);
+					$this->assertNull($origin->items);
+
+					return $run;
+				}
+			);
 
 		$this->mapper->expects($this->never())->method('update');
 
@@ -91,9 +101,9 @@ class FlowRunAdvancerDeletedSubjectTest extends TestCase {
 
 	public function testAnUnresolvableSubjectWithNoPayloadStillFails(): void {
 		$run = $this->runWithDeletedSubject([]);
-		$this->resolvers->method('resolveSubject')->willReturn(null);
+		$this->resolvers->method('resolveObject')->willReturn(null);
 
-		$this->runner->expects($this->never())->method('execute');
+		$this->runner->expects($this->never())->method('executePass');
 		$this->mapper->expects($this->once())->method('update')->willReturnArgument(0);
 
 		$this->advancer->advance($run);
@@ -112,9 +122,9 @@ class FlowRunAdvancerDeletedSubjectTest extends TestCase {
 	 */
 	public function testAnUnresolvableSubjectWithAPayloadOnAnotherTriggerStillFails(): void {
 		$run = $this->runWithDeletedSubject(['payload' => ['uuid' => 'gone-1']], trigger: 'object.updated');
-		$this->resolvers->method('resolveSubject')->willReturn(null);
+		$this->resolvers->method('resolveObject')->willReturn(null);
 
-		$this->runner->expects($this->never())->method('execute');
+		$this->runner->expects($this->never())->method('executePass');
 		$this->mapper->expects($this->once())->method('update')->willReturnArgument(0);
 
 		$this->advancer->advance($run);
@@ -126,18 +136,18 @@ class FlowRunAdvancerDeletedSubjectTest extends TestCase {
 	public function testADeletedSubjectWithASnapshotRunsFromThePayloadInstead(): void {
 		$snapshot = ['uuid' => 'gone-1', 'kenmerk' => 'K-1'];
 		$run = $this->runWithDeletedSubject(['payload' => $snapshot]);
-		$this->resolvers->method('resolveSubject')->willReturn(null);
+		$this->resolvers->method('resolveObject')->willReturn(null);
 
 		$seenSeed = null;
 		$this->runner->expects($this->once())
-			->method('execute')
+			->method('executePass')
 			->willReturnCallback(
-				function (FlowRun $r, array $flow, object $subject, ?array $seed, ?string $startAt) use (&$seenSeed, $run) {
-					$this->assertSame($run, $r);
-					$this->assertInstanceOf(stdClass::class, $subject);
-					$seenSeed = $seed;
+				function (FlowRunPass $pass, FlowRunOrigin $origin) use (&$seenSeed, $run): FlowRun {
+					$this->assertSame($run, $pass->run);
+					$this->assertInstanceOf(stdClass::class, $pass->subject);
+					$seenSeed = $origin->items;
 
-					return $r;
+					return $pass->run;
 				}
 			);
 
@@ -152,12 +162,20 @@ class FlowRunAdvancerDeletedSubjectTest extends TestCase {
 
 	public function testAdvanceStreamAlsoFallsBackToThePayloadRatherThanFailing(): void {
 		$run = $this->runWithDeletedSubject(['payload' => ['uuid' => 'gone-1']]);
-		$this->resolvers->method('resolveSubject')->willReturn(null);
+		$this->resolvers->method('resolveObject')->willReturn(null);
 
 		$this->runner->expects($this->once())
-			->method('advanceStream')
-			->with($run, ['id' => 'f1'], $this->isInstanceOf(stdClass::class), 'stream-1', 0)
-			->willReturn($run);
+			->method('advanceBranch')
+			->willReturnCallback(
+				function (FlowRunPass $pass, FlowStreamAdvance $advance) use ($run): FlowRun {
+					$this->assertSame($run, $pass->run);
+					$this->assertInstanceOf(stdClass::class, $pass->subject);
+					$this->assertSame('stream-1', $advance->streamId);
+					$this->assertSame(0, $advance->budget);
+
+					return $run;
+				}
+			);
 
 		$this->mapper->expects($this->never())->method('update');
 
@@ -166,9 +184,9 @@ class FlowRunAdvancerDeletedSubjectTest extends TestCase {
 
 	public function testAdvanceStreamStillFailsWithoutAPayload(): void {
 		$run = $this->runWithDeletedSubject([]);
-		$this->resolvers->method('resolveSubject')->willReturn(null);
+		$this->resolvers->method('resolveObject')->willReturn(null);
 
-		$this->runner->expects($this->never())->method('advanceStream');
+		$this->runner->expects($this->never())->method('advanceBranch');
 		$this->mapper->expects($this->once())->method('update')->willReturnArgument(0);
 
 		$this->advancer->advanceStream($run, 'stream-1', 0);

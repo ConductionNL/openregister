@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
+use OCA\OpenRegister\Service\Flow\VersionRunsMigration;
 use OCA\OpenRegister\Controller\FlowRunMigrationController;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -19,6 +21,7 @@ use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationService;
 use OCA\OpenRegister\Service\Flow\FlowRunnableGuard;
 use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowRunMigrationControllerFactory;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -116,7 +119,7 @@ class FlowRunMigrationControllerTest extends TestCase {
 	 * @return FlowRunMigrationController The controller.
 	 */
 	private function controller($migrations = null): FlowRunMigrationController {
-		return new FlowRunMigrationController(
+		return FlowRunMigrationControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,
@@ -180,7 +183,7 @@ class FlowRunMigrationControllerTest extends TestCase {
 		$migrations = $this->createMock(FlowRunMigrationService::class);
 		$migrations->expects($this->once())
 			->method('migrateRunsOfVersion')
-			->with('flow-1', 3, 4, 'the node was renamed', 'alice', [])
+			->with($this->equalTo(new VersionRunsMigration('flow-1', 3, new FlowRunMigrationTarget(4, 'the node was renamed', 'alice', []))))
 			->willReturn($report);
 
 		$flow = new Flow();

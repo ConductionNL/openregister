@@ -1,0 +1,386 @@
+{
+    "clear default type": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "settings.clearCache": [
+                    "all"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "done": "clearCache"
+        }
+    },
+    "clear named type": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "settings.clearCache": [
+                    "schema"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "done": "clearCache"
+        }
+    },
+    "clear throws": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "settings.clearCache": [
+                    "facet"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "clearCache failed"
+        }
+    },
+    "interval defaults": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "cache_warmup_interval",
+                    "3600"
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "cache_warmup_last_run",
+                    ""
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "interval": 3600,
+            "last_run": null,
+            "enabled": true
+        }
+    },
+    "interval disabled": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "cache_warmup_interval",
+                    "3600"
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "cache_warmup_last_run",
+                    ""
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "interval": 0,
+            "last_run": null,
+            "enabled": false
+        }
+    },
+    "interval not a number": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "cache_warmup_interval",
+                    "3600"
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "cache_warmup_last_run",
+                    ""
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "interval": 0,
+            "last_run": null,
+            "enabled": false
+        }
+    },
+    "interval saved": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "cache_warmup_interval",
+                    "3600"
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "cache_warmup_last_run",
+                    ""
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "interval": 900,
+            "last_run": "2026-01-02T03:04:05+00:00",
+            "enabled": true
+        }
+    },
+    "interval throws": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "cache_warmup_interval",
+                    "3600"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "config unavailable"
+        }
+    },
+    "set default": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "cache_warmup_interval",
+                    "3600"
+                ]
+            },
+            {
+                "logger.info": [
+                    "[CacheSettingsController] Cache warmup interval updated to 3600 seconds",
+                    []
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "interval": 3600,
+            "enabled": true,
+            "message": "Cache warmup interval set to 3600 seconds"
+        }
+    },
+    "set minimum": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "cache_warmup_interval",
+                    "300"
+                ]
+            },
+            {
+                "logger.info": [
+                    "[CacheSettingsController] Cache warmup interval updated to 300 seconds",
+                    []
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "interval": 300,
+            "enabled": true,
+            "message": "Cache warmup interval set to 300 seconds"
+        }
+    },
+    "set negative": {
+        "calls": [
+            {
+                "request.getParams": []
+            }
+        ],
+        "status": 422,
+        "data": {
+            "success": false,
+            "error": "Interval must be 0 (disabled) or at least 300 seconds (5 minutes)"
+        }
+    },
+    "set null": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "cache_warmup_interval",
+                    "3600"
+                ]
+            },
+            {
+                "logger.info": [
+                    "[CacheSettingsController] Cache warmup interval updated to 3600 seconds",
+                    []
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "interval": 3600,
+            "enabled": true,
+            "message": "Cache warmup interval set to 3600 seconds"
+        }
+    },
+    "set text": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "cache_warmup_interval",
+                    "0"
+                ]
+            },
+            {
+                "logger.info": [
+                    "[CacheSettingsController] Cache warmup interval updated to 0 seconds",
+                    []
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "interval": 0,
+            "enabled": false,
+            "message": "Cache warmup disabled"
+        }
+    },
+    "set throws": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "cache_warmup_interval",
+                    "600"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "config read-only"
+        }
+    },
+    "set too small": {
+        "calls": [
+            {
+                "request.getParams": []
+            }
+        ],
+        "status": 422,
+        "data": {
+            "success": false,
+            "error": "Interval must be 0 (disabled) or at least 300 seconds (5 minutes)"
+        }
+    },
+    "set zero": {
+        "calls": [
+            {
+                "request.getParams": []
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "cache_warmup_interval",
+                    "0"
+                ]
+            },
+            {
+                "logger.info": [
+                    "[CacheSettingsController] Cache warmup interval updated to 0 seconds",
+                    []
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "interval": 0,
+            "enabled": false,
+            "message": "Cache warmup disabled"
+        }
+    },
+    "stats": {
+        "calls": [
+            {
+                "settings.getCacheStats": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "done": "getCacheStats"
+        }
+    },
+    "stats throws": {
+        "calls": [
+            {
+                "settings.getCacheStats": []
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "getCacheStats failed"
+        }
+    },
+    "warmup": {
+        "calls": [
+            {
+                "settings.warmupNamesCache": []
+            }
+        ],
+        "status": 200,
+        "data": {
+            "done": "warmupNamesCache"
+        }
+    },
+    "warmup throws": {
+        "calls": [
+            {
+                "settings.warmupNamesCache": []
+            }
+        ],
+        "status": 422,
+        "data": {
+            "error": "warmupNamesCache failed"
+        }
+    }
+}

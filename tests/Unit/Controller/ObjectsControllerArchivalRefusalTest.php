@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -57,7 +58,7 @@ class ObjectsControllerArchivalRefusalTest extends TestCase {
 
 		$this->objectService = $this->createMock(ObjectService::class);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(IAppConfig::class),

@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Audit;
  * resolver cannot work out on its own: which registered consumer presented
  * the credential. A claim always wins over resolution.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class TokenContext {
 	/**
@@ -83,7 +83,7 @@ class TokenContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function claim(?TokenIdentity $identity): void {
 		$this->claimed = $identity;
@@ -94,7 +94,7 @@ class TokenContext {
 	 *
 	 * @return TokenIdentity|null The identity, or null when no token made this call.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function identity(): ?TokenIdentity {
 		if ($this->claimed !== null) {
@@ -114,7 +114,7 @@ class TokenContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function clear(): void {
 		$this->claimed = null;

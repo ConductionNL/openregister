@@ -1,0 +1,138 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`audit trail action badge golden changes: renders the badge for every action 1`] = `
+{
+  "create": "<span class="action-badge action-create"><x-plus size="16"></x-plus> CREATE</span>",
+  "delete": "<span class="action-badge action-delete"><x-delete size="16"></x-delete> DELETE</span>",
+  "lock": "<span class="action-badge action-lock"> LOCK</span>",
+  "read": "<span class="action-badge action-read"><x-eye size="16"></x-eye> READ</span>",
+  "undefined": "<span class="action-badge action-undefined"> </span>",
+  "update": "<span class="action-badge action-update"><x-pencil size="16"></x-pencil> UPDATE</span>",
+}
+`;
+
+exports[`audit trail action badge golden changes: renders the open dialog 1`] = `
+"<x-ncdialog name="t:Audit Trail Changes" size="large">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Copy Changes</slot-default>
+      <slot-icon>
+        <x-contentcopy size="20"></x-contentcopy>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton>
+      <slot-default> t:View Full Details</slot-default>
+      <slot-icon>
+        <x-eye size="20"></x-eye>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton>
+      <slot-default> t:Close</slot-default>
+      <slot-icon>
+        <x-close size="20"></x-close>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="audit-trail-changes">
+      
+      <div class="changes-header">
+        <h3>t:Changes for Audit Trail #{id}{"id":42}</h3>
+        <div class="audit-info"><span class="action-badge action-update"><x-pencil size="16"></x-pencil> UPDATE</span><span class="timestamp">local-time</span><span class="user">Alice</span></div>
+      </div>
+      <div class="changes-section">
+        <div class="changes-table-container">
+          <table class="changes-table">
+            <thead>
+              <tr>
+                <th scope="col">t:Field</th>
+                <th scope="col">t:Old Value</th>
+                <th scope="col">t:New Value</th>
+                <th scope="col">t:Change Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="change-row">
+                <td class="field-name">title</td>
+                <td class="old-value"><span>a</span></td>
+                <td class="new-value"><span>b</span></td>
+                <td class="change-type"><span class="type-badge modified">t:Modified</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`audit trail action badge golden details: renders the badge for every action 1`] = `
+{
+  "create": "<span class="action-badge action-create"><x-plus size="16"></x-plus> CREATE</span>",
+  "delete": "<span class="action-badge action-delete"><x-delete size="16"></x-delete> DELETE</span>",
+  "lock": "<span class="action-badge action-lock"> LOCK</span>",
+  "read": "<span class="action-badge action-read"><x-eye size="16"></x-eye> READ</span>",
+  "undefined": "<span class="action-badge action-undefined"> </span>",
+  "update": "<span class="action-badge action-update"><x-pencil size="16"></x-pencil> UPDATE</span>",
+}
+`;
+
+exports[`audit trail action badge golden details: renders the open dialog 1`] = `
+"<x-ncdialog name="t:Audit Trail Details" size="large">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Copy Full Data</slot-default>
+      <slot-icon>
+        <x-contentcopy size="20"></x-contentcopy>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton>
+      <slot-default> t:Copy Changes</slot-default>
+      <slot-icon>
+        <x-comparehorizontal size="20"></x-comparehorizontal>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton>
+      <slot-default> t:Close</slot-default>
+      <slot-icon>
+        <x-close size="20"></x-close>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="audit-trail-details">
+      
+      <div class="details-section">
+        <h3>t:Basic Information</h3>
+        <div class="details-grid">
+          <div class="detail-item"><label>t:ID</label><span>42</span></div>
+          <div class="detail-item"><label>t:Action</label><span class="action-badge action-update"><x-pencil size="16"></x-pencil> UPDATE</span></div>
+          <div class="detail-item"><label>t:Created</label><span>local-time</span></div>
+          <div class="detail-item"><label>t:Object ID</label><span>obj-1</span></div>
+          <div class="detail-item"><label>t:Register ID</label><span>1</span></div>
+          <div class="detail-item"><label>t:Schema ID</label><span>2</span></div>
+          <div class="detail-item"><label>t:User</label><span>Alice</span></div>
+          <div class="detail-item"><label>t:Size</label><span>-</span></div>
+        </div>
+      </div>
+      <div class="details-section">
+        <h3>t:Changes</h3>
+        <div class="changes-container"><pre>{
+  "title": {
+    "old": "a",
+    "new": "b"
+  }
+}</pre>
+        </div>
+      </div>
+      
+      
+      <div class="details-section">
+        <h3>t:Additional Information</h3>
+        <div class="additional-fields"></div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;

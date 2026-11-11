@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Capabilities;
 
-use OCA\OpenRegister\Service\UrnService;
+use OCA\OpenRegister\Service\UrnServiceInterface;
 use OCP\Capabilities\ICapability;
 
 /**
@@ -41,13 +41,37 @@ use OCP\Capabilities\ICapability;
  */
 class UrnCapability implements ICapability {
 	/**
+	 * The URN routes, relative to the instance root.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ENDPOINTS = [
+		'resolve' => '/apps/openregister/api/urn/resolve',
+		'lookup' => '/apps/openregister/api/urn/lookup',
+		'bulk' => '/apps/openregister/api/urn/bulk',
+	];
+
+	/**
+	 * Which URN features this instance supports.
+	 *
+	 * @var array<string, bool>
+	 */
+	private const FEATURES = [
+		'bulkResolve' => true,
+		'reverseLookup' => true,
+		'crossInstance' => false,
+		'aliases' => false,
+		'versioning' => false,
+	];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param UrnService $urnService URN identifier service used to read
+	 * @param UrnServiceInterface $urnService URN identifier service used to read
 	 *                               the configured instance slug.
 	 */
 	public function __construct(
-		private readonly UrnService $urnService,
+		private readonly UrnServiceInterface $urnService,
 	) {
 	}//end __construct()
 
@@ -81,23 +105,12 @@ class UrnCapability implements ICapability {
 				'urn' => [
 					'enabled' => true,
 					'version' => '1',
-					'nid' => UrnService::DEFAULT_NID,
+					'nid' => UrnServiceInterface::DEFAULT_NID,
 					'instance' => $this->urnService->getInstanceSlug(),
-					'endpoints' => [
-						'resolve' => '/apps/openregister/api/urn/resolve',
-						'lookup' => '/apps/openregister/api/urn/lookup',
-						'bulk' => '/apps/openregister/api/urn/bulk',
-					],
-					'features' => [
-						'bulkResolve' => true,
-						'reverseLookup' => true,
-						'crossInstance' => false,
-						'aliases' => false,
-						'versioning' => false,
-					],
+					'endpoints' => self::ENDPOINTS,
+					'features' => self::FEATURES,
 				],
 			],
 		];
-
 	}//end getCapabilities()
 }//end class

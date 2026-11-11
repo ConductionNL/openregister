@@ -118,22 +118,9 @@ class ObjectStateWriteException extends Exception {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public static function archived(ObjectEntity $object): self {
-		$marker = ($object->getArchived() ?? []);
-		$actor = self::stringOrNull(value: ($marker['by'] ?? null));
-		$occurredAt = self::stringOrNull(value: ($marker['at'] ?? null));
+		$marker = new ObjectStateMarker(marker: ($object->getArchived() ?? []));
 
-		$exception = new self(
-			message: 'Cannot write to this object: it was archived by '
-				. ($actor ?? 'an unknown user') . ' on ' . ($occurredAt ?? 'an unrecorded date')
-				. '. Restore it from the archive before changing it.'
-		);
-
-		$exception->state = 'archived';
-		$exception->actor = $actor;
-		$exception->occurredAt = $occurredAt;
-		$exception->reason = self::stringOrNull(value: ($marker['reason'] ?? null));
-
-		return $exception;
+		return self::refusal(state: 'archived', marker: $marker);
 	}//end archived()
 
 	/**
@@ -150,28 +137,9 @@ class ObjectStateWriteException extends Exception {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public static function frozen(ObjectEntity $object): self {
-		$marker = ($object->getFrozen() ?? []);
-		$actor = self::stringOrNull(value: ($marker['by'] ?? null));
-		$occurredAt = self::stringOrNull(value: ($marker['at'] ?? null));
-		$state = self::stringOrNull(value: ($marker['state'] ?? null));
+		$marker = new ObjectStateMarker(marker: ($object->getFrozen() ?? []));
 
-		$because = '';
-		if ($state !== null) {
-			$because = ' on entering the state "' . $state . '"';
-		}
-
-		$exception = new self(
-			message: 'Cannot write to this object: it was frozen by '
-				. ($actor ?? 'an unknown user') . ' on ' . ($occurredAt ?? 'an unrecorded date')
-				. $because . '. Unfreeze it before changing it.'
-		);
-
-		$exception->state = 'frozen';
-		$exception->actor = $actor;
-		$exception->occurredAt = $occurredAt;
-		$exception->reason = self::stringOrNull(value: ($marker['reason'] ?? null));
-
-		return $exception;
+		return self::refusal(state: 'frozen', marker: $marker);
 	}//end frozen()
 
 	/**
@@ -240,23 +208,27 @@ class ObjectStateWriteException extends Exception {
 	}//end toResponseBody()
 
 	/**
-	 * Narrow a marker value to a non-empty string.
+	 * The refusal for one state, carrying the marker's actor, time and reason.
 	 *
-	 * A marker written by an older version, or by a repair, can hold anything;
-	 * concatenating an array into the message would turn a refusal into a
-	 * PHP notice and lose the sentence the caller needs.
+	 * @param string            $state  The state word: `archived` or `frozen`.
+	 * @param ObjectStateMarker $marker The stored marker.
 	 *
-	 * @param mixed $value The raw marker value.
-	 *
-	 * @return string|null The value as a non-empty string, or null.
+	 * @return self The refusal.
 	 */
-	private static function stringOrNull(mixed $value): ?string {
-		if (is_string($value) === false || $value === '') {
-			return null;
+	private static function refusal(string $state, ObjectStateMarker $marker): self {
+		$message = $marker->archivedMessage();
+		if ($state === 'frozen') {
+			$message = $marker->frozenMessage();
 		}
 
-		return $value;
-	}//end stringOrNull()
+		$exception = new self(message: $message);
+		$exception->state = $state;
+		$exception->actor = $marker->field(key: 'by');
+		$exception->occurredAt = $marker->field(key: 'at');
+		$exception->reason = $marker->field(key: 'reason');
+
+		return $exception;
+	}//end refusal()
 
 	/**
 	 * Constructor for ObjectStateWriteException.

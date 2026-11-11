@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -25,9 +25,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Service\Operations\JobRunRecorder;
-use OCA\OpenRegister\Service\Operations\JobScheduleService;
-use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Service\Operations\JobRunStart;
+use OCA\OpenRegister\Service\Operations\JobRunContext;
+use OCA\OpenRegister\Service\Operations\JobRunRecorderInterface;
+use OCA\OpenRegister\Service\Operations\JobScheduleServiceInterface;
 use OCP\BackgroundJob\TimedJob;
 
 /**
@@ -43,23 +44,29 @@ use OCP\BackgroundJob\TimedJob;
  * that an administrator disabled must not run, and putting that check in each
  * subclass is putting it in the place it can be left out.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+ * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
  */
 abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 
 	/**
+	 * The wrapper that writes the run row.
+	 *
+	 * @var JobRunRecorderInterface
+	 */
+	protected readonly JobRunRecorderInterface $recorder;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory       $time     Time factory for the parent job class.
-	 * @param JobRunRecorder     $recorder The wrapper that writes the run row.
-	 * @param JobScheduleService $schedule The administered schedule.
+	 * @param RecordedJobRuntime          $runtime  The scheduler clock and the recorder that writes the run row.
+	 * @param JobScheduleServiceInterface $schedule The administered schedule.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		protected readonly JobRunRecorder $recorder,
-		protected readonly JobScheduleService $schedule,
+		RecordedJobRuntime $runtime,
+		protected readonly JobScheduleServiceInterface $schedule,
 	) {
-		parent::__construct(time: $time);
+		$this->recorder = $runtime->recorder;
+		parent::__construct(time: $runtime->time);
 
 	}//end __construct()
 
@@ -70,7 +77,7 @@ abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	final protected function run($argument): void {
 		if ($this->schedule->mayRun(jobClass: static::class, moment: new DateTime()) === false) {
@@ -81,11 +88,10 @@ abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 		}
 
 		$this->recorder->around(
-			jobClass: static::class,
+			start: new JobRunStart(jobClass: static::class, context: new JobRunContext(argument: $argument)),
 			work: function () use ($argument): void {
 				$this->runRecorded(argument: $argument);
-			},
-			argument: $argument
+			}
 		);
 
 	}//end run()
@@ -97,7 +103,7 @@ abstract class RecordedTimedJob extends TimedJob implements RecordsItsRuns {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	abstract protected function runRecorded(mixed $argument): void;
 }//end class

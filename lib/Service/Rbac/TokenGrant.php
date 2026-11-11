@@ -78,25 +78,75 @@ class TokenGrant {
 	public const UNGRANTABLE = 'manage';
 
 	/**
+	 * The verbs this token may use.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $verbs;
+
+	/**
+	 * Register slugs, or null for every one the holder may reach.
+	 *
+	 * @var array<int, string>|null
+	 */
+	public readonly ?array $registers;
+
+	/**
+	 * Schema slugs, or null for every one.
+	 *
+	 * @var array<int, string>|null
+	 */
+	public readonly ?array $schemas;
+
+	/**
+	 * A row condition, in the conditional-scope grammar.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	public readonly ?array $match;
+
+	/**
+	 * When it lapses; required at issue.
+	 *
+	 * @var DateTimeInterface|null
+	 */
+	public readonly ?DateTimeInterface $expiresAt;
+
+	/**
+	 * Calls per minute, or null for none.
+	 *
+	 * @var int|null
+	 */
+	public readonly ?int $rateLimit;
+
+	/**
+	 * Which token this is, for `actorVia`.
+	 *
+	 * @var string
+	 */
+	public readonly string $tokenId;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param array<int, string>        $verbs     The verbs this token may use.
-	 * @param array<int, string>|null   $registers Register slugs, or null for every one the holder may reach.
-	 * @param array<int, string>|null   $schemas   Schema slugs, or null for every one.
-	 * @param array<string, mixed>|null $match     A row condition, in the conditional-scope grammar.
-	 * @param DateTimeInterface|null    $expiresAt When it lapses; required at issue.
-	 * @param int|null                  $rateLimit Calls per minute, or null for none.
-	 * @param string                    $tokenId   Which token this is, for `actorVia`.
+	 * @param array<int, string>    $verbs   The verbs this token may use.
+	 * @param TokenGrantReach|null  $reach   Which registers, schemas and rows it reaches, or null for all the holder may.
+	 * @param TokenGrantTerms|null  $terms   When it lapses and how often it may call, or null for neither.
+	 * @param string                $tokenId Which token this is, for `actorVia`.
 	 */
 	public function __construct(
-		public readonly array $verbs,
-		public readonly ?array $registers = null,
-		public readonly ?array $schemas = null,
-		public readonly ?array $match = null,
-		public readonly ?DateTimeInterface $expiresAt = null,
-		public readonly ?int $rateLimit = null,
-		public readonly string $tokenId = '',
+		array $verbs,
+		?TokenGrantReach $reach = null,
+		?TokenGrantTerms $terms = null,
+		string $tokenId = '',
 	) {
+		$this->verbs = $verbs;
+		$this->registers = $reach?->registers;
+		$this->schemas = $reach?->schemas;
+		$this->match = $reach?->match;
+		$this->expiresAt = $terms?->expiresAt;
+		$this->rateLimit = $terms?->rateLimit;
+		$this->tokenId = $tokenId;
 	}//end __construct()
 
 	/**
@@ -122,35 +172,74 @@ class TokenGrant {
 			return null;
 		}
 
-		if (is_array($stored) === false) {
+		$verbs = self::storedVerbs(stored: $stored);
+		if ($verbs === null) {
 			return new self(verbs: [], tokenId: $tokenId);
+		}
+
+		return new self(
+			verbs: $verbs,
+			reach: self::storedReach(stored: $stored),
+			terms: self::storedTerms(stored: $stored),
+			tokenId: $tokenId
+		);
+	}//end fromStored()
+
+	/**
+	 * The stored verbs as strings, or null when the grant or its verb list is malformed.
+	 *
+	 * @param mixed $stored The stored grant.
+	 *
+	 * @return array<int, string>|null The verbs.
+	 */
+	private static function storedVerbs(mixed $stored): ?array {
+		if (is_array($stored) === false) {
+			return null;
 		}
 
 		$verbs = ($stored['verbs'] ?? null);
 		if (is_array($verbs) === false) {
-			return new self(verbs: [], tokenId: $tokenId);
+			return null;
 		}
 
+		return array_values(array_map(static fn (mixed $v): string => (string)$v, $verbs));
+	}//end storedVerbs()
+
+	/**
+	 * Where a stored grant reaches: its registers, schemas and match; each null when absent or malformed.
+	 *
+	 * @param array<string, mixed> $stored The stored grant.
+	 *
+	 * @return TokenGrantReach The reach.
+	 */
+	private static function storedReach(array $stored): TokenGrantReach {
 		$match = null;
 		if (is_array(($stored['match'] ?? null)) === true) {
 			$match = $stored['match'];
 		}
 
+		return new TokenGrantReach(
+			registers: self::listOrNull(value: ($stored['registers'] ?? null)),
+			schemas: self::listOrNull(value: ($stored['schemas'] ?? null)),
+			match: $match
+		);
+	}//end storedReach()
+
+	/**
+	 * Until when and how often a stored grant may be used; each null when absent or malformed.
+	 *
+	 * @param array<string, mixed> $stored The stored grant.
+	 *
+	 * @return TokenGrantTerms The terms.
+	 */
+	private static function storedTerms(array $stored): TokenGrantTerms {
 		$rateLimit = null;
 		if (is_numeric(($stored['rateLimit'] ?? null)) === true) {
 			$rateLimit = (int)$stored['rateLimit'];
 		}
 
-		return new self(
-			verbs: array_values(array_map(static fn (mixed $v): string => (string)$v, $verbs)),
-			registers: self::listOrNull(value: ($stored['registers'] ?? null)),
-			schemas: self::listOrNull(value: ($stored['schemas'] ?? null)),
-			match: $match,
-			expiresAt: self::dateOrNull(value: ($stored['expiresAt'] ?? null)),
-			rateLimit: $rateLimit,
-			tokenId: $tokenId
-		);
-	}//end fromStored()
+		return new TokenGrantTerms(expiresAt: self::dateOrNull(value: ($stored['expiresAt'] ?? null)), rateLimit: $rateLimit);
+	}//end storedTerms()
 
 	/**
 	 * Whether this grant permits nothing at all.

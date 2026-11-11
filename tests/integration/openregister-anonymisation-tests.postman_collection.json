@@ -1,0 +1,715 @@
+{
+	"info": {
+		"_postman_id": "openregister-anonymisation-tests",
+		"name": "OpenRegister - PDF / Office Anonymisation Tests",
+		"description": "Integration tests for the file-anonymise REST surface (`POST /api/files/{fileId}/anonymize`) of the `pdf-anonymisation` spec.\n\nThe collection brings its own fixtures, so it runs on a fresh instance: three synthetic one-page PDFs (no real person, no real document) are carried as collection variables in plain ASCII, uploaded over WebDAV, extracted, and given the operator-marked name `Jan Jansen` through `/manual-entities`. No external detector (Presidio, OpenAnonymiser, an LLM) is needed.\n\n1. Happy path: a Flate-compressed content stream is anonymised completely, and the re-extracted copy no longer holds the name.\n2. Encrypted PDF: a file whose text was extracted and that was then replaced by an encrypted version answers 422 with reason `encrypted_pdf`.\n3. Residual: an unfiltered content stream the byte replacer does not rewrite is answered 200 with `complete: false` and the residual listed, never as a complete anonymisation.\n\nEvery file is removed in `99 teardown`.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{username}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{password}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// The quality workflow passes base_url, admin_user and admin_password; take",
+					"// them for this collection's own names when those are not given.",
+					"[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password'], ['adminUser', 'admin_user'], ['adminPassword', 'admin_password']].forEach(function (pair) {",
+					"    var given = pm.environment.get(pair[1]);",
+					"    if (given !== undefined && pm.environment.get(pair[0]) === undefined) {",
+					"        pm.collectionVariables.set(pair[0], given);",
+					"    }",
+					"});",
+					"if (!pm.collectionVariables.get('runId')) {",
+					"    var runId = String(Date.now());",
+					"    pm.collectionVariables.set('runId', runId);",
+					"    pm.collectionVariables.set('plainName', 'anonymisation-' + runId + '-plain.pdf');",
+					"    pm.collectionVariables.set('plainAnonymizedName', 'anonymisation-' + runId + '-plain_anonymized.pdf');",
+					"    pm.collectionVariables.set('encryptedName', 'anonymisation-' + runId + '-encrypted.pdf');",
+					"    pm.collectionVariables.set('residualName', 'anonymisation-' + runId + '-residual.pdf');",
+					"}"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "00 setup",
+			"item": [
+				{
+					"name": "upload the plain PDF",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/pdf"
+							}
+						],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{plainName}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{{pdfPlain}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the upload is stored', () => pm.expect(pm.response.code, pm.response.text()).to.be.oneOf([201, 204]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "read the plain file id",
+					"request": {
+						"method": "PROPFIND",
+						"header": [
+							{
+								"key": "Depth",
+								"value": "0"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/xml"
+							}
+						],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{plainName}}",
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\"?><d:propfind xmlns:d=\"DAV:\" xmlns:oc=\"http://owncloud.org/ns\"><d:prop><oc:fileid/></d:prop></d:propfind>"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const m = pm.response.text().match(/<oc:fileid>(\\d+)<\\/oc:fileid>/);",
+									"pm.test('the file id is readable', () => pm.expect(m, pm.response.text()).to.not.eql(null));",
+									"if (m) { pm.collectionVariables.set('fixtureFileId', m[1]); }"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "extract the plain text",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{fixtureFileId}}/extract"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('extraction succeeds', () => {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json().success, pm.response.text()).to.eql(true);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "mark the name in the plain file",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{fixtureFileId}}/manual-entities",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"value\": \"Jan Jansen\", \"type\": \"PERSON\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the name is found once in the extracted text', () => {",
+									"    pm.response.to.have.status(201);",
+									"    pm.expect(pm.response.json().matchCount, pm.response.text()).to.eql(1);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "upload the to-be-encrypted PDF",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/pdf"
+							}
+						],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{encryptedName}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{{pdfPlain}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the upload is stored', () => pm.expect(pm.response.code, pm.response.text()).to.be.oneOf([201, 204]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "read the to-be-encrypted file id",
+					"request": {
+						"method": "PROPFIND",
+						"header": [
+							{
+								"key": "Depth",
+								"value": "0"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/xml"
+							}
+						],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{encryptedName}}",
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\"?><d:propfind xmlns:d=\"DAV:\" xmlns:oc=\"http://owncloud.org/ns\"><d:prop><oc:fileid/></d:prop></d:propfind>"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const m = pm.response.text().match(/<oc:fileid>(\\d+)<\\/oc:fileid>/);",
+									"pm.test('the file id is readable', () => pm.expect(m, pm.response.text()).to.not.eql(null));",
+									"if (m) { pm.collectionVariables.set('encryptedFixtureFileId', m[1]); }"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "extract the to-be-encrypted text",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{encryptedFixtureFileId}}/extract"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('extraction succeeds', () => {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json().success, pm.response.text()).to.eql(true);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "mark the name in the to-be-encrypted file",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{encryptedFixtureFileId}}/manual-entities",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"value\": \"Jan Jansen\", \"type\": \"PERSON\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the name is found once in the extracted text', () => {",
+									"    pm.response.to.have.status(201);",
+									"    pm.expect(pm.response.json().matchCount, pm.response.text()).to.eql(1);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "upload the residual PDF",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/pdf"
+							}
+						],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{residualName}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{{pdfUnfiltered}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the upload is stored', () => pm.expect(pm.response.code, pm.response.text()).to.be.oneOf([201, 204]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "read the residual file id",
+					"request": {
+						"method": "PROPFIND",
+						"header": [
+							{
+								"key": "Depth",
+								"value": "0"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/xml"
+							}
+						],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{residualName}}",
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\"?><d:propfind xmlns:d=\"DAV:\" xmlns:oc=\"http://owncloud.org/ns\"><d:prop><oc:fileid/></d:prop></d:propfind>"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const m = pm.response.text().match(/<oc:fileid>(\\d+)<\\/oc:fileid>/);",
+									"pm.test('the file id is readable', () => pm.expect(m, pm.response.text()).to.not.eql(null));",
+									"if (m) { pm.collectionVariables.set('residualFixtureFileId', m[1]); }"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "extract the residual text",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{residualFixtureFileId}}/extract"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('extraction succeeds', () => {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json().success, pm.response.text()).to.eql(true);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "mark the name in the residual file",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{residualFixtureFileId}}/manual-entities",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"value\": \"Jan Jansen\", \"type\": \"PERSON\"}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the name is found once in the extracted text', () => {",
+									"    pm.response.to.have.status(201);",
+									"    pm.expect(pm.response.json().matchCount, pm.response.text()).to.eql(1);",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "1 happy path",
+			"item": [
+				{
+					"name": "anonymise the plain PDF",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{fixtureFileId}}/anonymize"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('anonymisation answers 200 and is complete', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.complete, pm.response.text()).to.eql(true);",
+									"    pm.expect(j.residual_count).to.eql(0);",
+									"    pm.expect(j.entities_replaced).to.eql(1);",
+									"});",
+									"pm.test('the response carries the anonymised file id', () => {",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.anonymized_file_id).to.be.a('number');",
+									"    pm.expect(j.anonymized_file_id).to.not.eql(Number(pm.collectionVariables.get('fixtureFileId')));",
+									"    pm.collectionVariables.set('anonymizedFileId', j.anonymized_file_id);",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "extract the anonymised copy",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{anonymizedFileId}}/extract"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the anonymised copy is readable', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "the name is gone from the anonymised copy",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{anonymizedFileId}}/text"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the text no longer holds the name', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const t = pm.response.json().text;",
+									"    pm.expect(t).to.be.a('string');",
+									"    pm.expect(t).to.not.include('Jan Jansen');",
+									"    pm.expect(t).to.not.include('Jansen');",
+									"    pm.expect(t).to.include('Zuiddrecht');",
+									"});"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "a second anonymisation of the copy is refused",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{anonymizedFileId}}/anonymize"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('an anonymised file is not anonymised again', () => {",
+									"    pm.response.to.have.status(400);",
+									"    pm.expect(pm.response.json().message).to.include('already anonymized');",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "2 encrypted PDF",
+			"item": [
+				{
+					"name": "replace the file with an encrypted version",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/pdf"
+							}
+						],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{encryptedName}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{{pdfEncrypted}}"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the encrypted version replaces the file', () => pm.expect(pm.response.code, pm.response.text()).to.be.oneOf([201, 204]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "anonymising an encrypted PDF answers 422",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{encryptedFixtureFileId}}/anonymize"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('encrypted PDF returns 422 (caller-correctable)', () => pm.response.to.have.status(422));",
+									"pm.test('the body names reason encrypted_pdf', () => pm.expect(pm.response.json()).to.have.property('reason', 'encrypted_pdf'));",
+									"pm.test('the body does not echo the entity text', () => pm.expect(pm.response.text()).to.not.include('Jan Jansen'));"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "3 residual entity text",
+			"item": [
+				{
+					"name": "a stream the replacer cannot rewrite is reported, not claimed",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{residualFixtureFileId}}/anonymize"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the partial result answers 200 and says it is not complete', () => {",
+									"    pm.response.to.have.status(200);",
+									"    const j = pm.response.json();",
+									"    pm.expect(j.complete, pm.response.text()).to.eql(false);",
+									"    pm.expect(j.residual_count).to.eql(1);",
+									"    pm.expect(j.residual_entities.map((e) => e.text)).to.include('Jan Jansen');",
+									"    pm.collectionVariables.set('residualAnonymizedName', String(j.anonymized_path).split('/').pop());",
+									"});"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "99 teardown",
+			"item": [
+				{
+					"name": "remove plainName",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{plainName}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([204, 404]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "remove plainAnonymizedName",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{plainAnonymizedName}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([204, 404]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "remove encryptedName",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{encryptedName}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([204, 404]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "remove residualName",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{residualName}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([204, 404]));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "remove residualAnonymizedName",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{residualAnonymizedName}}"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('removed', () => pm.expect(pm.response.code).to.be.oneOf([204, 404]));"
+								]
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "pdfPlain",
+			"value": "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n5 0 obj\n<< /Length 111 /Filter [/ASCII85Decode /FlateDecode] >>\nstream\nGhNnOYms#Q'Lq%_q*u4-Md8$(mps>LW&1W`jnVns^7:3[Ns\\L3G-j<^J/C^n&lsk_aYsh24sVJ[N7[rWBlUm9%S8?=L,m=uVQ'c))!D&icPlB~>\nendstream\nendobj\nxref\n0 6\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000241 00000 n \n0000000338 00000 n \ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n538\n%%EOF\n"
+		},
+		{
+			"key": "pdfUnfiltered",
+			"value": "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n5 0 obj\n<< /Length 86 >>\nstream\nBT /F1 12 Tf 72 720 Td (Dit besluit is opgesteld voor Jan Jansen te Zuiddrecht.) Tj ET\nendstream\nendobj\nxref\n0 6\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000241 00000 n \n0000000338 00000 n \ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n474\n%%EOF\n"
+		},
+		{
+			"key": "pdfEncrypted",
+			"value": "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n5 0 obj\n<< /Length 111 /Filter [/ASCII85Decode /FlateDecode] >>\nstream\nGhNnOYms#Q'Lq%_q*u4-Md8$(mps>LW&1W`jnVns^7:3[Ns\\L3G-j<^J/C^n&lsk_aYsh24sVJ[N7[rWBlUm9%S8?=L,m=uVQ'c))!D&icPlB~>\nendstream\nendobj\n6 0 obj\n<< /Filter /Standard /V 1 /R 2 /O (0123456789abcdef0123456789abcdef) /U (0123456789abcdef0123456789abcdef) /P -4 >>\nendobj\nxref\n0 7\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000241 00000 n \n0000000338 00000 n \n0000000538 00000 n \ntrailer\n<< /Size 7 /Root 1 0 R /Encrypt 6 0 R /ID [<0123456789abcdef0123456789abcdef> <0123456789abcdef0123456789abcdef>] >>\nstartxref\n669\n%%EOF\n"
+		}
+	]
+}

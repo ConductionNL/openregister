@@ -1,0 +1,967 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`branchy helpers golden maps search trail statistics 1`] = `
+[
+  {
+    "averageExecutionTime": 0,
+    "averageResultsPerSearch": 0,
+    "avgObjectViewsPerSession": 0,
+    "avgSearchesPerSession": 0,
+    "queryComplexity": {
+      "complex": 0,
+      "medium": 0,
+      "simple": 0,
+    },
+    "successRate": 0,
+    "total": 0,
+    "totalResults": 0,
+    "uniqueOrganizations": 0,
+    "uniqueSearchTerms": 0,
+    "uniqueUsers": 0,
+  },
+  {
+    "averageExecutionTime": 20,
+    "averageResultsPerSearch": 1.5,
+    "avgObjectViewsPerSession": 6,
+    "avgSearchesPerSession": 4,
+    "queryComplexity": {
+      "simple": 1,
+    },
+    "successRate": 0.5,
+    "total": 5,
+    "totalResults": 9,
+    "uniqueOrganizations": 1,
+    "uniqueSearchTerms": 3,
+    "uniqueUsers": 2,
+  },
+  {
+    "averageExecutionTime": 0,
+    "averageResultsPerSearch": 0,
+    "avgObjectViewsPerSession": 0,
+    "avgSearchesPerSession": 0,
+    "queryComplexity": {
+      "complex": 0,
+      "medium": 0,
+      "simple": 0,
+    },
+    "successRate": 0,
+    "total": 0,
+    "totalResults": 0,
+    "uniqueOrganizations": 0,
+    "uniqueSearchTerms": 0,
+    "uniqueUsers": 0,
+  },
+]
+`;
+
+exports[`branchy helpers golden parses Mail URLs 1`] = `
+[
+  [
+    null,
+    {
+      "accountId": null,
+      "messageId": null,
+      "sender": null,
+    },
+  ],
+  [
+    "",
+    {
+      "accountId": null,
+      "messageId": null,
+      "sender": null,
+    },
+  ],
+  [
+    "https://x/apps/mail/box/priority/thread/6",
+    {
+      "accountId": 1,
+      "messageId": 6,
+      "sender": null,
+    },
+  ],
+  [
+    "/apps/mail/box/2/thread/42",
+    {
+      "accountId": 1,
+      "messageId": 42,
+      "sender": null,
+    },
+  ],
+  [
+    "/apps/mail/box/2",
+    {
+      "accountId": 2,
+      "messageId": null,
+      "sender": null,
+    },
+  ],
+  [
+    "/apps/mail/box/2/",
+    {
+      "accountId": null,
+      "messageId": null,
+      "sender": null,
+    },
+  ],
+  [
+    "#/accounts/3/folders/INBOX/messages/42",
+    {
+      "accountId": 3,
+      "messageId": 42,
+      "sender": null,
+    },
+  ],
+  [
+    "#/accounts/3/folders/INBOX",
+    {
+      "accountId": 3,
+      "messageId": null,
+      "sender": null,
+    },
+  ],
+  [
+    "#/accounts/3/folders/",
+    {
+      "accountId": 3,
+      "messageId": null,
+      "sender": null,
+    },
+  ],
+  [
+    "/apps/mail/box/x",
+    {
+      "accountId": null,
+      "messageId": null,
+      "sender": null,
+    },
+  ],
+  [
+    "/apps/files",
+    {
+      "accountId": null,
+      "messageId": null,
+      "sender": null,
+    },
+  ],
+]
+`;
+
+exports[`branchy helpers golden reads date strings 1`] = `
+[
+  [
+    "date",
+    null,
+    null,
+  ],
+  [
+    "date",
+    "",
+    null,
+  ],
+  [
+    "date",
+    "2026-02-03",
+    "Local(2026-02-03 00:00:00)",
+  ],
+  [
+    "date",
+    "2026-02-03 10:11:12",
+    "Local(2026-02-03 00:00:00)",
+  ],
+  [
+    "date",
+    "2026-02-03T10:11:12Z",
+    "Local(2026-02-03 00:00:00)",
+  ],
+  [
+    "date",
+    "10:11",
+    null,
+  ],
+  [
+    "date",
+    "10:11:12",
+    null,
+  ],
+  [
+    "date",
+    "1:x",
+    null,
+  ],
+  [
+    "date",
+    "garbage",
+    null,
+  ],
+  [
+    "date",
+    "2026-02",
+    null,
+  ],
+  [
+    "date",
+    "Date(2020-01-01T00:00:00.000Z)",
+    "Date(2020-01-01T00:00:00.000Z)",
+  ],
+  [
+    "time",
+    null,
+    null,
+  ],
+  [
+    "time",
+    "",
+    null,
+  ],
+  [
+    "time",
+    "2026-02-03",
+    null,
+  ],
+  [
+    "time",
+    "2026-02-03 10:11:12",
+    null,
+  ],
+  [
+    "time",
+    "2026-02-03T10:11:12Z",
+    null,
+  ],
+  [
+    "time",
+    "10:11",
+    "Local(2026-03-04 10:11:00)",
+  ],
+  [
+    "time",
+    "10:11:12",
+    "Local(2026-03-04 10:11:12)",
+  ],
+  [
+    "time",
+    "1:x",
+    null,
+  ],
+  [
+    "time",
+    "garbage",
+    null,
+  ],
+  [
+    "time",
+    "2026-02",
+    null,
+  ],
+  [
+    "time",
+    "Date(2020-01-01T00:00:00.000Z)",
+    "Date(2020-01-01T00:00:00.000Z)",
+  ],
+  [
+    "date-time",
+    null,
+    null,
+  ],
+  [
+    "date-time",
+    "",
+    null,
+  ],
+  [
+    "date-time",
+    "2026-02-03",
+    "Date(2026-02-03T00:00:00.000Z)",
+  ],
+  [
+    "date-time",
+    "2026-02-03 10:11:12",
+    "Local(2026-02-03 10:11:12)",
+  ],
+  [
+    "date-time",
+    "2026-02-03T10:11:12Z",
+    "Date(2026-02-03T10:11:12.000Z)",
+  ],
+  [
+    "date-time",
+    "10:11",
+    null,
+  ],
+  [
+    "date-time",
+    "10:11:12",
+    null,
+  ],
+  [
+    "date-time",
+    "1:x",
+    null,
+  ],
+  [
+    "date-time",
+    "garbage",
+    null,
+  ],
+  [
+    "date-time",
+    "2026-02",
+    "Date(2026-02-01T00:00:00.000Z)",
+  ],
+  [
+    "date-time",
+    "Date(2020-01-01T00:00:00.000Z)",
+    "Date(2020-01-01T00:00:00.000Z)",
+  ],
+  [
+    "other",
+    null,
+    null,
+  ],
+  [
+    "other",
+    "",
+    null,
+  ],
+  [
+    "other",
+    "2026-02-03",
+    null,
+  ],
+  [
+    "other",
+    "2026-02-03 10:11:12",
+    null,
+  ],
+  [
+    "other",
+    "2026-02-03T10:11:12Z",
+    null,
+  ],
+  [
+    "other",
+    "10:11",
+    null,
+  ],
+  [
+    "other",
+    "10:11:12",
+    null,
+  ],
+  [
+    "other",
+    "1:x",
+    null,
+  ],
+  [
+    "other",
+    "garbage",
+    null,
+  ],
+  [
+    "other",
+    "2026-02",
+    null,
+  ],
+  [
+    "other",
+    "Date(2020-01-01T00:00:00.000Z)",
+    "Date(2020-01-01T00:00:00.000Z)",
+  ],
+  [
+    undefined,
+    null,
+    null,
+  ],
+  [
+    undefined,
+    "",
+    null,
+  ],
+  [
+    undefined,
+    "2026-02-03",
+    null,
+  ],
+  [
+    undefined,
+    "2026-02-03 10:11:12",
+    null,
+  ],
+  [
+    undefined,
+    "2026-02-03T10:11:12Z",
+    null,
+  ],
+  [
+    undefined,
+    "10:11",
+    null,
+  ],
+  [
+    undefined,
+    "10:11:12",
+    null,
+  ],
+  [
+    undefined,
+    "1:x",
+    null,
+  ],
+  [
+    undefined,
+    "garbage",
+    null,
+  ],
+  [
+    undefined,
+    "2026-02",
+    null,
+  ],
+  [
+    undefined,
+    "Date(2020-01-01T00:00:00.000Z)",
+    "Date(2020-01-01T00:00:00.000Z)",
+  ],
+  [
+    "toString",
+    null,
+    null,
+  ],
+  [
+    "toString",
+    "",
+    null,
+  ],
+  [
+    "toString",
+    "2026-02-03",
+    null,
+  ],
+  [
+    "toString",
+    "2026-02-03 10:11:12",
+    null,
+  ],
+  [
+    "toString",
+    "2026-02-03T10:11:12Z",
+    null,
+  ],
+  [
+    "toString",
+    "10:11",
+    null,
+  ],
+  [
+    "toString",
+    "10:11:12",
+    null,
+  ],
+  [
+    "toString",
+    "1:x",
+    null,
+  ],
+  [
+    "toString",
+    "garbage",
+    null,
+  ],
+  [
+    "toString",
+    "2026-02",
+    null,
+  ],
+  [
+    "toString",
+    "Date(2020-01-01T00:00:00.000Z)",
+    "Date(2020-01-01T00:00:00.000Z)",
+  ],
+  [
+    "constructor",
+    null,
+    null,
+  ],
+  [
+    "constructor",
+    "",
+    null,
+  ],
+  [
+    "constructor",
+    "2026-02-03",
+    null,
+  ],
+  [
+    "constructor",
+    "2026-02-03 10:11:12",
+    null,
+  ],
+  [
+    "constructor",
+    "2026-02-03T10:11:12Z",
+    null,
+  ],
+  [
+    "constructor",
+    "10:11",
+    null,
+  ],
+  [
+    "constructor",
+    "10:11:12",
+    null,
+  ],
+  [
+    "constructor",
+    "1:x",
+    null,
+  ],
+  [
+    "constructor",
+    "garbage",
+    null,
+  ],
+  [
+    "constructor",
+    "2026-02",
+    null,
+  ],
+  [
+    "constructor",
+    "Date(2020-01-01T00:00:00.000Z)",
+    "Date(2020-01-01T00:00:00.000Z)",
+  ],
+]
+`;
+
+exports[`branchy helpers golden refreshes the object list 1`] = `
+[
+  {
+    "fetched": [],
+    "thrown": "Register and schema are required.",
+  },
+  {
+    "secondCall": 0,
+  },
+  {
+    "fetched": [
+      [
+        "register",
+        "1-2",
+        2,
+        1,
+      ],
+      [
+        "1-2",
+        {
+          "status": "open",
+        },
+      ],
+      [
+        "register",
+        "1-2",
+        2,
+        1,
+      ],
+      [
+        "1-2",
+        {
+          "status": "open",
+        },
+      ],
+    ],
+    "returned": {
+      "data": {
+        "limit": 10,
+        "offset": 20,
+        "page": 3,
+        "pages": 4,
+        "results": [
+          {
+            "id": "r",
+          },
+        ],
+        "total": 30,
+      },
+      "response": {},
+    },
+  },
+  {
+    "secondCall": 4,
+  },
+  {
+    "fetched": [
+      [
+        "register",
+        "5-6",
+        6,
+        5,
+      ],
+      [
+        "5-6",
+        {
+          "_limit": 10,
+          "_page": 2,
+          "_search": "q",
+          "status": "open",
+        },
+      ],
+      [
+        "register",
+        "5-6",
+        6,
+        5,
+      ],
+      [
+        "5-6",
+        {
+          "_limit": 10,
+          "_page": 2,
+          "_search": "q",
+          "status": "open",
+        },
+      ],
+    ],
+    "returned": {
+      "data": {
+        "limit": 10,
+        "offset": 20,
+        "page": 3,
+        "pages": 4,
+        "results": [
+          {
+            "id": "r",
+          },
+        ],
+        "total": 30,
+      },
+      "response": {},
+    },
+  },
+  {
+    "secondCall": 4,
+  },
+  {
+    "fetched": [
+      [
+        "register",
+        "5-7",
+        7,
+        5,
+      ],
+      [
+        "5-7",
+        {
+          "_limit": 0,
+          "_search": "",
+          "status": "open",
+        },
+      ],
+      [
+        "register",
+        "5-7",
+        7,
+        5,
+      ],
+      [
+        "5-7",
+        {
+          "_limit": 0,
+          "_search": "",
+          "status": "open",
+        },
+      ],
+    ],
+    "returned": {
+      "data": {
+        "limit": 10,
+        "offset": 20,
+        "page": 3,
+        "pages": 4,
+        "results": [
+          {
+            "id": "r",
+          },
+        ],
+        "total": 30,
+      },
+      "response": {},
+    },
+  },
+  {
+    "secondCall": 4,
+  },
+  {
+    "fetched": [],
+    "thrown": "Register and schema are required.",
+  },
+  {
+    "secondCall": 0,
+  },
+  {
+    "fetched": [],
+    "thrown": "Register and schema are required.",
+  },
+  {
+    "secondCall": 0,
+  },
+]
+`;
+
+exports[`branchy helpers golden suggests property configurations 1`] = `
+[
+  {
+    "deprecated": false,
+    "description": "",
+    "displayTitle": undefined,
+    "example": "",
+    "exclusiveMax": false,
+    "exclusiveMin": false,
+    "facetable": false,
+    "format": "",
+    "hideOnCollection": false,
+    "hideOnForm": false,
+    "immutable": false,
+    "maxLength": null,
+    "maximum": null,
+    "minLength": null,
+    "minimum": null,
+    "multipleOf": null,
+    "order": 0,
+    "pattern": "",
+    "required": false,
+    "title": undefined,
+    "type": undefined,
+    "visible": true,
+  },
+  {
+    "deprecated": false,
+    "description": "A name",
+    "displayTitle": "name",
+    "example": "",
+    "exclusiveMax": false,
+    "exclusiveMin": false,
+    "facetable": false,
+    "format": "email",
+    "hideOnCollection": false,
+    "hideOnForm": false,
+    "immutable": false,
+    "maxLength": 20,
+    "maximum": null,
+    "minLength": 3,
+    "minimum": null,
+    "multipleOf": null,
+    "order": 0,
+    "pattern": "",
+    "required": false,
+    "title": "name",
+    "type": "string",
+    "visible": true,
+  },
+  {
+    "deprecated": false,
+    "description": "",
+    "displayTitle": undefined,
+    "example": "",
+    "exclusiveMax": false,
+    "exclusiveMin": false,
+    "facetable": false,
+    "format": "",
+    "hideOnCollection": false,
+    "hideOnForm": false,
+    "immutable": false,
+    "maxLength": null,
+    "maximum": null,
+    "minLength": null,
+    "minimum": null,
+    "multipleOf": null,
+    "order": 0,
+    "pattern": "",
+    "required": false,
+    "title": undefined,
+    "type": undefined,
+    "visible": true,
+  },
+  {
+    "deprecated": false,
+    "description": "",
+    "displayTitle": undefined,
+    "example": "",
+    "exclusiveMax": false,
+    "exclusiveMin": false,
+    "facetable": false,
+    "format": "",
+    "hideOnCollection": false,
+    "hideOnForm": false,
+    "immutable": false,
+    "maxLength": null,
+    "maximum": null,
+    "minLength": null,
+    "minimum": null,
+    "multipleOf": null,
+    "order": 0,
+    "pattern": "",
+    "required": false,
+    "title": undefined,
+    "type": undefined,
+    "visible": true,
+  },
+  {
+    "deprecated": false,
+    "description": "",
+    "displayTitle": undefined,
+    "example": "",
+    "exclusiveMax": false,
+    "exclusiveMin": false,
+    "facetable": false,
+    "format": "",
+    "hideOnCollection": false,
+    "hideOnForm": false,
+    "immutable": false,
+    "maxLength": null,
+    "maximum": null,
+    "minLength": 0,
+    "minimum": null,
+    "multipleOf": null,
+    "order": 0,
+    "pattern": "",
+    "required": false,
+    "title": undefined,
+    "type": undefined,
+    "visible": true,
+  },
+  {
+    "deprecated": false,
+    "description": "",
+    "displayTitle": undefined,
+    "example": "",
+    "exclusiveMax": false,
+    "exclusiveMin": false,
+    "facetable": false,
+    "format": "",
+    "hideOnCollection": false,
+    "hideOnForm": false,
+    "immutable": false,
+    "maxLength": "5",
+    "maximum": null,
+    "minLength": 9007199254740990,
+    "minimum": null,
+    "multipleOf": null,
+    "order": 0,
+    "pattern": "",
+    "required": false,
+    "title": undefined,
+    "type": undefined,
+    "visible": true,
+  },
+  {
+    "deprecated": false,
+    "description": "",
+    "displayTitle": undefined,
+    "example": "",
+    "exclusiveMax": false,
+    "exclusiveMin": false,
+    "facetable": false,
+    "format": "",
+    "hideOnCollection": false,
+    "hideOnForm": false,
+    "immutable": false,
+    "maxLength": null,
+    "maximum": null,
+    "minLength": null,
+    "minimum": null,
+    "multipleOf": null,
+    "order": 0,
+    "pattern": "",
+    "required": false,
+    "title": undefined,
+    "type": undefined,
+    "visible": true,
+  },
+]
+`;
+
+exports[`branchy helpers golden updates file metadata 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/objects/1/2/o/files/9",
+      {
+        "body": "{}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/1/2/o/files/9",
+      {
+        "body": "{"description":"d"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/1/2/o/files/9",
+      {
+        "body": "{"category":"c","labels":["a"]}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/1/2/o/files/9",
+      {
+        "body": "{"category":"","labels":[]}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+    [
+      "/index.php/apps/openregister/api/objects/1/2/o/files/9",
+      {
+        "body": "{"description":"d","category":"c"}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "PUT",
+      },
+    ],
+  ],
+  "results": [
+    {
+      "returned": {
+        "id": 0,
+      },
+    },
+    {
+      "returned": {
+        "id": 1,
+      },
+    },
+    {
+      "returned": {
+        "id": 2,
+      },
+    },
+    {
+      "returned": {
+        "id": 3,
+      },
+    },
+    {
+      "thrown": "Failed to update file metadata: HTTP 409",
+    },
+  ],
+}
+`;

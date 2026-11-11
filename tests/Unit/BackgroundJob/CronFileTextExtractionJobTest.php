@@ -16,16 +16,17 @@ declare(strict_types=1);
 
 namespace Unit\BackgroundJob;
 
-use OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\BackgroundJob\CronFileTextExtractionJob;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Tests\Unit\Support\RegistersContainerServices;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 
 /**
  * Test class for CronFileTextExtractionJob
@@ -48,7 +49,7 @@ class CronFileTextExtractionJobTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Register all mocks in the Nextcloud DI container.
-		$this->registerService(SettingsService::class, function () {
+		$this->registerService(AppSettingsInterface::class, function () {
 			return $this->settingsService;
 		});
 		$this->registerService(TextExtractionService::class, function () {

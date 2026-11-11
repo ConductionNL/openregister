@@ -43,7 +43,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Db\Task;
-use OCP\EventDispatcher\Event;
 
 /**
  * Carries the task as it was persisted in its terminal state.
@@ -55,7 +54,7 @@ use OCP\EventDispatcher\Event;
  * and the after-commit dispatch (run continuation), and listeners filter on
  * it. Two classes would force every subscriber to know both names.
  */
-class TaskTerminalEvent extends Event {
+class TaskTerminalEvent extends AbstractTaskEvent {
 
 	/**
 	 * Constructor.
@@ -65,23 +64,12 @@ class TaskTerminalEvent extends Event {
 	 *                        closed; FALSE when dispatched inside it.
 	 */
 	public function __construct(
-		private readonly Task $task,
+		Task $task,
 		private readonly bool $committed = true,
 	) {
-		parent::__construct();
+		parent::__construct(task: $task);
 
 	}//end __construct()
-
-	/**
-	 * The terminal task.
-	 *
-	 * @return Task The task as persisted.
-	 *
-	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
-	 */
-	public function getTask(): Task {
-		return $this->task;
-	}//end getTask()
 
 	/**
 	 * Whether the terminal write has committed.
@@ -103,7 +91,7 @@ class TaskTerminalEvent extends Event {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function getTaskUuid(): string {
-		return (string)$this->task->getUuid();
+		return (string)$this->getTask()->getUuid();
 	}//end getTaskUuid()
 
 	/**
@@ -114,7 +102,7 @@ class TaskTerminalEvent extends Event {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function getState(): string {
-		return (string)$this->task->getState();
+		return (string)$this->getTask()->getState();
 	}//end getState()
 
 	/**
@@ -125,6 +113,6 @@ class TaskTerminalEvent extends Event {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-a-business-timer-is-durable-subject-bound-and-cancelled-by-completion
 	 */
 	public function getOutcome(): ?string {
-		return $this->task->getOutcome();
+		return $this->getTask()->getOutcome();
 	}//end getOutcome()
 }//end class

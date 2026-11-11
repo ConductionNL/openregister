@@ -1,0 +1,254 @@
+{
+    "transfer everything": {
+        "success": true,
+        "actions": {
+            "properties": [
+                {
+                    "property": "title",
+                    "oldValue": "Target",
+                    "newValue": "Merged"
+                }
+            ],
+            "files": [
+                {
+                    "name": "a.pdf",
+                    "action": "transferred",
+                    "success": true
+                },
+                {
+                    "name": "stuck.pdf",
+                    "action": "transfer_failed",
+                    "success": false,
+                    "error": "The file could not be removed from the source object"
+                },
+                {
+                    "name": "broken.pdf",
+                    "action": "transfer_failed",
+                    "success": false,
+                    "error": "quota"
+                }
+            ],
+            "relations": {
+                "action": "transferred",
+                "relations": [
+                    "rel-a"
+                ]
+            },
+            "references": [
+                {
+                    "objectId": "ref-1",
+                    "title": "ref-1"
+                }
+            ]
+        },
+        "statistics": {
+            "propertiesChanged": 1,
+            "filesTransferred": 1,
+            "filesDeleted": 0,
+            "relationsTransferred": 1,
+            "relationsDropped": 0,
+            "referencesUpdated": 1
+        },
+        "warnings": [
+            "Failed to transfer file stuck.pdf: The file could not be removed from the source object",
+            "Failed to transfer file broken.pdf: quota"
+        ],
+        "errors": []
+    },
+    "delete files, drop relations, keep references": {
+        "success": true,
+        "actions": {
+            "properties": [
+                {
+                    "property": "title",
+                    "oldValue": "Target",
+                    "newValue": "Merged"
+                }
+            ],
+            "files": [
+                {
+                    "name": "a.pdf",
+                    "action": "deleted",
+                    "success": true
+                },
+                {
+                    "name": "stuck.pdf",
+                    "action": "delete_failed",
+                    "success": false,
+                    "error": "The file could not be deleted"
+                },
+                {
+                    "name": "broken.pdf",
+                    "action": "delete_failed",
+                    "success": false,
+                    "error": "The file could not be deleted"
+                }
+            ],
+            "relations": {
+                "action": "dropped",
+                "relations": [
+                    "rel-a",
+                    "rel-b"
+                ]
+            },
+            "references": []
+        },
+        "statistics": {
+            "propertiesChanged": 1,
+            "filesTransferred": 0,
+            "filesDeleted": 1,
+            "relationsTransferred": 0,
+            "relationsDropped": 2,
+            "referencesUpdated": 0
+        },
+        "warnings": [
+            "Failed to delete file stuck.pdf: The file could not be deleted",
+            "Failed to delete file broken.pdf: The file could not be deleted"
+        ],
+        "errors": []
+    },
+    "source files unreadable on transfer": {
+        "success": true,
+        "actions": {
+            "properties": [
+                {
+                    "property": "title",
+                    "oldValue": "Target",
+                    "newValue": "Merged"
+                }
+            ],
+            "files": [],
+            "relations": {
+                "action": "transferred",
+                "relations": [
+                    "rel-a"
+                ]
+            },
+            "references": [
+                {
+                    "objectId": "ref-1",
+                    "title": "ref-1"
+                }
+            ]
+        },
+        "statistics": {
+            "propertiesChanged": 1,
+            "filesTransferred": 0,
+            "filesDeleted": 0,
+            "relationsTransferred": 1,
+            "relationsDropped": 0,
+            "referencesUpdated": 1
+        },
+        "warnings": [
+            "Failed to access source files: folder gone"
+        ],
+        "errors": []
+    },
+    "source files unreadable on delete": {
+        "success": true,
+        "actions": {
+            "properties": [
+                {
+                    "property": "title",
+                    "oldValue": "Target",
+                    "newValue": "Merged"
+                }
+            ],
+            "files": [],
+            "relations": {
+                "action": "transferred",
+                "relations": [
+                    "rel-a"
+                ]
+            },
+            "references": [
+                {
+                    "objectId": "ref-1",
+                    "title": "ref-1"
+                }
+            ]
+        },
+        "statistics": {
+            "propertiesChanged": 1,
+            "filesTransferred": 0,
+            "filesDeleted": 0,
+            "relationsTransferred": 1,
+            "relationsDropped": 0,
+            "referencesUpdated": 1
+        },
+        "warnings": [
+            "Failed to access source files: folder gone"
+        ],
+        "errors": []
+    },
+    "source without a folder": {
+        "success": true,
+        "actions": {
+            "properties": [
+                {
+                    "property": "title",
+                    "oldValue": "Target",
+                    "newValue": "Merged"
+                }
+            ],
+            "files": [],
+            "relations": {
+                "action": "transferred",
+                "relations": [
+                    "rel-a"
+                ]
+            },
+            "references": [
+                {
+                    "objectId": "ref-1",
+                    "title": "ref-1"
+                }
+            ]
+        },
+        "statistics": {
+            "propertiesChanged": 1,
+            "filesTransferred": 0,
+            "filesDeleted": 0,
+            "relationsTransferred": 1,
+            "relationsDropped": 0,
+            "referencesUpdated": 1
+        },
+        "warnings": [],
+        "errors": []
+    },
+    "unknown file action": {
+        "success": true,
+        "actions": {
+            "properties": [
+                {
+                    "property": "title",
+                    "oldValue": "Target",
+                    "newValue": "Merged"
+                }
+            ],
+            "files": [],
+            "relations": {
+                "action": "transferred",
+                "relations": [
+                    "rel-a"
+                ]
+            },
+            "references": [
+                {
+                    "objectId": "ref-1",
+                    "title": "ref-1"
+                }
+            ]
+        },
+        "statistics": {
+            "propertiesChanged": 1,
+            "filesTransferred": 0,
+            "filesDeleted": 0,
+            "relationsTransferred": 1,
+            "relationsDropped": 0,
+            "referencesUpdated": 1
+        },
+        "warnings": [],
+        "errors": []
+    }
+}

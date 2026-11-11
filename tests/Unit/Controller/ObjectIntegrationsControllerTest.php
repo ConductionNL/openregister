@@ -34,6 +34,10 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsAccess;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsControllerServices;
+use OCA\OpenRegister\Controller\Support\ObjectIntegrationsDomain;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
@@ -52,6 +56,8 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 	public array $listCalled = [];
 	public array $getCalled = [];
 	public array $createCalled = [];
+	public array $updateCalled = [];
+	public array $deleteCalled = [];
 
 	public function __construct(
 		private string $id = 'stub',
@@ -86,8 +92,8 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 		return true;
 	}//end isEnabled()
 
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		$this->listCalled = compact('register', 'schema', 'objectId', 'filters');
+	public function list(ObjectRef $ref, array $filters = []): array {
+		$this->listCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'filters' => $filters];
 		if ($this->listThrowsNotImplemented === true) {
 			throw new NotImplementedException('list not supported');
 		}
@@ -97,13 +103,13 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 		return [['id' => 'a'], ['id' => 'b']];
 	}//end list()
 
-	public function get(string $register, string $schema, string $objectId, string $entityId): array {
-		$this->getCalled = compact('register', 'schema', 'objectId', 'entityId');
+	public function get(ObjectRef $ref, string $entityId): array {
+		$this->getCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'entityId' => $entityId];
 		return ['id' => $entityId, 'name' => 'thing'];
 	}//end get()
 
-	public function create(string $register, string $schema, string $objectId, array $payload): array {
-		$this->createCalled = compact('register', 'schema', 'objectId', 'payload');
+	public function create(ObjectRef $ref, array $payload): array {
+		$this->createCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'payload' => $payload];
 		if ($this->createThrowsUnavailable === true) {
 			throw new ProviderUnavailableException(
 				'upstream down',
@@ -113,9 +119,14 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 		return ['id' => 'new-id'];
 	}//end create()
 
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
-		// no-op
+	public function delete(ObjectRef $ref, string $entityId): void {
+		$this->deleteCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'entityId' => $entityId];
 	}//end delete()
+
+	public function update(ObjectRef $ref, string $entityId, array $payload): array {
+		$this->updateCalled = ['register' => $ref->register, 'schema' => $ref->schema, 'objectId' => $ref->id, 'entityId' => $entityId, 'payload' => $payload];
+		return ['id' => $entityId];
+	}//end update()
 
 }//end class
 
@@ -124,32 +135,60 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
  */
 class ObjectIntegrationsControllerTest extends TestCase {
 
+	/** @var array<int, string> The actions the permission handler was asked about. */
+	private array $askedActions = [];
+
 	private function buildController(
 		IntegrationRegistry $registry,
 		?IRequest $request = null,
 		?\OCA\OpenRegister\Service\ObjectService $objectService = null,
-		?\OCA\OpenRegister\Service\TimelineVisibilityService $visibility = null,
+		?\OCA\OpenRegister\Notifications\Service\TimelineVisibilityService $visibility = null,
+		?\OCA\OpenRegister\Service\Object\PermissionHandler $permissions = null,
 	): ObjectIntegrationsController {
 		$request = $request ?? $this->createMock(IRequest::class);
 		return new ObjectIntegrationsController(
-			appName: 'openregister',
 			request: $request,
-			registry: $registry,
-			logger: new NullLogger(),
-			objectService: $objectService ?? $this->accessibleObjectService(),
-			schemaMapper: $this->createMock(SchemaMapper::class),
-			visibility: $visibility ?? $this->passThroughVisibility()
+			services: new ObjectIntegrationsControllerServices(
+				domain: new ObjectIntegrationsDomain(
+					registry: $registry,
+					objectService: $objectService ?? $this->accessibleObjectService(),
+					schemaMapper: $this->createMock(SchemaMapper::class)
+				),
+				access: new ObjectIntegrationsAccess(
+					visibility: $visibility ?? $this->passThroughVisibility(),
+					permissions: $permissions ?? $this->permissions(mayUpdate: true)
+				),
+				logger: new NullLogger()
+			)
 		);
 	}//end buildController()
+
+	/**
+	 * A permission handler that answers the `update` right with $mayUpdate and records the actions asked.
+	 *
+	 * @param bool $mayUpdate The answer for `update`.
+	 *
+	 * @return \OCA\OpenRegister\Service\Object\PermissionHandler
+	 */
+	private function permissions(bool $mayUpdate): \OCA\OpenRegister\Service\Object\PermissionHandler {
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
+		$permissions->method('hasPermission')->willReturnCallback(
+			function (\OCA\OpenRegister\Db\Schema $schema, string $action) use ($mayUpdate): bool {
+				$this->askedActions[] = $action;
+				return $action === 'update' ? $mayUpdate : true;
+			}
+		);
+		return $permissions;
+	}//end permissions()
 
 	/**
 	 * A visibility service that lets every row through, for the dispatch tests
 	 * that are not about the timeline leaves.
 	 *
-	 * @return \OCA\OpenRegister\Service\TimelineVisibilityService
+	 * @return \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService
 	 */
-	private function passThroughVisibility(): \OCA\OpenRegister\Service\TimelineVisibilityService {
-		$visibility = $this->createMock(\OCA\OpenRegister\Service\TimelineVisibilityService::class);
+	private function passThroughVisibility(): \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService {
+		$visibility = $this->createMock(\OCA\OpenRegister\Notifications\Service\TimelineVisibilityService::class);
 		$visibility->method('isTimelineIntegration')->willReturn(false);
 		return $visibility;
 	}//end passThroughVisibility()
@@ -160,8 +199,10 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	 */
 	private function accessibleObjectService(): \OCA\OpenRegister\Service\ObjectService {
 		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
-		$objectService->method('getObject')
-			->willReturn($this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class));
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setUuid('o-uuid');
+		$objectService->method('getObject')->willReturn($object);
+		$objectService->method('getCurrentSchemaEntity')->willReturn(new \OCA\OpenRegister\Db\Schema());
 		return $objectService;
 	}//end accessibleObjectService()
 
@@ -370,6 +411,32 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$this->assertSame(['title' => 'X'], $stub->createCalled['payload']);
 	}//end testCreateReturns201()
 
+	/**
+	 * A create that fails keeps the failure's own status: only a success becomes 201.
+	 *
+	 * @return void
+	 */
+	public function testAFailedCreateKeepsItsStatus(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerStubProvider('stub'));
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $this->buildController($registry)->create('r', 's', 'o', 'missing')->getStatus());
+	}//end testAFailedCreateKeepsItsStatus()
+
+	public function testAnItemOfAnotherObjectAnswers404(): void {
+		$provider = new class('stub') extends _ControllerStubProvider {
+			public function delete(ObjectRef $ref, string $entityId): void {
+				throw new \Exception('Note not found', 404);
+			}
+		};
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider($provider);
+
+		$response = $this->buildController($registry)->destroy('r', 's', 'o', 'stub', 'entity-id');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testAnItemOfAnotherObjectAnswers404()
+
 	public function testDestroyReturns204(): void {
 		$registry = new IntegrationRegistry(new NullLogger());
 		$registry->addProvider(new _ControllerStubProvider('stub'));
@@ -378,6 +445,91 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$response = $controller->destroy('r', 's', 'o', 'stub', 'entity-id');
 		$this->assertSame(Http::STATUS_NO_CONTENT, $response->getStatus());
 	}//end testDestroyReturns204()
+
+	public function testWritesNeedTheObjectUpdateRight(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$stub = new _ControllerStubProvider('stub');
+		$registry->addProvider($stub);
+		$request = $this->buildRequest(['title' => 'X']);
+		$controller = $this->buildController(registry: $registry, request: $request, permissions: $this->permissions(mayUpdate: false));
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->create('r', 's', 'o', 'stub')->getStatus());
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->update('r', 's', 'o', 'stub', 'e')->getStatus());
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->destroy('r', 's', 'o', 'stub', 'e')->getStatus());
+		$this->assertSame([], $stub->createCalled);
+		$this->assertSame([], $stub->updateCalled);
+		$this->assertSame([], $stub->deleteCalled);
+		$this->assertSame(['update', 'update', 'update'], $this->askedActions, 'the right asked is update, not read');
+	}//end testWritesNeedTheObjectUpdateRight()
+
+	public function testWritesProceedWithTheObjectUpdateRight(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$stub = new _ControllerStubProvider('stub');
+		$registry->addProvider($stub);
+		$controller = $this->buildController(registry: $registry, request: $this->buildRequest(['role' => 'x']));
+
+		$this->assertSame(Http::STATUS_OK, $controller->update('r', 's', 'o', 'stub', 'e')->getStatus());
+		$this->assertSame(Http::STATUS_NO_CONTENT, $controller->destroy('r', 's', 'o', 'stub', 'e')->getStatus());
+		$this->assertSame('e', $stub->deleteCalled['entityId']);
+	}//end testWritesProceedWithTheObjectUpdateRight()
+
+	public function testReadsNeedNoUpdateRight(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerStubProvider('stub'));
+		$controller = $this->buildController(registry: $registry, permissions: $this->permissions(mayUpdate: false));
+
+		$this->assertSame(Http::STATUS_OK, $controller->show('r', 's', 'o', 'stub', 'e')->getStatus());
+	}//end testReadsNeedNoUpdateRight()
+
+	public function testProvidersReceiveTheResolvedUuidNotTheRouteId(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$stub = new _ControllerStubProvider('stub');
+		$registry->addProvider($stub);
+		$controller = $this->buildController(registry: $registry, request: $this->buildRequest(['role' => 'x']));
+
+		$controller->index('r', 's', 'my-slug', 'stub');
+		$controller->update('r', 's', 'my-slug', 'stub', 'e');
+		$controller->destroy('r', 's', 'my-slug', 'stub', 'e');
+
+		$this->assertSame('o-uuid', $stub->listCalled['objectId']);
+		$this->assertSame('o-uuid', $stub->updateCalled['objectId']);
+		$this->assertSame('o-uuid', $stub->deleteCalled['objectId']);
+	}//end testProvidersReceiveTheResolvedUuidNotTheRouteId()
+
+	public function testALinkOfAnotherObjectAnswers404Not500(): void {
+		$contacts = $this->createMock(\OCA\OpenRegister\Service\ContactService::class);
+		$contacts->expects($this->once())
+			->method('unlinkContact')
+			->with(77, 'o-uuid')
+			->willThrowException(new \Exception('Contact link not found', 404));
+		$contacts->method('updateRole')->willThrowException(new \Exception('Contact link not found', 404));
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(
+			new \OCA\OpenRegister\Service\Integration\Providers\ContactsProvider(
+				new \OCA\OpenRegister\Service\Integration\Providers\AppProviderDescription(
+					$this->createMock(\OCP\App\IAppManager::class),
+					$this->createMock(\OCP\IL10N::class)
+				),
+				$contacts
+			)
+		);
+		$controller = $this->buildController(registry: $registry, request: $this->buildRequest(['role' => 'x']));
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->destroy('r', 's', 'my-slug', 'contacts', '77')->getStatus());
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->update('r', 's', 'my-slug', 'contacts', '77')->getStatus());
+	}//end testALinkOfAnotherObjectAnswers404Not500()
+
+	public function testAnObjectWithoutAUuidIsNotFound(): void {
+		$objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+		$objectService->method('getObject')->willReturn(new \OCA\OpenRegister\Db\ObjectEntity());
+		$registry = new IntegrationRegistry(new NullLogger());
+		$stub = new _ControllerStubProvider('stub');
+		$registry->addProvider($stub);
+		$controller = $this->buildController(registry: $registry, objectService: $objectService);
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $controller->destroy('r', 's', 'o', 'stub', 'e')->getStatus());
+		$this->assertSame([], $stub->deleteCalled);
+	}//end testAnObjectWithoutAUuidIsNotFound()
 
 	public function testUnknownIntegrationReturns404(): void {
 		$registry = new IntegrationRegistry(new NullLogger());
@@ -436,12 +588,10 @@ class ObjectIntegrationsControllerTest extends TestCase {
 			)
 		);
 
-		$visibility = new \OCA\OpenRegister\Service\TimelineVisibilityService(
-			$this->createMock(SchemaMapper::class),
+		$visibility = new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService(
+			new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform($this->createMock(SchemaMapper::class), $this->createMock(\OCP\IUserSession::class), new NullLogger()),
 			$this->permissionHandlerAnswering(false),
-			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			$this->createMock(\OCP\IUserSession::class),
-			new NullLogger()
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class)
 		);
 
 		$controller = $this->buildController(
@@ -469,12 +619,10 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$registry = new IntegrationRegistry(new NullLogger());
 		$registry->addProvider(new _ControllerStubProvider('files'));
 
-		$visibility = new \OCA\OpenRegister\Service\TimelineVisibilityService(
-			$this->createMock(SchemaMapper::class),
+		$visibility = new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService(
+			new \OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform($this->createMock(SchemaMapper::class), $this->createMock(\OCP\IUserSession::class), new NullLogger()),
 			$this->permissionHandlerAnswering(false),
-			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			$this->createMock(\OCP\IUserSession::class),
-			new NullLogger()
+			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class)
 		);
 
 		$controller = $this->buildController(

@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rules;
 
 use DateTime;
 use OCA\OpenRegister\Db\RuleRunSummary;
+use OCA\OpenRegister\Db\RuleRunSummary\RuleEvaluation;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
@@ -34,7 +35,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class RuleSummaryThrottleTest extends TestCase {
 
@@ -73,15 +74,13 @@ class RuleSummaryThrottleTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testARepeatInsideTheWindowIsDropped(): void {
 		$this->assertFalse(
 			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_FIRED, lastRun: '2026-09-14 12:00:00'),
-				verdict: RuleVocabulary::VERDICT_FIRED,
-				moment: new DateTime('2026-09-14 12:00:30'),
-				isError: false
+				evaluation: new RuleEvaluation(verdict: RuleVocabulary::VERDICT_FIRED, moment: new DateTime('2026-09-14 12:00:30'))
 			)
 		);
 
@@ -93,15 +92,13 @@ class RuleSummaryThrottleTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheSameVerdictPastTheWindowIsWritten(): void {
 		$this->assertTrue(
 			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_FIRED, lastRun: '2026-09-14 12:00:00'),
-				verdict: RuleVocabulary::VERDICT_FIRED,
-				moment: new DateTime('2026-09-14 12:02:00'),
-				isError: false
+				evaluation: new RuleEvaluation(verdict: RuleVocabulary::VERDICT_FIRED, moment: new DateTime('2026-09-14 12:02:00'))
 			)
 		);
 
@@ -114,15 +111,13 @@ class RuleSummaryThrottleTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAChangedVerdictIsNeverDropped(): void {
 		$this->assertTrue(
 			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_FIRED, lastRun: '2026-09-14 12:00:00'),
-				verdict: RuleVocabulary::VERDICT_REFUSED,
-				moment: new DateTime('2026-09-14 12:00:01'),
-				isError: false
+				evaluation: new RuleEvaluation(verdict: RuleVocabulary::VERDICT_REFUSED, moment: new DateTime('2026-09-14 12:00:01'))
 			)
 		);
 
@@ -134,15 +129,13 @@ class RuleSummaryThrottleTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAnErrorIsNeverDropped(): void {
 		$this->assertTrue(
 			condition: $this->mapper()->worthWriting(
 				summary: $this->stored(verdict: RuleVocabulary::VERDICT_ERROR, lastRun: '2026-09-14 12:00:00'),
-				verdict: RuleVocabulary::VERDICT_ERROR,
-				moment: new DateTime('2026-09-14 12:00:01'),
-				isError: true
+				evaluation: new RuleEvaluation(verdict: RuleVocabulary::VERDICT_ERROR, moment: new DateTime('2026-09-14 12:00:01'), error: 'the rule failed')
 			)
 		);
 
@@ -153,15 +146,13 @@ class RuleSummaryThrottleTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testAFirstEvaluationIsAlwaysWritten(): void {
 		$this->assertTrue(
 			condition: $this->mapper()->worthWriting(
 				summary: new RuleRunSummary(),
-				verdict: RuleVocabulary::VERDICT_FIRED,
-				moment: new DateTime('2026-09-14 12:00:00'),
-				isError: false
+				evaluation: new RuleEvaluation(verdict: RuleVocabulary::VERDICT_FIRED, moment: new DateTime('2026-09-14 12:00:00'))
 			)
 		);
 
@@ -173,16 +164,10 @@ class RuleSummaryThrottleTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testTheDerivedIdMatchesTheDescriptorsOwn(): void {
-		$descriptor = new RuleDescriptor(
-			kind: RuleVocabulary::KIND_CALCULATION,
-			schemaSlug: 'bezwaar',
-			key: 'uiterlijkeDatum',
-			label: 'uiterlijkeDatum',
-			source: 'x-openregister-calculations.uiterlijkeDatum'
-		);
+		$descriptor = new RuleDescriptor(origin: new \OCA\OpenRegister\Service\Rules\RuleOrigin(kind: RuleVocabulary::KIND_CALCULATION, schemaSlug: 'bezwaar', key: 'uiterlijkeDatum', source: 'x-openregister-calculations.uiterlijkeDatum'), label: 'uiterlijkeDatum');
 
 		$this->assertSame(
 			expected: $descriptor->getId(),

@@ -51,8 +51,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rules;
 
 use DateTimeImmutable;
-use DateTimeInterface;
-use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
+use OCA\OpenRegister\Service\Flow\Timer\SlaCalculatorInterface;
+use OCA\OpenRegister\Service\Flow\Timer\UnitConversion;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use Throwable;
 
@@ -152,12 +152,39 @@ class RelativeTimeCondition {
 	public const MAX_OFFSET = 10000;
 
 	/**
+	 * The operator each comparison compiles to.
+	 *
+	 * `moreThan` means older than the threshold, so the comparison is the
+	 * LESS-than one. Getting this inversion wrong selects exactly the objects
+	 * that are not due, which reads as "the rule does nothing" rather than as
+	 * a bug.
+	 *
+	 * @var array<string, string>
+	 */
+	private const OPERATORS = [self::MORE_THAN => '<=', self::LESS_THAN => '>'];
+
+	/**
+	 * The engine unit each condition unit is walked in.
+	 *
+	 * Working hours are walked as business days, after the ENGINE'S OWN
+	 * conversion, so the number this rule uses is the number the timers use.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ENGINE_UNITS = [
+		self::UNIT_HOURS => SlaCalculatorInterface::UNIT_HOURS,
+		self::UNIT_WORKING_HOURS => SlaCalculatorInterface::UNIT_BUSINESS_DAYS,
+		self::UNIT_CALENDAR_DAYS => SlaCalculatorInterface::UNIT_CALENDAR_DAYS,
+		self::UNIT_BUSINESS_DAYS => SlaCalculatorInterface::UNIT_BUSINESS_DAYS,
+	];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param SlaCalculator $calculator The engine the timers use.
+	 * @param SlaCalculatorInterface $calculator The engine the timers use.
 	 */
 	public function __construct(
-		private readonly SlaCalculator $calculator,
+		private readonly SlaCalculatorInterface $calculator,
 	) {
 	}//end __construct()
 
@@ -194,28 +221,29 @@ class RelativeTimeCondition {
 			return sprintf('"%s" must be an object naming a property and a comparison', self::KEY);
 		}
 
+		return $this->declarationRefusal(declaration: $declaration, calendar: $calendar);
+	}//end refusalFor()
+
+	/**
+	 * Why a condition body may not be saved: no property, no comparison, or a bad offset.
+	 *
+	 * @param array<string, mixed> $declaration The condition body.
+	 * @param WorkingCalendar|null $calendar    The calendar that resolves for this schema.
+	 *
+	 * @return string|null The reason, or null when it may be saved.
+	 */
+	private function declarationRefusal(array $declaration, ?WorkingCalendar $calendar): ?string {
 		$property = (string)($declaration['property'] ?? '');
 		if ($property === '') {
 			return sprintf('"%s" must name the date property it compares', self::KEY);
 		}
 
-		$comparison = $this->comparisonIn(declaration: $declaration);
-		if ($comparison === null) {
-			return sprintf(
-				'"%s" on "%s" must declare one of %s',
-				self::KEY,
-				$property,
-				implode(' or ', self::COMPARISONS)
-			);
+		if ($this->comparisonIn(declaration: $declaration) === null) {
+			return sprintf('"%s" on "%s" must declare one of %s', self::KEY, $property, implode(' or ', self::COMPARISONS));
 		}
 
-		return $this->offsetRefusal(
-			offset: $declaration[$comparison],
-			comparison: $comparison,
-			property: $property,
-			calendar: $calendar
-		);
-	}//end refusalFor()
+		return ($this->offsetShapeRefusal(declaration: $declaration) ?? $this->calendarRefusal(declaration: $declaration, calendar: $calendar));
+	}//end declarationRefusal()
 
 	/**
 	 * Which comparison the declaration names, or null when it names none.
@@ -240,56 +268,85 @@ class RelativeTimeCondition {
 	}//end comparisonIn()
 
 	/**
-	 * Why the declared offset may not be saved, or null when it may.
+	 * Why the declared offset is not a {value, unit} block with a known unit and a value in bounds.
 	 *
-	 * @param mixed                $offset     The declared {value, unit} block.
-	 * @param string               $comparison The comparison it sits under.
-	 * @param string               $property   The date property being compared.
-	 * @param WorkingCalendar|null $calendar   The calendar for this schema.
+	 * @param array<string, mixed> $declaration The condition body, naming a property and a comparison.
 	 *
-	 * @return string|null The reason.
+	 * @return string|null The reason, or null when the offset is well formed.
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
 	 */
-	private function offsetRefusal(mixed $offset, string $comparison, string $property, ?WorkingCalendar $calendar): ?string {
+	private function offsetShapeRefusal(array $declaration): ?string {
+		$comparison = (string)$this->comparisonIn(declaration: $declaration);
+		$property = (string)$declaration['property'];
+		$offset = $declaration[$comparison];
 		if (is_array($offset) === false) {
 			return sprintf('"%s" on "%s" must be {value, unit}', $comparison, $property);
 		}
 
+		return ($this->unitRefusal(offset: $offset, property: $property) ?? $this->valueRefusal(offset: $offset, property: $property));
+	}//end offsetShapeRefusal()
+
+	/**
+	 * Why the offset's unit is refused, or null when it is a known unit.
+	 *
+	 * @param array<string, mixed> $offset   The declared {value, unit} block.
+	 * @param string               $property The date property being compared.
+	 *
+	 * @return string|null The reason.
+	 */
+	private function unitRefusal(array $offset, string $property): ?string {
 		$unit = (string)($offset['unit'] ?? '');
-		if (in_array($unit, self::UNITS, true) === false) {
-			return sprintf(
-				'unit "%s" on "%s" is refused: use one of %s',
-				$unit,
-				$property,
-				implode(', ', self::UNITS)
-			);
+		if (in_array($unit, self::UNITS, true) === true) {
+			return null;
 		}
 
+		return sprintf('unit "%s" on "%s" is refused: use one of %s', $unit, $property, implode(', ', self::UNITS));
+	}//end unitRefusal()
+
+	/**
+	 * Why the offset's value is refused, or null when it is a positive number within bounds.
+	 *
+	 * @param array<string, mixed> $offset   The declared {value, unit} block.
+	 * @param string               $property The date property being compared.
+	 *
+	 * @return string|null The reason.
+	 */
+	private function valueRefusal(array $offset, string $property): ?string {
 		$value = ($offset['value'] ?? null);
 		if (is_numeric($value) === false || (float)$value <= 0 || (float)$value > self::MAX_OFFSET) {
-			return sprintf(
-				'offset on "%s" must be a positive number no greater than %d',
-				$property,
-				self::MAX_OFFSET
-			);
-		}
-
-		// 🔴 The refusal that matters. A business unit with no calendar cannot
-		// be evaluated as anything except wall-clock time, and wall-clock time
-		// is a DIFFERENT DEADLINE. Refused here, where an author reads it.
-		if (in_array($unit, self::BUSINESS_UNITS, true) === true && $calendar === null) {
-			return sprintf(
-				'"%s" on "%s" is counted in %s, and no working calendar resolves for this schema; '
-				. 'it would silently become wall-clock time, which is a different deadline',
-				self::KEY,
-				$property,
-				$unit
-			);
+			return sprintf('offset on "%s" must be a positive number no greater than %d', $property, self::MAX_OFFSET);
 		}
 
 		return null;
-	}//end offsetRefusal()
+	}//end valueRefusal()
+
+	/**
+	 * Why a business unit cannot be evaluated without a calendar, or null when it can.
+	 *
+	 * 🔴 The refusal that matters. A business unit with no calendar cannot be
+	 * evaluated as anything except wall-clock time, and wall-clock time is a
+	 * DIFFERENT DEADLINE. Refused here, where an author reads it.
+	 *
+	 * @param array<string, mixed> $declaration The condition body, with a well-formed offset.
+	 * @param WorkingCalendar|null $calendar    The calendar for this schema.
+	 *
+	 * @return string|null The reason.
+	 */
+	private function calendarRefusal(array $declaration, ?WorkingCalendar $calendar): ?string {
+		$unit = (string)$declaration[(string)$this->comparisonIn(declaration: $declaration)]['unit'];
+		if (in_array($unit, self::BUSINESS_UNITS, true) === false || $calendar !== null) {
+			return null;
+		}
+
+		return sprintf(
+			'"%s" on "%s" is counted in %s, and no working calendar resolves for this schema; '
+			. 'it would silently become wall-clock time, which is a different deadline',
+			self::KEY,
+			(string)$declaration['property'],
+			$unit
+		);
+	}//end calendarRefusal()
 
 	/**
 	 * Compile the condition into one indexed comparison (D-5, task 3.3).
@@ -297,9 +354,8 @@ class RelativeTimeCondition {
 	 * The walk happens HERE, once, and what comes back is a property, an
 	 * operator and an instant — which is a `WHERE created_at <= ?`, not a loop.
 	 *
-	 * @param mixed                $node     The condition node.
-	 * @param DateTimeInterface    $now      The present moment.
-	 * @param WorkingCalendar|null $calendar The calendar, when the unit needs one.
+	 * @param mixed              $node   The condition node.
+	 * @param RelativeTimeMoment $moment The present moment, and the calendar when the unit needs one.
 	 *
 	 * @return array{property: string, operator: string, value: string}|null The comparison, or null when the node is not one.
 	 *
@@ -307,47 +363,39 @@ class RelativeTimeCondition {
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
 	 */
-	public function compile(mixed $node, DateTimeInterface $now, ?WorkingCalendar $calendar): ?array {
+	public function compile(mixed $node, RelativeTimeMoment $moment): ?array {
 		if ($this->isRelativeTime(node: $node) === false) {
 			return null;
 		}
 
-		$refusal = $this->refusalFor(node: $node, calendar: $calendar);
+		$refusal = $this->refusalFor(node: $node, calendar: $moment->calendar);
 		if ($refusal !== null) {
 			throw new ConditionRefusedException(conditionName: self::KEY, why: $refusal);
 		}
 
-		$declaration = $node[self::KEY];
-		$property = (string)$declaration['property'];
-		$comparison = self::LESS_THAN;
-		if (array_key_exists(self::MORE_THAN, $declaration) === true) {
-			$comparison = self::MORE_THAN;
-		}
+		return $this->compiled(declaration: $node[self::KEY], moment: $moment);
+	}//end compile()
 
-		$offset = $declaration[$comparison];
-
-		$threshold = $this->threshold(
-			now: $now,
-			value: (float)$offset['value'],
-			unit: (string)$offset['unit'],
-			calendar: $calendar
-		);
-
-		$operator = '>';
-		if ($comparison === self::MORE_THAN) {
-			$operator = '<=';
-		}
+	/**
+	 * The comparison an accepted condition body compiles to.
+	 *
+	 * @param array<string, mixed> $declaration The accepted condition body.
+	 * @param RelativeTimeMoment   $moment      The present moment and calendar.
+	 *
+	 * @return array{property: string, operator: string, value: string} The comparison.
+	 *
+	 * @throws ConditionRefusedException When the engine refuses the walk.
+	 */
+	private function compiled(array $declaration, RelativeTimeMoment $moment): array {
+		$comparison = (string)$this->comparisonIn(declaration: $declaration);
+		$threshold = $this->threshold(offset: $declaration[$comparison], moment: $moment);
 
 		return [
-			'property' => $property,
-			// `moreThan` means older than the threshold, so the comparison is
-			// the LESS-than one. Getting this inversion wrong selects exactly
-			// the objects that are not due, which reads as "the rule does
-			// nothing" rather than as a bug.
-			'operator' => $operator,
+			'property' => (string)$declaration['property'],
+			'operator' => self::OPERATORS[$comparison],
 			'value' => $threshold->format(DATE_ATOM),
 		];
-	}//end compile()
+	}//end compiled()
 
 	/**
 	 * Whether the condition holds for one document.
@@ -357,10 +405,8 @@ class RelativeTimeCondition {
 	 * property that matters, because a sweep selects by query and a save
 	 * evaluates in PHP.
 	 *
-	 * @param mixed                $node     The condition node.
-	 * @param array<string, mixed> $document The object.
-	 * @param DateTimeInterface    $now      The present moment.
-	 * @param WorkingCalendar|null $calendar The calendar.
+	 * @param mixed             $node  The condition node.
+	 * @param RelativeTimeCheck $check The object, and the moment and calendar it is judged at.
 	 *
 	 * @return bool True when it holds.
 	 *
@@ -368,117 +414,83 @@ class RelativeTimeCondition {
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
 	 */
-	public function holds(mixed $node, array $document, DateTimeInterface $now, ?WorkingCalendar $calendar): bool {
-		$compiled = $this->compile(node: $node, now: $now, calendar: $calendar);
+	public function holds(mixed $node, RelativeTimeCheck $check): bool {
+		$compiled = $this->compile(node: $node, moment: $check->moment);
 		if ($compiled === null) {
 			throw new ConditionRefusedException(conditionName: self::KEY, why: 'the node is not a relative-time condition');
 		}
 
-		$raw = ($document[$compiled['property']] ?? null);
+		$value = $this->dateIn(document: $check->document, property: $compiled['property'])->getTimestamp();
+		$threshold = (new DateTimeImmutable($compiled['value']))->getTimestamp();
+		if ($compiled['operator'] === '<=') {
+			return ($value <= $threshold);
+		}
+
+		return ($value > $threshold);
+	}//end holds()
+
+	/**
+	 * The date a document holds under a property.
+	 *
+	 * 🔴 A missing or unreadable date is a REFUSAL, not a false. An object
+	 * whose `createdAt` is absent is not "not yet due", it is an object the
+	 * rule cannot judge, and saying "not due" would quietly exclude it from
+	 * every sweep forever.
+	 *
+	 * @param array<string, mixed> $document The object.
+	 * @param string               $property The date property.
+	 *
+	 * @return DateTimeImmutable The date.
+	 *
+	 * @throws ConditionRefusedException When the property holds no readable date.
+	 */
+	private function dateIn(array $document, string $property): DateTimeImmutable {
+		$raw = ($document[$property] ?? null);
 		if (is_string($raw) === false || $raw === '') {
-			// 🔴 A missing or unreadable date is a REFUSAL, not a false. An
-			// object whose `createdAt` is absent is not "not yet due", it is an
-			// object the rule cannot judge, and saying "not due" would quietly
-			// exclude it from every sweep forever.
 			throw new ConditionRefusedException(
 				conditionName: self::KEY,
-				why: sprintf('"%s" holds no readable date on this object', $compiled['property'])
+				why: sprintf('"%s" holds no readable date on this object', $property)
 			);
 		}
 
+		return $this->parseDate(raw: $raw, property: $property);
+	}//end dateIn()
+
+	/**
+	 * Parse a stored date, refusing one that is not a date.
+	 *
+	 * @param string $raw      The stored value.
+	 * @param string $property The date property, for the message.
+	 *
+	 * @return DateTimeImmutable The date.
+	 *
+	 * @throws ConditionRefusedException When the value is not a date.
+	 */
+	private function parseDate(string $raw, string $property): DateTimeImmutable {
 		try {
-			$value = new DateTimeImmutable($raw);
+			return new DateTimeImmutable($raw);
 		} catch (Throwable $e) {
 			throw new ConditionRefusedException(
 				conditionName: self::KEY,
-				why: sprintf('"%s" holds "%s", which is not a date', $compiled['property'], $raw),
+				why: sprintf('"%s" holds "%s", which is not a date', $property, $raw),
 				previous: $e
 			);
 		}
-
-		$threshold = new DateTimeImmutable($compiled['value']);
-		if ($compiled['operator'] === '<=') {
-			return ($value->getTimestamp() <= $threshold->getTimestamp());
-		}
-
-		return ($value->getTimestamp() > $threshold->getTimestamp());
-	}//end holds()
+	}//end parseDate()
 
 	/**
 	 * `now` minus the offset, walked through the calendar once.
 	 *
-	 * @param DateTimeInterface    $now      The present moment.
-	 * @param float                $value    The offset.
-	 * @param string               $unit     Its unit.
-	 * @param WorkingCalendar|null $calendar The calendar.
+	 * @param array<string, mixed> $offset The accepted {value, unit} block.
+	 * @param RelativeTimeMoment   $moment The present moment and calendar.
 	 *
 	 * @return DateTimeImmutable The threshold instant.
 	 *
 	 * @throws ConditionRefusedException When the engine refuses the walk.
 	 */
-	private function threshold(
-		DateTimeInterface $now,
-		float $value,
-		string $unit,
-		?WorkingCalendar $calendar
-	): DateTimeImmutable {
+	private function threshold(array $offset, RelativeTimeMoment $moment): DateTimeImmutable {
 		try {
-			// Wall-clock hours and calendar days need NO calendar, and the
-			// engine's own branches for them never touch one. Demanding a
-			// calendar here would make an author invent one to say "two days".
-			if ($unit === self::UNIT_HOURS) {
-				return $this->calculator->sub(
-					from: $now,
-					value: $value,
-					unit: SlaCalculator::UNIT_HOURS,
-					calendar: $calendar
-				);
-			}
-
-			if ($unit === self::UNIT_CALENDAR_DAYS) {
-				return $this->calculator->sub(
-					from: $now,
-					value: $value,
-					unit: SlaCalculator::UNIT_CALENDAR_DAYS,
-					calendar: $calendar
-				);
-			}
-
-			// No null check here, and that is deliberate rather than an
-			// omission. `compile()` calls `refusalFor()` before it ever reaches
-			// this method, so a business unit with no calendar has already been
-			// refused by the time the walk is asked for; and if some future
-			// caller reached `threshold()` directly, `SlaCalculator::add()`
-			// refuses a business unit with a null calendar itself. Two
-			// reachable guards, rather than a third one here that no test
-			// could ever redden — dead code with a confident comment on it is
-			// how a guard stops being checked.
-			$resolved = $calendar;
-
-			if ($unit === self::UNIT_BUSINESS_DAYS) {
-				return $this->calculator->sub(
-					from: $now,
-					value: $value,
-					unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-					calendar: $resolved
-				);
-			}
-
-			// Working hours become business days through the ENGINE'S OWN
-			// conversion, so the number this rule uses is the number the timers
-			// use. Doing the division here would be a second implementation of
-			// hoursPerWorkingDay, and those drift.
-			return $this->calculator->sub(
-				from: $now,
-				value: $this->calculator->convert(
-					value: $value,
-					fromUnit: SlaCalculator::UNIT_HOURS,
-					toUnit: SlaCalculator::UNIT_BUSINESS_DAYS,
-					calendar: $resolved
-				),
-				unit: SlaCalculator::UNIT_BUSINESS_DAYS,
-				calendar: $resolved
-			);
+			return $this->walkBack(offset: $offset, moment: $moment);
 		} catch (ConditionRefusedException $refused) {
 			throw $refused;
 		} catch (Throwable $e) {
@@ -489,4 +501,45 @@ class RelativeTimeCondition {
 			);
 		}//end try
 	}//end threshold()
+
+	/**
+	 * Walk back from `now` by the offset, through the engine the timers use.
+	 *
+	 * Wall-clock hours and calendar days need NO calendar, and the engine's
+	 * own branches for them never touch one. Demanding a calendar here would
+	 * make an author invent one to say "two days".
+	 *
+	 * There is no null check on the calendar for a business unit, and that is
+	 * deliberate rather than an omission. `compile()` calls `refusalFor()`
+	 * before it ever reaches this method, so a business unit with no calendar
+	 * has already been refused by the time the walk is asked for; and if some
+	 * future caller reached it directly, `SlaCalculator::add()` refuses a
+	 * business unit with a null calendar itself. Two reachable guards, rather
+	 * than a third one here that no test could ever redden.
+	 *
+	 * Working hours become business days through the ENGINE'S OWN conversion.
+	 * Doing the division here would be a second implementation of
+	 * hoursPerWorkingDay, and those drift.
+	 *
+	 * @param array<string, mixed> $offset The accepted {value, unit} block.
+	 * @param RelativeTimeMoment   $moment The present moment and calendar.
+	 *
+	 * @return DateTimeImmutable The threshold instant.
+	 */
+	private function walkBack(array $offset, RelativeTimeMoment $moment): DateTimeImmutable {
+		$value = (float)$offset['value'];
+		$unit = (string)$offset['unit'];
+		if ($unit === self::UNIT_WORKING_HOURS) {
+			$value = $this->calculator->convert(
+				conversion: new UnitConversion(
+					value: $value,
+					fromUnit: SlaCalculatorInterface::UNIT_HOURS,
+					toUnit: SlaCalculatorInterface::UNIT_BUSINESS_DAYS,
+					calendar: $moment->calendar
+				)
+			);
+		}
+
+		return $this->calculator->sub(from: $moment->now, value: $value, unit: self::ENGINE_UNITS[$unit], calendar: $moment->calendar);
+	}//end walkBack()
 }//end class

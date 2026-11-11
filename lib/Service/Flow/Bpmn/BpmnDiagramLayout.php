@@ -48,34 +48,75 @@ class BpmnDiagramLayout {
 	 */
 	public function positions(DOMXPath $xpath): array {
 		$positions = [];
-		$shapes = $xpath->query('//bpmndi:BPMNShape');
-		if ($shapes === false) {
-			$shapes = [];
-		}
-
-		foreach ($shapes as $shape) {
+		foreach ($this->shapesIn(xpath: $xpath) as $shape) {
 			if (($shape instanceof DOMElement) === false) {
 				continue;
 			}
 
-			$bounds = $xpath->query('./dc:Bounds', $shape);
-			if ($bounds === false || $bounds->length === 0) {
+			$bound = $this->boundsOf(xpath: $xpath, shape: $shape);
+			if ($bound === null) {
 				continue;
 			}
 
-			$bound = $bounds->item(0);
-			if (($bound instanceof DOMElement) === false) {
-				continue;
-			}
-
-			$positions[trim($shape->getAttribute('bpmnElement'))] = [
-				'x' => (int)$bound->getAttribute('x'),
-				'y' => (int)$bound->getAttribute('y'),
-			];
+			$positions[trim($shape->getAttribute('bpmnElement'))] = self::pointOf(bound: $bound);
 		}
 
 		return $positions;
 	}//end positions()
+
+	/**
+	 * The x and y a shape's bounds place it at.
+	 *
+	 * @param DOMElement $bound The shape's `dc:Bounds`.
+	 *
+	 * @return array{x: int, y: int} The position.
+	 */
+	private static function pointOf(DOMElement $bound): array {
+		return [
+			'x' => (int)$bound->getAttribute('x'),
+			'y' => (int)$bound->getAttribute('y'),
+		];
+	}//end pointOf()
+
+	/**
+	 * The document's BPMN shapes, or none when the query fails.
+	 *
+	 * @param DOMXPath $xpath The document's XPath.
+	 *
+	 * @return iterable The shapes.
+	 */
+	private function shapesIn(DOMXPath $xpath): iterable {
+		$shapes = $xpath->query('//bpmndi:BPMNShape');
+		if ($shapes === false) {
+			return [];
+		}
+
+		return $shapes;
+	}//end shapesIn()
+
+	/**
+	 * A shape's first `dc:Bounds` element, or null when it has none.
+	 *
+	 * @param DOMXPath   $xpath The xpath.
+	 * @param DOMElement $shape The diagram shape.
+	 *
+	 * @return DOMElement|null The bounds.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	private function boundsOf(DOMXPath $xpath, DOMElement $shape): ?DOMElement {
+		$bounds = $xpath->query('./dc:Bounds', $shape);
+		if ($bounds === false || $bounds->length === 0) {
+			return null;
+		}
+
+		$bound = $bounds->item(0);
+		if (($bound instanceof DOMElement) === false) {
+			return null;
+		}
+
+		return $bound;
+	}//end boundsOf()
 
 	/**
 	 * The nodes with their positions, laid out when the file carried none.

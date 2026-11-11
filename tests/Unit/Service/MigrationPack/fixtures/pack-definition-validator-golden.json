@@ -1,0 +1,132 @@
+{
+    "valid pack": [],
+    "empty document": [
+        "\"%s\" is required and must be a non-empty string <[\"id\"]>",
+        "\"%s\" is required and must be a non-empty string <[\"name\"]>",
+        "%1$s must be one of: %2$s (got %3$s) <[\"\\\"sourceFormat\\\"\",\"csv, json, excel\",\"NULL\"]>",
+        "\"version\" must be a semver string (MAJOR.MINOR.PATCH), got %s <[\"NULL\"]>",
+        "\"fieldMappings\" is required and must be a non-empty array <[]>",
+        "\"idStrategy\" is required and must be an object with a \"type\" key <[]>"
+    ],
+    "id integer": [
+        "\"%s\" is required and must be a non-empty string <[\"id\"]>"
+    ],
+    "id empty": [
+        "\"%s\" is required and must be a non-empty string <[\"id\"]>"
+    ],
+    "id uppercase": [
+        "\"id\" must be a lowercase slug (letters, digits, hyphens), got \"%s\" <[\"Abc\"]>"
+    ],
+    "id leading hyphen": [
+        "\"id\" must be a lowercase slug (letters, digits, hyphens), got \"%s\" <[\"-a\"]>"
+    ],
+    "id slug with digits": [],
+    "name integer": [
+        "\"%s\" is required and must be a non-empty string <[\"name\"]>"
+    ],
+    "name empty": [
+        "\"%s\" is required and must be a non-empty string <[\"name\"]>"
+    ],
+    "source format null": [
+        "%1$s must be one of: %2$s (got %3$s) <[\"\\\"sourceFormat\\\"\",\"csv, json, excel\",\"NULL\"]>"
+    ],
+    "source format unknown": [
+        "%1$s must be one of: %2$s (got %3$s) <[\"\\\"sourceFormat\\\"\",\"csv, json, excel\",\"'xml'\"]>"
+    ],
+    "source format integer": [
+        "%1$s must be one of: %2$s (got %3$s) <[\"\\\"sourceFormat\\\"\",\"csv, json, excel\",\"5\"]>"
+    ],
+    "source format excel": [],
+    "version short": [
+        "\"version\" must be a semver string (MAJOR.MINOR.PATCH), got %s <[\"'1.0'\"]>"
+    ],
+    "version integer": [
+        "\"version\" must be a semver string (MAJOR.MINOR.PATCH), got %s <[\"1\"]>"
+    ],
+    "version prerelease": [
+        "\"version\" must be a semver string (MAJOR.MINOR.PATCH), got %s <[\"'1.0.0-beta'\"]>"
+    ],
+    "mappings string": [
+        "\"fieldMappings\" is required and must be a non-empty array <[]>"
+    ],
+    "mappings empty": [
+        "\"fieldMappings\" is required and must be a non-empty array <[]>"
+    ],
+    "mappings rows": [
+        "Mapping row %s must be an object <[1]>",
+        "Mapping row %1$s: %2$s is required and must be a non-empty string <[2,\"source\"]>",
+        "Mapping row %1$s: %2$s is required and must be a non-empty string <[2,\"target\"]>",
+        "Mapping row %1$s: %2$s is required and must be a non-empty string <[3,\"source\"]>",
+        "Mapping row %1$s: %2$s is required and must be a non-empty string <[3,\"target\"]>",
+        "Mapping row %s: required must be a boolean when present <[3]>",
+        "%s must be an object with a \"type\" key <[\"Mapping row %s: transform <[5]>\"]>"
+    ],
+    "transform types": [
+        "%1$s must be one of: %2$s (got %3$s) <[\"Mapping row %s: transform <[1]>.type\",\"trim, date, bool-map, concat, lookup, const\",\"NULL\"]>",
+        "%1$s must be one of: %2$s (got %3$s) <[\"Mapping row %s: transform <[2]>.type\",\"trim, date, bool-map, concat, lookup, const\",\"'nope'\"]>",
+        "%1$s must be one of: %2$s (got %3$s) <[\"Mapping row %s: transform <[3]>.type\",\"trim, date, bool-map, concat, lookup, const\",\"5\"]>",
+        "%s must be a string when present <[\"Mapping row %s: transform <[5]>.sourceFormat\"]>",
+        "%s must be a string when present <[\"Mapping row %s: transform <[6]>.targetFormat\"]>",
+        "%s must be a string when present <[\"Mapping row %s: transform <[7]>.sourceFormat\"]>",
+        "%1$s is required and must be a non-empty object for a %2$s transform <[\"Mapping row %s: transform <[9]>.map\",\"bool-map\"]>",
+        "%1$s is required and must be a non-empty object for a %2$s transform <[\"Mapping row %s: transform <[10]>.map\",\"bool-map\"]>",
+        "%1$s is required and must be a non-empty object for a %2$s transform <[\"Mapping row %s: transform <[11]>.map\",\"bool-map\"]>",
+        "%1$s is required and must be a non-empty object for a %2$s transform <[\"Mapping row %s: transform <[13]>.map\",\"lookup\"]>",
+        "%1$s is required and must be a non-empty array for a %2$s transform <[\"Mapping row %s: transform <[15]>.fields\",\"concat\"]>",
+        "%1$s is required and must be a non-empty array for a %2$s transform <[\"Mapping row %s: transform <[16]>.fields\",\"concat\"]>",
+        "%s must be a non-empty string <[\"Mapping row %s: transform <[17]>.fields[1]\"]>",
+        "%s must be a non-empty string <[\"Mapping row %s: transform <[18]>.fields[k]\"]>",
+        "%1$s is required for a %2$s transform <[\"Mapping row %s: transform <[20]>.value\",\"const\"]>"
+    ],
+    "defaults null": [],
+    "defaults string": [
+        "\"defaults\" must be an object of target-property => default value when present <[]>"
+    ],
+    "defaults empty": [],
+    "skip rows null": [],
+    "skip rows string": [
+        "\"skipRows\" must be an array of row numbers when present <[]>"
+    ],
+    "skip rows valid": [],
+    "skip rows zero": [
+        "\"skipRows\" entries must be positive integers <[]>"
+    ],
+    "skip rows numeric string": [
+        "\"skipRows\" entries must be positive integers <[]>"
+    ],
+    "skip rows empty": [],
+    "id strategy missing": [
+        "\"idStrategy\" is required and must be an object with a \"type\" key <[]>"
+    ],
+    "id strategy string": [
+        "\"idStrategy\" is required and must be an object with a \"type\" key <[]>"
+    ],
+    "id strategy unknown type": [
+        "%1$s must be one of: %2$s (got %3$s) <[\"idStrategy.type\",\"sourceField, generate\",\"'nope'\"]>"
+    ],
+    "id strategy no type": [
+        "%1$s must be one of: %2$s (got %3$s) <[\"idStrategy.type\",\"sourceField, generate\",\"NULL\"]>"
+    ],
+    "id strategy source field missing": [
+        "idStrategy.field is required and must be a non-empty string when idStrategy.type is \"sourceField\" <[]>"
+    ],
+    "id strategy source field empty": [
+        "idStrategy.field is required and must be a non-empty string when idStrategy.type is \"sourceField\" <[]>"
+    ],
+    "id strategy source field integer": [
+        "idStrategy.field is required and must be a non-empty string when idStrategy.type is \"sourceField\" <[]>"
+    ],
+    "id strategy source field set": [],
+    "everything wrong at once": [
+        "\"id\" must be a lowercase slug (letters, digits, hyphens), got \"%s\" <[\"A B\"]>",
+        "\"%s\" is required and must be a non-empty string <[\"name\"]>",
+        "%1$s must be one of: %2$s (got %3$s) <[\"\\\"sourceFormat\\\"\",\"csv, json, excel\",\"'pdf'\"]>",
+        "\"version\" must be a semver string (MAJOR.MINOR.PATCH), got %s <[\"'v1'\"]>",
+        "Mapping row %1$s: %2$s is required and must be a non-empty string <[1,\"source\"]>",
+        "Mapping row %1$s: %2$s is required and must be a non-empty string <[1,\"target\"]>",
+        "%1$s is required for a %2$s transform <[\"Mapping row %s: transform <[1]>.value\",\"const\"]>",
+        "\"defaults\" must be an object of target-property => default value when present <[]>",
+        "\"skipRows\" entries must be positive integers <[]>",
+        "idStrategy.field is required and must be a non-empty string when idStrategy.type is \"sourceField\" <[]>"
+    ]
+}
