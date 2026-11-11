@@ -1263,3 +1263,4 @@ opencatalogi	2497	571e4bab251843b225bccc4fec210641f273e387	GREEN	FV08:3	tree gre
 opencatalogi	2498	f0db2528511b66fff0e2d97589fb82ab3bb8640c	GREEN	FV08:3	tree green (phpunit 4744, 56 baseline errors only; vitest 736 ok), diff review clean
 opencatalogi	2499	c5d9a34365e2c8c31cc46c673b440bdbc5f77162	GREEN	FV08:3	tree green (phpunit 4744, 56 baseline errors only; vitest 736 ok), diff review clean
 opencatalogi	2500	581768a1b43d2a63f2511e399c42f4ba2d218645	GREEN	FV08:3	tree green (phpunit 4744, 56 baseline errors only; vitest 736 ok), diff review clean
+decidiq	1969	73fc5c3b8b219b68c76244bf8825d5e30ae967cb	RED	fv13:1	PortalPublicRecordsTest::testEveryMembersVotingRecordIsUnchanged fails: golden fixture pinned to the date it was written (example-set dates are relative to time()), fails against unchanged code too
