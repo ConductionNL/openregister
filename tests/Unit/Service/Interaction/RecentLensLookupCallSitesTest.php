@@ -206,14 +206,14 @@ class RecentLensLookupCallSitesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheAuditOptOutIsRecognisedInBothSpellings(): void {
-		$this->assertTrue(condition: $this->skipsTheAuditRow(call: '(id: $uuid, _audit: false)'));
-		$this->assertTrue(condition: $this->skipsTheAuditRow(call: '(id: $uuid, options: new ObjectFindOptions(render: false, audit: false))'));
+		$this->assertTrue($this->skipsTheAuditRow(call: '(id: $uuid, _audit: false)'));
+		$this->assertTrue($this->skipsTheAuditRow(call: '(id: $uuid, options: new ObjectFindOptions(render: false, audit: false))'));
 		$this->assertTrue(
-			condition: $this->skipsTheAuditRow(call: '(id: $id, options: new ObjectFindOptions(register: $ref->getId(), audit: false))')
+			$this->skipsTheAuditRow(call: '(id: $id, options: new ObjectFindOptions(register: $ref->getId(), audit: false))')
 		);
-		$this->assertFalse(condition: $this->skipsTheAuditRow(call: '(id: $uuid, options: new ObjectFindOptions(audit: true))'));
-		$this->assertFalse(condition: $this->skipsTheAuditRow(call: '(id: $uuid, options: new ObjectFindOptions(render: false))'));
-		$this->assertFalse(condition: $this->skipsTheAuditRow(call: '(id: $uuid, options: $options, audit: false)'));
+		$this->assertFalse($this->skipsTheAuditRow(call: '(id: $uuid, options: new ObjectFindOptions(audit: true))'));
+		$this->assertFalse($this->skipsTheAuditRow(call: '(id: $uuid, options: new ObjectFindOptions(render: false))'));
+		$this->assertFalse($this->skipsTheAuditRow(call: '(id: $uuid, options: $options, audit: false)'));
 	}//end testTheAuditOptOutIsRecognisedInBothSpellings()
 
 	/**
