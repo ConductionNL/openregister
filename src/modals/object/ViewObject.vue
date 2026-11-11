@@ -942,12 +942,7 @@ import {
 			</div>
 
 			<template #actions>
-				<NcButton @click="closeModal">
-					<template #icon>
-						<Cancel :size="20" />
-					</template>
-					Close
-				</NcButton>
+				<CloseCancelButton label="Close" @click="closeModal" />
 				<NcButton
 					v-if="!isNewObject"
 					@click="
@@ -1030,6 +1025,7 @@ import EventsTab from '../../components/object-relations/EventsTab.vue'
 import RelatedObjectsTable from '../../components/object-relations/RelatedObjectsTable.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import { uploadSizeLabel } from '../../services/byteSize.js'
@@ -1514,6 +1510,7 @@ export default {
 		CodeMirror,
 		AppTabs,
 		AppTab,
+		CloseCancelButton,
 		Cancel,
 		FileOutline,
 		OpenInNew,
