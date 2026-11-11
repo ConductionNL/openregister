@@ -2431,3 +2431,4 @@ larpinq	978	3254365b170588aebec15d8af2a2c815af1d51d8	GREEN	FV15:5	tree green (ph
 dossiq	5645	7d1ffd766212c20fcaffd693b801170337cc1c55	GREEN	FXL	golden default window recorded as placeholders; merged
 dossiq	5578	d6d8bfe84660d09e8a767dbf6daf0f570f95d072	GREEN	FXL	allowlist entry renamed to findRows; merged
 dossiq	5575	6ea6b94c728a538f9d8d0e5db47fa36af0d243b9	GREEN	FXL	readiness spec matches the merge by shape; merged
+dossiq	5500	9de1bb9319f722f8f1404188739a8b71d951a0b5	GREEN	FXL	lookup sweep recognises kccCaller; merged
