@@ -3120,3 +3120,4 @@
 2026-11-11T15:39:19Z integrator-20261111T115842-a749432d GREEN tree 0f9070ce39 on dev a184e259fd prs 2 front=skip: Tests: 56753, Assertions: 188001, Errors: 3, Failures: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-11T15:40:13Z integrator-20261111T115842-a749432d MERGED-TREE 0f9070ce39: 2 PRs in one push, main now 0f9070ce39 = tested tree
 2026-11-11T15:43:46Z session-20261111T063715-804d2803 fixer slot 1: merged main (0f9070ce) into #9095 5c156db4 (import conflicts); php -l clean
+2026-11-11T15:44:27Z session-20261111T063412-9f7228a4 FX5-0 merged main into #9108 4359c09e #9764 b25a3124: import-only conflicts auto-resolved; php -l clean; tests not run (composer dist 403)
