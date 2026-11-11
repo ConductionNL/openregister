@@ -4,11 +4,22 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'deleteAuditTrail'"
 		:name="t('openregister', 'Delete Audit Trail')"
-		size="normal"
-		:canClose="false">
+		:success="success"
+		:error="error"
+		:loading="loading"
+		:showConfirm="success === null"
+		:successText="t('openregister', 'Audit trail successfully deleted')"
+		:closeLabel="
+			success === null
+				? t('openregister', 'Cancel')
+				: t('openregister', 'Close')
+		"
+		:confirmLabel="t('openregister', 'Delete')"
+		@cancel="closeDialog"
+		@confirm="deleteAuditTrail()">
 		<p v-if="success === null">
 			{{
 				t(
@@ -42,85 +53,52 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 				{{ formatDate(auditTrailStore.auditTrailItem.created) }}
 			</p>
 		</div>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>{{ t('openregister', 'Audit trail successfully deleted') }}</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{
-					success === null
-						? t('openregister', 'Cancel')
-						: t('openregister', 'Close')
-				}}
-			</NcButton>
-			<NcButton
-				v-if="success === null"
-				:disabled="loading"
-				variant="error"
-				@click="deleteAuditTrail()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				{{ t('openregister', 'Delete') }}
-			</NcButton>
-		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import { confirmDialogState } from '../shared/confirmDialogState.js'
+import { deletionAnswer } from './deletionAnswer.js'
 /**
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+
+/**
+ * Ask the server to delete an audit trail entry; a refusal is thrown as an
+ * error carrying the server's reason.
+ *
+ * @param {number|string} id The entry id
+ * @return {Promise<void>}
+ */
+async function requestDeletion(id) {
+	const response = await fetch(
+		`/index.php/apps/openregister/api/audit-trails/${id}`,
+		{
+			method: 'DELETE',
+		},
+	)
+	await deletionAnswer(response)
+}
+
+/**
+ * The message for a deletion that failed without saying why.
+ *
+ * @return {string} The message
+ */
+function deletionFailedText() {
+	return t('openregister', 'An error occurred while deleting the audit trail')
+}
 
 export default {
 	name: 'DeleteAuditTrail',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		// Icons
-		TrashCanOutline,
-		Cancel,
+		ConfirmDialogFrame,
 	},
 
-	data() {
-		return {
-			success: null,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
-		}
-	},
+	mixins: [confirmDialogState(null)],
 
 	methods: {
-		/**
-		 * Close the dialog and reset state
-		 *
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		closeDialog() {
-			navigationStore.setDialog(false)
-			clearTimeout(this.closeModalTimeout)
-			this.success = null
-			this.loading = false
-			this.error = false
-		},
-
 		/**
 		 * Delete the audit trail entry
 		 *
@@ -132,36 +110,39 @@ export default {
 			this.loading = true
 
 			try {
-				const response = await fetch(
-					`/index.php/apps/openregister/api/audit-trails/${auditTrailStore.auditTrailItem.id}`,
-					{
-						method: 'DELETE',
-					},
-				)
-
-				const result = await response.json()
-
-				if (result.success) {
-					this.success = true
-					this.error = false
-					// Refresh the audit trail list
-					await auditTrailStore.refreshAuditTrailList()
-					// Auto-close after 2 seconds
-					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
-				} else {
-					throw new Error(result.error || 'Deletion failed')
-				}
+				await requestDeletion(auditTrailStore.auditTrailItem.id)
+				await this.showDeleted()
 			} catch (error) {
-				this.success = false
-				this.error =
-					error.message
-					|| t(
-						'openregister',
-						'An error occurred while deleting the audit trail',
-					)
+				this.showDeleteFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Say why the deletion failed.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showDeleteFailure(error) {
+			this.success = false
+			this.error = error.message || deletionFailedText()
+		},
+
+		/**
+		 * Say the entry was deleted, refresh the audit trail list and close
+		 * after two seconds.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async showDeleted() {
+			this.success = true
+			this.error = false
+			// Refresh the audit trail list
+			await auditTrailStore.refreshAuditTrailList()
+			// Auto-close after 2 seconds
+			this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 		},
 
 		/**
@@ -176,7 +157,7 @@ export default {
 			if (!dateString) return '-'
 			try {
 				return new Date(dateString).toLocaleString()
-			} catch (error) {
+			} catch {
 				return dateString
 			}
 		},
@@ -184,7 +165,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .audit-trail-info {
 	background: var(--color-background-hover);
 	padding: 16px;
@@ -196,31 +179,7 @@ export default {
 	margin: 8px 0;
 }
 
-.action-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	color: white;
-	background: var(--color-text-maxcontrast);
-}
+@include action-badge;
 
-.action-badge.action-create {
-	background: var(--color-success);
-}
-
-.action-badge.action-update {
-	background: var(--color-warning);
-}
-
-.action-badge.action-delete {
-	background: var(--color-error);
-}
-
-.action-badge.action-read {
-	background: var(--color-info);
-}
+@include action-badge-colours;
 </style>

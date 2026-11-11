@@ -125,22 +125,25 @@ class TransitionDocument {
 			return (str_starts_with($node, self::BEFORE . '.') === true || $node === self::BEFORE);
 		}
 
-		if (is_array($node) === false) {
-			return false;
-		}
+		return is_array($node) === true && $this->anyReadsPrior(node: $node);
+	}//end readsPrior()
 
+	/**
+	 * Whether any key of a node is the prior envelope, or any value reads it.
+	 *
+	 * @param array<int|string, mixed> $node The condition node.
+	 *
+	 * @return bool True when it reads the prior value.
+	 */
+	private function anyReadsPrior(array $node): bool {
 		foreach ($node as $key => $value) {
-			if ((string)$key === self::BEFORE) {
-				return true;
-			}
-
-			if ($this->readsPrior(node: $value) === true) {
+			if ((string)$key === self::BEFORE || $this->readsPrior(node: $value) === true) {
 				return true;
 			}
 		}
 
 		return false;
-	}//end readsPrior()
+	}//end anyReadsPrior()
 
 	/**
 	 * Why a rule may not be attached to its trigger, or null when it may.
@@ -151,41 +154,60 @@ class TransitionDocument {
 	 * declaration is decoration, and the first check is a check of a field
 	 * nobody has to fill in truthfully.
 	 *
-	 * @param string               $ruleName The rule, for the message.
-	 * @param mixed                $node     Its condition.
-	 * @param array<string, mixed> $rule     Its declaration.
-	 * @param string|null          $trigger  The trigger it is attached to.
+	 * @param RuleAttachment $attachment The rule's name, its declaration and the trigger it is attached to.
+	 * @param mixed          $node       Its condition.
 	 *
 	 * @return string|null The reason, naming the rule.
 	 *
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
 	 */
-	public function refusalFor(string $ruleName, mixed $node, array $rule, ?string $trigger): ?string {
-		$reads = $this->readsPrior(node: $node);
-		$declares = (($rule[self::REQUIRES_PRIOR] ?? false) === true);
-
-		if ($reads === true && $declares === false) {
-			return sprintf(
-				'rule "%s" reads the value before the write but does not declare "%s": declare it, so the trigger can be checked',
-				$ruleName,
-				self::REQUIRES_PRIOR
-			);
+	public function refusalFor(RuleAttachment $attachment, mixed $node): ?string {
+		if ($attachment->requiresPrior() === false) {
+			return $this->undeclaredReadRefusal(ruleName: $attachment->ruleName, node: $node);
 		}
 
-		if ($declares === false) {
+		return $this->createTriggerRefusal(ruleName: $attachment->ruleName, trigger: $attachment->trigger);
+	}//end refusalFor()
+
+	/**
+	 * The refusal for a rule that reads the prior value without declaring it.
+	 *
+	 * @param string $ruleName The rule, for the message.
+	 * @param mixed  $node     Its condition.
+	 *
+	 * @return string|null The reason, or null when the condition does not read it.
+	 */
+	private function undeclaredReadRefusal(string $ruleName, mixed $node): ?string {
+		if ($this->readsPrior(node: $node) === false) {
 			return null;
 		}
 
-		if ($trigger !== null && in_array($trigger, self::CREATE_TRIGGERS, true) === true) {
-			return sprintf(
-				'rule "%s" needs the value before the write, and "%s" has none; it would never match rather than failing',
-				$ruleName,
-				$trigger
-			);
+		return sprintf(
+			'rule "%s" reads the value before the write but does not declare "%s": declare it, so the trigger can be checked',
+			$ruleName,
+			self::REQUIRES_PRIOR
+		);
+	}//end undeclaredReadRefusal()
+
+	/**
+	 * The refusal for a rule that declares a prior value on a trigger that has none.
+	 *
+	 * @param string      $ruleName The rule, for the message.
+	 * @param string|null $trigger  The trigger it is attached to.
+	 *
+	 * @return string|null The reason, or null when the trigger has a prior value.
+	 */
+	private function createTriggerRefusal(string $ruleName, ?string $trigger): ?string {
+		if ($trigger === null || in_array($trigger, self::CREATE_TRIGGERS, true) === false) {
+			return null;
 		}
 
-		return null;
-	}//end refusalFor()
+		return sprintf(
+			'rule "%s" needs the value before the write, and "%s" has none; it would never match rather than failing',
+			$ruleName,
+			$trigger
+		);
+	}//end createTriggerRefusal()
 
 	/**
 	 * Which operand decided the verdict, for the run log (task 2.3).
@@ -203,26 +225,32 @@ class TransitionDocument {
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
 	 */
 	public function decidedBy(mixed $node, array $document): string {
-		if ($this->readsPrior(node: $node) === false) {
+		if ($this->readsPrior(node: $node) === false || array_key_exists(self::BEFORE, $document) === false) {
 			return 'after';
 		}
 
-		if (array_key_exists(self::BEFORE, $document) === false) {
-			return 'after';
-		}
-
-		$before = $document[self::BEFORE];
-		$after = ($document[self::AFTER] ?? []);
-
-		// The spaceship rather than `===` on purpose: two documents holding the
-		// same pairs in a different key order are the same document, and a save
-		// that re-serialises may hand back the keys in another order. `===`
-		// would read that as a transition and fire every rule on a write that
-		// changed nothing.
-		if (is_array($before) === true && is_array($after) === true && ($before <=> $after) === 0) {
+		if ($this->isUnchanged(before: $document[self::BEFORE], after: ($document[self::AFTER] ?? [])) === true) {
 			return 'unchanged';
 		}
 
 		return 'transition';
 	}//end decidedBy()
+
+	/**
+	 * Whether the two sides of the write hold the same pairs.
+	 *
+	 * The spaceship rather than `===` on purpose: two documents holding the
+	 * same pairs in a different key order are the same document, and a save
+	 * that re-serialises may hand back the keys in another order. `===` would
+	 * read that as a transition and fire every rule on a write that changed
+	 * nothing.
+	 *
+	 * @param mixed $before The values before the write.
+	 * @param mixed $after  The values after it.
+	 *
+	 * @return bool True when both are arrays holding the same pairs.
+	 */
+	private function isUnchanged(mixed $before, mixed $after): bool {
+		return is_array($before) === true && is_array($after) === true && ($before <=> $after) === 0;
+	}//end isUnchanged()
 }//end class

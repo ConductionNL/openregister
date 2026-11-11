@@ -1,0 +1,235 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`PermissionMatrix golden renders the matrix rows 1`] = `
+"<section name="t:Permission Matrix" description="t:View and manage authorization across registers and schemas" loading="false" loadingmessage="t:Loading permission matrix...">
+  <div class="permission-matrix">
+    <!-- Legend -->
+    <div class="matrix-legend"><span class="legend-item"><span class="legend-dot direct"></span> t:Direct permission</span><span class="legend-item"><span class="legend-dot inherited"></span> t:Inherited from register</span></div><!-- Matrix Table -->
+    <div class="matrix-table-wrapper">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th scope="col" class="name-column">t:Register / Schema</th>
+            <th scope="col" class="action-column">t:read</th>
+            <th scope="col" class="action-column">t:create</th>
+            <th scope="col" class="action-column">t:update</th>
+            <th scope="col" class="action-column">t:delete</th>
+            <th scope="col" class="action-column">t:manage</th>
+            <th id="permission-matrix-col-public" scope="col" class="action-column">t:Public</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Register Row -->
+          <tr class="register-row">
+            <td id="permission-matrix-register-1" class="name-cell"><button class="expand-toggle"><span class="expand-icon">▼</span><strong>Reg One</strong></button><span class="auth-badge">t:RBAC</span></td>
+            <td class="action-cell"><span class="group-list" title="staff, auditors">staff, auditors</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions">-</span></td>
+            <td class="action-cell"><span class="group-list" title="editors">editors</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions">-</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions">-</span></td>
+            <td class="action-cell">
+              <!---->
+            </td>
+          </tr><!-- Schema Rows -->
+          <tr class="schema-row">
+            <td id="permission-matrix-schema-1-10" class="name-cell schema-indent"> ↳ Direct
+              <!--v-if-->
+            </td>
+            <td class="action-cell"><span class="group-list direct" title="Directly configured on this schema">readers, public</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions (open access)">-</span></td>
+            <td class="action-cell"><span class="group-list inherited" title="Inherited from register: editors">-</span></td>
+            <td class="action-cell"><span class="group-list direct" title="Directly configured on this schema">admin</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions (open access)">-</span></td>
+            <td class="action-cell">
+              <!---->
+            </td>
+          </tr>
+          <tr class="schema-row">
+            <td id="permission-matrix-schema-1-11" class="name-cell schema-indent"> ↳ Inheriting <span class="inherited-badge" title="t:Inherits permissions from register">t:inherited</span></td>
+            <td class="action-cell"><span class="group-list inherited" title="Inherited from register: staff, auditors">staff, auditors</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions (open access)">-</span></td>
+            <td class="action-cell"><span class="group-list inherited" title="Inherited from register: editors">editors</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions (open access)">-</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions (open access)">-</span></td>
+            <td class="action-cell">
+              <!---->
+            </td>
+          </tr>
+          <tr class="schema-row">
+            <td id="permission-matrix-schema-1-12" class="name-cell schema-indent"> ↳ empty-auth <span class="inherited-badge" title="t:Inherits permissions from register">t:inherited</span></td>
+            <td class="action-cell"><span class="group-list inherited" title="Inherited from register: staff, auditors">staff, auditors</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions (open access)">-</span></td>
+            <td class="action-cell"><span class="group-list inherited" title="Inherited from register: editors">editors</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions (open access)">-</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions (open access)">-</span></td>
+            <td class="action-cell">
+              <!---->
+            </td>
+          </tr><!-- Register Row -->
+          <tr class="register-row">
+            <td id="permission-matrix-register-2" class="name-cell"><button class="expand-toggle"><span class="expand-icon">▼</span><strong>reg-two</strong></button>
+              <!--v-if-->
+            </td>
+            <td class="action-cell"><span class="group-list" title="No restrictions">-</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions">-</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions">-</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions">-</span></td>
+            <td class="action-cell"><span class="group-list" title="No restrictions">-</span></td>
+            <td class="action-cell">
+              <!---->
+            </td>
+          </tr><!-- Schema Rows -->
+        </tbody>
+      </table>
+    </div><!-- Bulk Actions -->
+    <div class="bulk-actions">
+      <h4>t:Bulk Role Assignment: Reg One</h4>
+      <p class="bulk-description">t:Apply a role to all schemas in this register that do not have explicit authorization overrides.</p>
+      <div class="bulk-controls">
+        <!---->
+        <!---->
+        <!--[object Object]-->
+      </div>
+    </div>
+  </div>
+</section>"
+`;
+
+exports[`PermissionMatrix golden resolves groups, classes and tooltips 1`] = `
+{
+  "10:create": [
+    [],
+    "group-list",
+    "No restrictions (open access)",
+  ],
+  "10:delete": [
+    [
+      "admin",
+    ],
+    "group-list direct",
+    "Directly configured on this schema",
+  ],
+  "10:manage": [
+    [],
+    "group-list",
+    "No restrictions (open access)",
+  ],
+  "10:read": [
+    [
+      "readers",
+      "public",
+    ],
+    "group-list direct",
+    "Directly configured on this schema",
+  ],
+  "10:update": [
+    [],
+    "group-list inherited",
+    "Inherited from register: editors",
+  ],
+  "11:create": [
+    [],
+    "group-list",
+    "No restrictions (open access)",
+  ],
+  "11:delete": [
+    [],
+    "group-list",
+    "No restrictions (open access)",
+  ],
+  "11:manage": [
+    [],
+    "group-list",
+    "No restrictions (open access)",
+  ],
+  "11:read": [
+    [
+      "staff",
+      "auditors",
+    ],
+    "group-list inherited",
+    "Inherited from register: staff, auditors",
+  ],
+  "11:update": [
+    [
+      "editors",
+    ],
+    "group-list inherited",
+    "Inherited from register: editors",
+  ],
+  "12:create": [
+    [],
+    "group-list",
+    "No restrictions (open access)",
+  ],
+  "12:delete": [
+    [],
+    "group-list",
+    "No restrictions (open access)",
+  ],
+  "12:manage": [
+    [],
+    "group-list",
+    "No restrictions (open access)",
+  ],
+  "12:read": [
+    [
+      "staff",
+      "auditors",
+    ],
+    "group-list inherited",
+    "Inherited from register: staff, auditors",
+  ],
+  "12:update": [
+    [
+      "editors",
+    ],
+    "group-list inherited",
+    "Inherited from register: editors",
+  ],
+  "options": [
+    {
+      "label": "admin",
+      "value": "admin",
+    },
+    {
+      "label": "auditors",
+      "value": "auditors",
+    },
+    {
+      "label": "editors",
+      "value": "editors",
+    },
+    {
+      "label": "public",
+      "value": "public",
+    },
+    {
+      "label": "readers",
+      "value": "readers",
+    },
+    {
+      "label": "staff",
+      "value": "staff",
+    },
+  ],
+  "register": [
+    [
+      "staff",
+      "auditors",
+    ],
+    [],
+    [
+      "editors",
+    ],
+    [],
+    [],
+  ],
+  "roles": [
+    {
+      "label": "viewer (read)",
+      "value": "viewer",
+    },
+  ],
+}
+`;

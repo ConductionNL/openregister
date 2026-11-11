@@ -1,0 +1,626 @@
+{
+    "postgresql bucket minute": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT date_trunc('minute', \"created\"::timestamptz) AS bucket, SUM(\"amount\") AS value FROM \"facts\" WHERE (\"created\"::timestamptz >= :dcValue1) AND (\"created\"::timestamptz < :dcValue2) AND (\"status\" IN (:dcValue3, :dcValue4)) AND (1 = 1) AND (\"amount\" > :dcValue5) AND (\"amount\" >= :dcValue6) AND (\"amount\" < :dcValue7) AND (\"amount\" <= :dcValue8) AND (\"amount\" <> :dcValue9) AND (\"created\" = :dcValue10) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "2026-01-01",
+                    "dcValue2": "2026-02-01",
+                    "dcValue3": "open",
+                    "dcValue4": "closed",
+                    "dcValue5": 1,
+                    "dcValue6": 2,
+                    "dcValue7": 9,
+                    "dcValue8": 8,
+                    "dcValue9": 5,
+                    "dcValue10": "today"
+                }
+            }
+        ]
+    },
+    "postgresql bucket hour": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT date_trunc('hour', \"created\"::timestamptz) AS bucket, SUM(\"amount\") AS value FROM \"facts\" WHERE (\"created\"::timestamptz >= :dcValue1) AND (\"created\"::timestamptz < :dcValue2) AND (\"status\" IN (:dcValue3, :dcValue4)) AND (1 = 1) AND (\"amount\" > :dcValue5) AND (\"amount\" >= :dcValue6) AND (\"amount\" < :dcValue7) AND (\"amount\" <= :dcValue8) AND (\"amount\" <> :dcValue9) AND (\"created\" = :dcValue10) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "2026-01-01",
+                    "dcValue2": "2026-02-01",
+                    "dcValue3": "open",
+                    "dcValue4": "closed",
+                    "dcValue5": 1,
+                    "dcValue6": 2,
+                    "dcValue7": 9,
+                    "dcValue8": 8,
+                    "dcValue9": 5,
+                    "dcValue10": "today"
+                }
+            }
+        ]
+    },
+    "postgresql bucket day": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT date_trunc('day', \"created\"::timestamptz) AS bucket, SUM(\"amount\") AS value FROM \"facts\" WHERE (\"created\"::timestamptz >= :dcValue1) AND (\"created\"::timestamptz < :dcValue2) AND (\"status\" IN (:dcValue3, :dcValue4)) AND (1 = 1) AND (\"amount\" > :dcValue5) AND (\"amount\" >= :dcValue6) AND (\"amount\" < :dcValue7) AND (\"amount\" <= :dcValue8) AND (\"amount\" <> :dcValue9) AND (\"created\" = :dcValue10) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "2026-01-01",
+                    "dcValue2": "2026-02-01",
+                    "dcValue3": "open",
+                    "dcValue4": "closed",
+                    "dcValue5": 1,
+                    "dcValue6": 2,
+                    "dcValue7": 9,
+                    "dcValue8": 8,
+                    "dcValue9": 5,
+                    "dcValue10": "today"
+                }
+            }
+        ]
+    },
+    "postgresql bucket week": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT date_trunc('week', \"created\"::timestamptz) AS bucket, SUM(\"amount\") AS value FROM \"facts\" WHERE (\"created\"::timestamptz >= :dcValue1) AND (\"created\"::timestamptz < :dcValue2) AND (\"status\" IN (:dcValue3, :dcValue4)) AND (1 = 1) AND (\"amount\" > :dcValue5) AND (\"amount\" >= :dcValue6) AND (\"amount\" < :dcValue7) AND (\"amount\" <= :dcValue8) AND (\"amount\" <> :dcValue9) AND (\"created\" = :dcValue10) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "2026-01-01",
+                    "dcValue2": "2026-02-01",
+                    "dcValue3": "open",
+                    "dcValue4": "closed",
+                    "dcValue5": 1,
+                    "dcValue6": 2,
+                    "dcValue7": 9,
+                    "dcValue8": 8,
+                    "dcValue9": 5,
+                    "dcValue10": "today"
+                }
+            }
+        ]
+    },
+    "postgresql bucket month": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT date_trunc('month', \"created\"::timestamptz) AS bucket, SUM(\"amount\") AS value FROM \"facts\" WHERE (\"created\"::timestamptz >= :dcValue1) AND (\"created\"::timestamptz < :dcValue2) AND (\"status\" IN (:dcValue3, :dcValue4)) AND (1 = 1) AND (\"amount\" > :dcValue5) AND (\"amount\" >= :dcValue6) AND (\"amount\" < :dcValue7) AND (\"amount\" <= :dcValue8) AND (\"amount\" <> :dcValue9) AND (\"created\" = :dcValue10) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "2026-01-01",
+                    "dcValue2": "2026-02-01",
+                    "dcValue3": "open",
+                    "dcValue4": "closed",
+                    "dcValue5": 1,
+                    "dcValue6": 2,
+                    "dcValue7": 9,
+                    "dcValue8": 8,
+                    "dcValue9": 5,
+                    "dcValue10": "today"
+                }
+            }
+        ]
+    },
+    "postgresql bucket quarter": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT date_trunc('quarter', \"created\"::timestamptz) AS bucket, SUM(\"amount\") AS value FROM \"facts\" WHERE (\"created\"::timestamptz >= :dcValue1) AND (\"created\"::timestamptz < :dcValue2) AND (\"status\" IN (:dcValue3, :dcValue4)) AND (1 = 1) AND (\"amount\" > :dcValue5) AND (\"amount\" >= :dcValue6) AND (\"amount\" < :dcValue7) AND (\"amount\" <= :dcValue8) AND (\"amount\" <> :dcValue9) AND (\"created\" = :dcValue10) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "2026-01-01",
+                    "dcValue2": "2026-02-01",
+                    "dcValue3": "open",
+                    "dcValue4": "closed",
+                    "dcValue5": 1,
+                    "dcValue6": 2,
+                    "dcValue7": 9,
+                    "dcValue8": 8,
+                    "dcValue9": 5,
+                    "dcValue10": "today"
+                }
+            }
+        ]
+    },
+    "postgresql bucket year": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT date_trunc('year', \"created\"::timestamptz) AS bucket, SUM(\"amount\") AS value FROM \"facts\" WHERE (\"created\"::timestamptz >= :dcValue1) AND (\"created\"::timestamptz < :dcValue2) AND (\"status\" IN (:dcValue3, :dcValue4)) AND (1 = 1) AND (\"amount\" > :dcValue5) AND (\"amount\" >= :dcValue6) AND (\"amount\" < :dcValue7) AND (\"amount\" <= :dcValue8) AND (\"amount\" <> :dcValue9) AND (\"created\" = :dcValue10) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "2026-01-01",
+                    "dcValue2": "2026-02-01",
+                    "dcValue3": "open",
+                    "dcValue4": "closed",
+                    "dcValue5": 1,
+                    "dcValue6": 2,
+                    "dcValue7": 9,
+                    "dcValue8": 8,
+                    "dcValue9": 5,
+                    "dcValue10": "today"
+                }
+            }
+        ]
+    },
+    "postgresql bucket fortnight": {
+        "answer": null,
+        "statements": []
+    },
+    "postgresql bucket DAY": {
+        "answer": null,
+        "statements": []
+    },
+    "postgresql bucket ": {
+        "answer": null,
+        "statements": []
+    },
+    "postgresql bucket unknown field": {
+        "answer": null,
+        "statements": []
+    },
+    "postgresql bucket without bounds": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT date_trunc('month', \"created\"::timestamptz) AS bucket, COUNT(*) AS value FROM \"facts\" WHERE (\"created\"::timestamptz >= :dcValue1) AND (\"created\"::timestamptz < :dcValue2) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "",
+                    "dcValue2": ""
+                }
+            }
+        ]
+    },
+    "postgresql grouped": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT \"status\" AS grpkey, AVG(\"amount\") AS value FROM \"facts\" WHERE (\"status\" IN (:dcValue1, :dcValue2)) AND (1 = 1) AND (\"amount\" > :dcValue3) AND (\"amount\" >= :dcValue4) AND (\"amount\" < :dcValue5) AND (\"amount\" <= :dcValue6) AND (\"amount\" <> :dcValue7) AND (\"created\" = :dcValue8) GROUP BY \"status\"",
+                "params": {
+                    "dcValue1": "open",
+                    "dcValue2": "closed",
+                    "dcValue3": 1,
+                    "dcValue4": 2,
+                    "dcValue5": 9,
+                    "dcValue6": 8,
+                    "dcValue7": 5,
+                    "dcValue8": "today"
+                }
+            }
+        ]
+    },
+    "postgresql scalar": {
+        "answer": {
+            "value": 4
+        },
+        "statements": [
+            {
+                "sql": "SELECT COUNT(*) FROM \"facts\" WHERE (\"status\" IN (:dcValue1, :dcValue2)) AND (1 = 1) AND (\"amount\" > :dcValue3) AND (\"amount\" >= :dcValue4) AND (\"amount\" < :dcValue5) AND (\"amount\" <= :dcValue6) AND (\"amount\" <> :dcValue7) AND (\"created\" = :dcValue8)",
+                "params": {
+                    "dcValue1": "open",
+                    "dcValue2": "closed",
+                    "dcValue3": 1,
+                    "dcValue4": 2,
+                    "dcValue5": 9,
+                    "dcValue6": 8,
+                    "dcValue7": 5,
+                    "dcValue8": "today"
+                }
+            }
+        ]
+    },
+    "postgresql scalar, empty in": {
+        "answer": {
+            "value": 4.0
+        },
+        "statements": [
+            {
+                "sql": "SELECT MAX(\"amount\") FROM \"facts\" WHERE (1 = 0) AND (\"status\" NOT IN (:dcValue1))",
+                "params": {
+                    "dcValue1": "a"
+                }
+            }
+        ]
+    },
+    "mysql bucket minute": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT DATE_FORMAT(`created`, '%Y-%m-%dT%H:%i:00Z') AS bucket, SUM(`amount`) AS value FROM \"facts\" WHERE (`created` >= :dcValue1) AND (`created` < :dcValue2) AND (`status` IN (:dcValue3, :dcValue4)) AND (1 = 1) AND (`amount` > :dcValue5) AND (`amount` >= :dcValue6) AND (`amount` < :dcValue7) AND (`amount` <= :dcValue8) AND (`amount` <> :dcValue9) AND (`created` = :dcValue10) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "2026-01-01",
+                    "dcValue2": "2026-02-01",
+                    "dcValue3": "open",
+                    "dcValue4": "closed",
+                    "dcValue5": 1,
+                    "dcValue6": 2,
+                    "dcValue7": 9,
+                    "dcValue8": 8,
+                    "dcValue9": 5,
+                    "dcValue10": "today"
+                }
+            }
+        ]
+    },
+    "mysql bucket hour": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT DATE_FORMAT(`created`, '%Y-%m-%dT%H:00:00Z') AS bucket, SUM(`amount`) AS value FROM \"facts\" WHERE (`created` >= :dcValue1) AND (`created` < :dcValue2) AND (`status` IN (:dcValue3, :dcValue4)) AND (1 = 1) AND (`amount` > :dcValue5) AND (`amount` >= :dcValue6) AND (`amount` < :dcValue7) AND (`amount` <= :dcValue8) AND (`amount` <> :dcValue9) AND (`created` = :dcValue10) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "2026-01-01",
+                    "dcValue2": "2026-02-01",
+                    "dcValue3": "open",
+                    "dcValue4": "closed",
+                    "dcValue5": 1,
+                    "dcValue6": 2,
+                    "dcValue7": 9,
+                    "dcValue8": 8,
+                    "dcValue9": 5,
+                    "dcValue10": "today"
+                }
+            }
+        ]
+    },
+    "mysql bucket day": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT DATE_FORMAT(`created`, '%Y-%m-%dT00:00:00Z') AS bucket, SUM(`amount`) AS value FROM \"facts\" WHERE (`created` >= :dcValue1) AND (`created` < :dcValue2) AND (`status` IN (:dcValue3, :dcValue4)) AND (1 = 1) AND (`amount` > :dcValue5) AND (`amount` >= :dcValue6) AND (`amount` < :dcValue7) AND (`amount` <= :dcValue8) AND (`amount` <> :dcValue9) AND (`created` = :dcValue10) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "2026-01-01",
+                    "dcValue2": "2026-02-01",
+                    "dcValue3": "open",
+                    "dcValue4": "closed",
+                    "dcValue5": 1,
+                    "dcValue6": 2,
+                    "dcValue7": 9,
+                    "dcValue8": 8,
+                    "dcValue9": 5,
+                    "dcValue10": "today"
+                }
+            }
+        ]
+    },
+    "mysql bucket week": {
+        "answer": null,
+        "statements": []
+    },
+    "mysql bucket month": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT DATE_FORMAT(`created`, '%Y-%m-01T00:00:00Z') AS bucket, SUM(`amount`) AS value FROM \"facts\" WHERE (`created` >= :dcValue1) AND (`created` < :dcValue2) AND (`status` IN (:dcValue3, :dcValue4)) AND (1 = 1) AND (`amount` > :dcValue5) AND (`amount` >= :dcValue6) AND (`amount` < :dcValue7) AND (`amount` <= :dcValue8) AND (`amount` <> :dcValue9) AND (`created` = :dcValue10) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "2026-01-01",
+                    "dcValue2": "2026-02-01",
+                    "dcValue3": "open",
+                    "dcValue4": "closed",
+                    "dcValue5": 1,
+                    "dcValue6": 2,
+                    "dcValue7": 9,
+                    "dcValue8": 8,
+                    "dcValue9": 5,
+                    "dcValue10": "today"
+                }
+            }
+        ]
+    },
+    "mysql bucket quarter": {
+        "answer": null,
+        "statements": []
+    },
+    "mysql bucket year": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT DATE_FORMAT(`created`, '%Y-01-01T00:00:00Z') AS bucket, SUM(`amount`) AS value FROM \"facts\" WHERE (`created` >= :dcValue1) AND (`created` < :dcValue2) AND (`status` IN (:dcValue3, :dcValue4)) AND (1 = 1) AND (`amount` > :dcValue5) AND (`amount` >= :dcValue6) AND (`amount` < :dcValue7) AND (`amount` <= :dcValue8) AND (`amount` <> :dcValue9) AND (`created` = :dcValue10) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "2026-01-01",
+                    "dcValue2": "2026-02-01",
+                    "dcValue3": "open",
+                    "dcValue4": "closed",
+                    "dcValue5": 1,
+                    "dcValue6": 2,
+                    "dcValue7": 9,
+                    "dcValue8": 8,
+                    "dcValue9": 5,
+                    "dcValue10": "today"
+                }
+            }
+        ]
+    },
+    "mysql bucket fortnight": {
+        "answer": null,
+        "statements": []
+    },
+    "mysql bucket DAY": {
+        "answer": null,
+        "statements": []
+    },
+    "mysql bucket ": {
+        "answer": null,
+        "statements": []
+    },
+    "mysql bucket unknown field": {
+        "answer": null,
+        "statements": []
+    },
+    "mysql bucket without bounds": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "2026-01-05T00:00:00Z",
+                    "value": 3
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT DATE_FORMAT(`created`, '%Y-%m-01T00:00:00Z') AS bucket, COUNT(*) AS value FROM \"facts\" WHERE (`created` >= :dcValue1) AND (`created` < :dcValue2) GROUP BY bucket ORDER BY bucket ASC",
+                "params": {
+                    "dcValue1": "",
+                    "dcValue2": ""
+                }
+            }
+        ]
+    },
+    "mysql grouped": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT `status` AS grpkey, AVG(`amount`) AS value FROM \"facts\" WHERE (`status` IN (:dcValue1, :dcValue2)) AND (1 = 1) AND (`amount` > :dcValue3) AND (`amount` >= :dcValue4) AND (`amount` < :dcValue5) AND (`amount` <= :dcValue6) AND (`amount` <> :dcValue7) AND (`created` = :dcValue8) GROUP BY `status`",
+                "params": {
+                    "dcValue1": "open",
+                    "dcValue2": "closed",
+                    "dcValue3": 1,
+                    "dcValue4": 2,
+                    "dcValue5": 9,
+                    "dcValue6": 8,
+                    "dcValue7": 5,
+                    "dcValue8": "today"
+                }
+            }
+        ]
+    },
+    "mysql scalar": {
+        "answer": {
+            "value": 4
+        },
+        "statements": [
+            {
+                "sql": "SELECT COUNT(*) FROM \"facts\" WHERE (`status` IN (:dcValue1, :dcValue2)) AND (1 = 1) AND (`amount` > :dcValue3) AND (`amount` >= :dcValue4) AND (`amount` < :dcValue5) AND (`amount` <= :dcValue6) AND (`amount` <> :dcValue7) AND (`created` = :dcValue8)",
+                "params": {
+                    "dcValue1": "open",
+                    "dcValue2": "closed",
+                    "dcValue3": 1,
+                    "dcValue4": 2,
+                    "dcValue5": 9,
+                    "dcValue6": 8,
+                    "dcValue7": 5,
+                    "dcValue8": "today"
+                }
+            }
+        ]
+    },
+    "mysql scalar, empty in": {
+        "answer": {
+            "value": 4.0
+        },
+        "statements": [
+            {
+                "sql": "SELECT MAX(`amount`) FROM \"facts\" WHERE (1 = 0) AND (`status` NOT IN (:dcValue1))",
+                "params": {
+                    "dcValue1": "a"
+                }
+            }
+        ]
+    },
+    "sqlite bucket minute": {
+        "answer": null,
+        "statements": []
+    },
+    "sqlite bucket hour": {
+        "answer": null,
+        "statements": []
+    },
+    "sqlite bucket day": {
+        "answer": null,
+        "statements": []
+    },
+    "sqlite bucket week": {
+        "answer": null,
+        "statements": []
+    },
+    "sqlite bucket month": {
+        "answer": null,
+        "statements": []
+    },
+    "sqlite bucket quarter": {
+        "answer": null,
+        "statements": []
+    },
+    "sqlite bucket year": {
+        "answer": null,
+        "statements": []
+    },
+    "sqlite bucket fortnight": {
+        "answer": null,
+        "statements": []
+    },
+    "sqlite bucket DAY": {
+        "answer": null,
+        "statements": []
+    },
+    "sqlite bucket ": {
+        "answer": null,
+        "statements": []
+    },
+    "sqlite bucket unknown field": {
+        "answer": null,
+        "statements": []
+    },
+    "sqlite bucket without bounds": {
+        "answer": null,
+        "statements": []
+    },
+    "sqlite grouped": {
+        "answer": {
+            "groups": [
+                {
+                    "key": "open",
+                    "value": 3.0
+                }
+            ]
+        },
+        "statements": [
+            {
+                "sql": "SELECT \"status\" AS grpkey, AVG(\"amount\") AS value FROM \"facts\" WHERE (\"status\" IN (:dcValue1, :dcValue2)) AND (1 = 1) AND (\"amount\" > :dcValue3) AND (\"amount\" >= :dcValue4) AND (\"amount\" < :dcValue5) AND (\"amount\" <= :dcValue6) AND (\"amount\" <> :dcValue7) AND (\"created\" = :dcValue8) GROUP BY \"status\"",
+                "params": {
+                    "dcValue1": "open",
+                    "dcValue2": "closed",
+                    "dcValue3": 1,
+                    "dcValue4": 2,
+                    "dcValue5": 9,
+                    "dcValue6": 8,
+                    "dcValue7": 5,
+                    "dcValue8": "today"
+                }
+            }
+        ]
+    },
+    "sqlite scalar": {
+        "answer": {
+            "value": 4
+        },
+        "statements": [
+            {
+                "sql": "SELECT COUNT(*) FROM \"facts\" WHERE (\"status\" IN (:dcValue1, :dcValue2)) AND (1 = 1) AND (\"amount\" > :dcValue3) AND (\"amount\" >= :dcValue4) AND (\"amount\" < :dcValue5) AND (\"amount\" <= :dcValue6) AND (\"amount\" <> :dcValue7) AND (\"created\" = :dcValue8)",
+                "params": {
+                    "dcValue1": "open",
+                    "dcValue2": "closed",
+                    "dcValue3": 1,
+                    "dcValue4": 2,
+                    "dcValue5": 9,
+                    "dcValue6": 8,
+                    "dcValue7": 5,
+                    "dcValue8": "today"
+                }
+            }
+        ]
+    },
+    "sqlite scalar, empty in": {
+        "answer": {
+            "value": 4.0
+        },
+        "statements": [
+            {
+                "sql": "SELECT MAX(\"amount\") FROM \"facts\" WHERE (1 = 0) AND (\"status\" NOT IN (:dcValue1))",
+                "params": {
+                    "dcValue1": "a"
+                }
+            }
+        ]
+    }
+}

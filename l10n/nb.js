@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Fullfør: {outcome}",
         "Could not load the task": "Kunne ikke laste oppgaven",
         "The task refused that action": "Oppgaven avviste den handlingen",
-        "Store": "Butikk",
+        "Marketplace": "Butikk",
         "Install registers, schemas and flows that other organisations have published.": "Installer registre, skjemaer og flyter som andre organisasjoner har publisert.",
         "No such run": "Ingen slik kjøring",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Kjøringen finnes ikke, eller du har ikke tilgang til å se den. Sletter du en flyt, slettes kjøringene dens også.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Hvem som godkjente listen, og når.",
         "Who made it.": "Hvem som har laget det.",
         "Who rejected the list, and why.": "Hvem som avslo listen, og hvorfor.",
-        "Woo published": "Offentliggjort etter Woo"
+        "Woo published": "Offentliggjort etter Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "En PDF krever en kontorserver (Collabora eller Euro-Office), og ingen er installert. Be administratoren din om å installere en, eller last ned rapporten i et annet format.",
+        "The report could not be downloaded.": "Rapporten kunne ikke lastes ned."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -23,22 +23,24 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Tests\Unit\Service\Support\TextExtractionServiceFactory;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
-use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Files\Service\ProvidedTextRequest;
+use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtraction\EmlParser;
-use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
-use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
-use OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor;
-use OCA\OpenRegister\Service\TextExtraction\WordExtractor;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
+use OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor;
+use OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
 use OCP\IDBConnection;
@@ -76,7 +78,7 @@ final class TextExtractionProvidedTextTest extends TestCase {
 		$settings = $this->createMock(SettingsService::class);
 		$settings->method('getFileSettingsOnly')->willReturn(['entityRecognitionEnabled' => true, 'entityRecognitionMethod' => 'regex']);
 
-		$this->service = new TextExtractionService(
+		$this->service = TextExtractionServiceFactory::create(
 			$this->files,
 			$this->chunks,
 			$this->root,
@@ -86,8 +88,6 @@ final class TextExtractionProvidedTextTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(RegisterMapper::class),
 			$this->entities,
-			$this->createMock(GdprEntityMapper::class),
-			$this->createMock(EntityRelationMapper::class),
 			$settings,
 			$this->createMock(RiskLevelService::class),
 			$this->createMock(EmlParser::class),
@@ -108,7 +108,7 @@ final class TextExtractionProvidedTextTest extends TestCase {
 			->with('file', 42, $this->callback(static fn (array $options): bool => $options['entity_types'] === ['bsn']))
 			->willReturn(['entities_found' => 1, 'relations_created' => 0]);
 
-		$this->service->extractFromProvidedText(fileId: 42, text: "De aanvrager met BSN 123456782 woont in Utrecht.\n", entityTypes: ['bsn']);
+		$this->service->extractFromProvidedText(request: new ProvidedTextRequest(fileId: 42, text: "De aanvrager met BSN 123456782 woont in Utrecht.\n", entityTypes: ['bsn']));
 
 		$this->assertStringContainsString('BSN 123456782', implode("\n", $this->stored));
 		$this->assertStringContainsString('"extraction_method": "ocr"', implode("\n", $this->stored), 'The metadata chunk says the text came from OCR.');
@@ -123,6 +123,6 @@ final class TextExtractionProvidedTextTest extends TestCase {
 
 		$this->expectException(NotFoundException::class);
 
-		$this->service->extractFromProvidedText(fileId: 404, text: 'anything');
+		$this->service->extractFromProvidedText(request: new ProvidedTextRequest(fileId: 404, text: 'anything'));
 	}//end testTextForAMissingFileIsRefused()
 }//end class

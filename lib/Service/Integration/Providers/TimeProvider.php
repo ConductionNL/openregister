@@ -44,16 +44,16 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
 use OCA\OpenRegister\Db\TimeTrackerLink;
-use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
+use OCA\OpenRegister\Db\TimeTrackerLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 class TimeProvider extends AbstractIntegrationProvider {
+	use NcAppLinkTableProvider;
 	use MarkerLookupTrait;
 
 	/**
@@ -79,25 +79,51 @@ class TimeProvider extends AbstractIntegrationProvider {
 	private const MARKER_PREFIX = '[or:';
 
 	/**
+	 * NC DB connection (well-known idiom; used for legacy marker fallback queries).
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Logger for the degraded marker-scan path.
+	 *
+	 * @var LoggerInterface
+	 */
+	private LoggerInterface $logger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db NC DB connection (well-known idiom; used for legacy marker fallback queries).
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 * @param TimeTrackerLinkMapper $linkMapper Time-tracker-link mapper (Tier-2 link table).
-	 * @param IConfig $config NC config (reads the time-tracker.backend admin override).
-	 * @param LoggerInterface $logger Logger for the degraded marker-scan path.
+	 * @param LeafMarkerScanning             $leaf       The DB connection, app manager, localisation and marker-scan logger.
+	 * @param TimeTrackerLinkMapperInterface $linkMapper Time-tracker-link mapper (Tier-2 link table).
+	 * @param IConfig                        $config     NC config (reads the time-tracker.backend admin override).
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $db is a well-known PHP idiom for a database connection parameter.
 	 */
 	public function __construct(
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
-		private TimeTrackerLinkMapper $linkMapper,
+		LeafMarkerScanning $leaf,
+		private TimeTrackerLinkMapperInterface $linkMapper,
 		private IConfig $config,
-		private LoggerInterface $logger,
 	) {
+		$this->db = $leaf->db;
+		$this->appManager = $leaf->appManager;
+		$this->l10n = $leaf->l10n;
+		$this->logger = $leaf->logger;
 	}//end __construct()
 
 	/**
@@ -140,59 +166,18 @@ class TimeProvider extends AbstractIntegrationProvider {
 		return $this->backendAppId();
 	}//end getRequiredApp()
 
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
 	public function isEnabled(): bool {
 		return $this->appManager->isInstalled($this->backendAppId());
 	}//end isEnabled()
 
 	/**
-	 * List linked TimeManager entries for an OR object.
+	 * The link mapper this provider reads first.
 	 *
-	 * Reads the Tier-2 link table first; if no link rows exist it falls
-	 * back to the legacy `[or:{uuid}]` marker scan in
-	 * `timemanager_client.note` + `timemanager_task.note` so entries that
-	 * pre-date the link table still surface (preserving the wave-2.4
-	 * three-kind row shape).
-	 *
-	 * @param string $register Register slug for the parent object.
-	 * @param string $schema Schema slug for the parent object.
-	 * @param string $objectId UUID of the OR object whose rows we want.
-	 * @param array $filters Optional registry filters (unused).
-	 *
-	 * @return array<int,array<string,mixed>> List of registry leaf rows.
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register, $schema and $filters are required by the
-	 * IntegrationProvider interface contract; this implementation routes by $objectId only.
-	 *
-	 * @spec openspec/specs/integration-time-tracker/spec.md
+	 * @return TimeTrackerLinkMapperInterface
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->isEnabled() === false) {
-			return [];
-		}
-
-		// Tier-2 path: read from the link table.
-		try {
-			$linkRows = $this->linkMapper->findByObjectUuid($objectId);
-		} catch (Throwable $e) {
-			$linkRows = [];
-		}
-
-		if (count($linkRows) > 0) {
-			return array_map(
-				fn (TimeTrackerLink $link): array => $this->rowFromLink(link: $link),
-				$linkRows
-			);
-		}
-
-		// Backwards-compat fallback: scan the legacy `[or:{uuid}]` marker
-		// in `timemanager_client.note` + `timemanager_task.note`,
-		// preserving the three-kind row shape.
-		return $this->legacyMarkerRows(objectId: $objectId);
-	}//end list()
+	protected function linkMapper(): TimeTrackerLinkMapperInterface {
+		return $this->linkMapper;
+	}//end linkMapper()
 
 	/**
 	 * Convert a TimeTrackerLink row into the registry leaf-row shape (the
@@ -202,7 +187,7 @@ class TimeProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function rowFromLink(TimeTrackerLink $link): array {
+	protected function rowFromLink(TimeTrackerLink $link): array {
 		$entryType = (string)$link->getEntryType();
 		$id = $this->entryIdOf(link: $link);
 
@@ -212,16 +197,29 @@ class TimeProvider extends AbstractIntegrationProvider {
 			'type' => $entryType,
 			'title' => (string)$link->getName(),
 			'name' => (string)$link->getName(),
+		] + $this->linkFields(link: $link) + [
+			'url' => $this->entryDeepLink(entryType: $entryType, entryId: $id),
+			'data' => $link->jsonSerialize(),
+		];
+	}//end rowFromLink()
+
+	/**
+	 * The link's cached client, task, time, duration, billable and start fields.
+	 *
+	 * @param TimeTrackerLink $link Link row.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function linkFields(TimeTrackerLink $link): array {
+		return [
 			'clientId' => $link->getClientId(),
 			'taskId' => $link->getTaskId(),
 			'timeId' => $link->getTimeId(),
 			'duration' => $link->getDuration(),
 			'billable' => $link->getBillable(),
 			'startedAt' => $link->getStartedAt()?->format(\DateTime::ATOM),
-			'url' => $this->entryDeepLink(entryType: $entryType, entryId: $id),
-			'data' => $link->jsonSerialize(),
 		];
-	}//end rowFromLink()
+	}//end linkFields()
 
 	/**
 	 * The upstream entry id carried by the link, per entry type.
@@ -261,63 +259,60 @@ class TimeProvider extends AbstractIntegrationProvider {
 	}//end entryDeepLink()
 
 	/**
-	 * Legacy marker scan: surface clients + tasks whose `note` carries
-	 * the `[or:{uuid}]` marker, in the three-kind row shape.
+	 * Legacy marker scan: the clients, then the tasks, whose `note` carries the
+	 * `[or:{uuid}]` marker, in the three-kind row shape.
 	 *
 	 * @param string $objectId The OR object uuid.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
-	private function legacyMarkerRows(string $objectId): array {
+	protected function unlinkedRows(string $objectId): array {
 		$marker = self::MARKER_PREFIX . $objectId . ']';
+		$clients = $this->scanNotes(table: 'timemanager_client', marker: $marker);
+		$tasks = $this->scanNotes(table: 'timemanager_task', marker: $marker);
 
-		$clients = $this->findByMarker(
-			db: $this->db,
-			table: 'timemanager_client',
-			markerColumn: 'note',
-			marker: $marker,
-			extraColumns: ['uuid', 'name'],
-			idColumn: 'id',
+		return array_merge(
+			array_map(fn (array $row): array => $this->markerRow(row: $row, kind: 'client'), $clients),
+			array_map(fn (array $row): array => $this->markerRow(row: $row, kind: 'task'), $tasks)
 		);
+	}//end unlinkedRows()
 
-		$tasks = $this->findByMarker(
+	/**
+	 * The rows of a TimeManager table whose `note` carries the marker.
+	 *
+	 * @param string $table  Table without the `oc_` prefix.
+	 * @param string $marker The `[or:{uuid}]` marker.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function scanNotes(string $table, string $marker): array {
+		return $this->scanMarker(
 			db: $this->db,
-			table: 'timemanager_task',
-			markerColumn: 'note',
-			marker: $marker,
-			extraColumns: ['uuid', 'name'],
-			idColumn: 'id',
+			scan: new MarkerScan(table: $table, markerColumn: 'note', marker: $marker, columns: ['id', 'uuid', 'name']),
 		);
+	}//end scanNotes()
 
-		$rows = [];
-		foreach ($clients as $row) {
-			$uuid = (string)($row['uuid'] ?? $row['id'] ?? '');
-			$rows[] = [
-				'id' => $uuid,
-				'kind' => 'client',
-				'type' => 'client',
-				'title' => (string)($row['name'] ?? ''),
-				'name' => (string)($row['name'] ?? ''),
-				'url' => $this->entryDeepLink(entryType: 'client', entryId: $uuid),
-				'data' => $row,
-			];
-		}
+	/**
+	 * One marker-scan row of a kind in the three-kind row shape.
+	 *
+	 * @param array<string,mixed> $row  The scanned row.
+	 * @param string              $kind client or task.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function markerRow(array $row, string $kind): array {
+		$uuid = (string)($row['uuid'] ?? $row['id'] ?? '');
 
-		foreach ($tasks as $row) {
-			$uuid = (string)($row['uuid'] ?? $row['id'] ?? '');
-			$rows[] = [
-				'id' => $uuid,
-				'kind' => 'task',
-				'type' => 'task',
-				'title' => (string)($row['name'] ?? ''),
-				'name' => (string)($row['name'] ?? ''),
-				'url' => $this->entryDeepLink(entryType: 'task', entryId: $uuid),
-				'data' => $row,
-			];
-		}
-
-		return $rows;
-	}//end legacyMarkerRows()
+		return [
+			'id' => $uuid,
+			'kind' => $kind,
+			'type' => $kind,
+			'title' => (string)($row['name'] ?? ''),
+			'name' => (string)($row['name'] ?? ''),
+			'url' => $this->entryDeepLink(entryType: $kind, entryId: $uuid),
+			'data' => $row,
+		];
+	}//end markerRow()
 
 	/**
 	 * Provider health descriptor (enabled/disabled echo).

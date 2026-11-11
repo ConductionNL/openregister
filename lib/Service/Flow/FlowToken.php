@@ -36,7 +36,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/openregister-flow-executionmode-and-token/specs/flow-token/spec.md
+ * @spec openspec/specs/flow-token/spec.md
  */
 
 declare(strict_types=1);

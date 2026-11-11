@@ -1,0 +1,214 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ViewObject related-object tabs golden renders a row per related object and opens it 1`] = `
+[
+  "<x-apptab title="t:Uses">
+  <div class="search-list-table">
+    <table class="table">
+      <thead>
+        <tr class="table-row">
+          <th scope="col">ID</th>
+          <th scope="col">URI</th>
+          <th scope="col">Schema</th>
+          <th scope="col">Register</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="table-row">
+          <td>u1</td>
+          <td>/uri/u1</td>
+          <td>schema-u1</td>
+          <td>register-u1</td>
+          <td>
+            <x-ncbutton>
+              <slot-default> View Object </slot-default>
+              <slot-icon>
+                <x-eye size="20"></x-eye>
+              </slot-icon>
+            </x-ncbutton>
+          </td>
+        </tr>
+        <tr class="table-row">
+          <td>u2</td>
+          <td>/uri/u2</td>
+          <td>schema-u2</td>
+          <td>register-u2</td>
+          <td>
+            <x-ncbutton>
+              <slot-default> View Object </slot-default>
+              <slot-icon>
+                <x-eye size="20"></x-eye>
+              </slot-icon>
+            </x-ncbutton>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</x-apptab>",
+  "<x-apptab title="t:Used by">
+  <div class="search-list-table">
+    <table class="table">
+      <thead>
+        <tr class="table-row">
+          <th scope="col">ID</th>
+          <th scope="col">URI</th>
+          <th scope="col">Schema</th>
+          <th scope="col">Register</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="table-row">
+          <td>b1</td>
+          <td>/uri/b1</td>
+          <td>schema-b1</td>
+          <td>register-b1</td>
+          <td>
+            <x-ncbutton>
+              <slot-default> View Object </slot-default>
+              <slot-icon>
+                <x-eye size="20"></x-eye>
+              </slot-icon>
+            </x-ncbutton>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</x-apptab>",
+  "<x-apptab title="t:Contracts">
+  <div class="search-list-table">
+    <table class="table">
+      <thead>
+        <tr class="table-row">
+          <th scope="col">ID</th>
+          <th scope="col">URI</th>
+          <th scope="col">Schema</th>
+          <th scope="col">Register</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="table-row">
+          <td>c1</td>
+          <td>/uri/c1</td>
+          <td>schema-c1</td>
+          <td>register-c1</td>
+          <td>
+            <x-ncbutton>
+              <slot-default> View Object </slot-default>
+              <slot-icon>
+                <x-eye size="20"></x-eye>
+              </slot-icon>
+            </x-ncbutton>
+          </td>
+        </tr>
+        <tr class="table-row">
+          <td>c2</td>
+          <td>/uri/c2</td>
+          <td>schema-c2</td>
+          <td>register-c2</td>
+          <td>
+            <x-ncbutton>
+              <slot-default> View Object </slot-default>
+              <slot-icon>
+                <x-eye size="20"></x-eye>
+              </slot-icon>
+            </x-ncbutton>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</x-apptab>",
+]
+`;
+
+exports[`ViewObject related-object tabs golden renders a row per related object and opens it 2`] = `
+[
+  {
+    "modal": [
+      [
+        "viewObject",
+      ],
+    ],
+    "selected": [
+      "u1",
+    ],
+  },
+  {
+    "modal": [
+      [
+        "viewObject",
+      ],
+    ],
+    "selected": [
+      "u2",
+    ],
+  },
+  {
+    "modal": [
+      [
+        "viewObject",
+      ],
+    ],
+    "selected": [
+      "b1",
+    ],
+  },
+  {
+    "modal": [
+      [
+        "viewObject",
+      ],
+    ],
+    "selected": [
+      "c1",
+    ],
+  },
+  {
+    "modal": [
+      [
+        "viewObject",
+      ],
+    ],
+    "selected": [
+      "c2",
+    ],
+  },
+]
+`;
+
+exports[`ViewObject related-object tabs golden renders a row per related object and opens it 3`] = `
+[
+  "click",
+]
+`;
+
+exports[`ViewObject related-object tabs golden renders the empty notes 1`] = `
+[
+  "<x-apptab title="t:Uses">
+  <x-ncnotecard type="info">
+    <slot-default>
+      <p>No uses found for this object</p>
+    </slot-default>
+  </x-ncnotecard>
+</x-apptab>",
+  "<x-apptab title="t:Used by">
+  <x-ncnotecard type="info">
+    <slot-default>
+      <p>No objects are using this object</p>
+    </slot-default>
+  </x-ncnotecard>
+</x-apptab>",
+  "<x-apptab title="t:Contracts">
+  <x-ncnotecard type="info">
+    <slot-default>
+      <p>No contracts found for this object</p>
+    </slot-default>
+  </x-ncnotecard>
+</x-apptab>",
+]
+`;

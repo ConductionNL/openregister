@@ -161,6 +161,16 @@ class CalendarLink extends Entity implements JsonSerializable {
 	 * Constructor.
 	 */
 	public function __construct() {
+		$this->addKeyTypes();
+		$this->addDetailTypes();
+	}//end __construct()
+
+	/**
+	 * Register the types of the columns that say what links to which event.
+	 *
+	 * @return void
+	 */
+	private function addKeyTypes(): void {
 		$this->addType(fieldName: 'objectUuid', type: 'string');
 		$this->addType(fieldName: 'registerId', type: 'integer');
 		$this->addType(fieldName: 'schemaId', type: 'integer');
@@ -168,6 +178,14 @@ class CalendarLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'calendarId', type: 'integer');
 		$this->addType(fieldName: 'eventUid', type: 'string');
 		$this->addType(fieldName: 'eventUri', type: 'string');
+	}//end addKeyTypes()
+
+	/**
+	 * Register the types of the cached event details and link provenance.
+	 *
+	 * @return void
+	 */
+	private function addDetailTypes(): void {
 		$this->addType(fieldName: 'summary', type: 'string');
 		$this->addType(fieldName: 'dtstart', type: 'datetime');
 		$this->addType(fieldName: 'dtend', type: 'datetime');
@@ -175,7 +193,7 @@ class CalendarLink extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'linkedBy', type: 'string');
 		$this->addType(fieldName: 'linkedAt', type: 'datetime');
 		$this->addType(fieldName: 'taggedWithXor', type: 'boolean');
-	}//end __construct()
+	}//end addDetailTypes()
 
 	/**
 	 * JSON serialization in CnCalendarTab-consumer shape.
@@ -187,15 +205,19 @@ class CalendarLink extends Entity implements JsonSerializable {
 	 * @return array<string,mixed>
 	 */
 	public function jsonSerialize(): array {
-		$calendarIdStr = null;
-		if ($this->calendarId !== null) {
-			$calendarIdStr = (string)$this->calendarId;
-		}
+		return array_merge($this->eventJson(), $this->linkJson());
+	}//end jsonSerialize()
 
+	/**
+	 * The event half of the serialisation, in veventToArray() shape.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function eventJson(): array {
 		return [
 			'id' => $this->eventUri,
 			'uid' => $this->eventUid,
-			'calendarId' => $calendarIdStr,
+			'calendarId' => $this->calendarIdString(),
 			'calendarUri' => $this->calendarUri,
 			'summary' => $this->summary ?? '',
 			'dtstart' => $this->dtstart?->format(DateTime::ATOM),
@@ -204,6 +226,16 @@ class CalendarLink extends Entity implements JsonSerializable {
 			'description' => '',
 			'attendees' => [],
 			'status' => null,
+		];
+	}//end eventJson()
+
+	/**
+	 * The link half of the serialisation: the object and who linked it.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function linkJson(): array {
+		return [
 			'objectUuid' => $this->objectUuid,
 			'registerId' => $this->registerId,
 			'schemaId' => $this->schemaId,
@@ -211,5 +243,18 @@ class CalendarLink extends Entity implements JsonSerializable {
 			'linkedAt' => $this->linkedAt?->format(DateTime::ATOM),
 			'taggedWithXor' => (bool)$this->taggedWithXor,
 		];
-	}//end jsonSerialize()
+	}//end linkJson()
+
+	/**
+	 * The calendar id as a string, as the calendar tab expects, or null.
+	 *
+	 * @return string|null The id.
+	 */
+	private function calendarIdString(): ?string {
+		if ($this->calendarId === null) {
+			return null;
+		}
+
+		return (string)$this->calendarId;
+	}//end calendarIdString()
 }//end class

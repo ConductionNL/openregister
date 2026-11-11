@@ -7,6 +7,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\BulkRowChecks;
+use OCA\OpenRegister\Service\Object\BulkSaveReporting;
+use OCA\OpenRegister\Service\Object\BulkSaveSession;
+use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -29,13 +33,10 @@ class SaveObjectsRefactoredMethodsTest extends TestCase {
 		parent::setUp();
 
 		$this->saveObjects = new SaveObjects(
-			$this->createMock(MagicMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(SaveObject::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(OrganisationService::class),
-			$this->createMock(LoggerInterface::class)
+			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)), saveHandler: $this->createMock(SaveObject::class)),
+			session: new BulkSaveSession(userSession: $this->createMock(IUserSession::class), organisationService: $this->createMock(OrganisationService::class)),
+			reporting: new BulkSaveReporting(logger: $this->createMock(LoggerInterface::class)),
+			checks: new BulkRowChecks()
 		);
 	}
 

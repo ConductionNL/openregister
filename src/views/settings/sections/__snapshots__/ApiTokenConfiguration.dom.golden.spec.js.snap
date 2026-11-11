@@ -1,0 +1,891 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`api token configuration renders with edited tokens while saving and testing 1`] = `
+"<x-settingssection id="api-tokens" name="t:API Token Configuration" description="t:Configure API tokens for external service integrations" loading="false" loadingmessage="t:Loading API tokens...">
+<slot-default>
+<div class="section-description-full">
+<p class="main-description">API tokens enable<strong>discovering, importing, and publishing OpenRegister configurations</strong>to GitHub and GitLab repositories. With the appropriate token scopes, you can search for configurations published by the community, import them into your system, and publish your own configurations back to repositories for sharing and version control.</p>
+<p class="main-description info-note">
+<strong>🔐 Note:</strong>Tokens are<strong>optional</strong>for basic workflows. You can import configurations manually using direct URLs without tokens. However, tokens with appropriate scopes are required for:<strong>(1)</strong>Discovery/search features, and<strong>(2)</strong>Publishing configurations to repositories.</p>
+</div>
+<x-settingscard title="t:Required Token Scopes" icon="📋" collapsible="true" defaultcollapsed="true">
+<slot-default>
+<div class="scopes-info">
+<div class="scope-item">
+<div class="scope-header">
+<x-github size="20">
+</x-github>
+<strong>GitHub Token</strong>
+</div>
+<p>
+<strong>Required Scope:</strong>
+<code>repo</code>
+</p>
+<p class="scope-description">
+<strong>✅ Discover &amp; Import:</strong>Search and read configuration files from repositories<br>
+<strong>✅ Publish &amp; Export:</strong>Write and update configuration files to repositories</p>
+<p class="scope-note">The<code>repo</code>scope provides full repository access (read and write), enabling both discovery and publishing workflows.</p>
+<a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer" class="external-link">Create GitHub Personal Access Token →</a>
+</div>
+<div class="scope-item">
+<div class="scope-header">
+<x-gitlab size="20">
+</x-gitlab>
+<strong>GitLab Token</strong>
+</div>
+<p>
+<strong>Required Scopes:</strong>
+</p>
+<ul class="scope-list">
+<li>
+<code>read_api</code>- For<strong>discovery only</strong>(read-only access)</li>
+<li>
+<code>api</code>- For<strong>discovery AND publishing</strong>(full read/write access)</li>
+</ul>
+<p class="scope-description">
+<strong>🔍 Discovery Only:</strong>Use<code>read_api</code>to search and import configurations<br>
+<strong>📤 Discovery + Publishing:</strong>Use<code>api</code>to also export and update configurations</p>
+<p class="scope-note">If you plan to publish configurations back to GitLab, select the<code>api</code>scope when creating your token.</p>
+<a href="https://gitlab.com/-/user_settings/personal_access_tokens" target="_blank" rel="noopener noreferrer" class="external-link">Create GitLab Personal Access Token →</a>
+</div>
+<div class="documentation-link">
+<x-informationoutline size="20">
+</x-informationoutline>
+<a href="https://docs.openregister.nl/user-guide/configuration/api-tokens" target="_blank" rel="noopener noreferrer">View complete documentation on obtaining and configuring API tokens</a>
+</div>
+</div>
+</slot-default>
+</x-settingscard>
+<x-settingscard title="t:GitHub Personal Access Token" icon="🔐" collapsible="false">
+<slot-default>
+<div class="token-config">
+<div class="token-field-group">
+<label for="github-token">GitHub Token</label>
+<div class="token-input-row">
+<x-ncpasswordfield id="github-token" modelvalue="ghp_new" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+<slot-trailing-button-icon>
+<x-github size="20">
+</x-github>
+</slot-trailing-button-icon>
+</x-ncpasswordfield>
+<div class="token-actions">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Save Token</slot-default>
+<slot-icon>
+<x-ncloadingicon size="20">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="secondary" disabled="true">
+<slot-default>Test Token</slot-default>
+<slot-icon>
+<x-ncloadingicon size="20">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="error" disabled="true">
+<slot-default>Clear Token</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+<p class="field-hint">
+<x-lockoutline size="16">
+</x-lockoutline>Optional: Required for discovering and publishing configurations to/from GitHub</p>
+</div>
+</div>
+</slot-default>
+<slot-icon>
+<x-github size="20">
+</x-github>
+</slot-icon>
+</x-settingscard>
+<x-settingscard title="t:GitLab Personal Access Token" icon="🔐" collapsible="false">
+<slot-default>
+<div class="token-config">
+<div class="token-field-group">
+<label for="gitlab-token">GitLab Token</label>
+<div class="token-input-row">
+<x-ncpasswordfield id="gitlab-token" modelvalue="glpat_new" placeholder="glpat-xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+<slot-trailing-button-icon>
+<x-gitlab size="20">
+</x-gitlab>
+</slot-trailing-button-icon>
+</x-ncpasswordfield>
+<div class="token-actions">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Save Token</slot-default>
+<slot-icon>
+<x-ncloadingicon size="20">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="secondary" disabled="true">
+<slot-default>Test Token</slot-default>
+<slot-icon>
+<x-ncloadingicon size="20">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="error" disabled="true">
+<slot-default>Clear Token</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+<p class="field-hint">
+<x-lockoutline size="16">
+</x-lockoutline>Optional: Use<code>read_api</code>for discovery, or<code>api</code>for discovery + publishing</p>
+</div>
+<div class="gitlab-url-section">
+<h5>🌐 Custom GitLab Instance (Optional)</h5>
+<div class="token-field-group">
+<label for="gitlab-url">GitLab API Base URL</label>
+<x-nctextfield id="gitlab-url" modelvalue="https://other.example/api/v4" placeholder="https://gitlab.com/api/v4">
+<slot-trailing-button-icon>
+<x-web size="20">
+</x-web>
+</slot-trailing-button-icon>
+</x-nctextfield>
+<p class="field-hint">
+<x-informationoutline size="16">
+</x-informationoutline>Leave empty to use GitLab.com. For self-hosted GitLab instances, enter your API URL</p>
+</div>
+<div class="token-actions">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Save URL</slot-default>
+<slot-icon>
+<x-ncloadingicon size="20">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+</slot-default>
+<slot-icon>
+<x-gitlab size="20">
+</x-gitlab>
+</slot-icon>
+</x-settingscard>
+</slot-default>
+</x-settingssection>"
+`;
+
+exports[`api token configuration renders with saved tokens 1`] = `
+"<x-settingssection id="api-tokens" name="t:API Token Configuration" description="t:Configure API tokens for external service integrations" loading="false" loadingmessage="t:Loading API tokens...">
+<slot-default>
+<div class="section-description-full">
+<p class="main-description">API tokens enable<strong>discovering, importing, and publishing OpenRegister configurations</strong>to GitHub and GitLab repositories. With the appropriate token scopes, you can search for configurations published by the community, import them into your system, and publish your own configurations back to repositories for sharing and version control.</p>
+<p class="main-description info-note">
+<strong>🔐 Note:</strong>Tokens are<strong>optional</strong>for basic workflows. You can import configurations manually using direct URLs without tokens. However, tokens with appropriate scopes are required for:<strong>(1)</strong>Discovery/search features, and<strong>(2)</strong>Publishing configurations to repositories.</p>
+</div>
+<x-settingscard title="t:Required Token Scopes" icon="📋" collapsible="true" defaultcollapsed="true">
+<slot-default>
+<div class="scopes-info">
+<div class="scope-item">
+<div class="scope-header">
+<x-github size="20">
+</x-github>
+<strong>GitHub Token</strong>
+</div>
+<p>
+<strong>Required Scope:</strong>
+<code>repo</code>
+</p>
+<p class="scope-description">
+<strong>✅ Discover &amp; Import:</strong>Search and read configuration files from repositories<br>
+<strong>✅ Publish &amp; Export:</strong>Write and update configuration files to repositories</p>
+<p class="scope-note">The<code>repo</code>scope provides full repository access (read and write), enabling both discovery and publishing workflows.</p>
+<a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer" class="external-link">Create GitHub Personal Access Token →</a>
+</div>
+<div class="scope-item">
+<div class="scope-header">
+<x-gitlab size="20">
+</x-gitlab>
+<strong>GitLab Token</strong>
+</div>
+<p>
+<strong>Required Scopes:</strong>
+</p>
+<ul class="scope-list">
+<li>
+<code>read_api</code>- For<strong>discovery only</strong>(read-only access)</li>
+<li>
+<code>api</code>- For<strong>discovery AND publishing</strong>(full read/write access)</li>
+</ul>
+<p class="scope-description">
+<strong>🔍 Discovery Only:</strong>Use<code>read_api</code>to search and import configurations<br>
+<strong>📤 Discovery + Publishing:</strong>Use<code>api</code>to also export and update configurations</p>
+<p class="scope-note">If you plan to publish configurations back to GitLab, select the<code>api</code>scope when creating your token.</p>
+<a href="https://gitlab.com/-/user_settings/personal_access_tokens" target="_blank" rel="noopener noreferrer" class="external-link">Create GitLab Personal Access Token →</a>
+</div>
+<div class="documentation-link">
+<x-informationoutline size="20">
+</x-informationoutline>
+<a href="https://docs.openregister.nl/user-guide/configuration/api-tokens" target="_blank" rel="noopener noreferrer">View complete documentation on obtaining and configuring API tokens</a>
+</div>
+</div>
+</slot-default>
+</x-settingscard>
+<x-settingscard title="t:GitHub Personal Access Token" icon="🔐" collapsible="false">
+<slot-default>
+<div class="token-config">
+<div class="token-field-group">
+<label for="github-token">GitHub Token</label>
+<div class="token-input-row">
+<x-ncpasswordfield id="github-token" modelvalue="ghp_saved" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+<slot-trailing-button-icon>
+<x-github size="20">
+</x-github>
+</slot-trailing-button-icon>
+</x-ncpasswordfield>
+<div class="token-actions">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Save Token</slot-default>
+<slot-icon>
+<x-contentsave size="20">
+</x-contentsave>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="secondary" disabled="false">
+<slot-default>Test Token</slot-default>
+<slot-icon>
+<x-testtube size="20">
+</x-testtube>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="error" disabled="false">
+<slot-default>Clear Token</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+<span class="saved-indicator">
+<x-checkcircle size="20">
+</x-checkcircle>Token saved</span>
+</div>
+</div>
+<p class="field-hint">
+<x-lockoutline size="16">
+</x-lockoutline>Optional: Required for discovering and publishing configurations to/from GitHub</p>
+</div>
+</div>
+</slot-default>
+<slot-icon>
+<x-github size="20">
+</x-github>
+</slot-icon>
+</x-settingscard>
+<x-settingscard title="t:GitLab Personal Access Token" icon="🔐" collapsible="false">
+<slot-default>
+<div class="token-config">
+<div class="token-field-group">
+<label for="gitlab-token">GitLab Token</label>
+<div class="token-input-row">
+<x-ncpasswordfield id="gitlab-token" modelvalue="glpat_saved" placeholder="glpat-xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+<slot-trailing-button-icon>
+<x-gitlab size="20">
+</x-gitlab>
+</slot-trailing-button-icon>
+</x-ncpasswordfield>
+<div class="token-actions">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Save Token</slot-default>
+<slot-icon>
+<x-contentsave size="20">
+</x-contentsave>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="secondary" disabled="false">
+<slot-default>Test Token</slot-default>
+<slot-icon>
+<x-testtube size="20">
+</x-testtube>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="error" disabled="false">
+<slot-default>Clear Token</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+<span class="saved-indicator">
+<x-checkcircle size="20">
+</x-checkcircle>Token saved</span>
+</div>
+</div>
+<p class="field-hint">
+<x-lockoutline size="16">
+</x-lockoutline>Optional: Use<code>read_api</code>for discovery, or<code>api</code>for discovery + publishing</p>
+</div>
+<div class="gitlab-url-section">
+<h5>🌐 Custom GitLab Instance (Optional)</h5>
+<div class="token-field-group">
+<label for="gitlab-url">GitLab API Base URL</label>
+<x-nctextfield id="gitlab-url" modelvalue="https://git.example/api/v4" placeholder="https://gitlab.com/api/v4">
+<slot-trailing-button-icon>
+<x-web size="20">
+</x-web>
+</slot-trailing-button-icon>
+</x-nctextfield>
+<p class="field-hint">
+<x-informationoutline size="16">
+</x-informationoutline>Leave empty to use GitLab.com. For self-hosted GitLab instances, enter your API URL</p>
+</div>
+<div class="token-actions">
+<span class="saved-indicator">
+<x-checkcircle size="20">
+</x-checkcircle>URL saved</span>
+</div>
+</div>
+</div>
+</slot-default>
+<slot-icon>
+<x-gitlab size="20">
+</x-gitlab>
+</slot-icon>
+</x-settingscard>
+</slot-default>
+</x-settingssection>"
+`;
+
+exports[`api token configuration renders with test results 1`] = `
+"<x-settingssection id="api-tokens" name="t:API Token Configuration" description="t:Configure API tokens for external service integrations" loading="false" loadingmessage="t:Loading API tokens...">
+<slot-default>
+<div class="section-description-full">
+<p class="main-description">API tokens enable<strong>discovering, importing, and publishing OpenRegister configurations</strong>to GitHub and GitLab repositories. With the appropriate token scopes, you can search for configurations published by the community, import them into your system, and publish your own configurations back to repositories for sharing and version control.</p>
+<p class="main-description info-note">
+<strong>🔐 Note:</strong>Tokens are<strong>optional</strong>for basic workflows. You can import configurations manually using direct URLs without tokens. However, tokens with appropriate scopes are required for:<strong>(1)</strong>Discovery/search features, and<strong>(2)</strong>Publishing configurations to repositories.</p>
+</div>
+<x-settingscard title="t:Required Token Scopes" icon="📋" collapsible="true" defaultcollapsed="true">
+<slot-default>
+<div class="scopes-info">
+<div class="scope-item">
+<div class="scope-header">
+<x-github size="20">
+</x-github>
+<strong>GitHub Token</strong>
+</div>
+<p>
+<strong>Required Scope:</strong>
+<code>repo</code>
+</p>
+<p class="scope-description">
+<strong>✅ Discover &amp; Import:</strong>Search and read configuration files from repositories<br>
+<strong>✅ Publish &amp; Export:</strong>Write and update configuration files to repositories</p>
+<p class="scope-note">The<code>repo</code>scope provides full repository access (read and write), enabling both discovery and publishing workflows.</p>
+<a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer" class="external-link">Create GitHub Personal Access Token →</a>
+</div>
+<div class="scope-item">
+<div class="scope-header">
+<x-gitlab size="20">
+</x-gitlab>
+<strong>GitLab Token</strong>
+</div>
+<p>
+<strong>Required Scopes:</strong>
+</p>
+<ul class="scope-list">
+<li>
+<code>read_api</code>- For<strong>discovery only</strong>(read-only access)</li>
+<li>
+<code>api</code>- For<strong>discovery AND publishing</strong>(full read/write access)</li>
+</ul>
+<p class="scope-description">
+<strong>🔍 Discovery Only:</strong>Use<code>read_api</code>to search and import configurations<br>
+<strong>📤 Discovery + Publishing:</strong>Use<code>api</code>to also export and update configurations</p>
+<p class="scope-note">If you plan to publish configurations back to GitLab, select the<code>api</code>scope when creating your token.</p>
+<a href="https://gitlab.com/-/user_settings/personal_access_tokens" target="_blank" rel="noopener noreferrer" class="external-link">Create GitLab Personal Access Token →</a>
+</div>
+<div class="documentation-link">
+<x-informationoutline size="20">
+</x-informationoutline>
+<a href="https://docs.openregister.nl/user-guide/configuration/api-tokens" target="_blank" rel="noopener noreferrer">View complete documentation on obtaining and configuring API tokens</a>
+</div>
+</div>
+</slot-default>
+</x-settingscard>
+<x-settingscard title="t:GitHub Personal Access Token" icon="🔐" collapsible="false">
+<slot-default>
+<div class="token-config">
+<div class="token-field-group">
+<label for="github-token">GitHub Token</label>
+<div class="token-input-row">
+<x-ncpasswordfield id="github-token" modelvalue="ghp_saved" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+<slot-trailing-button-icon>
+<x-github size="20">
+</x-github>
+</slot-trailing-button-icon>
+</x-ncpasswordfield>
+<div class="token-actions">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Save Token</slot-default>
+<slot-icon>
+<x-contentsave size="20">
+</x-contentsave>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="secondary" disabled="false">
+<slot-default>Test Token</slot-default>
+<slot-icon>
+<x-testtube size="20">
+</x-testtube>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="error" disabled="false">
+<slot-default>Clear Token</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+<span class="test-result-success">
+<x-checkcircle size="20">
+</x-checkcircle>GitHub fine</span>
+</div>
+</div>
+<p class="field-hint">
+<x-lockoutline size="16">
+</x-lockoutline>Optional: Required for discovering and publishing configurations to/from GitHub</p>
+</div>
+</div>
+</slot-default>
+<slot-icon>
+<x-github size="20">
+</x-github>
+</slot-icon>
+</x-settingscard>
+<x-settingscard title="t:GitLab Personal Access Token" icon="🔐" collapsible="false">
+<slot-default>
+<div class="token-config">
+<div class="token-field-group">
+<label for="gitlab-token">GitLab Token</label>
+<div class="token-input-row">
+<x-ncpasswordfield id="gitlab-token" modelvalue="glpat_saved" placeholder="glpat-xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+<slot-trailing-button-icon>
+<x-gitlab size="20">
+</x-gitlab>
+</slot-trailing-button-icon>
+</x-ncpasswordfield>
+<div class="token-actions">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Save Token</slot-default>
+<slot-icon>
+<x-contentsave size="20">
+</x-contentsave>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="secondary" disabled="false">
+<slot-default>Test Token</slot-default>
+<slot-icon>
+<x-testtube size="20">
+</x-testtube>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="error" disabled="false">
+<slot-default>Clear Token</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+<span class="test-result-error">
+<x-alertcircle size="20">
+</x-alertcircle>GitLab refused</span>
+</div>
+</div>
+<p class="field-hint">
+<x-lockoutline size="16">
+</x-lockoutline>Optional: Use<code>read_api</code>for discovery, or<code>api</code>for discovery + publishing</p>
+</div>
+<div class="gitlab-url-section">
+<h5>🌐 Custom GitLab Instance (Optional)</h5>
+<div class="token-field-group">
+<label for="gitlab-url">GitLab API Base URL</label>
+<x-nctextfield id="gitlab-url" modelvalue="https://git.example/api/v4" placeholder="https://gitlab.com/api/v4">
+<slot-trailing-button-icon>
+<x-web size="20">
+</x-web>
+</slot-trailing-button-icon>
+</x-nctextfield>
+<p class="field-hint">
+<x-informationoutline size="16">
+</x-informationoutline>Leave empty to use GitLab.com. For self-hosted GitLab instances, enter your API URL</p>
+</div>
+<div class="token-actions">
+<span class="saved-indicator">
+<x-checkcircle size="20">
+</x-checkcircle>URL saved</span>
+</div>
+</div>
+</div>
+</slot-default>
+<slot-icon>
+<x-gitlab size="20">
+</x-gitlab>
+</slot-icon>
+</x-settingscard>
+<div class="save-message success">Saved</div>
+</slot-default>
+</x-settingssection>"
+`;
+
+exports[`api token configuration renders with the opposite test results 1`] = `
+"<x-settingssection id="api-tokens" name="t:API Token Configuration" description="t:Configure API tokens for external service integrations" loading="false" loadingmessage="t:Loading API tokens...">
+<slot-default>
+<div class="section-description-full">
+<p class="main-description">API tokens enable<strong>discovering, importing, and publishing OpenRegister configurations</strong>to GitHub and GitLab repositories. With the appropriate token scopes, you can search for configurations published by the community, import them into your system, and publish your own configurations back to repositories for sharing and version control.</p>
+<p class="main-description info-note">
+<strong>🔐 Note:</strong>Tokens are<strong>optional</strong>for basic workflows. You can import configurations manually using direct URLs without tokens. However, tokens with appropriate scopes are required for:<strong>(1)</strong>Discovery/search features, and<strong>(2)</strong>Publishing configurations to repositories.</p>
+</div>
+<x-settingscard title="t:Required Token Scopes" icon="📋" collapsible="true" defaultcollapsed="true">
+<slot-default>
+<div class="scopes-info">
+<div class="scope-item">
+<div class="scope-header">
+<x-github size="20">
+</x-github>
+<strong>GitHub Token</strong>
+</div>
+<p>
+<strong>Required Scope:</strong>
+<code>repo</code>
+</p>
+<p class="scope-description">
+<strong>✅ Discover &amp; Import:</strong>Search and read configuration files from repositories<br>
+<strong>✅ Publish &amp; Export:</strong>Write and update configuration files to repositories</p>
+<p class="scope-note">The<code>repo</code>scope provides full repository access (read and write), enabling both discovery and publishing workflows.</p>
+<a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer" class="external-link">Create GitHub Personal Access Token →</a>
+</div>
+<div class="scope-item">
+<div class="scope-header">
+<x-gitlab size="20">
+</x-gitlab>
+<strong>GitLab Token</strong>
+</div>
+<p>
+<strong>Required Scopes:</strong>
+</p>
+<ul class="scope-list">
+<li>
+<code>read_api</code>- For<strong>discovery only</strong>(read-only access)</li>
+<li>
+<code>api</code>- For<strong>discovery AND publishing</strong>(full read/write access)</li>
+</ul>
+<p class="scope-description">
+<strong>🔍 Discovery Only:</strong>Use<code>read_api</code>to search and import configurations<br>
+<strong>📤 Discovery + Publishing:</strong>Use<code>api</code>to also export and update configurations</p>
+<p class="scope-note">If you plan to publish configurations back to GitLab, select the<code>api</code>scope when creating your token.</p>
+<a href="https://gitlab.com/-/user_settings/personal_access_tokens" target="_blank" rel="noopener noreferrer" class="external-link">Create GitLab Personal Access Token →</a>
+</div>
+<div class="documentation-link">
+<x-informationoutline size="20">
+</x-informationoutline>
+<a href="https://docs.openregister.nl/user-guide/configuration/api-tokens" target="_blank" rel="noopener noreferrer">View complete documentation on obtaining and configuring API tokens</a>
+</div>
+</div>
+</slot-default>
+</x-settingscard>
+<x-settingscard title="t:GitHub Personal Access Token" icon="🔐" collapsible="false">
+<slot-default>
+<div class="token-config">
+<div class="token-field-group">
+<label for="github-token">GitHub Token</label>
+<div class="token-input-row">
+<x-ncpasswordfield id="github-token" modelvalue="ghp_saved" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+<slot-trailing-button-icon>
+<x-github size="20">
+</x-github>
+</slot-trailing-button-icon>
+</x-ncpasswordfield>
+<div class="token-actions">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Save Token</slot-default>
+<slot-icon>
+<x-contentsave size="20">
+</x-contentsave>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="secondary" disabled="false">
+<slot-default>Test Token</slot-default>
+<slot-icon>
+<x-testtube size="20">
+</x-testtube>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="error" disabled="false">
+<slot-default>Clear Token</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+<span class="test-result-error">
+<x-alertcircle size="20">
+</x-alertcircle>GitHub refused</span>
+</div>
+</div>
+<p class="field-hint">
+<x-lockoutline size="16">
+</x-lockoutline>Optional: Required for discovering and publishing configurations to/from GitHub</p>
+</div>
+</div>
+</slot-default>
+<slot-icon>
+<x-github size="20">
+</x-github>
+</slot-icon>
+</x-settingscard>
+<x-settingscard title="t:GitLab Personal Access Token" icon="🔐" collapsible="false">
+<slot-default>
+<div class="token-config">
+<div class="token-field-group">
+<label for="gitlab-token">GitLab Token</label>
+<div class="token-input-row">
+<x-ncpasswordfield id="gitlab-token" modelvalue="glpat_saved" placeholder="glpat-xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+<slot-trailing-button-icon>
+<x-gitlab size="20">
+</x-gitlab>
+</slot-trailing-button-icon>
+</x-ncpasswordfield>
+<div class="token-actions">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Save Token</slot-default>
+<slot-icon>
+<x-contentsave size="20">
+</x-contentsave>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="secondary" disabled="false">
+<slot-default>Test Token</slot-default>
+<slot-icon>
+<x-testtube size="20">
+</x-testtube>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="error" disabled="false">
+<slot-default>Clear Token</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+<span class="test-result-success">
+<x-checkcircle size="20">
+</x-checkcircle>GitLab fine</span>
+</div>
+</div>
+<p class="field-hint">
+<x-lockoutline size="16">
+</x-lockoutline>Optional: Use<code>read_api</code>for discovery, or<code>api</code>for discovery + publishing</p>
+</div>
+<div class="gitlab-url-section">
+<h5>🌐 Custom GitLab Instance (Optional)</h5>
+<div class="token-field-group">
+<label for="gitlab-url">GitLab API Base URL</label>
+<x-nctextfield id="gitlab-url" modelvalue="https://git.example/api/v4" placeholder="https://gitlab.com/api/v4">
+<slot-trailing-button-icon>
+<x-web size="20">
+</x-web>
+</slot-trailing-button-icon>
+</x-nctextfield>
+<p class="field-hint">
+<x-informationoutline size="16">
+</x-informationoutline>Leave empty to use GitLab.com. For self-hosted GitLab instances, enter your API URL</p>
+</div>
+<div class="token-actions">
+<span class="saved-indicator">
+<x-checkcircle size="20">
+</x-checkcircle>URL saved</span>
+</div>
+</div>
+</div>
+</slot-default>
+<slot-icon>
+<x-gitlab size="20">
+</x-gitlab>
+</slot-icon>
+</x-settingscard>
+</slot-default>
+</x-settingssection>"
+`;
+
+exports[`api token configuration renders without tokens 1`] = `
+"<x-settingssection id="api-tokens" name="t:API Token Configuration" description="t:Configure API tokens for external service integrations" loading="false" loadingmessage="t:Loading API tokens...">
+<slot-default>
+<div class="section-description-full">
+<p class="main-description">API tokens enable<strong>discovering, importing, and publishing OpenRegister configurations</strong>to GitHub and GitLab repositories. With the appropriate token scopes, you can search for configurations published by the community, import them into your system, and publish your own configurations back to repositories for sharing and version control.</p>
+<p class="main-description info-note">
+<strong>🔐 Note:</strong>Tokens are<strong>optional</strong>for basic workflows. You can import configurations manually using direct URLs without tokens. However, tokens with appropriate scopes are required for:<strong>(1)</strong>Discovery/search features, and<strong>(2)</strong>Publishing configurations to repositories.</p>
+</div>
+<x-settingscard title="t:Required Token Scopes" icon="📋" collapsible="true" defaultcollapsed="true">
+<slot-default>
+<div class="scopes-info">
+<div class="scope-item">
+<div class="scope-header">
+<x-github size="20">
+</x-github>
+<strong>GitHub Token</strong>
+</div>
+<p>
+<strong>Required Scope:</strong>
+<code>repo</code>
+</p>
+<p class="scope-description">
+<strong>✅ Discover &amp; Import:</strong>Search and read configuration files from repositories<br>
+<strong>✅ Publish &amp; Export:</strong>Write and update configuration files to repositories</p>
+<p class="scope-note">The<code>repo</code>scope provides full repository access (read and write), enabling both discovery and publishing workflows.</p>
+<a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer" class="external-link">Create GitHub Personal Access Token →</a>
+</div>
+<div class="scope-item">
+<div class="scope-header">
+<x-gitlab size="20">
+</x-gitlab>
+<strong>GitLab Token</strong>
+</div>
+<p>
+<strong>Required Scopes:</strong>
+</p>
+<ul class="scope-list">
+<li>
+<code>read_api</code>- For<strong>discovery only</strong>(read-only access)</li>
+<li>
+<code>api</code>- For<strong>discovery AND publishing</strong>(full read/write access)</li>
+</ul>
+<p class="scope-description">
+<strong>🔍 Discovery Only:</strong>Use<code>read_api</code>to search and import configurations<br>
+<strong>📤 Discovery + Publishing:</strong>Use<code>api</code>to also export and update configurations</p>
+<p class="scope-note">If you plan to publish configurations back to GitLab, select the<code>api</code>scope when creating your token.</p>
+<a href="https://gitlab.com/-/user_settings/personal_access_tokens" target="_blank" rel="noopener noreferrer" class="external-link">Create GitLab Personal Access Token →</a>
+</div>
+<div class="documentation-link">
+<x-informationoutline size="20">
+</x-informationoutline>
+<a href="https://docs.openregister.nl/user-guide/configuration/api-tokens" target="_blank" rel="noopener noreferrer">View complete documentation on obtaining and configuring API tokens</a>
+</div>
+</div>
+</slot-default>
+</x-settingscard>
+<x-settingscard title="t:GitHub Personal Access Token" icon="🔐" collapsible="false">
+<slot-default>
+<div class="token-config">
+<div class="token-field-group">
+<label for="github-token">GitHub Token</label>
+<div class="token-input-row">
+<x-ncpasswordfield id="github-token" modelvalue="" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+<slot-trailing-button-icon>
+<x-github size="20">
+</x-github>
+</slot-trailing-button-icon>
+</x-ncpasswordfield>
+<div class="token-actions">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Save Token</slot-default>
+<slot-icon>
+<x-contentsave size="20">
+</x-contentsave>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="secondary" disabled="true">
+<slot-default>Test Token</slot-default>
+<slot-icon>
+<x-testtube size="20">
+</x-testtube>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="error" disabled="true">
+<slot-default>Clear Token</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+<p class="field-hint">
+<x-lockoutline size="16">
+</x-lockoutline>Optional: Required for discovering and publishing configurations to/from GitHub</p>
+</div>
+</div>
+</slot-default>
+<slot-icon>
+<x-github size="20">
+</x-github>
+</slot-icon>
+</x-settingscard>
+<x-settingscard title="t:GitLab Personal Access Token" icon="🔐" collapsible="false">
+<slot-default>
+<div class="token-config">
+<div class="token-field-group">
+<label for="gitlab-token">GitLab Token</label>
+<div class="token-input-row">
+<x-ncpasswordfield id="gitlab-token" modelvalue="" placeholder="glpat-xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+<slot-trailing-button-icon>
+<x-gitlab size="20">
+</x-gitlab>
+</slot-trailing-button-icon>
+</x-ncpasswordfield>
+<div class="token-actions">
+<x-ncbutton variant="primary" disabled="true">
+<slot-default>Save Token</slot-default>
+<slot-icon>
+<x-contentsave size="20">
+</x-contentsave>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="secondary" disabled="true">
+<slot-default>Test Token</slot-default>
+<slot-icon>
+<x-testtube size="20">
+</x-testtube>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton variant="error" disabled="true">
+<slot-default>Clear Token</slot-default>
+<slot-icon>
+<x-delete size="20">
+</x-delete>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+<p class="field-hint">
+<x-lockoutline size="16">
+</x-lockoutline>Optional: Use<code>read_api</code>for discovery, or<code>api</code>for discovery + publishing</p>
+</div>
+<div class="gitlab-url-section">
+<h5>🌐 Custom GitLab Instance (Optional)</h5>
+<div class="token-field-group">
+<label for="gitlab-url">GitLab API Base URL</label>
+<x-nctextfield id="gitlab-url" modelvalue="" placeholder="https://gitlab.com/api/v4">
+<slot-trailing-button-icon>
+<x-web size="20">
+</x-web>
+</slot-trailing-button-icon>
+</x-nctextfield>
+<p class="field-hint">
+<x-informationoutline size="16">
+</x-informationoutline>Leave empty to use GitLab.com. For self-hosted GitLab instances, enter your API URL</p>
+</div>
+<div class="token-actions">
+</div>
+</div>
+</div>
+</slot-default>
+<slot-icon>
+<x-gitlab size="20">
+</x-gitlab>
+</slot-icon>
+</x-settingscard>
+</slot-default>
+</x-settingssection>"
+`;

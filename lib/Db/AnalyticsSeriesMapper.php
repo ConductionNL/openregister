@@ -24,9 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -34,7 +32,9 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<AnalyticsSeries>
  */
-class AnalyticsSeriesMapper extends QBMapper {
+class AnalyticsSeriesMapper extends QBMapper implements AnalyticsSeriesMapperInterface {
+
+	use SelectByColumnTrait;
 	/**
 	 * Constructor.
 	 *
@@ -52,38 +52,13 @@ class AnalyticsSeriesMapper extends QBMapper {
 	 * @return AnalyticsSeries|null The series, or null when unknown.
 	 */
 	public function findByKey(string $seriesKey): ?AnalyticsSeries {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('series_key', $qb->createNamedParameter($seriesKey)));
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'series_key', value: $seriesKey));
 
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$found = $this->findOneOrNull(query: $qb);
+		if ($found instanceof AnalyticsSeries) {
+			return $found;
 		}
+
+		return null;
 	}//end findByKey()
-
-	/**
-	 * Find all series scoped to a register (and optionally a schema).
-	 *
-	 * @param int $registerId The register id.
-	 * @param int|null $schemaId Optional schema id filter.
-	 *
-	 * @return AnalyticsSeries[] Matching series.
-	 */
-	public function findByScope(int $registerId, ?int $schemaId = null): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('register_id', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)));
-
-		if ($schemaId !== null) {
-			$qb->andWhere($qb->expr()->eq('schema_id', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)));
-		}
-
-		$qb->orderBy('updated_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByScope()
 }//end class

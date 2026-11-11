@@ -1,0 +1,200 @@
+{
+    "known uuid and slug": {
+        "uuids": [
+            "a",
+            "b"
+        ],
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = %\"5\"%, 2",
+            "#1 expr.like(all_of, :p1, NULL)",
+            "#1 param :p2 = %\"u\"%, 2",
+            "#1 expr.like(all_of, :p2, NULL)",
+            "#1 param :p3 = %\"s\"%, 2",
+            "#1 expr.like(all_of, :p3, NULL)",
+            "#1 param :p4 = %\"5\"%, 2",
+            "#1 expr.like(one_of, :p4, NULL)",
+            "#1 param :p5 = %\"u\"%, 2",
+            "#1 expr.like(one_of, :p5, NULL)",
+            "#1 param :p6 = %\"s\"%, 2",
+            "#1 expr.like(one_of, :p6, NULL)",
+            "#1 param :p7 = %\"5\"%, 2",
+            "#1 expr.like(any_of, :p7, NULL)",
+            "#1 param :p8 = %\"u\"%, 2",
+            "#1 expr.like(any_of, :p8, NULL)",
+            "#1 param :p9 = %\"s\"%, 2",
+            "#1 expr.like(any_of, :p9, NULL)",
+            "#1 expr.orX(like(all_of, :p1, NULL), like(all_of, :p2, NULL), like(all_of, :p3, NULL), like(one_of, :p4, NULL), like(one_of, :p5, NULL), like(one_of, :p6, NULL), like(any_of, :p7, NULL), like(any_of, :p8, NULL), like(any_of, :p9, NULL))",
+            "#1 where(orX(like(all_of, :p1, NULL), like(all_of, :p2, NULL), like(all_of, :p3, NULL), like(one_of, :p4, NULL), like(one_of, :p5, NULL), like(one_of, :p6, NULL), like(any_of, :p7, NULL), like(any_of, :p8, NULL), like(any_of, :p9, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "known uuid": {
+        "uuids": [
+            "a",
+            "b"
+        ],
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = %\"5\"%, 2",
+            "#1 expr.like(all_of, :p1, NULL)",
+            "#1 param :p2 = %\"u\"%, 2",
+            "#1 expr.like(all_of, :p2, NULL)",
+            "#1 param :p3 = %\"5\"%, 2",
+            "#1 expr.like(one_of, :p3, NULL)",
+            "#1 param :p4 = %\"u\"%, 2",
+            "#1 expr.like(one_of, :p4, NULL)",
+            "#1 param :p5 = %\"5\"%, 2",
+            "#1 expr.like(any_of, :p5, NULL)",
+            "#1 param :p6 = %\"u\"%, 2",
+            "#1 expr.like(any_of, :p6, NULL)",
+            "#1 expr.orX(like(all_of, :p1, NULL), like(all_of, :p2, NULL), like(one_of, :p3, NULL), like(one_of, :p4, NULL), like(any_of, :p5, NULL), like(any_of, :p6, NULL))",
+            "#1 where(orX(like(all_of, :p1, NULL), like(all_of, :p2, NULL), like(one_of, :p3, NULL), like(one_of, :p4, NULL), like(any_of, :p5, NULL), like(any_of, :p6, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "known slug": {
+        "uuids": [
+            "a",
+            "b"
+        ],
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = %\"5\"%, 2",
+            "#1 expr.like(all_of, :p1, NULL)",
+            "#1 param :p2 = %\"s\"%, 2",
+            "#1 expr.like(all_of, :p2, NULL)",
+            "#1 param :p3 = %\"5\"%, 2",
+            "#1 expr.like(one_of, :p3, NULL)",
+            "#1 param :p4 = %\"s\"%, 2",
+            "#1 expr.like(one_of, :p4, NULL)",
+            "#1 param :p5 = %\"5\"%, 2",
+            "#1 expr.like(any_of, :p5, NULL)",
+            "#1 param :p6 = %\"s\"%, 2",
+            "#1 expr.like(any_of, :p6, NULL)",
+            "#1 expr.orX(like(all_of, :p1, NULL), like(all_of, :p2, NULL), like(one_of, :p3, NULL), like(one_of, :p4, NULL), like(any_of, :p5, NULL), like(any_of, :p6, NULL))",
+            "#1 where(orX(like(all_of, :p1, NULL), like(all_of, :p2, NULL), like(one_of, :p3, NULL), like(one_of, :p4, NULL), like(any_of, :p5, NULL), like(any_of, :p6, NULL)))",
+            "#1 executeQuery()"
+        ]
+    },
+    "known empty": {
+        "uuids": [],
+        "queries": [
+            "#1 select(uuid)",
+            "#1 from(openregister_schemas, NULL)"
+        ]
+    },
+    "looked up": {
+        "uuids": [
+            "a",
+            "b"
+        ],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = seven, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = seven, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()",
+            "#2 select(uuid)",
+            "#2 from(openregister_schemas, NULL)",
+            "#2 param :p3 = %\"7\"%, 2",
+            "#2 expr.like(all_of, :p3, NULL)",
+            "#2 param :p4 = %\"uuid-7\"%, 2",
+            "#2 expr.like(all_of, :p4, NULL)",
+            "#2 param :p5 = %\"seven\"%, 2",
+            "#2 expr.like(all_of, :p5, NULL)",
+            "#2 param :p6 = %\"7\"%, 2",
+            "#2 expr.like(one_of, :p6, NULL)",
+            "#2 param :p7 = %\"uuid-7\"%, 2",
+            "#2 expr.like(one_of, :p7, NULL)",
+            "#2 param :p8 = %\"seven\"%, 2",
+            "#2 expr.like(one_of, :p8, NULL)",
+            "#2 param :p9 = %\"7\"%, 2",
+            "#2 expr.like(any_of, :p9, NULL)",
+            "#2 param :p10 = %\"uuid-7\"%, 2",
+            "#2 expr.like(any_of, :p10, NULL)",
+            "#2 param :p11 = %\"seven\"%, 2",
+            "#2 expr.like(any_of, :p11, NULL)",
+            "#2 expr.orX(like(all_of, :p3, NULL), like(all_of, :p4, NULL), like(all_of, :p5, NULL), like(one_of, :p6, NULL), like(one_of, :p7, NULL), like(one_of, :p8, NULL), like(any_of, :p9, NULL), like(any_of, :p10, NULL), like(any_of, :p11, NULL))",
+            "#2 where(orX(like(all_of, :p3, NULL), like(all_of, :p4, NULL), like(all_of, :p5, NULL), like(one_of, :p6, NULL), like(one_of, :p7, NULL), like(one_of, :p8, NULL), like(any_of, :p9, NULL), like(any_of, :p10, NULL), like(any_of, :p11, NULL)))",
+            "#2 executeQuery()"
+        ]
+    },
+    "lookup finds nothing": {
+        "uuids": [],
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 param :p1 = gone, 2",
+            "#1 expr.eq(uuid, :p1, NULL)",
+            "#1 func.lower(slug)",
+            "#1 param :p2 = gone, 2",
+            "#1 expr.eq(lower(slug), :p2, NULL)",
+            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
+            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#1 addOrderBy(id, ASC)",
+            "#1 expr.isNull(organisation)",
+            "#1 andWhere(isNull(organisation))",
+            "#1 setMaxResults(2)",
+            "#1 executeQuery()"
+        ]
+    },
+    "all references": {
+        "map": {
+            "1": [
+                "ext-4",
+                "ext-5"
+            ],
+            "2": [
+                "ext-4"
+            ],
+            "3": [
+                "ext-4",
+                "ext-8"
+            ]
+        },
+        "queries": [
+            "#1 select(id, uuid, slug, all_of, one_of, any_of)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 expr.isNotNull(all_of)",
+            "#1 expr.isNotNull(one_of)",
+            "#1 expr.isNotNull(any_of)",
+            "#1 expr.orX(isNotNull(all_of), isNotNull(one_of), isNotNull(any_of))",
+            "#1 where(orX(isNotNull(all_of), isNotNull(one_of), isNotNull(any_of)))",
+            "#1 executeQuery()",
+            "#2 select(id, uuid, slug)",
+            "#2 from(openregister_schemas, NULL)",
+            "#2 executeQuery()"
+        ]
+    },
+    "all nothing": {
+        "map": [],
+        "queries": [
+            "#1 select(id, uuid, slug, all_of, one_of, any_of)",
+            "#1 from(openregister_schemas, NULL)",
+            "#1 expr.isNotNull(all_of)",
+            "#1 expr.isNotNull(one_of)",
+            "#1 expr.isNotNull(any_of)",
+            "#1 expr.orX(isNotNull(all_of), isNotNull(one_of), isNotNull(any_of))",
+            "#1 where(orX(isNotNull(all_of), isNotNull(one_of), isNotNull(any_of)))",
+            "#1 executeQuery()",
+            "#2 select(id, uuid, slug)",
+            "#2 from(openregister_schemas, NULL)",
+            "#2 executeQuery()"
+        ]
+    }
+}

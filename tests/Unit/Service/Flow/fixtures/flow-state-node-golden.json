@@ -1,0 +1,1010 @@
+{
+    "validate: no operation": "InvalidArgumentException: operation must be one of: get, set, forget, claim, release",
+    "validate: unknown operation": "InvalidArgumentException: operation must be one of: get, set, forget, claim, release",
+    "validate: get without key": "InvalidArgumentException: key is required",
+    "validate: get blank key": "InvalidArgumentException: key is required",
+    "validate: get ok": "ok",
+    "validate: set ok": "ok",
+    "validate: forget without key": "InvalidArgumentException: key is required",
+    "validate: claim without slots": "InvalidArgumentException: slots is required for claim and release",
+    "validate: claim blank slots": "InvalidArgumentException: slots is required for claim and release",
+    "validate: claim no capacity": "InvalidArgumentException: capacity must be at least 1 for claim",
+    "validate: claim zero capacity": "InvalidArgumentException: capacity must be at least 1 for claim",
+    "validate: claim ok": "ok",
+    "validate: claim ignores key": "ok",
+    "validate: release without slots": "InvalidArgumentException: slots is required for claim and release",
+    "validate: release ok no cap": "ok",
+    "execute: no state handle": {
+        "error": "InvalidArgumentException: This run has no flow state — flow state needs a flow-scoped run."
+    },
+    "execute: get missing default null": {
+        "out": [
+            {
+                "json": {
+                    "a": 1,
+                    "k": null
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": [],
+        "written": []
+    },
+    "execute: get with default and as": {
+        "out": [
+            {
+                "json": {
+                    "out": 7
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": [],
+        "written": []
+    },
+    "execute: get present": {
+        "out": [
+            {
+                "json": {
+                    "k": {
+                        "x": 1
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            },
+            {
+                "json": {
+                    "b": 2,
+                    "k": {
+                        "x": 1
+                    }
+                },
+                "binary": {
+                    "f": {
+                        "data": "x"
+                    }
+                },
+                "pairedItem": {
+                    "item": 1
+                }
+            }
+        ],
+        "state": {
+            "k": {
+                "x": 1
+            }
+        },
+        "written": []
+    },
+    "execute: set literal": {
+        "out": [
+            {
+                "json": [],
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "k": 5
+        },
+        "written": [
+            "k"
+        ]
+    },
+    "execute: set from item": {
+        "out": [
+            {
+                "json": {
+                    "n": 9
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "k": 9
+        },
+        "written": [
+            "k"
+        ]
+    },
+    "execute: set from missing field": {
+        "out": [
+            {
+                "json": [],
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "k": null
+        },
+        "written": [
+            "k"
+        ]
+    },
+    "execute: set no value": {
+        "out": [
+            {
+                "json": [],
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "k": null
+        },
+        "written": [
+            "k"
+        ]
+    },
+    "execute: forget": {
+        "out": [
+            {
+                "json": [],
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "j": 2
+        },
+        "written": []
+    },
+    "execute: unknown op passes through": {
+        "out": [
+            {
+                "json": {
+                    "a": 1
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": [],
+        "written": []
+    },
+    "execute: no items": {
+        "out": [],
+        "state": [],
+        "written": []
+    },
+    "execute: claim empty pool": {
+        "out": [
+            {
+                "json": {
+                    "holder": "h1",
+                    "claimed": true,
+                    "slot": 1
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "h1",
+                    "since": "<now>"
+                },
+                "2": null,
+                "3": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim no holder": {
+        "out": [
+            {
+                "json": {
+                    "claimed": true,
+                    "slot": 1
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": null,
+                    "since": "<now>"
+                },
+                "2": null,
+                "3": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim custom holder field": {
+        "out": [
+            {
+                "json": {
+                    "who": "w1",
+                    "holder": "ignored",
+                    "claimed": true,
+                    "slot": 1
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "w1",
+                    "since": "<now>"
+                },
+                "2": null,
+                "3": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim with record": {
+        "out": [
+            {
+                "json": {
+                    "holder": "h1",
+                    "stage": "build",
+                    "since": "x",
+                    "claimed": true,
+                    "slot": 1
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "h1",
+                    "since": "<now>",
+                    "stage": "build",
+                    "repo": null,
+                    "3": null
+                },
+                "2": null,
+                "3": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim record scalar": {
+        "out": [
+            {
+                "json": {
+                    "holder": "h1",
+                    "stage": "s",
+                    "claimed": true,
+                    "slot": 1
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "h1",
+                    "since": "<now>",
+                    "stage": "s"
+                },
+                "2": null,
+                "3": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim skips taken": {
+        "out": [
+            {
+                "json": {
+                    "holder": "h",
+                    "claimed": true,
+                    "slot": 2
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "a",
+                    "since": "2000-01-01T00:00:00+00:00"
+                },
+                "2": {
+                    "holder": "h",
+                    "since": "<now>"
+                },
+                "3": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim full": {
+        "out": [
+            {
+                "json": {
+                    "holder": "h",
+                    "claimed": false,
+                    "slot": null
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "a",
+                    "since": null
+                },
+                "2": {
+                    "holder": null,
+                    "since": null
+                },
+                "3": {
+                    "holder": "c"
+                }
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim two items fill": {
+        "out": [
+            {
+                "json": {
+                    "holder": "x",
+                    "claimed": true,
+                    "slot": 2
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            },
+            {
+                "json": {
+                    "holder": "y",
+                    "claimed": true,
+                    "slot": 3
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 1
+                }
+            },
+            {
+                "json": {
+                    "holder": "z",
+                    "claimed": false,
+                    "slot": null
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 2
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "a",
+                    "since": null
+                },
+                "2": {
+                    "holder": "x",
+                    "since": "<now>"
+                },
+                "3": {
+                    "holder": "y",
+                    "since": "<now>"
+                }
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim lease expired": {
+        "out": [
+            {
+                "json": {
+                    "holder": "h",
+                    "claimed": true,
+                    "slot": 1
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "h",
+                    "since": "<now>"
+                },
+                "2": {
+                    "holder": "b",
+                    "since": null
+                },
+                "3": {
+                    "holder": null,
+                    "since": null
+                }
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim lease not expired": {
+        "out": [
+            {
+                "json": {
+                    "holder": "h",
+                    "claimed": false,
+                    "slot": null
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "a",
+                    "since": "2999-01-01T00:00:00+00:00"
+                },
+                "2": {
+                    "holder": "b",
+                    "since": null
+                },
+                "3": {
+                    "holder": null,
+                    "since": null
+                }
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim lease no since": {
+        "out": [
+            {
+                "json": {
+                    "holder": "h",
+                    "claimed": false,
+                    "slot": null
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "a"
+                },
+                "2": {
+                    "holder": "b",
+                    "since": ""
+                },
+                "3": {
+                    "holder": "c",
+                    "since": 5
+                }
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim lease garbage since": {
+        "out": [
+            {
+                "json": {
+                    "holder": "h",
+                    "claimed": false,
+                    "slot": null
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "a",
+                    "since": "not a date"
+                },
+                "2": {
+                    "holder": "b",
+                    "since": null
+                },
+                "3": {
+                    "holder": "c",
+                    "since": null
+                }
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim lease zero": {
+        "out": [
+            {
+                "json": {
+                    "holder": "h",
+                    "claimed": false,
+                    "slot": null
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "a",
+                    "since": "2000-01-01T00:00:00+00:00"
+                },
+                "2": {
+                    "holder": "b",
+                    "since": null
+                },
+                "3": {
+                    "holder": "c",
+                    "since": null
+                }
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim keeps over-capacity": {
+        "out": [
+            {
+                "json": {
+                    "holder": "h",
+                    "claimed": true,
+                    "slot": 2
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "a",
+                    "since": null
+                },
+                "2": {
+                    "holder": "h",
+                    "since": "<now>"
+                },
+                "5": {
+                    "holder": "e",
+                    "since": null
+                },
+                "x": {
+                    "holder": null,
+                    "since": null
+                }
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: claim capacity string": {
+        "out": [
+            {
+                "json": {
+                    "holder": "h",
+                    "claimed": true,
+                    "slot": 1
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "h",
+                    "since": "<now>"
+                }
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: release by slot": {
+        "out": [
+            {
+                "json": {
+                    "slot": 1,
+                    "released": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": null,
+                "2": "b"
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: release by custom slot field": {
+        "out": [
+            {
+                "json": {
+                    "s": "2",
+                    "released": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": "a",
+                "2": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: release slot unknown": {
+        "out": [
+            {
+                "json": {
+                    "slot": 9,
+                    "released": false
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": "a"
+            }
+        },
+        "written": []
+    },
+    "execute: release slot unknown holder": {
+        "out": [
+            {
+                "json": {
+                    "slot": 9,
+                    "holder": "b",
+                    "released": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": "a",
+                "2": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: release by holder record": {
+        "out": [
+            {
+                "json": {
+                    "holder": "b",
+                    "released": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "a"
+                },
+                "2": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: release by holder legacy": {
+        "out": [
+            {
+                "json": {
+                    "holder": "b",
+                    "released": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": true,
+                "2": null,
+                "3": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: release by holder int": {
+        "out": [
+            {
+                "json": {
+                    "holder": "7",
+                    "released": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: release holder not held": {
+        "out": [
+            {
+                "json": {
+                    "holder": "z",
+                    "released": false
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": {
+                    "holder": "a"
+                },
+                "2": true,
+                "3": {
+                    "since": "x"
+                }
+            }
+        },
+        "written": []
+    },
+    "execute: release holder custom field": {
+        "out": [
+            {
+                "json": {
+                    "who": "b",
+                    "released": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": "a",
+                "2": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: release nothing named": {
+        "out": [
+            {
+                "json": {
+                    "released": false
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": "a"
+            }
+        },
+        "written": []
+    },
+    "execute: release null slot by holder": {
+        "out": [
+            {
+                "json": {
+                    "slot": null,
+                    "holder": "a",
+                    "released": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": null,
+                "2": "b"
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "execute: release empty pool": {
+        "out": [
+            {
+                "json": {
+                    "slot": 1,
+                    "holder": "a",
+                    "released": false
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "state": [],
+        "written": []
+    },
+    "execute: release first of two matches": {
+        "out": [
+            {
+                "json": {
+                    "holder": "a",
+                    "released": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            },
+            {
+                "json": {
+                    "holder": "a",
+                    "released": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 1
+                }
+            }
+        ],
+        "state": {
+            "pool": {
+                "1": null,
+                "2": null
+            }
+        },
+        "written": [
+            "pool"
+        ]
+    },
+    "configKeys": [
+        "operation",
+        "key",
+        "as",
+        "default",
+        "value",
+        "from",
+        "record",
+        "slots",
+        "capacity",
+        "leaseSeconds",
+        "holder",
+        "slot"
+    ]
+}

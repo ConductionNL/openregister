@@ -25,6 +25,13 @@ errors. The move SHALL write one `moved` audit entry naming both addresses.
 - **THEN** the response is 422 with the missing property and the object is unchanged
 - @e2e exclude {validation, covered by MoveObject unit tests}
 
+#### Scenario: a locked, frozen or archived object is not moved
+
+- **GIVEN** an object that is locked (by anyone, the caller included, or by a run), frozen or archived
+- **WHEN** it is moved, or a migration takes it
+- **THEN** it is refused, names why, and the object stays where it is, unchanged
+- @e2e exclude {state refusal, covered by MoveObject unit tests}
+
 ### Requirement: The old address keeps answering
 
 After a move the old register, schema and id SHALL resolve to the object

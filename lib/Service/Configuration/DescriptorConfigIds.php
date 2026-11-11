@@ -35,48 +35,11 @@ namespace OCA\OpenRegister\Service\Configuration;
 
 /**
  * Maps an OpenRegister descriptor file to the configuration id its import runs under.
+ *
+ * The ids are constants of DescriptorConfigIdsInterface, so the repair steps
+ * outside lib/Service name the interface, not this class.
  */
-final class DescriptorConfigIds {
-
-	/**
-	 * The id the descriptors without a dedicated one share.
-	 */
-	public const SHARED = 'openregister';
-
-	public const DECISION_TABLES = 'openregister.decision-tables';
-
-	public const DISMISSED_PAIR = 'openregister.dismissed-pair';
-
-	public const EDEPOT_TRANSFERS = 'openregister.edepot-transfers';
-
-	public const DESTRUCTION_LISTS = 'openregister.destruction-lists';
-
-	public const MERGE_OPERATION = 'openregister.merge-operation';
-
-	public const TRUST_CONFIGURATION = 'openregister.trust-configuration';
-
-	public const VOCABULARY = 'openregister.vocabulary';
-
-	public const DSAR_CASES = 'openregister.dsar-cases';
-
-	public const DSAR_POLICY_PACKS = 'openregister.dsar-policy-packs';
-
-	/**
-	 * The descriptors that import under an id of their own, by file name.
-	 *
-	 * @var array<string, string>
-	 */
-	public const BY_FILE = [
-		'decision_table_register.json' => self::DECISION_TABLES,
-		'dismissed_pair_register.json' => self::DISMISSED_PAIR,
-		'edepot_transfer_register.json' => self::EDEPOT_TRANSFERS,
-		'destruction_list_register.json' => self::DESTRUCTION_LISTS,
-		'merge_operation_register.json' => self::MERGE_OPERATION,
-		'trust_configuration_register.json' => self::TRUST_CONFIGURATION,
-		'vocabulary_register.json' => self::VOCABULARY,
-		'data_subject_request_register.json' => self::DSAR_CASES,
-		'dsar_policy_pack_register.json' => self::DSAR_POLICY_PACKS,
-	];
+final class DescriptorConfigIds implements DescriptorConfigIdsInterface {
 
 	/**
 	 * The configuration id a descriptor of an app is imported under.

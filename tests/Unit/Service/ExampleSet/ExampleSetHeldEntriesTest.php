@@ -6,14 +6,14 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-held-entries-follow-the-declaration/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-held-change-or-preference-follows-its-declaration
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 
 /**
  * A held change proves only the fields it still declares and a refresh puts back what an import undid; a held

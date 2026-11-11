@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectAction;
 
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use Throwable;
 
@@ -44,15 +44,15 @@ use Throwable;
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-register-may-declare-actions-its-schemas-inherit
  */
-class ObjectActionDefinitions {
+class ObjectActionDefinitions implements ObjectActionDefinitionsInterface {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterMapper $registers Loads the register an object lives in.
+	 * @param RegisterMapperInterface $registers Loads the register an object lives in.
 	 */
 	public function __construct(
-		private readonly RegisterMapper $registers,
+		private readonly RegisterMapperInterface $registers,
 	) {
 	}//end __construct()
 
@@ -72,21 +72,6 @@ class ObjectActionDefinitions {
 			registerConfig: $this->registerConfiguration(register: $register)
 		);
 	}//end forSchema()
-
-	/**
-	 * One action of a schema, or null when it declares or inherits none by that key.
-	 *
-	 * @param Schema                   $schema   The schema.
-	 * @param string                   $key      The action key.
-	 * @param Register|int|string|null $register The register, or its id.
-	 *
-	 * @return ObjectActionDefinition|null The definition.
-	 *
-	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-register-may-declare-actions-its-schemas-inherit
-	 */
-	public function find(Schema $schema, string $key, Register|int|string|null $register = null): ?ObjectActionDefinition {
-		return ($this->forSchema(schema: $schema, register: $register)[$key] ?? null);
-	}//end find()
 
 	/**
 	 * Merge register defaults under a schema's own declarations.

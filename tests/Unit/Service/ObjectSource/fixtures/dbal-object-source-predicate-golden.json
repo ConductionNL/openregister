@@ -1,0 +1,212 @@
+{
+    "filters: none": {
+        "sql": "SELECT * FROM t",
+        "params": []
+    },
+    "filters: equality": {
+        "sql": "SELECT * FROM t WHERE (\"status\" = :dcValue1) AND (\"name\" = :dcValue2)",
+        "params": {
+            "dcValue1": "active",
+            "dcValue2": "Ann"
+        }
+    },
+    "filters: not allowlisted": {
+        "sql": "SELECT * FROM t WHERE \"status\" = :dcValue1",
+        "params": {
+            "dcValue1": "x"
+        }
+    },
+    "filters: numeric column name": {
+        "sql": "SELECT * FROM t",
+        "params": []
+    },
+    "filters: filters not a list": {
+        "sql": "SELECT * FROM t",
+        "params": []
+    },
+    "filters: array and object": {
+        "sql": "SELECT * FROM t",
+        "params": []
+    },
+    "filters: like one term": {
+        "sql": "SELECT * FROM t WHERE (LOWER(CAST(\"name\" AS TEXT)) LIKE LOWER(:dcValue1) ESCAPE '\\')",
+        "params": {
+            "dcValue1": "%an%"
+        }
+    },
+    "filters: like several terms": {
+        "sql": "SELECT * FROM t WHERE ((LOWER(CAST(\"name\" AS TEXT)) LIKE LOWER(:dcValue1) ESCAPE '\\' OR LOWER(CAST(\"name\" AS TEXT)) LIKE LOWER(:dcValue2) ESCAPE '\\')) AND (\"status\" = :dcValue3)",
+        "params": {
+            "dcValue1": "%an%",
+            "dcValue2": "%bo%",
+            "dcValue3": "x"
+        }
+    },
+    "filters: like empty": {
+        "sql": "SELECT * FROM t",
+        "params": []
+    },
+    "filters: like plus other key": {
+        "sql": "SELECT * FROM t WHERE (LOWER(CAST(\"name\" AS TEXT)) LIKE LOWER(:dcValue1) ESCAPE '\\')",
+        "params": {
+            "dcValue1": "%a%"
+        }
+    },
+    "filters: search": {
+        "sql": "SELECT * FROM t WHERE (CAST(\"id\" AS TEXT) LIKE :dcValue1 OR CAST(\"name\" AS TEXT) LIKE :dcValue1 OR CAST(\"status\" AS TEXT) LIKE :dcValue1 OR CAST(\"secret\" AS TEXT) LIKE :dcValue1 OR CAST(\"7\" AS TEXT) LIKE :dcValue1)",
+        "params": {
+            "dcValue1": "%ann%"
+        }
+    },
+    "filters: search alias": {
+        "sql": "SELECT * FROM t WHERE (CAST(\"id\" AS TEXT) LIKE :dcValue1 OR CAST(\"name\" AS TEXT) LIKE :dcValue1 OR CAST(\"status\" AS TEXT) LIKE :dcValue1 OR CAST(\"secret\" AS TEXT) LIKE :dcValue1 OR CAST(\"7\" AS TEXT) LIKE :dcValue1)",
+        "params": {
+            "dcValue1": "%bob%"
+        }
+    },
+    "filters: search both": {
+        "sql": "SELECT * FROM t WHERE (\"status\" = :dcValue1) AND ((CAST(\"id\" AS TEXT) LIKE :dcValue2 OR CAST(\"name\" AS TEXT) LIKE :dcValue2 OR CAST(\"status\" AS TEXT) LIKE :dcValue2 OR CAST(\"secret\" AS TEXT) LIKE :dcValue2 OR CAST(\"7\" AS TEXT) LIKE :dcValue2))",
+        "params": {
+            "dcValue1": "s",
+            "dcValue2": "%a%"
+        }
+    },
+    "filters: search empty": {
+        "sql": "SELECT * FROM t",
+        "params": []
+    },
+    "filters: filterable allowlist": {
+        "sql": "SELECT * FROM t WHERE (\"status\" = :dcValue1) AND (\"name\" = :dcValue2) AND ((CAST(\"id\" AS TEXT) LIKE :dcValue3 OR CAST(\"name\" AS TEXT) LIKE :dcValue3 OR CAST(\"status\" AS TEXT) LIKE :dcValue3 OR CAST(\"secret\" AS TEXT) LIKE :dcValue3 OR CAST(\"7\" AS TEXT) LIKE :dcValue3))",
+        "params": {
+            "dcValue1": "x",
+            "dcValue2": "y",
+            "dcValue3": "%a%"
+        }
+    },
+    "filters: filterable empty": {
+        "sql": "SELECT * FROM t WHERE (CAST(\"id\" AS TEXT) LIKE :dcValue1 OR CAST(\"name\" AS TEXT) LIKE :dcValue1 OR CAST(\"status\" AS TEXT) LIKE :dcValue1 OR CAST(\"secret\" AS TEXT) LIKE :dcValue1 OR CAST(\"7\" AS TEXT) LIKE :dcValue1)",
+        "params": {
+            "dcValue1": "%a%"
+        }
+    },
+    "sort: none": {
+        "sql": "SELECT * FROM t",
+        "params": []
+    },
+    "sort: empty": {
+        "sql": "SELECT * FROM t",
+        "params": []
+    },
+    "sort: not a list": {
+        "sql": "SELECT * FROM t",
+        "params": []
+    },
+    "sort: asc and desc": {
+        "sql": "SELECT * FROM t ORDER BY \"name\" ASC, \"status\" DESC, \"id\" ASC",
+        "params": []
+    },
+    "sort: order alias": {
+        "sql": "SELECT * FROM t ORDER BY \"id\" DESC",
+        "params": []
+    },
+    "sort: sort wins": {
+        "sql": "SELECT * FROM t ORDER BY \"name\" DESC",
+        "params": []
+    },
+    "sort: not allowlisted": {
+        "sql": "SELECT * FROM t",
+        "params": []
+    },
+    "read id: single": {
+        "sql": "SELECT * FROM t WHERE \"id\" = :dcValue1",
+        "params": {
+            "dcValue1": "42"
+        }
+    },
+    "write id: single": {
+        "sql": "SELECT * FROM t WHERE \"id\" = :dcValue1",
+        "params": {
+            "dcValue1": "42"
+        }
+    },
+    "read id: single with separator": {
+        "sql": "SELECT * FROM t WHERE \"id\" = :dcValue1",
+        "params": {
+            "dcValue1": "1::2"
+        }
+    },
+    "write id: single with separator": {
+        "sql": "SELECT * FROM t WHERE \"id\" = :dcValue1",
+        "params": {
+            "dcValue1": "1::2"
+        }
+    },
+    "read id: composite": {
+        "sql": "SELECT * FROM t WHERE (\"tenant_id\" = :dcValue1) AND (\"code\" = :dcValue2)",
+        "params": {
+            "dcValue1": "1",
+            "dcValue2": "A"
+        }
+    },
+    "write id: composite": {
+        "sql": "SELECT * FROM t WHERE (\"tenant_id\" = :dcValue1) AND (\"code\" = :dcValue2)",
+        "params": {
+            "dcValue1": "1",
+            "dcValue2": "A"
+        }
+    },
+    "read id: composite short": {
+        "sql": "SELECT * FROM t WHERE (\"tenant_id\" = :dcValue1) AND (\"code\" = :dcValue2)",
+        "params": {
+            "dcValue1": "1",
+            "dcValue2": ""
+        }
+    },
+    "write id: composite short": {
+        "threw": "OCA\\OpenRegister\\Service\\ObjectSource\\DbalWriteException",
+        "message": "The object id does not match the table's composite key shape.",
+        "code": 0
+    },
+    "read id: composite long": {
+        "sql": "SELECT * FROM t WHERE (\"tenant_id\" = :dcValue1) AND (\"code\" = :dcValue2)",
+        "params": {
+            "dcValue1": "1",
+            "dcValue2": "A"
+        }
+    },
+    "write id: composite long": {
+        "threw": "OCA\\OpenRegister\\Service\\ObjectSource\\DbalWriteException",
+        "message": "The object id does not match the table's composite key shape.",
+        "code": 0
+    },
+    "read id: composite three": {
+        "sql": "SELECT * FROM t WHERE (\"a\" = :dcValue1) AND (\"b\" = :dcValue2) AND (\"c\" = :dcValue3)",
+        "params": {
+            "dcValue1": "x",
+            "dcValue2": "y",
+            "dcValue3": "z"
+        }
+    },
+    "write id: composite three": {
+        "sql": "SELECT * FROM t WHERE (\"a\" = :dcValue1) AND (\"b\" = :dcValue2) AND (\"c\" = :dcValue3)",
+        "params": {
+            "dcValue1": "x",
+            "dcValue2": "y",
+            "dcValue3": "z"
+        }
+    },
+    "read id: duplicate column": {
+        "sql": "SELECT * FROM t WHERE (\"a\" = :dcValue1) AND (\"a\" = :dcValue2)",
+        "params": {
+            "dcValue1": "x",
+            "dcValue2": "y"
+        }
+    },
+    "write id: duplicate column": {
+        "sql": "SELECT * FROM t WHERE (\"a\" = :dcValue1) AND (\"a\" = :dcValue2)",
+        "params": {
+            "dcValue1": "x",
+            "dcValue2": "y"
+        }
+    }
+}

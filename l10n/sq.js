@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Përfundo: {outcome}",
         "Could not load the task": "Detyra nuk u ngarkua dot",
         "The task refused that action": "Detyra e refuzoi atë veprim",
-        "Store": "Dyqani",
+        "Marketplace": "Dyqani",
         "Install registers, schemas and flows that other organisations have published.": "Instaloni regjistra, skema dhe rrjedha të publikuara nga organizata të tjera.",
         "No such run": "Nuk ka ekzekutim të tillë",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Ekzekutimi nuk ekziston, ose nuk keni të drejtë ta shihni. Fshirja e një rrjedhe fshin edhe ekzekutimet e saj.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Kush e miratoi listën dhe kur.",
         "Who made it.": "Kush e bëri.",
         "Who rejected the list, and why.": "Kush e refuzoi listën dhe pse.",
-        "Woo published": "Publikuar sipas Woo"
+        "Woo published": "Publikuar sipas Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "Për një PDF nevojitet një server zyre (Collabora ose Euro-Office) dhe asnjë nuk është i instaluar. Kërkojini administratorit të instalojë një, ose shkarkoni raportin në një format tjetër.",
+        "The report could not be downloaded.": "Raporti nuk mund të shkarkohej."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -31,20 +31,21 @@ declare(strict_types=1);
 namespace Unit\Service\Timeline;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\TimelineEntry;
-use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\Timeline\PublicTimeline;
-use OCA\OpenRegister\Service\Timeline\TimelineEntryService;
-use OCA\OpenRegister\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Db\TimelineEntry;
+use OCA\OpenRegister\Files\Service\NoteService;
+use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
+use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
+use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Unit tests for the one anonymous timeline reader.
  *
- * @covers \OCA\OpenRegister\Service\Timeline\PublicTimeline
+ * @covers \OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class PublicTimelineTest extends TestCase {
@@ -110,7 +111,7 @@ class PublicTimelineTest extends TestCase {
 	public function testBothSourcesAreAskedForThePublicHalf(): void {
 		$this->entries->expects($this->once())
 			->method('listForObject')
-			->with($this->anything(), TimelineVisibilityService::PUBLIC_ENTRY, 50)
+			->with($this->anything(), $this->callback(static fn (ListQuery $q): bool => [$q->filters['visibility'] ?? null, $q->limit, $q->offset ?? 0] === [TimelineVisibilityService::PUBLIC_ENTRY, 50, 0]))
 			->willReturn([]);
 
 		$this->notes->expects($this->once())

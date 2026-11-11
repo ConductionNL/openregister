@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -35,7 +36,7 @@ class LoopNodeTest extends TestCase {
 	}
 
 	public function testItSplitsIntoBatchesOfTheConfiguredSize(): void {
-		$out = $this->node->execute($this->items(7), ['batchSize' => 3], []);
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items(7), config: ['batchSize' => 3], context: []));
 
 		// 7 items in batches of 3 -> 3 batches (3, 3, 1).
 		$this->assertCount(3, $out);
@@ -47,7 +48,7 @@ class LoopNodeTest extends TestCase {
 	}
 
 	public function testNoItemsYieldsNoBatches(): void {
-		$this->assertSame([], $this->node->execute([], ['batchSize' => 5], []));
+		$this->assertSame([], $this->node->execute(new FlowNodeCall(items: [], config: ['batchSize' => 5], context: [])));
 	}
 
 	public function testANonPositiveBatchSizeIsRefused(): void {

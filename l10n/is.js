@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Ljúka: {outcome}",
         "Could not load the task": "Gat ekki hlaðið verkefninu",
         "The task refused that action": "Verkefnið hafnaði þeirri aðgerð",
-        "Store": "Verslun",
+        "Marketplace": "Verslun",
         "Install registers, schemas and flows that other organisations have published.": "Settu upp skrár, skemu og flæði sem aðrar stofnanir hafa birt.",
         "No such run": "Engin slík keyrsla",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Keyrslan er ekki til, eða þú mátt ekki sjá hana. Ef flæði er eytt eyðast keyrslur þess líka.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Hver samþykkti listann, og hvenær.",
         "Who made it.": "Hver bjó það til.",
         "Who rejected the list, and why.": "Hver hafnaði listanum, og hvers vegna.",
-        "Woo published": "Birt samkvæmt Woo"
+        "Woo published": "Birt samkvæmt Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "PDF krefst skrifstofuþjóns (Collabora eða Euro-Office) og enginn er uppsettur. Biddu kerfisstjórann þinn um að setja einn upp, eða sæktu skýrsluna á öðru sniði.",
+        "The report could not be downloaded.": "Ekki tókst að sækja skýrsluna."
     },
     "nplurals=2; plural=(n != 1);"
 )

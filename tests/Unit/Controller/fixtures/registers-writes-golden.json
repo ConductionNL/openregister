@@ -1,0 +1,1403 @@
+{
+    "create anonymous": {
+        "calls": [],
+        "status": 403,
+        "data": {
+            "error": "Only administrators may create registers"
+        }
+    },
+    "create by somebody else": {
+        "calls": [
+            [
+                "isAdmin",
+                "other"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "Only administrators may create registers"
+        }
+    },
+    "create cache failure": {
+        "calls": [
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getParams"
+            ],
+            [
+                "createFromArray",
+                []
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "status": 500,
+        "data": {
+            "error": "cache failed"
+        }
+    },
+    "create constraint": {
+        "calls": [
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getParams"
+            ],
+            [
+                "createFromArray",
+                []
+            ]
+        ],
+        "status": 418,
+        "data": {
+            "error": "taken"
+        }
+    },
+    "create database error": {
+        "calls": [
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getParams"
+            ],
+            [
+                "createFromArray",
+                []
+            ]
+        ],
+        "status": 409,
+        "data": {
+            "error": "This register already exists. Please check your input and try again."
+        }
+    },
+    "create drops internal fields": {
+        "calls": [
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getParams"
+            ],
+            [
+                "createFromArray",
+                {
+                    "title": "New",
+                    "description": "d"
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "status": 201,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "create drops the id": {
+        "calls": [
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getParams"
+            ],
+            [
+                "createFromArray",
+                {
+                    "title": "New"
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "status": 201,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "create keeps a null id": {
+        "calls": [
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getParams"
+            ],
+            [
+                "createFromArray",
+                {
+                    "id": null,
+                    "title": "New"
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "status": 201,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "create other failure": {
+        "calls": [
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getParams"
+            ],
+            [
+                "createFromArray",
+                []
+            ]
+        ],
+        "status": 500,
+        "data": {
+            "error": "save failed"
+        }
+    },
+    "create refused rules": {
+        "calls": [
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getParams"
+            ],
+            [
+                "createFromArray",
+                []
+            ]
+        ],
+        "status": 422,
+        "data": {
+            "error": "rules disagree"
+        }
+    },
+    "create with no fields": {
+        "calls": [
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "getParams"
+            ],
+            [
+                "createFromArray",
+                []
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "status": 201,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "patch": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "authorization": {
+                        "manage": [
+                            "editors",
+                            "owners"
+                        ]
+                    }
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ],
+            [
+                "logRegisterAuthorizationChange",
+                7,
+                "Saved",
+                {
+                    "manage": [
+                        "editors"
+                    ]
+                },
+                {
+                    "manage": [
+                        "editors",
+                        "owners"
+                    ]
+                }
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "patch by somebody else": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "other"
+            ],
+            [
+                "getUserGroupIds",
+                "other"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "User does not have permission to manage this register"
+        }
+    },
+    "update anonymous": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "User does not have permission to manage this register"
+        }
+    },
+    "update audit fails": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "authorization": {
+                        "manage": [
+                            "editors",
+                            "owners"
+                        ]
+                    },
+                    "configuration": {
+                        "roles": [
+                            "r2"
+                        ]
+                    }
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ],
+            [
+                "logRegisterAuthorizationChange",
+                7,
+                "Saved",
+                {
+                    "manage": [
+                        "editors"
+                    ]
+                },
+                {
+                    "manage": [
+                        "editors",
+                        "owners"
+                    ]
+                }
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update audit unavailable": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "authorization": {
+                        "manage": [
+                            "editors",
+                            "owners"
+                        ]
+                    }
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update authorization": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "authorization": {
+                        "manage": [
+                            "editors",
+                            "owners"
+                        ]
+                    }
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ],
+            [
+                "logRegisterAuthorizationChange",
+                7,
+                "Saved",
+                {
+                    "manage": [
+                        "editors"
+                    ]
+                },
+                {
+                    "manage": [
+                        "editors",
+                        "owners"
+                    ]
+                }
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update authorization to empty": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "authorization": []
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ],
+            [
+                "logRegisterAuthorizationChange",
+                7,
+                "Saved",
+                {
+                    "manage": [
+                        "editors"
+                    ]
+                },
+                {
+                    "manage": [
+                        "editors",
+                        "owners"
+                    ]
+                }
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update both": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "authorization": {
+                        "manage": [
+                            "editors",
+                            "owners"
+                        ]
+                    },
+                    "configuration": {
+                        "roles": [
+                            "r2"
+                        ]
+                    }
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ],
+            [
+                "logRegisterAuthorizationChange",
+                7,
+                "Saved",
+                {
+                    "manage": [
+                        "editors"
+                    ]
+                },
+                {
+                    "manage": [
+                        "editors",
+                        "owners"
+                    ]
+                }
+            ],
+            [
+                "logRoleDefinitionChange",
+                7,
+                "Saved",
+                [
+                    "r1"
+                ],
+                [
+                    "r2"
+                ]
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update both without a title": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "authorization": {
+                        "manage": [
+                            "editors",
+                            "owners"
+                        ]
+                    },
+                    "configuration": {
+                        "roles": [
+                            "r2"
+                        ]
+                    }
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ],
+            [
+                "logRegisterAuthorizationChange",
+                7,
+                "",
+                {
+                    "manage": [
+                        "editors"
+                    ]
+                },
+                {
+                    "manage": [
+                        "editors",
+                        "owners"
+                    ]
+                }
+            ],
+            [
+                "logRoleDefinitionChange",
+                7,
+                "",
+                [
+                    "r1"
+                ],
+                [
+                    "r2"
+                ]
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": null
+        }
+    },
+    "update by a manager": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "member"
+            ],
+            [
+                "getUserGroupIds",
+                "member"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "title": "New"
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update by somebody else": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "other"
+            ],
+            [
+                "getUserGroupIds",
+                "other"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "User does not have permission to manage this register"
+        }
+    },
+    "update cache failure": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                []
+            ],
+            [
+                "invalidate",
+                7
+            ]
+        ],
+        "thrown": "RuntimeException",
+        "message": "cache failed"
+    },
+    "update constraint": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                []
+            ]
+        ],
+        "status": 418,
+        "data": {
+            "error": "taken"
+        }
+    },
+    "update database error": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                []
+            ]
+        ],
+        "status": 409,
+        "data": {
+            "error": "This register already exists. Please check your input and try again."
+        }
+    },
+    "update drops immutable fields": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "title": "New"
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update drops internal fields": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "title": "New",
+                    "description": "d"
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update drops the roles": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "configuration": {
+                        "roles": [
+                            "r2"
+                        ]
+                    }
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ],
+            [
+                "logRoleDefinitionChange",
+                7,
+                "Saved",
+                [
+                    "r1"
+                ],
+                null
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update null authorization": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "authorization": null
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update other configuration": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "configuration": {
+                        "x": 1
+                    }
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update other failure": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                []
+            ]
+        ],
+        "thrown": "RuntimeException",
+        "message": "save failed"
+    },
+    "update refused rules": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                []
+            ]
+        ],
+        "status": 422,
+        "data": {
+            "error": "rules disagree"
+        }
+    },
+    "update roles": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "configuration": {
+                        "roles": [
+                            "r2"
+                        ]
+                    }
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ],
+            [
+                "logRoleDefinitionChange",
+                7,
+                "Saved",
+                [
+                    "r1"
+                ],
+                [
+                    "r2"
+                ]
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update roles audit fails": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "authorization": {
+                        "manage": [
+                            "editors",
+                            "owners"
+                        ]
+                    },
+                    "configuration": {
+                        "roles": [
+                            "r2"
+                        ]
+                    }
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ],
+            [
+                "logRegisterAuthorizationChange",
+                7,
+                "Saved",
+                {
+                    "manage": [
+                        "editors"
+                    ]
+                },
+                {
+                    "manage": [
+                        "editors",
+                        "owners"
+                    ]
+                }
+            ],
+            [
+                "logRoleDefinitionChange",
+                7,
+                "Saved",
+                [
+                    "r1"
+                ],
+                [
+                    "r2"
+                ]
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update unknown register": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ]
+        ],
+        "status": 404,
+        "data": {
+            "error": "Register not found"
+        }
+    },
+    "update when the rights fail": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "User does not have permission to manage this register"
+        }
+    },
+    "update with no fields": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                []
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update without earlier roles": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
+            ],
+            [
+                "updateFromArray",
+                7,
+                {
+                    "configuration": {
+                        "roles": [
+                            "r2"
+                        ]
+                    }
+                }
+            ],
+            [
+                "invalidate",
+                7
+            ],
+            [
+                "container",
+                "OCA\\OpenRegister\\Service\\AuthorizationAuditService"
+            ],
+            [
+                "logRoleDefinitionChange",
+                7,
+                "Saved",
+                null,
+                [
+                    "r2"
+                ]
+            ]
+        ],
+        "status": 200,
+        "data": {
+            "register": 7,
+            "title": "Saved"
+        }
+    },
+    "update without manage rules": {
+        "calls": [
+            [
+                "getParams"
+            ],
+            [
+                "find",
+                7
+            ],
+            [
+                "container",
+                "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "other"
+            ]
+        ],
+        "status": 403,
+        "data": {
+            "error": "User does not have permission to manage this register"
+        }
+    }
+}

@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
+use OCA\OpenRegister\AppHost\Service\StoreRegistryAccess;
 use OCA\OpenRegister\AppHost\Service\LocalStoreRegistry;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -90,8 +91,7 @@ class GenericStoreServiceTest extends TestCase {
 	 */
 	private function service(): GenericStoreService {
 		return new GenericStoreService(
-			clientService: $this->clientService,
-			appConfig: $this->appConfig,
+			registry: new StoreRegistryAccess($this->clientService, $this->appConfig),
 			logger: $this->logger
 		);
 
@@ -170,7 +170,7 @@ class GenericStoreServiceTest extends TestCase {
 	 * A registry set to `local` is read from this instance's own register,
 	 * without any HTTP request.
 	 *
-	 * @spec openspec/changes/store-local-registry/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 *
 	 * @return void
 	 */
@@ -206,7 +206,7 @@ class GenericStoreServiceTest extends TestCase {
 	/**
 	 * A local registry resolves one item by its slug, and only that slug.
 	 *
-	 * @spec openspec/changes/store-local-registry/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 *
 	 * @return void
 	 */
@@ -228,7 +228,7 @@ class GenericStoreServiceTest extends TestCase {
 	 * A local registry whose register or schema is missing answers as
 	 * unreachable, never as an empty store.
 	 *
-	 * @spec openspec/changes/store-local-registry/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 *
 	 * @return void
 	 */
@@ -264,7 +264,7 @@ class GenericStoreServiceTest extends TestCase {
 	 * Publishing to a local registry creates the object in-process, with only
 	 * the declared fields, and makes no HTTP request.
 	 *
-	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 *
 	 * @return void
 	 */
@@ -296,7 +296,7 @@ class GenericStoreServiceTest extends TestCase {
 	/**
 	 * Publishing a slug the local registry already holds updates that object.
 	 *
-	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 *
 	 * @return void
 	 */
@@ -329,7 +329,7 @@ class GenericStoreServiceTest extends TestCase {
 	/**
 	 * A local write that fails answers unreachable, never ok.
 	 *
-	 * @spec openspec/changes/store-publish-route/specs/apphost-store-plane/spec.md
+	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 *
 	 * @return void
 	 */
@@ -361,8 +361,7 @@ class GenericStoreServiceTest extends TestCase {
 		$container->method('get')->willReturn($objects);
 
 		return new GenericStoreService(
-			clientService: $this->clientService,
-			appConfig: $this->appConfig,
+			registry: new StoreRegistryAccess($this->clientService, $this->appConfig),
 			logger: $this->logger,
 			localRegistry: new LocalStoreRegistry(container: $container, logger: $this->logger)
 		);

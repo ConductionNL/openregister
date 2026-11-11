@@ -69,14 +69,35 @@ final class DeletedLens {
 	 */
 	public function mode(array $query): string {
 		if (array_key_exists('_deleted', $query) === false) {
-			if (filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
-				return self::ANY;
-			}
-
-			return self::EXCLUDE;
+			return $this->includeDeletedMode(query: $query);
 		}
 
-		$raw = $query['_deleted'];
+		return $this->deletedMode(raw: $query['_deleted']);
+	}//end mode()
+
+	/**
+	 * The lens of a query without `_deleted`: `_includeDeleted=true` means both.
+	 *
+	 * @param array<string, mixed> $query The search query.
+	 *
+	 * @return string ANY or EXCLUDE.
+	 */
+	private function includeDeletedMode(array $query): string {
+		if (filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
+			return self::ANY;
+		}
+
+		return self::EXCLUDE;
+	}//end includeDeletedMode()
+
+	/**
+	 * The lens a `_deleted` value asks for.
+	 *
+	 * @param mixed $raw The `_deleted` value.
+	 *
+	 * @return string One of the constants.
+	 */
+	private function deletedMode(mixed $raw): string {
 		if (is_string($raw) === true && strtolower(trim($raw)) === self::ANY) {
 			return self::ANY;
 		}
@@ -86,7 +107,7 @@ final class DeletedLens {
 		}
 
 		return self::EXCLUDE;
-	}//end mode()
+	}//end deletedMode()
 
 	/**
 	 * The predicate for a lens, or null when it puts no condition on the list.

@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Завершить: {outcome}",
         "Could not load the task": "Не удалось загрузить задачу",
         "The task refused that action": "Задача отклонила это действие",
-        "Store": "Магазин",
+        "Marketplace": "Магазин",
         "Install registers, schemas and flows that other organisations have published.": "Установите реестры, схемы и потоки, опубликованные другими организациями.",
         "No such run": "Нет такого запуска",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Запуск не существует, или у вас нет права его видеть. Удаление потока удаляет и его запуски.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Кто утвердил список и когда.",
         "Who made it.": "Кто его изготовил.",
         "Who rejected the list, and why.": "Кто отклонил список и почему.",
-        "Woo published": "Опубликовано на основании Woo"
+        "Woo published": "Опубликовано на основании Woo",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "Для PDF нужен офисный сервер (Collabora или Euro-Office), но ни один не установлен. Попросите администратора установить его или скачайте отчёт в другом формате.",
+        "The report could not be downloaded.": "Не удалось скачать отчёт."
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

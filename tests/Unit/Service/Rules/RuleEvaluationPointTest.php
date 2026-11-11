@@ -35,7 +35,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @package OCA\OpenRegister\Tests\Unit\Service\Rules
  *
- * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class RuleEvaluationPointTest extends TestCase {
 
@@ -94,7 +94,7 @@ class RuleEvaluationPointTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	/**
 	 * Files allowed to suppress the lifecycle events, and why.
@@ -114,6 +114,10 @@ class RuleEvaluationPointTest extends TestCase {
 		// apps that an object they can still read is gone, and the rules would
 		// act on a deletion that did not happen.
 		'MoveObject.php' => 'a move removes the source ROW, not the object; the object still exists',
+		// The permanent delete. The flag only skips the mapper's ObjectDeletingEvent:
+		// DeleteObject::delete() has dispatched that same event through
+		// assertDeletable() before the folder goes, so the guards answer once.
+		'DeleteObject.php' => 'delete() already asked the guards; the mapper must not ask a second time',
 	];
 
 	public function testBothWriteMethodsDispatchTheSaveEvent(): void {
@@ -141,7 +145,7 @@ class RuleEvaluationPointTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testNoWritePathAsksToSkipTheRules(): void {
 		$offenders = [];
@@ -191,10 +195,10 @@ class RuleEvaluationPointTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function testTheRuleListenersAreSubscribedToThoseEvents(): void {
-		$application = (string)file_get_contents($this->lib() . '/AppInfo/Application.php');
+		$application = (string)file_get_contents($this->lib() . '/Listener/ListenerRegistrar.php');
 
 		$this->assertStringContainsString(
 			needle: 'registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class)',
@@ -226,7 +230,7 @@ class RuleEvaluationPointTest extends TestCase {
 	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/object-lifecycle/spec.md
 	 */
 	public function testTheAdministeredValidationsAreSubscribedToThoseEvents(): void {
-		$application = (string)file_get_contents($this->lib() . '/AppInfo/Application.php');
+		$application = (string)file_get_contents($this->lib() . '/Listener/ListenerRegistrar.php');
 
 		foreach (['ObjectCreatingEvent', 'ObjectUpdatingEvent'] as $event) {
 			$this->assertStringContainsString(
@@ -289,7 +293,7 @@ class RuleEvaluationPointTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testBothListenersRecordTheirVerdict(): void {
 		foreach (['CalculationOnSaveListener', 'LifecycleValidationListener'] as $listener) {
@@ -313,7 +317,7 @@ class RuleEvaluationPointTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function testBothEnginesHonourTheSwitch(): void {
 		$calculation = (string)file_get_contents($this->lib() . '/Listener/CalculationOnSaveListener.php');

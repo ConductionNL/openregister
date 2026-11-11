@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\SearchController;
+use OCA\OpenRegister\Search\Controller\SearchController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IRequest;
@@ -22,9 +22,7 @@ class SearchControllerTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
-		$this->controller = new SearchController(
-			'openregister',
-			$this->request,
+		$this->controller = new SearchController($this->request,
 			$this->objectService
 		);
 	}

@@ -1,0 +1,264 @@
+{
+    "annotation empty": [
+        {
+            "code": "aggregations-empty",
+            "message": "x-openregister-aggregations must declare at least one aggregation."
+        }
+    ],
+    "annotation not an array": [
+        {
+            "code": "aggregations-empty",
+            "message": "x-openregister-aggregations must declare at least one aggregation."
+        }
+    ],
+    "array metric": [
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Aggregation \"total\" metric \"\" is not in [count, sum, avg, min, max, count_distinct]."
+        }
+    ],
+    "avg empty field": [
+        {
+            "code": "aggregation-field-missing",
+            "message": "Aggregation \"s\" with metric \"avg\" requires a field."
+        }
+    ],
+    "count ignores field": [],
+    "count_distinct known field": [],
+    "cross-schema bad metric and filter": [
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Cross-schema aggregation \"c\" metric \"median\" is not in [count, sum, avg, min, max, count_distinct]."
+        },
+        {
+            "code": "aggregation-filter-malformed",
+            "message": "Cross-schema aggregation \"c\" where/filter must be a map."
+        }
+    ],
+    "cross-schema empty from": [
+        {
+            "code": "aggregation-from-empty",
+            "message": "Cross-schema aggregation \"c\" must have a non-empty `from` string."
+        }
+    ],
+    "cross-schema skips field checks": [],
+    "cross-schema valid": [],
+    "empty name": [
+        {
+            "code": "aggregation-bad-name",
+            "message": "Aggregation names must be non-empty strings."
+        }
+    ],
+    "everything wrong at once": [
+        {
+            "code": "aggregation-field-not-in-schema",
+            "message": "Aggregation \"w\" field \"height\" is not declared in the schema properties."
+        },
+        {
+            "code": "aggregation-filter-field-unknown",
+            "message": "Aggregation \"w\" filter references unknown field \"colour\"."
+        },
+        {
+            "code": "aggregation-groupby-field-unknown",
+            "message": "Aggregation \"w\" groupBy.field \"size\" is not declared in the schema properties."
+        },
+        {
+            "code": "aggregation-join-malformed",
+            "message": "Aggregation \"w\" join must be an object {through, on, filter?, select}."
+        }
+    ],
+    "filter not a map": [
+        {
+            "code": "aggregation-filter-malformed",
+            "message": "Aggregation \"f\" filter/where must be a map."
+        }
+    ],
+    "filter unknown fields": [
+        {
+            "code": "aggregation-filter-field-unknown",
+            "message": "Aggregation \"f\" filter references unknown field \"colour\"."
+        },
+        {
+            "code": "aggregation-filter-field-unknown",
+            "message": "Aggregation \"f\" filter references unknown field \"3\"."
+        }
+    ],
+    "filter wins over where": [],
+    "from null is intra-schema": [
+        {
+            "code": "aggregation-filter-field-unknown",
+            "message": "Aggregation \"c\" filter references unknown field \"colour\"."
+        }
+    ],
+    "groupBy field": [],
+    "groupBy fields form": [],
+    "groupBy list duplicate": [
+        {
+            "code": "aggregation-groupby-duplicate-field",
+            "message": "Aggregation \"g\" groupBy names \"status\" more than once."
+        }
+    ],
+    "groupBy malformed": [
+        {
+            "code": "aggregation-groupby-malformed",
+            "message": "Aggregation \"g\" groupBy must be {field, bucket?}, {fields: [...]} or a list of field names."
+        }
+    ],
+    "groupBy unknown": [
+        {
+            "code": "aggregation-groupby-field-unknown",
+            "message": "Aggregation \"g\" groupBy.field \"colour\" is not declared in the schema properties."
+        }
+    ],
+    "join malformed": [
+        {
+            "code": "aggregation-join-malformed",
+            "message": "Aggregation \"j\" join must be an object {through, on, filter?, select}."
+        }
+    ],
+    "join through missing": [
+        {
+            "code": "aggregation-join-through-empty",
+            "message": "Aggregation \"j\" join must have a non-empty `through` schema ref."
+        },
+        {
+            "code": "aggregation-join-select-empty",
+            "message": "Aggregation \"j\" join must declare a non-empty `select` list of joined-schema fields."
+        }
+    ],
+    "join valid": [],
+    "max unknown field": [
+        {
+            "code": "aggregation-field-not-in-schema",
+            "message": "Aggregation \"s\" field \"height\" is not declared in the schema properties."
+        }
+    ],
+    "metric wins over select": [
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Aggregation \"total\" metric \"nope\" is not in [count, sum, avg, min, max, count_distinct]."
+        }
+    ],
+    "metrics empty list": [
+        {
+            "code": "aggregation-metrics-malformed",
+            "message": "Aggregation \"m\" metrics must be a non-empty list of {metric, field?} objects."
+        }
+    ],
+    "metrics invalid skips groupBy": [
+        {
+            "code": "aggregation-metrics-field-not-in-schema",
+            "message": "Aggregation \"m\" metrics[0] field \"height\" is not declared in the schema properties."
+        }
+    ],
+    "metrics not a list": [
+        {
+            "code": "aggregation-metrics-malformed",
+            "message": "Aggregation \"m\" metrics must be a non-empty list of {metric, field?} objects."
+        }
+    ],
+    "metrics valid": [],
+    "metrics valid, groupBy unknown, filter ignored": [
+        {
+            "code": "aggregation-groupby-field-unknown",
+            "message": "Aggregation \"m\" groupBy.field \"colour\" is not declared in the schema properties."
+        }
+    ],
+    "metrics wins over metric": [],
+    "missing metric": [
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Aggregation \"total\" metric \"\" is not in [count, sum, avg, min, max, count_distinct]."
+        }
+    ],
+    "no annotation": [],
+    "numeric metric": [
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Aggregation \"total\" metric \"7\" is not in [count, sum, avg, min, max, count_distinct]."
+        }
+    ],
+    "numeric name": [
+        {
+            "code": "aggregation-bad-name",
+            "message": "Aggregation names must be non-empty strings."
+        }
+    ],
+    "plain count": [],
+    "properties missing": [
+        {
+            "code": "aggregation-field-not-in-schema",
+            "message": "Aggregation \"s\" field \"amount\" is not declared in the schema properties."
+        },
+        {
+            "code": "aggregation-filter-field-unknown",
+            "message": "Aggregation \"s\" filter references unknown field \"status\"."
+        }
+    ],
+    "properties not an array": [
+        {
+            "code": "aggregation-field-not-in-schema",
+            "message": "Aggregation \"s\" field \"amount\" is not declared in the schema properties."
+        }
+    ],
+    "select alias": [],
+    "several entries keep order": [
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Aggregation \"one\" metric \"median\" is not in [count, sum, avg, min, max, count_distinct]."
+        },
+        {
+            "code": "aggregation-bad-name",
+            "message": "Aggregation names must be non-empty strings."
+        },
+        {
+            "code": "aggregation-field-missing",
+            "message": "Aggregation \"two\" with metric \"sum\" requires a field."
+        },
+        {
+            "code": "aggregation-malformed",
+            "message": "Aggregation \"three\" must be an object."
+        },
+        {
+            "code": "aggregation-from-empty",
+            "message": "Cross-schema aggregation \"four\" must have a non-empty `from` string."
+        },
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Cross-schema aggregation \"four\" metric \"x\" is not in [count, sum, avg, min, max, count_distinct]."
+        },
+        {
+            "code": "aggregation-filter-field-unknown",
+            "message": "Aggregation \"five\" filter references unknown field \"colour\"."
+        }
+    ],
+    "spec not an object": [
+        {
+            "code": "aggregation-malformed",
+            "message": "Aggregation \"a\" must be an object."
+        },
+        {
+            "code": "aggregation-malformed",
+            "message": "Aggregation \"b\" must be an object."
+        }
+    ],
+    "sum without field": [
+        {
+            "code": "aggregation-field-missing",
+            "message": "Aggregation \"s\" with metric \"sum\" requires a field."
+        }
+    ],
+    "unknown metric": [
+        {
+            "code": "aggregation-bad-metric",
+            "message": "Aggregation \"total\" metric \"median\" is not in [count, sum, avg, min, max, count_distinct]."
+        }
+    ],
+    "where alias not a map": [
+        {
+            "code": "aggregation-filter-malformed",
+            "message": "Aggregation \"f\" filter/where must be a map."
+        }
+    ],
+    "where known fields": []
+}

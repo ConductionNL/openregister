@@ -23,13 +23,14 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-provider-labels-in-plain-words/specs/credential-broker/spec.md
+ * @spec openspec/specs/credential-broker/spec.md
  */
 
 declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CredentialControllerFactory;
 use OCA\OpenRegister\Controller\CredentialController;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
@@ -49,6 +50,12 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialVault
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialTokens
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Service\Credential\ProviderCatalogue
  */
 class CredentialProviderLabelsTest extends TestCase {
 
@@ -112,7 +119,7 @@ class CredentialProviderLabelsTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		return new CredentialController(
+		return CredentialControllerFactory::create(
 			'openregister',
 			$this->createMock(IRequest::class),
 			$session,

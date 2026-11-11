@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
+ * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ use OCP\IDBConnection;
  * Read a table's DECIMAL column sizes, so a save checks a value against the
  * column that will hold it rather than the size the schema asks for.
  *
- * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
+ * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
  */
 final class MagicNumberColumnSizes {
 
@@ -59,7 +59,7 @@ final class MagicNumberColumnSizes {
 	 *
 	 * @return array<string, array{precision: int, scale: int}> Sizes keyed by lower-cased column name.
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
 	 */
 	public function sizes(string $tableName): array {
 		$key = strtolower($this->tablePrefix.$tableName);
@@ -67,6 +67,19 @@ final class MagicNumberColumnSizes {
 			return self::$cache[$key];
 		}
 
+		self::$cache[$key] = $this->read(key: $key);
+
+		return self::$cache[$key];
+	}//end sizes()
+
+	/**
+	 * Read the sizes from information_schema.
+	 *
+	 * @param string $key The lower-cased full table name.
+	 *
+	 * @return array<string, array{precision: int, scale: int}> Sizes keyed by lower-cased column name.
+	 */
+	private function read(string $key): array {
 		$sql = 'SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns';
 		$sql .= " WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')";
 		$stmt = $this->db->prepare($sql);
@@ -74,15 +87,11 @@ final class MagicNumberColumnSizes {
 
 		$sizes = [];
 		while (($row = $stmt->fetch()) !== false) {
-			$sizes[(string)$row['col']] = [
-				'precision' => (int)$row['numeric_precision'],
-				'scale' => (int)$row['numeric_scale'],
-			];
+			$sizes[(string)$row['col']] = ['precision' => (int)$row['numeric_precision'], 'scale' => (int)$row['numeric_scale']];
 		}
 
-		self::$cache[$key] = $sizes;
 		return $sizes;
-	}//end sizes()
+	}//end read()
 
 	/**
 	 * Forget a table's sizes after its columns changed.
@@ -91,9 +100,9 @@ final class MagicNumberColumnSizes {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/magic-number-columns-keep-their-decimals/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
 	 */
-	public static function forget(string $fullTableName): void {
+	public function forget(string $fullTableName): void {
 		unset(self::$cache[strtolower($fullTableName)]);
 	}//end forget()
 }//end class

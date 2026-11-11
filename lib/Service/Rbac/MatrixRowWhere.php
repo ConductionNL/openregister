@@ -19,19 +19,21 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Service\ConditionMatcher;
+
 /**
  * Reads a matrix row's `where`.
  *
- * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
-class MatrixRowWhere {
+class MatrixRowWhere implements MatrixRowKeys {
 
 	/**
 	 * A row's extra conditions, key-sorted, or null when the row must be dropped.
@@ -41,29 +43,61 @@ class MatrixRowWhere {
 	 * non-object `where`, a key that repeats the matrix field, a value that is
 	 * not a scalar, a list of scalars or `{$in: [...]}`, and an empty list,
 	 * which the SQL builder would drop the same way it drops an empty `$in`.
+	 * A condition that binds a field other than `_organisation` to the
+	 * caller's organisation makes the compiled rule read across organisations,
+	 * so it also drops the row unless the row declares
+	 * `"crossOrganisation": true` ({@see crossesWithoutIntent()}).
 	 *
 	 * @param array<string, mixed> $row   The row.
 	 * @param string               $field The matrix field.
 	 *
 	 * @return array<string, mixed>|null The conditions, or null to drop the row.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function conditionsOf(array $row, string $field): ?array {
 		$where = ($row['where'] ?? []);
-		if (is_array($where) === false) {
+		if (is_array($where) === false || self::namesNoOtherField(where: $where, field: $field) === false) {
 			return null;
 		}
 
-		$conditions = [];
-		foreach ($where as $key => $value) {
+		return $this->readableConditions(row: $row);
+	}//end conditionsOf()
+
+	/**
+	 * Whether every key of a `where` names a field, and none of them the matrix field.
+	 *
+	 * @param array<int|string, mixed> $where The row's `where`.
+	 * @param string                   $field The matrix field.
+	 *
+	 * @return bool False when a key is blank or repeats the matrix field.
+	 */
+	private static function namesNoOtherField(array $where, string $field): bool {
+		foreach (array_keys($where) as $key) {
 			$key = trim((string)$key);
 			if ($key === '' || $key === $field) {
-				return null;
+				return false;
 			}
+		}
 
+		return true;
+	}//end namesNoOtherField()
+
+	/**
+	 * The row's `where` as conditions sorted by key, or null when a value cannot be read or crosses without intent.
+	 *
+	 * @param array<string, mixed> $row The row, its `where` absent or an object with readable keys.
+	 *
+	 * @return array<string, mixed>|null The conditions, or null to drop the row.
+	 */
+	private function readableConditions(array $row): ?array {
+		$conditions = [];
+		foreach (($row['where'] ?? []) as $key => $value) {
+			$key = trim((string)$key);
 			$condition = $this->condition(value: $value);
-			if ($condition === null) {
+			if ($condition === null
+				|| ($this->declaresCrossing(row: $row) === false && $this->bindsToOrganisation(key: $key, value: $value) === true)
+			) {
 				return null;
 			}
 
@@ -72,7 +106,67 @@ class MatrixRowWhere {
 
 		ksort($conditions);
 		return $conditions;
-	}//end conditionsOf()
+	}//end readableConditions()
+
+	/**
+	 * Findings for the conditions of a row that read across organisations
+	 * without the row saying so ({@see declaresCrossing()}, {@see bindsToOrganisation()}).
+	 *
+	 * @param array<string, mixed> $row  The row.
+	 * @param string               $name The row, as messages name it.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-a-matrix-row-may-add-conditions-and-an-end
+	 */
+	public function crossingFindings(array $row, string $name): array {
+		$findings = [];
+		foreach ((array)($row['where'] ?? []) as $key => $value) {
+			if ($this->declaresCrossing(row: $row) === false && $this->bindsToOrganisation(key: (string)$key, value: $value) === true) {
+				$findings[] = [
+					'code' => 'matrix.where-crosses-organisations',
+					'message' => $name . ': where binds "' . (string)$key . '" to the caller\'s organisation, which reads'
+						. ' other organisations\' rows; set crossOrganisation: true on the row if that is meant.',
+				];
+			}
+		}
+
+		return $findings;
+	}//end crossingFindings()
+
+	/**
+	 * Whether a row declares that it reads across organisations.
+	 *
+	 * A condition binding a field to the caller's organisation is refused on a
+	 * row that does not ({@see bindsToOrganisation()}).
+	 *
+	 * @param array<string, mixed> $row The row, for its `crossOrganisation` flag.
+	 *
+	 * @return bool True only for a `crossOrganisation` flag that is literally true.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-a-matrix-row-may-add-conditions-and-an-end
+	 */
+	public function declaresCrossing(array $row): bool {
+		return ($row[self::CROSS_ORGANISATION_KEY] ?? false) === true;
+	}//end declaresCrossing()
+
+	/**
+	 * Whether a condition binds a field other than `_organisation` to the caller's organisation.
+	 *
+	 * @param string $key   The field the condition is on.
+	 * @param mixed  $value The condition as written.
+	 *
+	 * @return bool True when the condition reads other organisations' rows.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-a-matrix-row-may-add-conditions-and-an-end
+	 */
+	public function bindsToOrganisation(string $key, mixed $value): bool {
+		if ($key === '_organisation') {
+			return false;
+		}
+
+		return is_string($value) === true && in_array($value, ConditionMatcher::ORGANISATION_TOKENS, true) === true;
+	}//end bindsToOrganisation()
 
 	/**
 	 * One `where` value in the scope vocabulary, or null when it cannot be read.
@@ -84,7 +178,7 @@ class MatrixRowWhere {
 	 *
 	 * @return string|int|float|bool|array{'$in': array<int, string|int|float|bool>}|null The condition.
 	 *
-	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function condition(mixed $value): string|int|float|bool|array|null {
 		if (is_scalar($value) === true) {

@@ -40,7 +40,31 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  */
 class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	private const KEY = 'pref_walkthrough_completed_version';
@@ -65,7 +89,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testTheStaffSkipTheTourAndRemoveTakesTheValuesAway(): void {
 		$this->alpha(preferences: [
@@ -95,7 +119,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAnAdoptedAccountGetsItsOwnValueBackUnlessItChangedSince(): void {
 		$this->accounts->users['sanne.devries'] = ['displayName' => 'Sanne', 'email' => '', 'password' => 'theirs'];
@@ -123,7 +147,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-preferences-on-cast-admins/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAnAccountTheSetDoesNotOwnAnAdministratorOutsideTheCastAndASecretAreRefusedBeforeAnyWrite(): void {
 		$this->accounts->users['someone'] = ['displayName' => 'Someone', 'email' => '', 'password' => 'x'];
@@ -156,7 +180,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/example-set-preferences-on-cast-admins/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAnAdministratorTheCastDeclaresGetsThePreference(): void {
 		$this->accounts->users['sanne.devries'] = ['displayName' => 'Sanne', 'email' => '', 'password' => 'theirs'];
@@ -171,7 +195,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAKeyNextcloudKeepsAsSensitiveIsRefused(): void {
 		$this->accounts->users['esra.demir'] = ['displayName' => 'Esra', 'email' => '', 'password' => 'theirs'];
@@ -186,7 +210,7 @@ class ExampleSetUserPreferencesTest extends ExampleSetTestCase {
 	}
 
 	/**
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
 	 */
 	public function testAPreferenceOfAnotherAppRefusesTheSet(): void {
 		$this->alpha(preferences: [['user' => '{{cast:esra.uid}}', 'app' => 'beta', 'key' => self::KEY, 'value' => '1.2.0']]);

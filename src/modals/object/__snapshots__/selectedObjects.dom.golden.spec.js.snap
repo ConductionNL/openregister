@@ -1,0 +1,259 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`selected objects in MassDeleteObject lists the objects 1`] = `
+"<div class="selected-objects-container">
+<h4>Selected Objects (3)</h4>
+<div class="selected-objects-list">
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Named</strong>
+<p class="object-id">ID: a</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Named">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Titled</strong>
+<p class="object-id">ID: b</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Titled">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Unnamed Object</strong>
+<p class="object-id">ID: c</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove c">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;
+
+exports[`selected objects in MassDeleteObject removes the object whose button is clicked 1`] = `
+{
+  "html": "<div class="selected-objects-container">
+<h4>Selected Objects (2)</h4>
+<div class="selected-objects-list">
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Named</strong>
+<p class="object-id">ID: a</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Named">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Unnamed Object</strong>
+<p class="object-id">ID: c</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove c">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>",
+  "shown": [
+    "a",
+    "c",
+  ],
+  "stored": [
+    "a",
+    "c",
+  ],
+}
+`;
+
+exports[`selected objects in MassValidateObjects lists the objects 1`] = `
+"<div class="selected-objects-container">
+<h4>Selected Objects (3)</h4>
+<div class="selected-objects-list">
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Named</strong>
+<p class="object-id">ID: a</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Named">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Titled</strong>
+<p class="object-id">ID: b</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Titled">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Unnamed Object</strong>
+<p class="object-id">ID: c</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove c">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;
+
+exports[`selected objects in MassValidateObjects removes the object whose button is clicked 1`] = `
+{
+  "html": "<div class="selected-objects-container">
+<h4>Selected Objects (2)</h4>
+<div class="selected-objects-list">
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Named</strong>
+<p class="object-id">ID: a</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Named">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Unnamed Object</strong>
+<p class="object-id">ID: c</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove c">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>",
+  "shown": [
+    "a",
+    "c",
+  ],
+  "stored": [
+    "a",
+    "c",
+  ],
+}
+`;
+
+exports[`selected objects in MigrationObject lists the objects 1`] = `
+"<div class="selected-objects-container">
+<h4>Selected Objects (3)</h4>
+<div class="selected-objects-list">
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Named</strong>
+<p class="object-id">ID: a</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Named">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Titled</strong>
+<p class="object-id">ID: b</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Titled">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Unnamed Object</strong>
+<p class="object-id">ID: c</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove c">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>"
+`;
+
+exports[`selected objects in MigrationObject removes the object whose button is clicked 1`] = `
+{
+  "html": "<div class="selected-objects-container">
+<h4>Selected Objects (2)</h4>
+<div class="selected-objects-list">
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Named</strong>
+<p class="object-id">ID: a</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Named">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Unnamed Object</strong>
+<p class="object-id">ID: c</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove c">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>",
+  "shown": [
+    "a",
+    "c",
+  ],
+  "stored": [
+    "a",
+    "c",
+  ],
+}
+`;

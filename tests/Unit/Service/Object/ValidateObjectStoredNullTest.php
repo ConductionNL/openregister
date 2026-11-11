@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/validate-stored-null-as-absent/specs/object-validation/spec.md
+ * @spec openspec/specs/object-validation/spec.md
  */
 
 declare(strict_types=1);
@@ -16,6 +16,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCA\OpenRegister\Service\Object\ValidationSchemaSource;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\IUserManager;
@@ -23,7 +25,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * @spec openspec/changes/validate-stored-null-as-absent/specs/object-validation/spec.md
+ * @spec openspec/specs/object-validation/spec.md
  */
 class ValidateObjectStoredNullTest extends TestCase {
 
@@ -41,12 +43,9 @@ class ValidateObjectStoredNullTest extends TestCase {
 		$urlGenerator->method('getBaseUrl')->willReturn('http://localhost:8080');
 
 		$this->handler = new ValidateObject(
-			$this->createMock(IAppConfig::class),
-			$this->createMock(MagicMapper::class),
-			$this->createMock(SchemaMapper::class),
-			$urlGenerator,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(IUserManager::class)
+			schemas: new ValidationSchemaSource(config: $this->createMock(IAppConfig::class), schemaMapper: $this->createMock(SchemaMapper::class), urlGenerator: $urlGenerator),
+			lookups: new ValidationLookups(objectMapper: $this->createMock(MagicMapper::class), userManager: $this->createMock(IUserManager::class)),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 
 	}//end setUp()

@@ -244,7 +244,7 @@ export default {
 		 * @param {object} row One inventory row.
 		 * @return {string} The key.
 		 *
-		 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+		 * @spec openspec/specs/register-descriptor-admin/spec.md
 		 */
 		rowKey(row) {
 			return `${row.appId}/${row.slug}`
@@ -256,7 +256,7 @@ export default {
 		 * @param {object} row One inventory row.
 		 * @return {string} The class, or empty.
 		 *
-		 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+		 * @spec openspec/specs/register-descriptor-admin/spec.md
 		 */
 		rowClass(row) {
 			return row.state === 'current' ? '' : 'descriptors__row--attention'
@@ -269,7 +269,7 @@ export default {
 		 * @param {string} state One of current/behind/absent.
 		 * @return {string} The translated label.
 		 *
-		 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+		 * @spec openspec/specs/register-descriptor-admin/spec.md
 		 */
 		stateLabel(state) {
 			if (state === 'absent') {
@@ -287,7 +287,7 @@ export default {
 		 * @param {object} row One inventory row.
 		 * @return {string} The translated version summary.
 		 *
-		 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+		 * @spec openspec/specs/register-descriptor-admin/spec.md
 		 */
 		versionLabel(row) {
 			if (row.installedVersion === null) {
@@ -309,7 +309,7 @@ export default {
 		 *
 		 * @return {Promise<void>} Resolves once rows and counts are set.
 		 *
-		 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+		 * @spec openspec/specs/register-descriptor-admin/spec.md
 		 */
 		async load() {
 			this.loading = true
@@ -439,7 +439,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../styles/common.scss' as *;
+
 .descriptors__summary {
 	display: flex;
 	flex-wrap: wrap;
@@ -534,11 +536,6 @@ export default {
 }
 
 .descriptors__sr {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	overflow: hidden;
-	clip-path: inset(50%);
-	white-space: nowrap;
+	@include visually-hidden;
 }
 </style>

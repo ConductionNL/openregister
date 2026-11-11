@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\Task\TaskSubjectLocator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -64,9 +65,11 @@ class TaskSubjectLocatorTest extends TestCase {
 	 */
 	private function locator(MagicMapper $objects): TaskSubjectLocator {
 		return new TaskSubjectLocator(
-			$objects,
-			$this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class),
-			$this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+			new SchemaCatalog(
+				registers: $this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class),
+				schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class),
+				tables: $objects
+			),
 			new NullLogger()
 		);
 	}//end locator()
@@ -172,4 +175,65 @@ class TaskSubjectLocatorTest extends TestCase {
 		$this->assertSame([25, 25, 10], $sizes);
 		$this->assertCount(60, $located);
 	}//end testALongListIsSearchedInChunks()
+	/**
+	 * Located tasks are read per register and schema pair; a pair that
+	 * cannot be read is skipped, and unlocated tasks are not read at all.
+	 *
+	 * @return void
+	 */
+	public function testLocatedSubjectsAreReadPerPairAndAFailingPairIsSkipped(): void {
+		$registers = $this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class);
+		$registers->method('find')->willReturnCallback(
+			function (int $id): \OCA\OpenRegister\Db\Register {
+				$register = new \OCA\OpenRegister\Db\Register();
+				$register->setId($id);
+
+				return $register;
+			}
+		);
+		$schemas = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
+		$schemas->method('find')->willReturnCallback(
+			function (int $id): \OCA\OpenRegister\Db\Schema {
+				if ($id === 99) {
+					throw new RuntimeException('schema gone');
+				}
+
+				$schema = new \OCA\OpenRegister\Db\Schema();
+				$schema->setId($id);
+
+				return $schema;
+			}
+		);
+		$reads = [];
+		$objects = $this->createMock(MagicMapper::class);
+		$objects->method('findObjectsByUuidsInRegisterSchema')->willReturnCallback(
+			function ($register, $schema, array $uuids) use (&$reads): array {
+				$reads[] = [$register->getId(), $schema->getId(), $uuids];
+
+				return array_combine($uuids, array_map(static fn (string $uuid): string => 'subject ' . $uuid, $uuids));
+			}
+		);
+
+		$task = static function (?string $uuid, ?int $register, ?int $schema): \OCA\OpenRegister\Db\Task {
+			$task = new \OCA\OpenRegister\Db\Task();
+			$task->setObjectUuid($uuid);
+			$task->setRegisterId($register);
+			$task->setSchemaId($schema);
+
+			return $task;
+		};
+		$tasks = [
+			$task('a', 1, 2),
+			$task('b', 3, 99),
+			$task(' c ', 1, 2),
+			$task('d', null, 2),
+			$task('', 1, 2),
+			$task('e', 3, 4),
+		];
+
+		$locator = new TaskSubjectLocator(catalog: new SchemaCatalog(registers: $registers, schemas: $schemas, tables: $objects), logger: new NullLogger());
+
+		$this->assertSame(['a' => 'subject a', 'c' => 'subject c', 'e' => 'subject e'], $locator->readLocated(tasks: $tasks));
+		$this->assertSame([[1, 2, ['a', 'c']], [3, 4, ['e']]], $reads);
+	}//end testLocatedSubjectsAreReadPerPairAndAFailingPairIsSkipped()
 }//end class

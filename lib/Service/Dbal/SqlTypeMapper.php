@@ -109,20 +109,54 @@ class SqlTypeMapper {
 		$typeName = $this->typeName(column: $column);
 
 		if (isset(self::TYPE_MAP[$typeName]) === false) {
-			$this->logger->warning(
-				sprintf(
-					'[SqlTypeMapper] unknown column type "%s" on column "%s" — falling back to string (non-filterable)',
-					$typeName,
-					$column->getName()
-				)
-			);
-
-			return [
-				'type' => 'string',
-				'x-filterable' => false,
-			];
+			return $this->unknownTypeFallback(column: $column, typeName: $typeName);
 		}
 
+		$property = array_merge(
+			$this->typedProperty(typeName: $typeName),
+			$this->maxLengthFacet(column: $column, typeName: $typeName),
+			$this->typeDescription(column: $column, typeName: $typeName)
+		);
+		$property['x-filterable'] = (in_array($typeName, self::NON_FILTERABLE_TYPES, true) === false);
+
+		return $property;
+	}//end mapColumn()
+
+	/**
+	 * The fragment for a column of an unmapped type: a non-filterable string, with a warning.
+	 *
+	 * @param Column $column   The introspected column.
+	 * @param string $typeName Its DBAL type name, not in TYPE_MAP.
+	 *
+	 * @return array<string, mixed> The fallback property fragment.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function unknownTypeFallback(Column $column, string $typeName): array {
+		$this->logger->warning(
+			sprintf(
+				'[SqlTypeMapper] unknown column type "%s" on column "%s" — falling back to string (non-filterable)',
+				$typeName,
+				$column->getName()
+			)
+		);
+
+		return [
+			'type' => 'string',
+			'x-filterable' => false,
+		];
+	}//end unknownTypeFallback()
+
+	/**
+	 * The JSON-Schema type of a mapped DBAL type, with its format when it has one.
+	 *
+	 * @param string $typeName A DBAL type name in TYPE_MAP.
+	 *
+	 * @return array<string, string> The `type` and optional `format`.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function typedProperty(string $typeName): array {
 		[$jsonType, $format] = self::TYPE_MAP[$typeName];
 
 		$property = ['type' => $jsonType];
@@ -130,31 +164,51 @@ class SqlTypeMapper {
 			$property['format'] = $format;
 		}
 
-		// Map the column length onto maxLength — only for length-carrying
-		// string types (VARCHAR-family); TEXT is unbounded per design D5.
+		return $property;
+	}//end typedProperty()
+
+	/**
+	 * Map the column length onto maxLength — only for length-carrying
+	 * string types (VARCHAR-family); TEXT is unbounded per design D5.
+	 *
+	 * @param Column $column   The introspected column.
+	 * @param string $typeName Its DBAL type name.
+	 *
+	 * @return array<string, int> The `maxLength`, or empty.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function maxLengthFacet(Column $column, string $typeName): array {
 		$length = $column->getLength();
 		if (in_array($typeName, [Types::STRING, Types::ASCII_STRING], true) === true && $length !== null && $length > 0) {
-			$property['maxLength'] = (int)$length;
+			return ['maxLength' => (int)$length];
 		}
 
-		// Surface DECIMAL precision/scale in the description (not a JSON-Schema keyword).
-		if ($typeName === Types::DECIMAL) {
-			$precision = $column->getPrecision();
-			$scale = $column->getScale();
-			if ($precision !== null) {
-				$property['description'] = sprintf('DECIMAL(%d,%d)', (int)$precision, (int)$scale);
-			}
+		return [];
+	}//end maxLengthFacet()
+
+	/**
+	 * The description a type carries: DECIMAL precision/scale (not a JSON-Schema
+	 * keyword), or the JS-precision note of a BIGINT (carried as an integer).
+	 *
+	 * @param Column $column   The introspected column.
+	 * @param string $typeName Its DBAL type name.
+	 *
+	 * @return array<string, string> The `description`, or empty.
+	 *
+	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 */
+	private function typeDescription(Column $column, string $typeName): array {
+		if ($typeName === Types::DECIMAL && $column->getPrecision() !== null) {
+			return ['description' => sprintf('DECIMAL(%d,%d)', (int)$column->getPrecision(), (int)$column->getScale())];
 		}
 
-		// BIGINT is carried as an integer but documented as JS-precision-lossy.
 		if ($typeName === Types::BIGINT) {
-			$property['description'] = 'BIGINT — values beyond 2^53 are precision-lossy in JSON/JS; ids are carried as strings.';
+			return ['description' => 'BIGINT — values beyond 2^53 are precision-lossy in JSON/JS; ids are carried as strings.'];
 		}
 
-		$property['x-filterable'] = (in_array($typeName, self::NON_FILTERABLE_TYPES, true) === false);
-
-		return $property;
-	}//end mapColumn()
+		return [];
+	}//end typeDescription()
 
 	/**
 	 * Resolve the dialect-normalised DBAL type name for a column.

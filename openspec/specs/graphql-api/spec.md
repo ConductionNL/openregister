@@ -145,11 +145,11 @@ References between schemas MUST be resolvable as nested objects in a single quer
 
 ### Requirement: GraphQL MUST support filtering and sorting matching the REST API
 
-List queries MUST support the full filtering, sorting, and search capabilities of the REST API. `GraphQLResolver.argsToRequestParams()` MUST translate GraphQL arguments into the request parameter format expected by `ObjectService.buildSearchQuery()`.
+List queries MUST support the full filtering, sorting, and search capabilities of the REST API. `ListRequest.requestParams()` MUST translate GraphQL arguments into the request parameter format expected by `ObjectService.buildSearchQuery()`.
 
 #### Scenario: Filter by property value
 - **GIVEN** a query: `meldingen(filter: { status: "in_behandeling" }) { edges { node { title } } }`
-- **WHEN** `argsToRequestParams()` processes the filter argument
+- **WHEN** `ListRequest.requestParams()` processes the filter argument
 - **THEN** it MUST set `$params['status'] = "in_behandeling"` (property filters are flattened into top-level params)
 - **AND** `ObjectService.buildSearchQuery()` MUST receive these params and delegate to `MagicSearchHandler`
 
@@ -160,20 +160,20 @@ List queries MUST support the full filtering, sorting, and search capabilities o
 
 #### Scenario: Full-text search with fuzzy matching
 - **GIVEN** a query: `meldingen(search: "wateroverlast", fuzzy: true) { edges { node { title } } }`
-- **WHEN** `argsToRequestParams()` processes the arguments
+- **WHEN** `ListRequest.requestParams()` processes the arguments
 - **THEN** it MUST set `$params['_search'] = "wateroverlast"` and `$params['_fuzzy'] = "true"`
 - **AND** the search MUST delegate to `MagicSearchHandler`'s full-text search (ILIKE across string properties)
 - **AND** when fuzzy is enabled, each edge MUST include a `_relevance` field (0-100) in the connection response
 
 #### Scenario: Sort results
 - **GIVEN** a query: `meldingen(sort: { field: "created", order: "DESC" })`
-- **WHEN** `argsToRequestParams()` processes the sort argument
+- **WHEN** `ListRequest.requestParams()` processes the sort argument
 - **THEN** it MUST set `$params['_order']` to a JSON-encoded array: `[{"field": "created", "direction": "DESC"}]`
 - **AND** `SortInput` is a shared `InputObjectType` with fields `field: String!` and `order: String` (default "ASC")
 
 #### Scenario: Metadata filtering via selfFilter
 - **GIVEN** a query using `selfFilter: { owner: "user-1", organisation: "gemeente-tilburg" }`
-- **WHEN** `argsToRequestParams()` processes the selfFilter argument
+- **WHEN** `ListRequest.requestParams()` processes the selfFilter argument
 - **THEN** it MUST set `$params['@self']['owner'] = "user-1"` and `$params['@self']['organisation'] = "gemeente-tilburg"`
 - **AND** this MUST match the REST API's `@self[owner]=user-1` behavior
 - **AND** `SelfFilter` is a shared `InputObjectType` with fields: `owner`, `organisation`, `register`, `schema`, `uuid`
@@ -184,7 +184,7 @@ Connection types MUST expose facets and facetable field lists matching `FacetHan
 
 #### Scenario: Request facets in a list query
 - **GIVEN** a query: `meldingen(facets: ["status", "priority"]) { edges { node { title } } facets facetable }`
-- **WHEN** `argsToRequestParams()` processes the facets argument
+- **WHEN** `ListRequest.requestParams()` processes the facets argument
 - **THEN** it MUST set `$params['_facets'] = "status,priority"` (comma-separated)
 - **AND** `ObjectService.searchObjectsPaginated()` MUST return facet data
 - **AND** the connection response MUST include `facets` (JSON scalar with value counts per field) and `facetable` (list of field names)
@@ -204,7 +204,7 @@ The API MUST support both offset-based pagination (matching the REST API) and Re
 #### Scenario: Offset-based pagination
 - **GIVEN** 100 meldingen objects
 - **AND** a query: `meldingen(first: 10, offset: 20) { edges { node { title } } totalCount }`
-- **THEN** `argsToRequestParams()` MUST set `$params['_limit'] = 10` and `$params['_offset'] = 20`
+- **THEN** `ListRequest.requestParams()` MUST set `$params['_limit'] = 10` and `$params['_offset'] = 20`
 - **AND** exactly 10 objects MUST be returned starting from offset 20
 - **AND** `totalCount` MUST reflect the total filtered count (100)
 
@@ -213,7 +213,7 @@ The API MUST support both offset-based pagination (matching the REST API) and Re
 - **AND** a query: `meldingen(first: 10, after: "eyJ1dWlk...") { edges { cursor node { title } } pageInfo { hasNextPage endCursor } }`
 - **THEN** 10 objects MUST be returned after the cursor position
 - **AND** `pageInfo.hasNextPage` MUST be `true` if `(offset + limit) < totalCount`
-- **AND** cursors MUST be opaque base64-encoded JSON containing `{uuid, offset}` (via `GraphQLResolver.encodeCursor()`)
+- **AND** cursors MUST be opaque base64-encoded JSON containing `{uuid, offset}` (via `ListConnection.encodeCursor()`)
 
 #### Scenario: Connection type follows Relay specification
 - **GIVEN** any schema `meldingen`
@@ -314,7 +314,7 @@ Individual fields within a type MUST respect the property-level authorization de
 
 ### Requirement: GraphQL MUST log operations to the audit trail
 
-All GraphQL mutations MUST produce audit trail entries using the existing `AuditTrailMapper`, matching the same detail level as REST API operations. Query audit trails MUST be available through a dedicated `_auditTrail` field on every object type.
+All GraphQL mutations MUST produce audit trail entries using the existing `AuditTrailMapper`, matching the same detail level as REST API operations. Every object type carries a dedicated `_auditTrail` field. That field MUST give out an object's entries only through the reader path of the object's history (`ObjectHistoryForReaders`), so that the object read, the doelbinding guard and the property redaction apply as on the REST history. Until a resolver is wired through that path, the field MUST answer null.
 
 #### Scenario: Mutation creates audit trail entry
 - **GIVEN** a user executes `createMelding(input: { title: "Wateroverlast", status: "nieuw" })`
@@ -331,11 +331,12 @@ All GraphQL mutations MUST produce audit trail entries using the existing `Audit
 - **AND** a user executes `updateMelding(id: "melding-1", input: { status: "in_behandeling" })`
 - **THEN** the audit trail `changed` field MUST contain only modified fields: `{ "status": { "old": "nieuw", "new": "in_behandeling" } }`
 
-#### Scenario: Queryable audit trail on objects
+#### Scenario: The audit trail field gives out nothing outside the reader path
 - **GIVEN** a user has access to object `melding-1`
 - **WHEN** they query `melding(id: "melding-1") { _auditTrail(last: 5) { action user changed created } }`
-- **THEN** `GraphQLResolver.resolveAuditTrail()` MUST call `AuditTrailMapper.findAll()` with filter `object_uuid = melding-1`, limit 5, ordered by `created DESC`
+- **THEN** the field answers null, even when the resolved object carries an `_auditTrail` key
 - **AND** the `AuditTrailEntry` type MUST include fields: `action`, `user`, `userName`, `changed` (JSON), `created` (DateTime), `ipAddress`, `processingActivityId`, `confidentiality`, `retentionPeriod`
+- @e2e exclude {asserted in tests/Unit/Service/GraphQL/SchemaGeneratorTest.php}
 
 #### Scenario: GraphQL operation name in audit metadata
 - **GIVEN** a named GraphQL operation: `mutation MarkUrgent($id: ID!) { updateMelding(id: $id, input: { priority: "urgent" }) { id } }`
@@ -704,7 +705,7 @@ type GroupBucket {
 #### Scenario: Resolve a groupBy aggregation
 
 - **GIVEN** a list query with a `groupBy` argument and a schema bound to a register
-- **WHEN** `resolveGroupBy()` runs
+- **WHEN** `ListAggregations.groups()` runs
 - **THEN** it MUST normalize the raw args (field, interval, from, to, metric lowercased, metricField) and validate them through the timeseries validator
 - **AND** it MUST run the aggregation via the aggregation runner and return buckets as `[{key: string, value: float}]`
 - **AND** a validation error or RBAC denial MUST be re-thrown as a GraphQL `Error` (field-level), and a schema with no register MUST return `null` rather than erroring
@@ -719,7 +720,7 @@ type GroupBucket {
 #### Scenario: Encode an opaque pagination cursor
 
 - **GIVEN** an object UUID and an offset position
-- **WHEN** `encodeCursor()` runs
+- **WHEN** `ListConnection.encodeCursor()` runs
 - **THEN** it MUST return a base64-encoded JSON string containing `{uuid, offset}`
 
 ## Current Implementation Status
@@ -734,9 +735,9 @@ type GroupBucket {
 - **Fully implemented -- controller and routes**: `GraphQLController` (`lib/Controller/GraphQLController.php`) exposes `POST /api/graphql` (public+CORS), `GET /api/graphql/explorer` (authenticated), and `GET /api/graphql/subscribe` (authenticated+CORS).
 - **Fully implemented -- RBAC integration**: Schema-level via `PermissionHandler.checkPermission()`, property-level via `PropertyRbacHandler.filterReadableProperties()` and `getUnauthorizedProperties()`.
 - **Fully implemented -- JSON Schema composition**: `CompositionHandler` handles `allOf` (merged fields), `oneOf` (UnionType), `anyOf` (InterfaceType).
-- **Fully implemented -- audit trail integration**: `_auditTrail` field on every object type, delegating to `AuditTrailMapper.findAll()`.
+- **Partially implemented -- audit trail integration**: `_auditTrail` field on every object type, answering null until it is wired through `ObjectHistoryForReaders`.
 - **Fully implemented -- multi-tenancy**: `resolveList()` passes `_multitenancy: true` to `searchObjectsPaginated()`.
-- **Tests present**: Unit tests in `tests/Unit/Service/GraphQL/` (SchemaGeneratorTest, GraphQLErrorFormatterTest, QueryComplexityAnalyzerTest, ScalarTypesTest) and integration test in `tests/Service/GraphQLIntegrationTest.php`. Postman collection at `tests/postman/openregister-graphql-tests.postman_collection.json`.
+- **Tests present**: Unit tests in `tests/Unit/Service/GraphQL/` (SchemaGeneratorTest, GraphQLErrorFormatterTest, QueryComplexityAnalyzerTest, ScalarTypesTest) and integration test in `tests/Service/GraphQLIntegrationTest.php`. Postman collection at `tests/integration/openregister-graphql-tests.postman_collection.json`.
 
 ## Standards & References
 

@@ -1,0 +1,249 @@
+{
+    "importRegisterComponents": {
+        "no registers": {
+            "registers": [],
+            "skipped": {
+                "registers": 0
+            },
+            "maps": {
+                "registersMap": [],
+                "schemasMap": {
+                    "page": "OCA\\OpenRegister\\Db\\Schema#3",
+                    "menu": "OCA\\OpenRegister\\Db\\Schema#4"
+                }
+            },
+            "calls": []
+        },
+        "registers not a list": {
+            "registers": [],
+            "skipped": {
+                "registers": 0
+            },
+            "maps": {
+                "registersMap": [],
+                "schemasMap": {
+                    "page": "OCA\\OpenRegister\\Db\\Schema#3",
+                    "menu": "OCA\\OpenRegister\\Db\\Schema#4"
+                }
+            },
+            "calls": []
+        },
+        "linked, typed and failing registers": {
+            "registers": [
+                "pub",
+                "own"
+            ],
+            "skipped": {
+                "registers": 1
+            },
+            "maps": {
+                "registersMap": {
+                    "pub": "OCA\\OpenRegister\\Db\\Register#50",
+                    "own": "OCA\\OpenRegister\\Db\\Register#50"
+                },
+                "schemasMap": {
+                    "page": "OCA\\OpenRegister\\Db\\Schema#3",
+                    "menu": "OCA\\OpenRegister\\Db\\Schema#4"
+                }
+            },
+            "calls": [
+                "debug [ImportHandler] Schema 'page' found in schemasMap {\"file\":\"ImportHandler.php\",\"schemaId\":3}",
+                "warning [ImportHandler] Schema with slug gone not found in schemasMap during register import. It was REJECTED by the schema import phase (bad shape). This register will be created without this schema reference. {\"file\":\"ImportHandler.php\"}",
+                "debug [ImportHandler] Schema 'menu' found in schemasMap {\"file\":\"ImportHandler.php\",\"schemaId\":4}",
+                "register.find [\"pub\",[false,false]]",
+                "debug [ImportHandler] Register 'pub' not found, will create new one {\"file\":\"ImportHandler.php\",\"appId\":\"app\"}",
+                "register.create {\"slug\":\"pub\",\"schemas\":[3,4],\"type\":\"mock\"}",
+                "register.update pub",
+                "register.find [\"own\",[false,false]]",
+                "debug [ImportHandler] Register 'own' not found, will create new one {\"file\":\"ImportHandler.php\",\"appId\":\"app\"}",
+                "register.create {\"slug\":\"own\",\"type\":\"real\",\"schemas\":\"not-a-list\"}",
+                "register.update own",
+                "register.find [\"boom\",[false,false]]",
+                "debug [ImportHandler] Register 'boom' not found, will create new one {\"file\":\"ImportHandler.php\",\"appId\":\"app\"}",
+                "register.create {\"slug\":\"boom\",\"type\":\"mock\"}",
+                "error [ImportHandler] Failed to import register: create refused {\"file\":\"ImportHandler.php\"}",
+                "warning [ImportHandler] Skipping register 'boom' - import failed: Failed to import register: create refused {\"file\":\"ImportHandler.php\",\"appId\":\"app\",\"registerSlug\":\"boom\",\"error\":\"Failed to import register: create refused\"}"
+            ]
+        },
+        "empty parent type": {
+            "registers": [
+                "pub"
+            ],
+            "skipped": {
+                "registers": 0
+            },
+            "maps": {
+                "registersMap": {
+                    "pub": "OCA\\OpenRegister\\Db\\Register#50"
+                },
+                "schemasMap": {
+                    "page": "OCA\\OpenRegister\\Db\\Schema#3",
+                    "menu": "OCA\\OpenRegister\\Db\\Schema#4"
+                }
+            },
+            "calls": [
+                "register.find [\"pub\",[false,false]]",
+                "debug [ImportHandler] Register 'pub' not found, will create new one {\"file\":\"ImportHandler.php\",\"appId\":\"app\"}",
+                "register.create {\"slug\":\"pub\",\"schemas\":null}",
+                "register.update pub"
+            ]
+        }
+    },
+    "resolveImportedObjectConfigurations": {
+        "plain property": {
+            "result": {
+                "type": "string"
+            },
+            "calls": []
+        },
+        "array configuration": {
+            "result": {
+                "type": "object",
+                "objectConfiguration": {
+                    "register": 9,
+                    "schema": 3
+                }
+            },
+            "calls": []
+        },
+        "object configuration": {
+            "result": {
+                "type": "object",
+                "objectConfiguration": {
+                    "register": 9,
+                    "schema": 3
+                }
+            },
+            "calls": []
+        },
+        "scalar configuration": {
+            "result": {
+                "type": "object",
+                "objectConfiguration": "pub"
+            },
+            "calls": []
+        },
+        "items null": {
+            "result": {
+                "type": "array",
+                "items": null
+            },
+            "calls": []
+        },
+        "items scalar": {
+            "result": {
+                "type": "array",
+                "items": "string"
+            },
+            "calls": []
+        },
+        "items array configuration": {
+            "result": {
+                "type": "array",
+                "items": {
+                    "objectConfiguration": {
+                        "register": 9,
+                        "schema": 3
+                    }
+                }
+            },
+            "calls": []
+        },
+        "items object with object configuration": {
+            "result": {
+                "type": "array",
+                "items": {
+                    "objectConfiguration": {
+                        "register": 9,
+                        "schema": 3
+                    }
+                }
+            },
+            "calls": []
+        },
+        "items without configuration": {
+            "result": {
+                "type": "array",
+                "objectConfiguration": {
+                    "register": 9,
+                    "schema": 3
+                },
+                "items": {
+                    "type": "string"
+                }
+            },
+            "calls": []
+        }
+    },
+    "listedSeedObjects": {
+        "nothing listed": [],
+        "components only": [
+            {
+                "@self": {
+                    "uuid": "u-1"
+                },
+                "n": 1
+            },
+            {
+                "@self": {
+                    "register": "pub",
+                    "schema": "page",
+                    "slug": "home"
+                },
+                "n": 2
+            },
+            {
+                "title": "no self",
+                "n": 3
+            },
+            {
+                "title": "no self",
+                "n": 3
+            }
+        ],
+        "both, deduplicated": [
+            {
+                "@self": {
+                    "uuid": "u-1"
+                },
+                "n": 1
+            },
+            {
+                "@self": {
+                    "register": "pub",
+                    "schema": "page",
+                    "slug": "home"
+                },
+                "n": 2
+            },
+            {
+                "title": "no self",
+                "n": 3
+            },
+            {
+                "@self": {
+                    "uuid": "u-2"
+                }
+            }
+        ],
+        "scalar buckets": []
+    },
+    "ensureMagicTablesForImportedSchemas": {
+        "no schemas": [],
+        "unusable entries": [],
+        "owning registers, failures and lookup failure": [
+            "register.idsWithSchema 41",
+            "register.find [7,[false,false]]",
+            "magic.ensure 7/41",
+            "register.find [66,[false,false]]",
+            "warning [ImportHandler] Failed to reconcile magic table for imported schema {\"file\":\"ImportHandler.php\",\"schema_id\":41,\"schema_slug\":\"page\",\"register_id\":\"66\",\"error\":\"register 66 broken\"}",
+            "register.find [8,[false,false]]",
+            "magic.ensure 8/41",
+            "warning [ImportHandler] Failed to reconcile magic table for imported schema {\"file\":\"ImportHandler.php\",\"schema_id\":41,\"schema_slug\":\"page\",\"register_id\":8,\"error\":\"ddl refused\"}",
+            "register.idsWithSchema 42",
+            "register.idsWithSchema 99",
+            "warning [ImportHandler] Could not resolve registers for imported schema; magic table not reconciled {\"file\":\"ImportHandler.php\",\"schema_id\":99,\"error\":\"ids lookup failed\"}"
+        ],
+        "no magic mapper": []
+    }
+}

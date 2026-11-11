@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\BulkJobMember;
 /**
  * An immutable per-object outcome.
  */
-final class BulkActionResult {
+final class BulkActionResult implements BulkActionOutcomeInterface {
 	/**
 	 * Constructor.
 	 *

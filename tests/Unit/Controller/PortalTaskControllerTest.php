@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\PortalTaskControllerFactory;
 use OCA\OpenRegister\Controller\PortalTaskController;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\Task;
@@ -33,6 +34,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Service\Portal\PortalCompletion;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
 use OCA\OpenRegister\Service\Portal\PortalSubjectAssertion;
 use OCA\OpenRegister\Service\Portal\PortalTaskDeliveryService;
@@ -52,6 +54,9 @@ use RuntimeException;
  * HTTP status and body translation for every portal task route.
  *
  * @covers \OCA\OpenRegister\Controller\PortalTaskController
+ * @uses \OCA\OpenRegister\Controller\Support\PortalTaskDomain
+ * @uses \OCA\OpenRegister\Controller\Support\PortalTaskPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\PortalTaskControllerServices
  * @covers \OCA\OpenRegister\Exception\PortalSubjectException
  * @covers \OCA\OpenRegister\Db\PortalTaskDelivery
  * @uses \OCA\OpenRegister\Db\Task
@@ -127,7 +132,7 @@ class PortalTaskControllerTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn($admin);
 
-		return new PortalTaskController('openregister', $this->request, $this->assertion, $this->portal, $this->delivery, $session, $groups, $this->logger);
+		return PortalTaskControllerFactory::create('openregister', $this->request, $this->assertion, $this->portal, $this->delivery, $session, $groups, $this->logger);
 	}//end controller()
 
 	/**
@@ -232,10 +237,14 @@ class PortalTaskControllerTest extends TestCase {
 			->with(
 				$subject,
 				't-1',
-				['remarks' => 'ok'],
-				'here',
-				[['name' => 'a.pdf', 'type' => 'application/pdf', 'size' => 12, 'tmp_name' => '/tmp/a', 'error' => UPLOAD_ERR_OK]],
-				'submitted'
+				$this->equalTo(
+					new PortalCompletion(
+						answers: ['remarks' => 'ok'],
+						comment: 'here',
+						files: [['name' => 'a.pdf', 'type' => 'application/pdf', 'size' => 12, 'tmp_name' => '/tmp/a', 'error' => UPLOAD_ERR_OK]],
+						outcome: 'submitted'
+					)
+				)
 			)
 			->willReturn($this->task());
 		$this->portal->method('row')->willReturn(['uuid' => 't-1', 'state' => 'completed']);

@@ -37,10 +37,9 @@ namespace OCA\OpenRegister\Service\Chat;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\Response;
-use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use OCP\IAppConfig;
 use OCP\IRequest;
-use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -52,7 +51,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  */
-class ChatProxyHandler {
+class ChatProxyHandler implements ChatProxyHandlerInterface {
 
 	/**
 	 * App id whose config holds the proxy target.
@@ -124,17 +123,15 @@ class ChatProxyHandler {
 	/**
 	 * Constructor.
 	 *
-	 * @param IAppConfig $appConfig Reads the `chat.proxyTo` appconfig value.
-	 * @param IAppManager $appManager Checks whether hermiq is installed/enabled before ever attempting a call.
-	 * @param IURLGenerator $urlGenerator Builds absolute same-instance URLs for the forward/redirect targets.
-	 * @param IClientService $clientService NC's outbound HTTP client factory.
-	 * @param LoggerInterface $logger Logs fallback reasons (never throws past this class).
+	 * @param ChatProxyEndpoint $endpoint   The collaborators that locate and call the chat backend.
+	 * @param IAppConfig        $appConfig  Reads the `chat.proxyTo` appconfig value.
+	 * @param IAppManager       $appManager Checks whether hermiq is installed/enabled before ever attempting a call.
+	 * @param LoggerInterface   $logger     Logs fallback reasons (never throws past this class).
 	 */
 	public function __construct(
+		private readonly ChatProxyEndpoint $endpoint,
 		private readonly IAppConfig $appConfig,
 		private readonly IAppManager $appManager,
-		private readonly IURLGenerator $urlGenerator,
-		private readonly IClientService $clientService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -198,8 +195,47 @@ class ChatProxyHandler {
 			hermiqPath: $hermiqPath,
 			queryString: $this->extractQueryString(request: $request)
 		);
-		$method = strtoupper($request->getMethod());
 
+		$upstream = $this->sendForward(request: $request, url: $url);
+		if ($upstream === null) {
+			return null;
+		}
+
+		return $this->rebuildResponse(upstream: $upstream);
+	}//end forwardJsonRequest()
+
+	/**
+	 * Send the request on to hermiq with its forwardable headers and, unless it is
+	 * a GET or DELETE, its JSON body.
+	 *
+	 * @param IRequest $request The original incoming request.
+	 * @param string   $url     The absolute hermiq URL.
+	 *
+	 * @return IResponse|null The upstream response, or null on transport failure (logged).
+	 */
+	private function sendForward(IRequest $request, string $url): ?IResponse {
+		$method  = strtoupper($request->getMethod());
+		$options = $this->forwardOptions(request: $request, method: $method);
+
+		try {
+			$client = $this->endpoint->clientService->newClient();
+			return $client->request($method, $url, $options);
+		} catch (Throwable $e) {
+			$this->logForwardFailure(url: $url, error: $e);
+			return null;
+		}
+	}//end sendForward()
+
+	/**
+	 * The client options of a forward: headers, upstream errors passed through, the
+	 * forward timeout, and the JSON body for methods that carry one.
+	 *
+	 * @param IRequest $request The original incoming request.
+	 * @param string   $method  The upper-cased HTTP method.
+	 *
+	 * @return array<string, mixed> The client options.
+	 */
+	private function forwardOptions(IRequest $request, string $method): array {
 		$options = [
 			'headers' => $this->buildForwardHeaders(request: $request),
 			'http_errors' => false,
@@ -210,20 +246,35 @@ class ChatProxyHandler {
 			$options['body'] = (string)json_encode($this->extractForwardableParams(request: $request));
 		}
 
-		try {
-			$client = $this->clientService->newClient();
-			$upstream = $client->request($method, $url, $options);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[ChatProxyHandler] hermiq forward failed — falling back to local serving',
-				[
-					'url' => $url,
-					'error' => $e->getMessage(),
-				]
-			);
-			return null;
-		}
+		return $options;
+	}//end forwardOptions()
 
+	/**
+	 * Log a failed forward; the caller falls back to local serving.
+	 *
+	 * @param string    $url   The absolute hermiq URL.
+	 * @param Throwable $error The transport failure.
+	 *
+	 * @return void
+	 */
+	private function logForwardFailure(string $url, Throwable $error): void {
+		$this->logger->warning(
+			'[ChatProxyHandler] hermiq forward failed — falling back to local serving',
+			[
+				'url' => $url,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logForwardFailure()
+
+	/**
+	 * Rebuild hermiq's answer verbatim: body, status code and Content-Type.
+	 *
+	 * @param IResponse $upstream The upstream response.
+	 *
+	 * @return Response The rebuilt response.
+	 */
+	private function rebuildResponse(IResponse $upstream): Response {
 		$body = $upstream->getBody();
 		if (is_resource($body) === true) {
 			$body = stream_get_contents($body);
@@ -255,7 +306,7 @@ class ChatProxyHandler {
 		}
 
 		return $response;
-	}//end forwardJsonRequest()
+	}//end rebuildResponse()
 
 	/**
 	 * Cheap reachability probe used before redirecting the SSE streaming
@@ -266,11 +317,27 @@ class ChatProxyHandler {
 	 * @return bool True when hermiq's chat health endpoint responds without a 5xx / transport error.
 	 */
 	public function probeReachable(): bool {
-		$url = $this->urlGenerator->getAbsoluteURL(self::HERMIQ_HEALTH_PATH);
+		$url = $this->endpoint->urlGenerator->getAbsoluteURL(self::HERMIQ_HEALTH_PATH);
 
+		$response = $this->probeResponse(url: $url);
+		if ($response === null) {
+			return false;
+		}
+
+		return $response->getStatusCode() < 500;
+	}//end probeReachable()
+
+	/**
+	 * Ask hermiq's health endpoint; a transport failure is logged and gives null.
+	 *
+	 * @param string $url The absolute health URL.
+	 *
+	 * @return IResponse|null The answer, or null.
+	 */
+	private function probeResponse(string $url): ?IResponse {
 		try {
-			$client = $this->clientService->newClient();
-			$response = $client->get(
+			$client = $this->endpoint->clientService->newClient();
+			return $client->get(
 				$url,
 				[
 					'timeout' => self::PROBE_TIMEOUT_SECONDS,
@@ -278,18 +345,28 @@ class ChatProxyHandler {
 				]
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[ChatProxyHandler] hermiq reachability probe failed — falling back to local serving',
-				[
-					'url' => $url,
-					'error' => $e->getMessage(),
-				]
-			);
-			return false;
+			$this->logProbeFailure(url: $url, error: $e);
+			return null;
 		}
+	}//end probeResponse()
 
-		return $response->getStatusCode() < 500;
-	}//end probeReachable()
+	/**
+	 * Log a failed reachability probe; the caller falls back to local serving.
+	 *
+	 * @param string    $url   The absolute health URL.
+	 * @param Throwable $error The transport failure.
+	 *
+	 * @return void
+	 */
+	private function logProbeFailure(string $url, Throwable $error): void {
+		$this->logger->warning(
+			'[ChatProxyHandler] hermiq reachability probe failed — falling back to local serving',
+			[
+				'url' => $url,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logProbeFailure()
 
 	/**
 	 * Build a 308 Permanent Redirect response to hermiq's mirrored path.
@@ -348,7 +425,7 @@ class ChatProxyHandler {
 	 * @return string The absolute URL.
 	 */
 	private function buildAbsoluteUrl(string $hermiqPath, string $queryString): string {
-		return $this->urlGenerator->getAbsoluteURL($hermiqPath) . $queryString;
+		return $this->endpoint->urlGenerator->getAbsoluteURL($hermiqPath) . $queryString;
 	}//end buildAbsoluteUrl()
 
 	/**

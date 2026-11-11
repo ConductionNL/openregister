@@ -66,14 +66,41 @@ final class ReferenceFilterDeclaration {
 	public const OPERATORS = ['eq', 'neq', 'in'];
 
 	/**
+	 * The refusal for a filter on a property that references nothing: annotation, path.
+	 */
+	private const MSG_NOT_A_REFERENCE = '%s at \'%s\' is on a property that references nothing. Put it on a `$ref` property.';
+
+	/**
+	 * The refusal for a condition missing an operand: path.
+	 */
+	private const MSG_NO_OPERANDS = 'The condition at \'%s\' needs a \'field\' on the referenced schema and a \'from\' on this one.';
+
+	/**
+	 * The refusal for an unknown operator: path, operator, the operators.
+	 */
+	private const MSG_BAD_OPERATOR = 'The condition at \'%s\' uses operator \'%s\'. It must be one of: %s.';
+
+	/**
+	 * The refusal for a `from` this schema does not declare: path, property.
+	 */
+	private const MSG_UNKNOWN_FROM = 'The filter at \'%s\' reads \'%s\' off this record, and this schema does not declare it.';
+
+	/**
+	 * The refusal for a `field` the referenced schema does not declare: path, property.
+	 */
+	private const MSG_UNKNOWN_FIELD = 'The filter at \'%s\' matches on \'%s\', and the referenced schema does not declare it.';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param array<int, array{field: string, op: string, from: string}> $conditions The parsed conditions.
+	 * @param string                                                     $path       The property path, for messages.
 	 *
 	 * @return void
 	 */
 	private function __construct(
 		public readonly array $conditions,
+		public readonly string $path = '',
 	) {
 	}//end __construct()
 
@@ -90,39 +117,44 @@ final class ReferenceFilterDeclaration {
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
 	 */
 	public static function fromProperty(array $property, string $path = ''): ?self {
-		$raw = ($property[self::ANNOTATION] ?? null);
-		if ($raw === null) {
+		if (($property[self::ANNOTATION] ?? null) === null) {
 			return null;
 		}
 
-		if (is_array($raw) === false || $raw === []) {
-			throw new ReferenceFilterException(
-				sprintf('%s at \'%s\' must be a non-empty list of conditions.', self::ANNOTATION, $path),
-				path: $path
-			);
-		}
-
-		// A REFERENCE, OR NOTHING TO NARROW. A filter on a plain string is not
-		// a narrower picker, it is a rule nothing reads, and the author who
-		// wrote it believes their field is filtered.
-		if (isset($property['$ref']) === false && ($property['type'] ?? '') !== 'array') {
-			throw new ReferenceFilterException(
-				sprintf(
-					'%s at \'%s\' is on a property that references nothing. Put it on a `$ref` property.',
-					self::ANNOTATION,
-					$path
-				),
-				path: $path
-			);
-		}
+		self::assertNarrowsAReference(property: $property, path: $path);
+		$raw = $property[self::ANNOTATION];
 
 		$conditions = [];
 		foreach ($raw as $index => $condition) {
 			$conditions[] = self::condition(condition: $condition, path: $path . '/' . (string)$index);
 		}
 
-		return new self(conditions: $conditions);
+		return new self(conditions: $conditions, path: $path);
 	}//end fromProperty()
+
+	/**
+	 * Refuse a filter that is no list of conditions, or sits on a property that references nothing.
+	 *
+	 * @param array<string, mixed> $property The schema property definition, carrying the declared filter.
+	 * @param string               $path     The property path, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws ReferenceFilterException When the filter cannot narrow anything.
+	 */
+	private static function assertNarrowsAReference(array $property, string $path): void {
+		$raw = $property[self::ANNOTATION];
+		if (is_array($raw) === false || $raw === []) {
+			throw self::refusal(message: sprintf('%s at \'%s\' must be a non-empty list of conditions.', self::ANNOTATION, $path), path: $path);
+		}
+
+		// A REFERENCE, OR NOTHING TO NARROW. A filter on a plain string is not
+		// a narrower picker, it is a rule nothing reads, and the author who
+		// wrote it believes their field is filtered.
+		if (isset($property['$ref']) === false && ($property['type'] ?? '') !== 'array') {
+			throw self::refusal(message: sprintf(self::MSG_NOT_A_REFERENCE, self::ANNOTATION, $path), path: $path);
+		}
+	}//end assertNarrowsAReference()
 
 	/**
 	 * One condition, checked.
@@ -136,40 +168,35 @@ final class ReferenceFilterDeclaration {
 	 */
 	private static function condition(mixed $condition, string $path): array {
 		if (is_array($condition) === false) {
-			throw new ReferenceFilterException(
-				sprintf('The condition at \'%s\' must be an object.', $path),
-				path: $path
-			);
+			throw self::refusal(message: sprintf('The condition at \'%s\' must be an object.', $path), path: $path);
 		}
 
 		$field = trim((string)($condition['field'] ?? ''));
-		$from = trim((string)($condition['from'] ?? ''));
-		$op = trim((string)($condition['op'] ?? 'eq'));
+		$from  = trim((string)($condition['from'] ?? ''));
+		$op    = trim((string)($condition['op'] ?? 'eq'));
 
 		if ($field === '' || $from === '') {
-			throw new ReferenceFilterException(
-				sprintf(
-					'The condition at \'%s\' needs a \'field\' on the referenced schema and a \'from\' on this one.',
-					$path
-				),
-				path: $path
-			);
+			throw self::refusal(message: sprintf(self::MSG_NO_OPERANDS, $path), path: $path);
 		}
 
 		if (in_array($op, self::OPERATORS, true) === false) {
-			throw new ReferenceFilterException(
-				sprintf(
-					'The condition at \'%s\' uses operator \'%s\'. It must be one of: %s.',
-					$path,
-					$op,
-					implode(', ', self::OPERATORS)
-				),
-				path: $path
-			);
+			throw self::refusal(message: sprintf(self::MSG_BAD_OPERATOR, $path, $op, implode(', ', self::OPERATORS)), path: $path);
 		}
 
 		return ['field' => $field, 'op' => $op, 'from' => $from];
 	}//end condition()
+
+	/**
+	 * A refusal about the filter at one path.
+	 *
+	 * @param string $message The sentence.
+	 * @param string $path    The path it is about.
+	 *
+	 * @return ReferenceFilterException The refusal.
+	 */
+	private static function refusal(string $message, string $path): ReferenceFilterException {
+		return new ReferenceFilterException($message, path: $path);
+	}//end refusal()
 
 	/**
 	 * Refuse a filter naming a property neither schema declares.
@@ -180,7 +207,6 @@ final class ReferenceFilterDeclaration {
 	 *
 	 * @param array<string, mixed> $ownProperties The properties of the schema holding the reference.
 	 * @param array<string, mixed> $farProperties The properties of the referenced schema.
-	 * @param string               $path          The property path, for the message.
 	 *
 	 * @return void
 	 *
@@ -188,28 +214,15 @@ final class ReferenceFilterDeclaration {
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
 	 */
-	public function assertOperandsExist(array $ownProperties, array $farProperties, string $path = ''): void {
+	public function assertOperandsExist(array $ownProperties, array $farProperties): void {
+		$path = $this->path;
 		foreach ($this->conditions as $condition) {
 			if (array_key_exists($condition['from'], $ownProperties) === false) {
-				throw new ReferenceFilterException(
-					sprintf(
-						'The filter at \'%s\' reads \'%s\' off this record, and this schema does not declare it.',
-						$path,
-						$condition['from']
-					),
-					path: $path
-				);
+				throw self::refusal(message: sprintf(self::MSG_UNKNOWN_FROM, $path, $condition['from']), path: $path);
 			}
 
 			if ($farProperties !== [] && array_key_exists($condition['field'], $farProperties) === false) {
-				throw new ReferenceFilterException(
-					sprintf(
-						'The filter at \'%s\' matches on \'%s\', and the referenced schema does not declare it.',
-						$path,
-						$condition['field']
-					),
-					path: $path
-				);
+				throw self::refusal(message: sprintf(self::MSG_UNKNOWN_FIELD, $path, $condition['field']), path: $path);
 			}
 		}
 	}//end assertOperandsExist()
@@ -234,17 +247,26 @@ final class ReferenceFilterDeclaration {
 
 		foreach ($this->conditions as $condition) {
 			$value = ($record[$condition['from']] ?? null);
-			if ($value === null || $value === '' || $value === []) {
+			if (self::isUnresolved(value: $value) === true) {
 				$needs[] = $condition['from'];
 				continue;
 			}
 
-			$filter[$condition['field']] = [$condition['op'] => $value];
-			if ($condition['op'] === 'eq') {
-				$filter[$condition['field']] = $value;
-			}
+			$filter[$condition['field']] = self::clause(op: $condition['op'], value: $value);
 		}
 
+		return self::wholeOrNothing(filter: $filter, needs: $needs);
+	}//end resolve()
+
+	/**
+	 * The resolved filter, or, when any operand is unresolved, no filter and what it needs.
+	 *
+	 * @param array<string, mixed> $filter The clauses of the resolved conditions.
+	 * @param array<int, string>   $needs  The operands still unresolved.
+	 *
+	 * @return array{filter: array<string, mixed>, needs: array<int, string>} The answer.
+	 */
+	private static function wholeOrNothing(array $filter, array $needs): array {
 		if ($needs !== []) {
 			// The filter is dropped whole. Half a filter is a wider answer than
 			// no filter at all was ever meant to be.
@@ -252,5 +274,78 @@ final class ReferenceFilterDeclaration {
 		}
 
 		return ['filter' => $filter, 'needs' => []];
-	}//end resolve()
+	}//end wholeOrNothing()
+
+	/**
+	 * The schema a reference property points at.
+	 *
+	 * Mirrors what a reference means everywhere else in this app: `$ref` or
+	 * `schema` on the property, and for an array of references, the same two
+	 * keys on its `items`.
+	 *
+	 * @param array<string, mixed> $config The reference property's declaration.
+	 *
+	 * @return string|null The target identifier, or null when the property names none.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 */
+	public static function targetSchemaOf(array $config): ?string {
+		$direct = self::namedTarget(config: $config);
+		if ($direct !== null) {
+			return $direct;
+		}
+
+		// An array of references points at its item shape.
+		$items = ($config['items'] ?? null);
+		if (is_array($items) === true) {
+			return self::targetSchemaOf(config: $items);
+		}
+
+		return null;
+	}//end targetSchemaOf()
+
+	/**
+	 * The schema `$ref` or `schema` names on the property itself.
+	 *
+	 * @param array<string, mixed> $config The reference property's declaration.
+	 *
+	 * @return string|null The target identifier, or null when neither names one.
+	 */
+	private static function namedTarget(array $config): ?string {
+		foreach (['$ref', 'schema'] as $key) {
+			$value = ($config[$key] ?? null);
+			if (is_string($value) === true && $value !== '') {
+				return $value;
+			}
+		}
+
+		return null;
+	}//end namedTarget()
+
+	/**
+	 * The objects-API clause one condition becomes: the bare value for `eq`, else `{op: value}`.
+	 *
+	 * @param string $op    The operator.
+	 * @param mixed  $value The resolved operand.
+	 *
+	 * @return mixed The clause.
+	 */
+	private static function clause(string $op, mixed $value): mixed {
+		if ($op === 'eq') {
+			return $value;
+		}
+
+		return [$op => $value];
+	}//end clause()
+
+	/**
+	 * Whether a record leaves an operand unresolved: absent, null, an empty string or an empty list.
+	 *
+	 * @param mixed $value The record's value.
+	 *
+	 * @return bool True when the operand is unresolved.
+	 */
+	private static function isUnresolved(mixed $value): bool {
+		return in_array($value, [null, '', []], true);
+	}//end isUnresolved()
 }//end class

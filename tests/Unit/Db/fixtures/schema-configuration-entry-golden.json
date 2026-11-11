@@ -1,0 +1,1869 @@
+{
+    "objectNameField #0": {
+        "kept": {
+            "objectNameField": null
+        },
+        "dropped": []
+    },
+    "objectNameField #1": {
+        "kept": null,
+        "dropped": [
+            "objectNameField"
+        ]
+    },
+    "objectNameField #2": {
+        "kept": null,
+        "dropped": [
+            "objectNameField"
+        ]
+    },
+    "objectNameField #3": {
+        "kept": null,
+        "dropped": [
+            "objectNameField"
+        ]
+    },
+    "objectNameField #4": {
+        "kept": null,
+        "dropped": [
+            "objectNameField"
+        ]
+    },
+    "objectNameField #5": {
+        "kept": null,
+        "dropped": [
+            "objectNameField"
+        ]
+    },
+    "objectNameField #6": {
+        "kept": null,
+        "dropped": [
+            "objectNameField"
+        ]
+    },
+    "objectNameField #7": {
+        "kept": {
+            "objectNameField": null
+        },
+        "dropped": []
+    },
+    "objectNameField #8": {
+        "kept": {
+            "objectNameField": "title"
+        },
+        "dropped": []
+    },
+    "objectNameField #9": {
+        "kept": {
+            "objectNameField": "30"
+        },
+        "dropped": []
+    },
+    "objectNameField #10": {
+        "kept": null,
+        "dropped": [
+            "objectNameField"
+        ]
+    },
+    "objectNameField #11": {
+        "kept": null,
+        "dropped": [
+            "objectNameField"
+        ]
+    },
+    "objectNameField #12": {
+        "kept": null,
+        "dropped": [
+            "objectNameField"
+        ]
+    },
+    "objectNameField #13": {
+        "kept": null,
+        "dropped": [
+            "objectNameField"
+        ]
+    },
+    "objectSlugField #0": {
+        "kept": {
+            "objectSlugField": null
+        },
+        "dropped": []
+    },
+    "objectSlugField #1": {
+        "kept": null,
+        "dropped": [
+            "objectSlugField"
+        ]
+    },
+    "objectSlugField #2": {
+        "kept": null,
+        "dropped": [
+            "objectSlugField"
+        ]
+    },
+    "objectSlugField #3": {
+        "kept": null,
+        "dropped": [
+            "objectSlugField"
+        ]
+    },
+    "objectSlugField #4": {
+        "kept": null,
+        "dropped": [
+            "objectSlugField"
+        ]
+    },
+    "objectSlugField #5": {
+        "kept": null,
+        "dropped": [
+            "objectSlugField"
+        ]
+    },
+    "objectSlugField #6": {
+        "kept": null,
+        "dropped": [
+            "objectSlugField"
+        ]
+    },
+    "objectSlugField #7": {
+        "kept": {
+            "objectSlugField": null
+        },
+        "dropped": []
+    },
+    "objectSlugField #8": {
+        "kept": {
+            "objectSlugField": "title"
+        },
+        "dropped": []
+    },
+    "objectSlugField #9": {
+        "kept": {
+            "objectSlugField": "30"
+        },
+        "dropped": []
+    },
+    "objectSlugField #10": {
+        "kept": null,
+        "dropped": [
+            "objectSlugField"
+        ]
+    },
+    "objectSlugField #11": {
+        "kept": null,
+        "dropped": [
+            "objectSlugField"
+        ]
+    },
+    "objectSlugField #12": {
+        "kept": null,
+        "dropped": [
+            "objectSlugField"
+        ]
+    },
+    "objectSlugField #13": {
+        "kept": null,
+        "dropped": [
+            "objectSlugField"
+        ]
+    },
+    "allowFiles #0": {
+        "kept": {
+            "allowFiles": null
+        },
+        "dropped": []
+    },
+    "allowFiles #1": {
+        "kept": {
+            "allowFiles": true
+        },
+        "dropped": []
+    },
+    "allowFiles #2": {
+        "kept": {
+            "allowFiles": false
+        },
+        "dropped": []
+    },
+    "allowFiles #3": {
+        "kept": null,
+        "dropped": [
+            "allowFiles"
+        ]
+    },
+    "allowFiles #4": {
+        "kept": null,
+        "dropped": [
+            "allowFiles"
+        ]
+    },
+    "allowFiles #5": {
+        "kept": null,
+        "dropped": [
+            "allowFiles"
+        ]
+    },
+    "allowFiles #6": {
+        "kept": null,
+        "dropped": [
+            "allowFiles"
+        ]
+    },
+    "allowFiles #7": {
+        "kept": null,
+        "dropped": [
+            "allowFiles"
+        ]
+    },
+    "allowFiles #8": {
+        "kept": null,
+        "dropped": [
+            "allowFiles"
+        ]
+    },
+    "allowFiles #9": {
+        "kept": null,
+        "dropped": [
+            "allowFiles"
+        ]
+    },
+    "allowFiles #10": {
+        "kept": null,
+        "dropped": [
+            "allowFiles"
+        ]
+    },
+    "allowFiles #11": {
+        "kept": null,
+        "dropped": [
+            "allowFiles"
+        ]
+    },
+    "allowFiles #12": {
+        "kept": null,
+        "dropped": [
+            "allowFiles"
+        ]
+    },
+    "allowFiles #13": {
+        "kept": null,
+        "dropped": [
+            "allowFiles"
+        ]
+    },
+    "autoShare #0": {
+        "kept": {
+            "autoShare": null
+        },
+        "dropped": []
+    },
+    "autoShare #1": {
+        "kept": {
+            "autoShare": true
+        },
+        "dropped": []
+    },
+    "autoShare #2": {
+        "kept": {
+            "autoShare": false
+        },
+        "dropped": []
+    },
+    "autoShare #3": {
+        "kept": null,
+        "dropped": [
+            "autoShare"
+        ]
+    },
+    "autoShare #4": {
+        "kept": null,
+        "dropped": [
+            "autoShare"
+        ]
+    },
+    "autoShare #5": {
+        "kept": null,
+        "dropped": [
+            "autoShare"
+        ]
+    },
+    "autoShare #6": {
+        "kept": null,
+        "dropped": [
+            "autoShare"
+        ]
+    },
+    "autoShare #7": {
+        "kept": null,
+        "dropped": [
+            "autoShare"
+        ]
+    },
+    "autoShare #8": {
+        "kept": null,
+        "dropped": [
+            "autoShare"
+        ]
+    },
+    "autoShare #9": {
+        "kept": null,
+        "dropped": [
+            "autoShare"
+        ]
+    },
+    "autoShare #10": {
+        "kept": null,
+        "dropped": [
+            "autoShare"
+        ]
+    },
+    "autoShare #11": {
+        "kept": null,
+        "dropped": [
+            "autoShare"
+        ]
+    },
+    "autoShare #12": {
+        "kept": null,
+        "dropped": [
+            "autoShare"
+        ]
+    },
+    "autoShare #13": {
+        "kept": null,
+        "dropped": [
+            "autoShare"
+        ]
+    },
+    "draftsListed #0": {
+        "kept": {
+            "draftsListed": null
+        },
+        "dropped": []
+    },
+    "draftsListed #1": {
+        "kept": {
+            "draftsListed": true
+        },
+        "dropped": []
+    },
+    "draftsListed #2": {
+        "kept": {
+            "draftsListed": false
+        },
+        "dropped": []
+    },
+    "draftsListed #3": {
+        "kept": null,
+        "dropped": [
+            "draftsListed"
+        ]
+    },
+    "draftsListed #4": {
+        "kept": null,
+        "dropped": [
+            "draftsListed"
+        ]
+    },
+    "draftsListed #5": {
+        "kept": null,
+        "dropped": [
+            "draftsListed"
+        ]
+    },
+    "draftsListed #6": {
+        "kept": null,
+        "dropped": [
+            "draftsListed"
+        ]
+    },
+    "draftsListed #7": {
+        "kept": null,
+        "dropped": [
+            "draftsListed"
+        ]
+    },
+    "draftsListed #8": {
+        "kept": null,
+        "dropped": [
+            "draftsListed"
+        ]
+    },
+    "draftsListed #9": {
+        "kept": null,
+        "dropped": [
+            "draftsListed"
+        ]
+    },
+    "draftsListed #10": {
+        "kept": null,
+        "dropped": [
+            "draftsListed"
+        ]
+    },
+    "draftsListed #11": {
+        "kept": null,
+        "dropped": [
+            "draftsListed"
+        ]
+    },
+    "draftsListed #12": {
+        "kept": null,
+        "dropped": [
+            "draftsListed"
+        ]
+    },
+    "draftsListed #13": {
+        "kept": null,
+        "dropped": [
+            "draftsListed"
+        ]
+    },
+    "orphanCleanup #0": {
+        "kept": {
+            "orphanCleanup": null
+        },
+        "dropped": []
+    },
+    "orphanCleanup #1": {
+        "kept": {
+            "orphanCleanup": true
+        },
+        "dropped": []
+    },
+    "orphanCleanup #2": {
+        "kept": {
+            "orphanCleanup": false
+        },
+        "dropped": []
+    },
+    "orphanCleanup #3": {
+        "kept": null,
+        "dropped": [
+            "orphanCleanup"
+        ]
+    },
+    "orphanCleanup #4": {
+        "kept": null,
+        "dropped": [
+            "orphanCleanup"
+        ]
+    },
+    "orphanCleanup #5": {
+        "kept": null,
+        "dropped": [
+            "orphanCleanup"
+        ]
+    },
+    "orphanCleanup #6": {
+        "kept": null,
+        "dropped": [
+            "orphanCleanup"
+        ]
+    },
+    "orphanCleanup #7": {
+        "kept": null,
+        "dropped": [
+            "orphanCleanup"
+        ]
+    },
+    "orphanCleanup #8": {
+        "kept": null,
+        "dropped": [
+            "orphanCleanup"
+        ]
+    },
+    "orphanCleanup #9": {
+        "kept": null,
+        "dropped": [
+            "orphanCleanup"
+        ]
+    },
+    "orphanCleanup #10": {
+        "kept": null,
+        "dropped": [
+            "orphanCleanup"
+        ]
+    },
+    "orphanCleanup #11": {
+        "kept": null,
+        "dropped": [
+            "orphanCleanup"
+        ]
+    },
+    "orphanCleanup #12": {
+        "kept": null,
+        "dropped": [
+            "orphanCleanup"
+        ]
+    },
+    "orphanCleanup #13": {
+        "kept": null,
+        "dropped": [
+            "orphanCleanup"
+        ]
+    },
+    "allowedTags #0": {
+        "kept": {
+            "allowedTags": null
+        },
+        "dropped": []
+    },
+    "allowedTags #1": {
+        "kept": null,
+        "dropped": [
+            "allowedTags"
+        ]
+    },
+    "allowedTags #2": {
+        "kept": null,
+        "dropped": [
+            "allowedTags"
+        ]
+    },
+    "allowedTags #3": {
+        "kept": null,
+        "dropped": [
+            "allowedTags"
+        ]
+    },
+    "allowedTags #4": {
+        "kept": null,
+        "dropped": [
+            "allowedTags"
+        ]
+    },
+    "allowedTags #5": {
+        "kept": null,
+        "dropped": [
+            "allowedTags"
+        ]
+    },
+    "allowedTags #6": {
+        "kept": null,
+        "dropped": [
+            "allowedTags"
+        ]
+    },
+    "allowedTags #7": {
+        "kept": null,
+        "dropped": [
+            "allowedTags"
+        ]
+    },
+    "allowedTags #8": {
+        "kept": null,
+        "dropped": [
+            "allowedTags"
+        ]
+    },
+    "allowedTags #9": {
+        "kept": null,
+        "dropped": [
+            "allowedTags"
+        ]
+    },
+    "allowedTags #10": {
+        "kept": {
+            "allowedTags": []
+        },
+        "dropped": []
+    },
+    "allowedTags #11": {
+        "kept": {
+            "allowedTags": [
+                "a",
+                "b"
+            ]
+        },
+        "dropped": []
+    },
+    "allowedTags #12": {
+        "kept": null,
+        "dropped": [
+            "allowedTags"
+        ]
+    },
+    "allowedTags #13": {
+        "kept": null,
+        "dropped": [
+            "allowedTags"
+        ]
+    },
+    "linkedTypes #0": {
+        "kept": {
+            "linkedTypes": null
+        },
+        "dropped": []
+    },
+    "linkedTypes #1": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "linkedTypes #2": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "linkedTypes #3": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "linkedTypes #4": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "linkedTypes #5": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "linkedTypes #6": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "linkedTypes #7": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "linkedTypes #8": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "linkedTypes #9": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "linkedTypes #10": {
+        "kept": {
+            "linkedTypes": []
+        },
+        "dropped": []
+    },
+    "linkedTypes #11": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "linkedTypes #12": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "linkedTypes #13": {
+        "kept": null,
+        "dropped": [
+            "linkedTypes"
+        ]
+    },
+    "mailObjectTemplate #0": {
+        "kept": {
+            "mailObjectTemplate": null
+        },
+        "dropped": []
+    },
+    "mailObjectTemplate #1": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "mailObjectTemplate #2": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "mailObjectTemplate #3": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "mailObjectTemplate #4": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "mailObjectTemplate #5": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "mailObjectTemplate #6": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "mailObjectTemplate #7": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "mailObjectTemplate #8": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "mailObjectTemplate #9": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "mailObjectTemplate #10": {
+        "kept": {
+            "mailObjectTemplate": []
+        },
+        "dropped": []
+    },
+    "mailObjectTemplate #11": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "mailObjectTemplate #12": {
+        "kept": {
+            "mailObjectTemplate": {
+                "x": 1
+            }
+        },
+        "dropped": []
+    },
+    "mailObjectTemplate #13": {
+        "kept": null,
+        "dropped": [
+            "mailObjectTemplate"
+        ]
+    },
+    "draftLifetimeDays #0": {
+        "kept": null,
+        "dropped": []
+    },
+    "draftLifetimeDays #1": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": [
+            "draftLifetimeDays"
+        ]
+    },
+    "draftLifetimeDays #2": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": []
+    },
+    "draftLifetimeDays #3": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": [
+            "draftLifetimeDays"
+        ]
+    },
+    "draftLifetimeDays #4": {
+        "kept": {
+            "draftLifetimeDays": 7
+        },
+        "dropped": []
+    },
+    "draftLifetimeDays #5": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": [
+            "draftLifetimeDays"
+        ]
+    },
+    "draftLifetimeDays #6": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": [
+            "draftLifetimeDays"
+        ]
+    },
+    "draftLifetimeDays #7": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": [
+            "draftLifetimeDays"
+        ]
+    },
+    "draftLifetimeDays #8": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": [
+            "draftLifetimeDays"
+        ]
+    },
+    "draftLifetimeDays #9": {
+        "kept": {
+            "draftLifetimeDays": 30
+        },
+        "dropped": []
+    },
+    "draftLifetimeDays #10": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": [
+            "draftLifetimeDays"
+        ]
+    },
+    "draftLifetimeDays #11": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": [
+            "draftLifetimeDays"
+        ]
+    },
+    "draftLifetimeDays #12": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": [
+            "draftLifetimeDays"
+        ]
+    },
+    "draftLifetimeDays #13": {
+        "kept": {
+            "draftLifetimeDays": false
+        },
+        "dropped": [
+            "draftLifetimeDays"
+        ]
+    },
+    "linkRoles #0": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "linkRoles #1": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "linkRoles #2": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "linkRoles #3": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "linkRoles #4": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "linkRoles #5": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "linkRoles #6": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "linkRoles #7": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "linkRoles #8": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "linkRoles #9": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "linkRoles #10": {
+        "kept": {
+            "linkRoles": []
+        },
+        "dropped": []
+    },
+    "linkRoles #11": {
+        "kept": {
+            "linkRoles": [
+                {
+                    "key": "a",
+                    "label": "a"
+                },
+                {
+                    "key": "b",
+                    "label": "b"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "linkRoles #12": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "linkRoles #13": {
+        "kept": null,
+        "dropped": [
+            "linkRoles"
+        ]
+    },
+    "partyKinds #0": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "partyKinds #1": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "partyKinds #2": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "partyKinds #3": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "partyKinds #4": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "partyKinds #5": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "partyKinds #6": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "partyKinds #7": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "partyKinds #8": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "partyKinds #9": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "partyKinds #10": {
+        "kept": {
+            "partyKinds": []
+        },
+        "dropped": []
+    },
+    "partyKinds #11": {
+        "kept": {
+            "partyKinds": [
+                {
+                    "key": "a",
+                    "label": "a"
+                },
+                {
+                    "key": "b",
+                    "label": "b"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "partyKinds #12": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "partyKinds #13": {
+        "kept": null,
+        "dropped": [
+            "partyKinds"
+        ]
+    },
+    "x-openregister-writeonly-paths #0": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths must be a list of dot-separated path strings",
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #1": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths must be a list of dot-separated path strings",
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #2": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths must be a list of dot-separated path strings",
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #3": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths must be a list of dot-separated path strings",
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #4": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths must be a list of dot-separated path strings",
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #5": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths must be a list of dot-separated path strings",
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #6": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths must be a list of dot-separated path strings",
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #7": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths must be a list of dot-separated path strings",
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #8": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths must be a list of dot-separated path strings",
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #9": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths must be a list of dot-separated path strings",
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #10": {
+        "kept": {
+            "x-openregister-writeonly-paths": []
+        },
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #11": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths path \"a\" is rooted at \"a\", which is not a declared property of this schema",
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #12": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths must be a list of dot-separated path strings",
+        "dropped": []
+    },
+    "x-openregister-writeonly-paths #13": {
+        "threw": "InvalidArgumentException: x-openregister-writeonly-paths entries must be non-empty strings",
+        "dropped": []
+    },
+    "calendarProvider #0": {
+        "kept": {
+            "calendarProvider": null
+        },
+        "dropped": []
+    },
+    "calendarProvider #1": {
+        "kept": {
+            "calendarProvider": true
+        },
+        "dropped": []
+    },
+    "calendarProvider #2": {
+        "kept": {
+            "calendarProvider": false
+        },
+        "dropped": []
+    },
+    "calendarProvider #3": {
+        "kept": {
+            "calendarProvider": 0
+        },
+        "dropped": []
+    },
+    "calendarProvider #4": {
+        "kept": {
+            "calendarProvider": 7
+        },
+        "dropped": []
+    },
+    "calendarProvider #5": {
+        "kept": {
+            "calendarProvider": -1
+        },
+        "dropped": []
+    },
+    "calendarProvider #6": {
+        "kept": {
+            "calendarProvider": 2.5
+        },
+        "dropped": []
+    },
+    "calendarProvider #7": {
+        "kept": {
+            "calendarProvider": ""
+        },
+        "dropped": []
+    },
+    "calendarProvider #8": {
+        "kept": {
+            "calendarProvider": "title"
+        },
+        "dropped": []
+    },
+    "calendarProvider #9": {
+        "kept": {
+            "calendarProvider": "30"
+        },
+        "dropped": []
+    },
+    "calendarProvider #10": {
+        "kept": {
+            "calendarProvider": []
+        },
+        "dropped": []
+    },
+    "calendarProvider #11": {
+        "kept": {
+            "calendarProvider": [
+                "a",
+                "b"
+            ]
+        },
+        "dropped": []
+    },
+    "calendarProvider #12": {
+        "kept": {
+            "calendarProvider": {
+                "x": 1
+            }
+        },
+        "dropped": []
+    },
+    "calendarProvider #13": {
+        "kept": {
+            "calendarProvider": [
+                {
+                    "role": "owner"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "unique #0": {
+        "kept": {
+            "unique": null
+        },
+        "dropped": []
+    },
+    "unique #1": {
+        "kept": {
+            "unique": true
+        },
+        "dropped": []
+    },
+    "unique #2": {
+        "kept": {
+            "unique": false
+        },
+        "dropped": []
+    },
+    "unique #3": {
+        "kept": {
+            "unique": 0
+        },
+        "dropped": []
+    },
+    "unique #4": {
+        "kept": {
+            "unique": 7
+        },
+        "dropped": []
+    },
+    "unique #5": {
+        "kept": {
+            "unique": -1
+        },
+        "dropped": []
+    },
+    "unique #6": {
+        "kept": {
+            "unique": 2.5
+        },
+        "dropped": []
+    },
+    "unique #7": {
+        "kept": {
+            "unique": ""
+        },
+        "dropped": []
+    },
+    "unique #8": {
+        "kept": {
+            "unique": "title"
+        },
+        "dropped": []
+    },
+    "unique #9": {
+        "kept": {
+            "unique": "30"
+        },
+        "dropped": []
+    },
+    "unique #10": {
+        "kept": {
+            "unique": []
+        },
+        "dropped": []
+    },
+    "unique #11": {
+        "kept": {
+            "unique": [
+                "a",
+                "b"
+            ]
+        },
+        "dropped": []
+    },
+    "unique #12": {
+        "kept": {
+            "unique": {
+                "x": 1
+            }
+        },
+        "dropped": []
+    },
+    "unique #13": {
+        "kept": {
+            "unique": [
+                {
+                    "role": "owner"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "autoPublish #0": {
+        "kept": {
+            "autoPublish": null
+        },
+        "dropped": []
+    },
+    "autoPublish #1": {
+        "kept": {
+            "autoPublish": true
+        },
+        "dropped": []
+    },
+    "autoPublish #2": {
+        "kept": {
+            "autoPublish": false
+        },
+        "dropped": []
+    },
+    "autoPublish #3": {
+        "kept": {
+            "autoPublish": 0
+        },
+        "dropped": []
+    },
+    "autoPublish #4": {
+        "kept": {
+            "autoPublish": 7
+        },
+        "dropped": []
+    },
+    "autoPublish #5": {
+        "kept": {
+            "autoPublish": -1
+        },
+        "dropped": []
+    },
+    "autoPublish #6": {
+        "kept": {
+            "autoPublish": 2.5
+        },
+        "dropped": []
+    },
+    "autoPublish #7": {
+        "kept": {
+            "autoPublish": ""
+        },
+        "dropped": []
+    },
+    "autoPublish #8": {
+        "kept": {
+            "autoPublish": "title"
+        },
+        "dropped": []
+    },
+    "autoPublish #9": {
+        "kept": {
+            "autoPublish": "30"
+        },
+        "dropped": []
+    },
+    "autoPublish #10": {
+        "kept": {
+            "autoPublish": []
+        },
+        "dropped": []
+    },
+    "autoPublish #11": {
+        "kept": {
+            "autoPublish": [
+                "a",
+                "b"
+            ]
+        },
+        "dropped": []
+    },
+    "autoPublish #12": {
+        "kept": {
+            "autoPublish": {
+                "x": 1
+            }
+        },
+        "dropped": []
+    },
+    "autoPublish #13": {
+        "kept": {
+            "autoPublish": [
+                {
+                    "role": "owner"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "importSource #0": {
+        "kept": {
+            "importSource": null
+        },
+        "dropped": []
+    },
+    "importSource #1": {
+        "kept": {
+            "importSource": true
+        },
+        "dropped": []
+    },
+    "importSource #2": {
+        "kept": {
+            "importSource": false
+        },
+        "dropped": []
+    },
+    "importSource #3": {
+        "kept": {
+            "importSource": 0
+        },
+        "dropped": []
+    },
+    "importSource #4": {
+        "kept": {
+            "importSource": 7
+        },
+        "dropped": []
+    },
+    "importSource #5": {
+        "kept": {
+            "importSource": -1
+        },
+        "dropped": []
+    },
+    "importSource #6": {
+        "kept": {
+            "importSource": 2.5
+        },
+        "dropped": []
+    },
+    "importSource #7": {
+        "kept": {
+            "importSource": ""
+        },
+        "dropped": []
+    },
+    "importSource #8": {
+        "kept": {
+            "importSource": "title"
+        },
+        "dropped": []
+    },
+    "importSource #9": {
+        "kept": {
+            "importSource": "30"
+        },
+        "dropped": []
+    },
+    "importSource #10": {
+        "kept": {
+            "importSource": []
+        },
+        "dropped": []
+    },
+    "importSource #11": {
+        "kept": {
+            "importSource": [
+                "a",
+                "b"
+            ]
+        },
+        "dropped": []
+    },
+    "importSource #12": {
+        "kept": {
+            "importSource": {
+                "x": 1
+            }
+        },
+        "dropped": []
+    },
+    "importSource #13": {
+        "kept": {
+            "importSource": [
+                {
+                    "role": "owner"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #0": {
+        "kept": {
+            "x-openregister-lifecycle": null
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #1": {
+        "kept": {
+            "x-openregister-lifecycle": true
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #2": {
+        "kept": {
+            "x-openregister-lifecycle": false
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #3": {
+        "kept": {
+            "x-openregister-lifecycle": 0
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #4": {
+        "kept": {
+            "x-openregister-lifecycle": 7
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #5": {
+        "kept": {
+            "x-openregister-lifecycle": -1
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #6": {
+        "kept": {
+            "x-openregister-lifecycle": 2.5
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #7": {
+        "kept": {
+            "x-openregister-lifecycle": ""
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #8": {
+        "kept": {
+            "x-openregister-lifecycle": "title"
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #9": {
+        "kept": {
+            "x-openregister-lifecycle": "30"
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #10": {
+        "kept": {
+            "x-openregister-lifecycle": []
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #11": {
+        "kept": {
+            "x-openregister-lifecycle": [
+                "a",
+                "b"
+            ]
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #12": {
+        "kept": {
+            "x-openregister-lifecycle": {
+                "x": 1
+            }
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycle #13": {
+        "kept": {
+            "x-openregister-lifecycle": [
+                {
+                    "role": "owner"
+                }
+            ]
+        },
+        "dropped": []
+    },
+    "x-openregister-lifecycl #0": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #1": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #2": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #3": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #4": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #5": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #6": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #7": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #8": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #9": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #10": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #11": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #12": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregister-lifecycl #13": {
+        "kept": null,
+        "dropped": [
+            "x-openregister-lifecycl"
+        ]
+    },
+    "x-openregisterlifecycle #0": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #1": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #2": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #3": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #4": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #5": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #6": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #7": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #8": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #9": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #10": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #11": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #12": {
+        "kept": null,
+        "dropped": []
+    },
+    "x-openregisterlifecycle #13": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #0": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #1": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #2": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #3": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #4": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #5": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #6": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #7": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #8": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #9": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #10": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #11": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #12": {
+        "kept": null,
+        "dropped": []
+    },
+    "somethingElse #13": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #0": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #1": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #2": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #3": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #4": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #5": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #6": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #7": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #8": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #9": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #10": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #11": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #12": {
+        "kept": null,
+        "dropped": []
+    },
+    "12 #13": {
+        "kept": null,
+        "dropped": []
+    },
+    "calendarProvider valid": {
+        "kept": {
+            "calendarProvider": {
+                "enabled": true,
+                "dtstart": "start",
+                "titleTemplate": "{{ title }}"
+            }
+        },
+        "dropped": []
+    },
+    "calendarProvider no dtstart": {
+        "kept": null,
+        "dropped": [
+            "calendarProvider"
+        ]
+    },
+    "writeonly path": {
+        "kept": {
+            "x-openregister-writeonly-paths": [
+                "title.secret"
+            ]
+        },
+        "dropped": []
+    },
+    "mixed": {
+        "kept": {
+            "objectNameField": "title",
+            "draftLifetimeDays": false,
+            "unique": [
+                "title"
+            ],
+            "exportable": true,
+            "x-openregister-calculations": {
+                "a": 1
+            }
+        },
+        "dropped": [
+            "draftLifetimeDays",
+            "allowFiles",
+            "x-openregister-lifecycl",
+            "linkRoles"
+        ]
+    }
+}

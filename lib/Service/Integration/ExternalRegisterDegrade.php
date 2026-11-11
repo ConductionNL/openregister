@@ -132,6 +132,28 @@ class ExternalRegisterDegrade {
 	public const ADMIN_ACTIONABLE = [self::SOURCE_ABSENT, self::NOT_CONFIGURED, self::UNREACHABLE];
 
 	/**
+	 * The flag tests after the key test, in the order of the causes:
+	 * [flag, value it must have, state when it does not]. A flag counts as
+	 * set only when it is strictly `true`.
+	 *
+	 * `answered` not set is UNREACHABLE, NOT folded into "no such record": an
+	 * unreachable register and an empty one render the same and only one of
+	 * them is a fact about the world.
+	 *
+	 * `refused` set is REFUSED: it answered and said no. A refusal is not an
+	 * outage, and telling a caller to phone an administrator about a system
+	 * working exactly as configured wastes both of them.
+	 *
+	 * @var list<array{0: string, 1: bool, 2: string}>
+	 */
+	private const FLAG_TESTS = [
+		['appInstalled', true, self::SOURCE_ABSENT],
+		['configured', true, self::NOT_CONFIGURED],
+		['answered', true, self::UNREACHABLE],
+		['refused', false, self::REFUSED],
+	];
+
+	/**
 	 * The state of one lookup.
 	 *
 	 * The order of the tests is the order of the causes: a key that is missing
@@ -149,20 +171,34 @@ class ExternalRegisterDegrade {
 	 */
 	public function evaluate(array $lookup): array {
 		$state = $this->stateOf(lookup: $lookup);
-		$record = null;
-		if ($state === self::OK) {
-			$record = [];
-			if (is_array($lookup['record'] ?? null) === true) {
-				$record = $lookup['record'];
-			}
-		}
 
 		return [
 			'state' => $state,
 			'adminActionable' => in_array($state, self::ADMIN_ACTIONABLE, true),
-			'record' => $record,
+			'record' => $this->recordFor(state: $state, lookup: $lookup),
 		];
 	}//end evaluate()
+
+	/**
+	 * The record to hand back: the lookup's record in the OK state, else none.
+	 *
+	 * @param string $state The lookup's state.
+	 * @param array<string,mixed> $lookup The lookup.
+	 *
+	 * @return array<string,mixed>|null The record, or null outside the OK state.
+	 */
+	private function recordFor(string $state, array $lookup): ?array {
+		if ($state !== self::OK) {
+			return null;
+		}
+
+		$record = ($lookup['record'] ?? null);
+		if (is_array($record) === true) {
+			return $record;
+		}
+
+		return [];
+	}//end recordFor()
 
 	/**
 	 * Which of the seven states this lookup is in.
@@ -176,35 +212,40 @@ class ExternalRegisterDegrade {
 			return self::NO_KEY;
 		}
 
-		if (($lookup['appInstalled'] ?? false) !== true) {
-			return self::SOURCE_ABSENT;
+		return $this->failedFlagState(lookup: $lookup) ?? $this->recordState(record: $lookup['record'] ?? null);
+	}//end stateOf()
+
+	/**
+	 * The state of the first flag test the lookup fails, in {@see FLAG_TESTS} order.
+	 *
+	 * @param array<string,mixed> $lookup The lookup.
+	 *
+	 * @return string|null The state, or null when every flag test passes.
+	 */
+	private function failedFlagState(array $lookup): ?string {
+		foreach (self::FLAG_TESTS as [$flag, $required, $state]) {
+			if ((($lookup[$flag] ?? false) === true) !== $required) {
+				return $state;
+			}
 		}
 
-		if (($lookup['configured'] ?? false) !== true) {
-			return self::NOT_CONFIGURED;
-		}
+		return null;
+	}//end failedFlagState()
 
-		if (($lookup['answered'] ?? false) !== true) {
-			// It did not answer. NOT folded into "no such record": an
-			// unreachable register and an empty one render the same and only
-			// one of them is a fact about the world.
-			return self::UNREACHABLE;
-		}
-
-		if (($lookup['refused'] ?? false) === true) {
-			// It answered and said no. A refusal is not an outage, and telling
-			// a caller to phone an administrator about a system working
-			// exactly as configured wastes both of them.
-			return self::REFUSED;
-		}
-
-		$record = ($lookup['record'] ?? null);
+	/**
+	 * OK for a non-empty array record, else NOT_FOUND.
+	 *
+	 * @param mixed $record The lookup's record.
+	 *
+	 * @return string The state.
+	 */
+	private function recordState(mixed $record): string {
 		if (is_array($record) === false || $record === []) {
 			return self::NOT_FOUND;
 		}
 
 		return self::OK;
-	}//end stateOf()
+	}//end recordState()
 
 	/**
 	 * Whether this state means the register itself holds nothing.

@@ -24,12 +24,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -91,7 +95,7 @@ class MagicMapperBatchSoftDeleteTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter) {
-				if ($id === DateTimeNormalizer::class) {
+				if ($id === DateTimeNormalizerInterface::class) {
 					return $dateTimeNormalizer;
 				}
 
@@ -99,7 +103,7 @@ class MagicMapperBatchSoftDeleteTest extends TestCase {
 					return $conditionMatcher;
 				}
 
-				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverter::class) {
+				if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class) {
 					return $schemaTypeConverter;
 				}
 
@@ -109,17 +113,22 @@ class MagicMapperBatchSoftDeleteTest extends TestCase {
 
 		return new MagicMapper(
 			$this->db,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IConfig::class),
-			$this->eventDispatcher,
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(SettingsService::class),
-			$container
+			new MagicMapperLookups(
+				$this->createMock(SchemaMapper::class),
+				$this->createMock(RegisterMapper::class),
+				$container
+			),
+			new MagicMapperIdentity(
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class),
+				$this->createMock(IUserManager::class)
+			),
+			new MagicMapperRuntime(
+				$this->createMock(IConfig::class),
+				$this->createMock(IAppConfig::class),
+				$this->eventDispatcher,
+				$this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end makeMapper()
 

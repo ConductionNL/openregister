@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -29,7 +30,7 @@ class ConditionMatcherGapTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->matcher = new ConditionMatcher(
-			$this->userSession,
+			new ConditionUserResolvers($this->userSession),
 			$this->container,
 			$this->operatorEvaluator,
 			$this->logger
@@ -52,7 +53,7 @@ class ConditionMatcherGapTest extends TestCase {
 		$orgServiceMock->method('getActiveOrganisation')->willReturn($orgMock);
 
 		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\OrganisationService')
+			->with('OCA\OpenRegister\Service\OrganisationServiceInterface')
 			->willReturn($orgServiceMock);
 
 		$object = ['_organisation' => 'org-uuid-123'];
@@ -82,7 +83,7 @@ class ConditionMatcherGapTest extends TestCase {
 		$orgServiceMock->method('getActiveOrganisation')->willReturn($orgMock);
 
 		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\OrganisationService')
+			->with('OCA\OpenRegister\Service\OrganisationServiceInterface')
 			->willReturn($orgServiceMock);
 
 		$object = ['_organisation' => 'org-uuid-456'];
@@ -102,7 +103,7 @@ class ConditionMatcherGapTest extends TestCase {
 		$orgServiceMock->method('getActiveOrganisation')->willReturn(null);
 
 		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\OrganisationService')
+			->with('OCA\OpenRegister\Service\OrganisationServiceInterface')
 			->willReturn($orgServiceMock);
 
 		$object = ['_organisation' => 'some-org'];
@@ -118,7 +119,7 @@ class ConditionMatcherGapTest extends TestCase {
 	 */
 	public function testOrganisationVariableExceptionReturnsNull(): void {
 		$this->container->method('get')
-			->with('OCA\OpenRegister\Service\OrganisationService')
+			->with('OCA\OpenRegister\Service\OrganisationServiceInterface')
 			->willThrowException(new \Exception('Service unavailable'));
 
 		$this->logger->expects($this->atLeastOnce())

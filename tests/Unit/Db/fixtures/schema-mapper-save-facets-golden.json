@@ -1,0 +1,474 @@
+{
+    "off wins over name": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": []
+        }
+    },
+    "off as word": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": []
+        }
+    },
+    "off as string": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": []
+        }
+    },
+    "on": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "x": {
+                    "type": "terms"
+                },
+                "y": {
+                    "type": "terms"
+                },
+                "z": {
+                    "type": "terms"
+                }
+            }
+        }
+    },
+    "on date type": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "x": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "y": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "z": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                }
+            }
+        }
+    },
+    "on date format": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "x": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "y": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "z": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                }
+            }
+        }
+    },
+    "on enum and number": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "x": {
+                    "type": "terms"
+                },
+                "y": {
+                    "type": "terms"
+                }
+            }
+        }
+    },
+    "unknown flag": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "status": {
+                    "type": "terms"
+                }
+            }
+        }
+    },
+    "common names": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "Status": {
+                    "type": "terms"
+                },
+                "TAGS": {
+                    "type": "terms"
+                },
+                "language": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "version": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                }
+            }
+        }
+    },
+    "enum": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "x": {
+                    "type": "terms"
+                }
+            }
+        }
+    },
+    "detected date": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "x": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "y": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "z": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                }
+            }
+        }
+    },
+    "date words": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": {
+                "createdAt": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "UPDATED": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "lastModified": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "birthdate": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "runtime": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "timestamp": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                }
+            }
+        }
+    },
+    "integer name": {
+        "facets": {
+            "@self": {
+                "register": {
+                    "type": "terms"
+                },
+                "schema": {
+                    "type": "terms"
+                },
+                "created": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "updated": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "published": {
+                    "type": "date_histogram",
+                    "interval": "month"
+                },
+                "owner": {
+                    "type": "terms"
+                }
+            },
+            "object_fields": [
+                {
+                    "type": "terms"
+                }
+            ]
+        }
+    }
+}

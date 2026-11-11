@@ -2866,7 +2866,7 @@ OC.L10N.register(
         "Complete: {outcome}": "Ofschléissen: {outcome}",
         "Could not load the task": "D'Aufgab konnt net geluede ginn",
         "The task refused that action": "D'Aufgab huet dës Aktioun refuséiert",
-        "Store": "Buttek",
+        "Marketplace": "Buttek",
         "Install registers, schemas and flows that other organisations have published.": "Installéiert Registeren, Schemaen a Flows déi aner Organisatiounen publizéiert hunn.",
         "No such run": "Keng esou Ausféierung",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "D'Ausféierung existéiert net, oder Dir däerft se net gesinn. Wann e Flux geläscht gëtt, ginn och seng Ausféierunge geläscht.",
@@ -3671,7 +3671,9 @@ OC.L10N.register(
         "Who approved the list, and when.": "Wien d'Lëscht genehmegt huet, a wéini.",
         "Who made it.": "Wien et hiergestallt huet.",
         "Who rejected the list, and why.": "Wien d'Lëscht ofgeleent huet, a firwat.",
-        "Woo published": "No der Woo verëffentlecht"
+        "Woo published": "No der Woo verëffentlecht",
+        "A PDF needs an office server (Collabora or Euro-Office), and none is installed. Ask your administrator to install one, or download the report in another format.": "E PDF brauch en Office-Server (Collabora oder Euro-Office), an et ass keen installéiert. Fro däin Administrateur, fir een z'installéieren, oder lued de Bericht an engem anere Format erof.",
+        "The report could not be downloaded.": "De Bericht konnt net erofgelueden ginn."
     },
     "nplurals=2; plural=(n != 1);"
 )

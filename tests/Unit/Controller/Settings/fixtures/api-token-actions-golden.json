@@ -1,0 +1,917 @@
+{
+    "get no tokens": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    ""
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "github_token": "",
+            "gitlab_token": "",
+            "gitlab_url": ""
+        }
+    },
+    "get throws": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to retrieve API tokens: config unavailable"
+        }
+    },
+    "get tokens": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    ""
+                ]
+            },
+            {
+                "settings.maskToken": [
+                    "ghp_saved"
+                ]
+            },
+            {
+                "settings.maskToken": [
+                    "glpat_saved"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "github_token": "ghp***",
+            "gitlab_token": "glp***",
+            "gitlab_url": "https://git.example/api/v4/"
+        }
+    },
+    "github config throws": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "message": "GitHub token test failed: config unavailable"
+        }
+    },
+    "github given equals saved": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://api.github.com/user",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json",
+                            "Authorization": "Bearer ghp_saved",
+                            "X-GitHub-Api-Version": "2022-11-28"
+                        }
+                    }
+                ]
+            },
+            {
+                "reporter.report": [
+                    "github",
+                    "configured",
+                    "The saved token is valid for octo."
+                ]
+            },
+            {
+                "response.getHeader": [
+                    "X-OAuth-Scopes"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "GitHub token is valid",
+            "username": "octo",
+            "scopes": "repo, user"
+        }
+    },
+    "github given token": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://api.github.com/user",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json",
+                            "Authorization": "Bearer ghp_other",
+                            "X-GitHub-Api-Version": "2022-11-28"
+                        }
+                    }
+                ]
+            },
+            {
+                "response.getHeader": [
+                    "X-OAuth-Scopes"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "GitHub token is valid",
+            "username": "octo",
+            "scopes": "repo, user"
+        }
+    },
+    "github int token": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://api.github.com/user",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json",
+                            "Authorization": "Bearer 42",
+                            "X-GitHub-Api-Version": "2022-11-28"
+                        }
+                    }
+                ]
+            },
+            {
+                "response.getHeader": [
+                    "X-OAuth-Scopes"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "GitHub token is valid",
+            "username": "octo",
+            "scopes": "repo, user"
+        }
+    },
+    "github no login": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://api.github.com/user",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json",
+                            "Authorization": "Bearer ghp_saved",
+                            "X-GitHub-Api-Version": "2022-11-28"
+                        }
+                    }
+                ]
+            },
+            {
+                "reporter.report": [
+                    "github",
+                    "configured",
+                    "The saved token is valid for an unknown account."
+                ]
+            },
+            {
+                "response.getHeader": [
+                    "X-OAuth-Scopes"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "GitHub token is valid",
+            "username": "Unknown",
+            "scopes": "repo, user"
+        }
+    },
+    "github no token": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "message": "No GitHub token provided"
+        }
+    },
+    "github refused given": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://api.github.com/user",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json",
+                            "Authorization": "Bearer x",
+                            "X-GitHub-Api-Version": "2022-11-28"
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "message": "GitHub token test failed: 401 Bad credentials"
+        }
+    },
+    "github refused saved": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://api.github.com/user",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json",
+                            "Authorization": "Bearer ghp_saved",
+                            "X-GitHub-Api-Version": "2022-11-28"
+                        }
+                    }
+                ]
+            },
+            {
+                "reporter.report": [
+                    "github",
+                    "error",
+                    "GitHub refused the saved token: 401 Bad credentials"
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "message": "GitHub token test failed: 401 Bad credentials"
+        }
+    },
+    "github saved token": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://api.github.com/user",
+                    {
+                        "headers": {
+                            "Accept": "application/vnd.github+json",
+                            "Authorization": "Bearer ghp_saved",
+                            "X-GitHub-Api-Version": "2022-11-28"
+                        }
+                    }
+                ]
+            },
+            {
+                "reporter.report": [
+                    "github",
+                    "configured",
+                    "The saved token is valid for octo."
+                ]
+            },
+            {
+                "response.getHeader": [
+                    "X-OAuth-Scopes"
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "GitHub token is valid",
+            "username": "octo",
+            "scopes": "repo, user"
+        }
+    },
+    "github zero token": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "github_api_token",
+                    ""
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "message": "No GitHub token provided"
+        }
+    },
+    "gitlab config throws": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "message": "GitLab token test failed: config unavailable"
+        }
+    },
+    "gitlab default url": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    "https://gitlab.com/api/v4"
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://gitlab.com/api/v4/user",
+                    {
+                        "headers": {
+                            "PRIVATE-TOKEN": "glpat_saved"
+                        }
+                    }
+                ]
+            },
+            {
+                "reporter.report": [
+                    "gitlab",
+                    "configured",
+                    "The saved token is valid for tanuki on https://gitlab.com/api/v4."
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "GitLab token is valid",
+            "username": "tanuki",
+            "instance": "https://gitlab.com/api/v4"
+        }
+    },
+    "gitlab given empty url": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    "https://gitlab.com/api/v4"
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://gitlab.com/api/v4/user",
+                    {
+                        "headers": {
+                            "PRIVATE-TOKEN": "glpat_saved"
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "GitLab token is valid",
+            "username": "tanuki",
+            "instance": "https://gitlab.com/api/v4"
+        }
+    },
+    "gitlab given token": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    "https://gitlab.com/api/v4"
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://git.example/api/v4/user",
+                    {
+                        "headers": {
+                            "PRIVATE-TOKEN": "glpat_other"
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "GitLab token is valid",
+            "username": "tanuki",
+            "instance": "https://git.example/api/v4"
+        }
+    },
+    "gitlab given url": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    "https://gitlab.com/api/v4"
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://other/api/v4/user",
+                    {
+                        "headers": {
+                            "PRIVATE-TOKEN": "glpat_saved"
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "GitLab token is valid",
+            "username": "tanuki",
+            "instance": "https://other/api/v4"
+        }
+    },
+    "gitlab given zero url": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    "https://gitlab.com/api/v4"
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://gitlab.com/api/v4/user",
+                    {
+                        "headers": {
+                            "PRIVATE-TOKEN": "glpat_saved"
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "GitLab token is valid",
+            "username": "tanuki",
+            "instance": "https://gitlab.com/api/v4"
+        }
+    },
+    "gitlab no token": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    "https://gitlab.com/api/v4"
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "message": "No GitLab token provided"
+        }
+    },
+    "gitlab no username": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    "https://gitlab.com/api/v4"
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://git.example/api/v4/user",
+                    {
+                        "headers": {
+                            "PRIVATE-TOKEN": "glpat_saved"
+                        }
+                    }
+                ]
+            },
+            {
+                "reporter.report": [
+                    "gitlab",
+                    "configured",
+                    "The saved token is valid for an unknown account on https://git.example/api/v4."
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "GitLab token is valid",
+            "username": "Unknown",
+            "instance": "https://git.example/api/v4"
+        }
+    },
+    "gitlab refused given": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    "https://gitlab.com/api/v4"
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://git.example/api/v4/user",
+                    {
+                        "headers": {
+                            "PRIVATE-TOKEN": "x"
+                        }
+                    }
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "message": "GitLab token test failed: 401 Bad credentials"
+        }
+    },
+    "gitlab refused saved": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    "https://gitlab.com/api/v4"
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://git.example/api/v4/user",
+                    {
+                        "headers": {
+                            "PRIVATE-TOKEN": "glpat_saved"
+                        }
+                    }
+                ]
+            },
+            {
+                "reporter.report": [
+                    "gitlab",
+                    "error",
+                    "GitLab refused the saved token: 401 Bad credentials"
+                ]
+            }
+        ],
+        "status": 400,
+        "data": {
+            "success": false,
+            "message": "GitLab token test failed: 401 Bad credentials"
+        }
+    },
+    "gitlab saved token": {
+        "calls": [
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    ""
+                ]
+            },
+            {
+                "config.getValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    "https://gitlab.com/api/v4"
+                ]
+            },
+            {
+                "clients.newClient": []
+            },
+            {
+                "client.get": [
+                    "https://git.example/api/v4/user",
+                    {
+                        "headers": {
+                            "PRIVATE-TOKEN": "glpat_saved"
+                        }
+                    }
+                ]
+            },
+            {
+                "reporter.report": [
+                    "gitlab",
+                    "configured",
+                    "The saved token is valid for tanuki on https://git.example/api/v4."
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "GitLab token is valid",
+            "username": "tanuki",
+            "instance": "https://git.example/api/v4"
+        }
+    },
+    "save all": {
+        "calls": [
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "github_api_token",
+                    "ghp_new"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "gitlab_api_token",
+                    "glpat_new"
+                ]
+            },
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    "https://g/"
+                ]
+            },
+            {
+                "reporter.refreshFromSave": [
+                    [
+                        "github_api_token",
+                        "gitlab_api_token",
+                        "gitlab_api_url"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "API tokens saved successfully"
+        }
+    },
+    "save masked": {
+        "calls": [
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "gitlab_api_url",
+                    ""
+                ]
+            },
+            {
+                "reporter.refreshFromSave": [
+                    [
+                        "gitlab_api_url"
+                    ]
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "API tokens saved successfully"
+        }
+    },
+    "save non-string token": {
+        "calls": [],
+        "threw": "TypeError"
+    },
+    "save nothing": {
+        "calls": [
+            {
+                "reporter.refreshFromSave": [
+                    []
+                ]
+            }
+        ],
+        "status": 200,
+        "data": {
+            "success": true,
+            "message": "API tokens saved successfully"
+        }
+    },
+    "save throws": {
+        "calls": [
+            {
+                "config.setValueString": [
+                    "openregister",
+                    "github_api_token",
+                    "ghp_new"
+                ]
+            }
+        ],
+        "status": 500,
+        "data": {
+            "error": "Failed to save API tokens: config read-only"
+        }
+    }
+}

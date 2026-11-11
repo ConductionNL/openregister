@@ -168,19 +168,6 @@ final class BpmnVocabulary {
 	];
 
 	/**
-	 * Whether the vocabulary knows how to export a node type directly.
-	 *
-	 * @param string $nodeType The node type.
-	 *
-	 * @return bool True when a row names it.
-	 *
-	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
-	 */
-	public function exportsDirectly(string $nodeType): bool {
-		return array_key_exists($nodeType, self::EXPORT);
-	}//end exportsDirectly()
-
-	/**
 	 * The BPMN element a node type exports as.
 	 *
 	 * @param string $nodeType The node type.
@@ -203,12 +190,19 @@ final class BpmnVocabulary {
 	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
 	 */
 	public function readingFor(string $element): array {
+		return $this->tableReading(element: $element) ?? $this->untabledReading(element: $element);
+	}//end readingFor()
+
+	/**
+	 * The reading of an element one of the refused, import or approximated tables names.
+	 *
+	 * @param string $element The BPMN element's local name.
+	 *
+	 * @return array{verdict: string, type: string, note: string}|null The reading, or null when no table names it.
+	 */
+	private function tableReading(string $element): ?array {
 		if (array_key_exists($element, self::REFUSED) === true) {
-			return [
-				'verdict' => BpmnMappingReport::REFUSED,
-				'type' => '',
-				'note' => self::REFUSED[$element],
-			];
+			return ['verdict' => BpmnMappingReport::REFUSED, 'type' => '', 'note' => self::REFUSED[$element]];
 		}
 
 		if (array_key_exists($element, self::IMPORT) === true) {
@@ -216,29 +210,31 @@ final class BpmnVocabulary {
 		}
 
 		if (array_key_exists($element, self::APPROXIMATED) === true) {
-			return [
-				'verdict' => BpmnMappingReport::APPROXIMATED,
-				'type' => self::APPROXIMATED[$element]['type'],
-				'note' => self::APPROXIMATED[$element]['lost'],
-			];
+			$approximated = self::APPROXIMATED[$element];
+			return ['verdict' => BpmnMappingReport::APPROXIMATED, 'type' => $approximated['type'], 'note' => $approximated['lost']];
 		}
 
+		return null;
+	}//end tableReading()
+
+	/**
+	 * The reading of an element no table names: the typeless fallback task, or a dropped construct.
+	 *
+	 * @param string $element The BPMN element's local name.
+	 *
+	 * @return array{verdict: string, type: string, note: string} The reading.
+	 */
+	private function untabledReading(string $element): array {
 		if ($element === self::FALLBACK) {
 			// 🔴 A `serviceTask` WITHOUT our extension elements imports TYPELESS
 			// and is listed as needing one. The importer must never guess a type
 			// from the task's NAME: a flow that runs something because a box was
 			// labelled "send email" is a flow nobody authorised.
-			return [
-				'verdict' => BpmnMappingReport::APPROXIMATED,
-				'type' => '',
-				'note' => 'this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it.',
-			];
+			$note = 'this task carries no openregister type, so it is imported without one and the flow will refuse to run until you assign it.';
+			return ['verdict' => BpmnMappingReport::APPROXIMATED, 'type' => '', 'note' => $note];
 		}
 
-		return [
-			'verdict' => BpmnMappingReport::REFUSED,
-			'type' => '',
-			'note' => sprintf('"%s" is not a construct this importer reads; it was dropped.', $element),
-		];
-	}//end readingFor()
+		$note = sprintf('"%s" is not a construct this importer reads; it was dropped.', $element);
+		return ['verdict' => BpmnMappingReport::REFUSED, 'type' => '', 'note' => $note];
+	}//end untabledReading()
 }//end class

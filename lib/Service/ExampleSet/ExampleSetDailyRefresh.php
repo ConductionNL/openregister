@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
  */
 
 declare(strict_types=1);
@@ -32,16 +32,16 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ExampleSet;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\IAppConfig;
 use Throwable;
 
 /**
  * Marks sets for a daily refresh and refreshes them.
  *
- * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
  */
-class ExampleSetDailyRefresh {
+class ExampleSetDailyRefresh implements ExampleSetDailyRefreshInterface, ExampleSetDailyMarksInterface {
 	/**
 	 * The app config key holding the marked set ids, as a JSON list.
 	 */
@@ -70,10 +70,10 @@ class ExampleSetDailyRefresh {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	public function sets(): array {
-		$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::KEY, '[]'), true);
+		$decoded = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, self::KEY, '[]'), true);
 		if (is_array($decoded) === false) {
 			return [];
 		}
@@ -91,7 +91,7 @@ class ExampleSetDailyRefresh {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the one fact the call sets.
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	public function mark(string $set, bool $daily): void {
 		$sets = array_values(array_diff($this->sets(), [$set]));
@@ -99,7 +99,7 @@ class ExampleSetDailyRefresh {
 			$sets[] = $set;
 		}
 
-		$this->appConfig->setValueString(Application::APP_ID, self::KEY, (string) json_encode($sets));
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::KEY, (string) json_encode($sets));
 	}//end mark()
 
 	/**
@@ -109,7 +109,7 @@ class ExampleSetDailyRefresh {
 	 *
 	 * @return array<string, array<string, mixed>> Per set: `ok`, and `skipped` or the refusals, dropped, missing and lost.
 	 *
-	 * @spec openspec/changes/example-set-daily-refresh/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-be-refreshed-every-day
 	 */
 	public function run(?DateTimeImmutable $today=null): array {
 		$report = [];
@@ -119,23 +119,34 @@ class ExampleSetDailyRefresh {
 				continue;
 			}
 
-			try {
-				$plan   = ($this->catalogue->gather(set: $set) + ['refresh' => true]);
-				$result = $this->installer->install(plan: $plan, today: $today);
-			} catch (Throwable $e) {
-				$report[$set] = ['ok' => false, 'skipped' => $e->getMessage()];
-				continue;
-			}
-
-			$report[$set] = [
-				'ok'       => $result['ok'],
-				'refusals' => $result['refusals'],
-				'dropped'  => $result['dropped'],
-				'missing'  => $result['missing'],
-				'lost'     => $result['lost'],
-			];
-		}//end foreach
+			$report[$set] = $this->refresh(set: $set, today: $today);
+		}
 
 		return $report;
 	}//end run()
+
+	/**
+	 * Refresh one installed set: what its install reports, or why it was skipped.
+	 *
+	 * @param string                 $set   The set id.
+	 * @param DateTimeImmutable|null $today The install day; null is today.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function refresh(string $set, ?DateTimeImmutable $today): array {
+		try {
+			$plan   = ($this->catalogue->gather(set: $set) + ['refresh' => true]);
+			$result = $this->installer->install(plan: $plan, today: $today);
+		} catch (Throwable $e) {
+			return ['ok' => false, 'skipped' => $e->getMessage()];
+		}
+
+		return [
+			'ok'       => $result['ok'],
+			'refusals' => $result['refusals'],
+			'dropped'  => $result['dropped'],
+			'missing'  => $result['missing'],
+			'lost'     => $result['lost'],
+		];
+	}//end refresh()
 }//end class

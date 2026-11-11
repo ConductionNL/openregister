@@ -8,7 +8,6 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		v-if="navigationStore.dialog === 'auditTrailDetails'"
 		:name="t('openregister', 'Audit Trail Details')"
 		size="large"
-		:canClose="true"
 		@close="closeDialog">
 		<div v-if="auditTrailStore.auditTrailItem" class="audit-trail-details">
 			<!-- Header Information -->
@@ -21,36 +20,8 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Action') }}</label>
-						<span
-							class="action-badge"
-							:class="`action-${auditTrailStore.auditTrailItem.action}`">
-							<Plus
-								v-if="
-									auditTrailStore.auditTrailItem.action
-									=== 'create'
-								"
-								:size="16" />
-							<Pencil
-								v-else-if="
-									auditTrailStore.auditTrailItem.action
-									=== 'update'
-								"
-								:size="16" />
-							<Delete
-								v-else-if="
-									auditTrailStore.auditTrailItem.action
-									=== 'delete'
-								"
-								:size="16" />
-							<Eye
-								v-else-if="
-									auditTrailStore.auditTrailItem.action === 'read'
-								"
-								:size="16" />
-							{{
-								auditTrailStore.auditTrailItem.action?.toUpperCase()
-							}}
-						</span>
+						<AuditActionBadge
+							:action="auditTrailStore.auditTrailItem.action" />
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Created') }}</label>
@@ -159,49 +130,25 @@ import { NcButton, NcDialog } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
-import Eye from 'vue-material-design-icons/Eye.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
+import AuditActionBadge from './AuditActionBadge.vue'
+import auditTrailModal from '../../services/auditTrailModal.js'
+import { printableValue } from './auditValues.js'
 
 export default {
 	name: 'AuditTrailDetails',
 	components: {
+		AuditActionBadge,
 		NcDialog,
 		NcButton,
 		// Icons
 		Close,
 		ContentCopy,
 		CompareHorizontal,
-		Plus,
-		Pencil,
-		Delete,
-		Eye,
 	},
 
+	mixins: [auditTrailModal],
+
 	computed: {
-		/**
-		 * Check if audit trail has changes data
-		 *
-		 * @return {boolean} True if has changes
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		hasChanges() {
-			const changed = auditTrailStore.auditTrailItem?.changed
-			if (!changed) return false
-
-			if (Array.isArray(changed)) {
-				return changed.length > 0
-			}
-
-			if (typeof changed === 'object') {
-				return Object.keys(changed).length > 0
-			}
-
-			return !!changed
-		},
-
 		/**
 		 * Get additional fields that aren't in the main display
 		 *
@@ -212,19 +159,7 @@ export default {
 		additionalFields() {
 			if (!auditTrailStore.auditTrailItem) return []
 
-			const mainFields = [
-				'id',
-				'action',
-				'created',
-				'object',
-				'register',
-				'schema',
-				'user',
-				'userName',
-				'size',
-				'changed',
-				'request',
-			]
+			const mainFields = mainFieldNames()
 
 			return Object.entries(auditTrailStore.auditTrailItem)
 				.filter(([key]) => !mainFields.includes(key))
@@ -236,62 +171,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Close the dialog
-		 *
-		 * @return {void}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		closeDialog() {
-			navigationStore.setDialog(false)
-		},
-
-		/**
-		 * Format date for display
-		 *
-		 * @param {string} dateString - Date string to format
-		 * @return {string} Formatted date
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		formatDate(dateString) {
-			if (!dateString) return '-'
-			try {
-				return new Date(dateString).toLocaleString()
-			} catch (error) {
-				return dateString
-			}
-		},
-
-		/**
-		 * Format changes data for display
-		 *
-		 * @param {*} changes - Changes data
-		 * @return {string} Formatted changes
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		formatChanges(changes) {
-			if (!changes) return ''
-
-			try {
-				if (typeof changes === 'string') {
-					// Try to parse if it's a JSON string
-					try {
-						const parsed = JSON.parse(changes)
-						return JSON.stringify(parsed, null, 2)
-					} catch {
-						return changes
-					}
-				}
-
-				return JSON.stringify(changes, null, 2)
-			} catch (error) {
-				return String(changes)
-			}
-		},
-
 		/**
 		 * Format JSON data for display
 		 *
@@ -315,7 +194,7 @@ export default {
 				}
 
 				return JSON.stringify(data, null, 2)
-			} catch (error) {
+			} catch {
 				return String(data)
 			}
 		},
@@ -346,15 +225,7 @@ export default {
 		formatFieldValue(value) {
 			if (value === null || value === undefined) return '-'
 
-			if (typeof value === 'object') {
-				try {
-					return JSON.stringify(value, null, 2)
-				} catch {
-					return String(value)
-				}
-			}
-
-			return String(value)
+			return printableValue(value)
 		},
 
 		/**
@@ -378,35 +249,35 @@ export default {
 				)
 			}
 		},
-
-		/**
-		 * Copy changes data to clipboard
-		 *
-		 * @return {Promise<void>}
-		 *
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		async copyChanges() {
-			try {
-				const changes = this.formatChanges(
-					auditTrailStore.auditTrailItem.changed,
-				)
-				await navigator.clipboard.writeText(changes)
-				OC.Notification.showSuccess(
-					this.t('openregister', 'Changes copied to clipboard'),
-				)
-			} catch (error) {
-				console.error('Error copying to clipboard:', error)
-				OC.Notification.showError(
-					this.t('openregister', 'Failed to copy changes'),
-				)
-			}
-		},
 	},
+}
+
+/**
+ * The fields of an audit trail entry the modal shows on their own, rather
+ * than among the additional fields.
+ *
+ * @return {Array<string>} The field names
+ */
+function mainFieldNames() {
+	return [
+		'id',
+		'action',
+		'created',
+		'object',
+		'register',
+		'schema',
+		'user',
+		'userName',
+		'size',
+		'changed',
+		'request',
+	]
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .audit-trail-details {
 	padding: 16px 0;
 }
@@ -430,11 +301,7 @@ export default {
 	gap: 16px;
 }
 
-.detail-item {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
+@include detail-item;
 
 .detail-item label {
 	font-size: 0.9rem;

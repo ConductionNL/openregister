@@ -23,7 +23,8 @@ is the one trigger that needs a worker.
   the flow store, and for each whose cron occurrence has passed since it last
   fired, queues a run (trigger `schedule`) and records the fire time (in app
   config, keyed by flow uuid, so the flow object is never rewritten). A flow
-  never fired is due at once, then follows its cron.
+  never fired is measured from its last save, so it fires on its first
+  occurrence after that save and never earlier.
 - **`FlowScheduleWorker`** — a `TimedJob` (five-minute interval) that asks the
   service which flows are due each tick. Scheduled runs are then executed by the
   existing `FlowRunWorker`, so a scheduled flow shares the whole run lifecycle.

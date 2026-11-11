@@ -20,14 +20,10 @@ SPDX-License-Identifier: EUPL-1.2
 		</div>
 
 		<!-- Error state -->
-		<NcEmptyContent
+		<TabErrorState
 			v-else-if="error"
 			:name="t('openregister', 'Failed to load Deck cards')"
-			:description="errorMessage">
-			<template #icon>
-				<AlertCircleOutline :size="44" />
-			</template>
-		</NcEmptyContent>
+			:description="errorMessage" />
 
 		<!-- Deck app missing (HTTP 501 graceful degradation) -->
 		<NcEmptyContent
@@ -46,7 +42,7 @@ SPDX-License-Identifier: EUPL-1.2
 
 		<!-- Empty state -->
 		<NcEmptyContent
-			v-else-if="cards.length === 0"
+			v-else-if="items.length === 0"
 			:name="t('openregister', 'No Deck cards linked to this object')"
 			:description="
 				t(
@@ -62,7 +58,7 @@ SPDX-License-Identifier: EUPL-1.2
 		<!-- Linked cards list -->
 		<ul v-else class="deck-tab__list">
 			<li
-				v-for="card in cards"
+				v-for="card in items"
 				:key="card.ref || card.deckRef || card.id"
 				class="deck-tab__item">
 				<div class="deck-tab__icon">
@@ -94,28 +90,23 @@ SPDX-License-Identifier: EUPL-1.2
 						}}</span>
 					</div>
 				</div>
-				<NcButton
-					variant="tertiary"
-					:aria-label="t('openregister', 'Remove Deck card')"
-					@click="unlinkCard(card)">
-					<template #icon>
-						<CloseCircleOutline :size="20" />
-					</template>
-				</NcButton>
+				<UnlinkButton
+					:label="t('openregister', 'Remove Deck card')"
+					@unlink="unlinkCard(card)" />
 			</li>
 		</ul>
 	</div>
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
-import CloseCircleOutline from 'vue-material-design-icons/CloseCircleOutline.vue'
 import TableLarge from 'vue-material-design-icons/TableLarge.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
 import TableRemove from 'vue-material-design-icons/TableRemove.vue'
+import TabErrorState from '../shared/TabErrorState.vue'
+import UnlinkButton from './UnlinkButton.vue'
 import { useDeckRelationsStore } from '../../store/modules/object-relations/deck.js'
+import { storeRelationTab } from './relationTab.js'
 
 /**
  * DeckTab — display + manage Nextcloud Deck cards linked to an OpenRegister object.
@@ -132,63 +123,19 @@ export default {
 	name: 'DeckTab',
 
 	components: {
+		TabErrorState,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcButton,
-		AlertCircleOutline,
 		TableLarge,
 		TableLargePlus,
 		TableRemove,
-		CloseCircleOutline,
+		UnlinkButton,
 	},
 
-	props: {
-		register: {
-			type: [String, Number],
-			required: true,
-		},
-
-		schema: {
-			type: [String, Number],
-			required: true,
-		},
-
-		objectId: {
-			type: String,
-			required: true,
-		},
-	},
-
-	data() {
-		return {
-			error: false,
-			errorMessage: '',
-			store: useDeckRelationsStore(),
-		}
-	},
+	mixins: [storeRelationTab(useDeckRelationsStore)],
 
 	computed: {
-		/**
-		 * @spec exclude computed store cache-key from register/schema/object, UI plumbing
-		 */
-		key() {
-			return `${this.register}:${this.schema}:${this.objectId}`
-		},
-
-		/**
-		 * @spec exclude computed read of linked deck cards from store; deck-relations contract owned by integration-deck capability
-		 */
-		cards() {
-			return this.store.byObject[this.key] || []
-		},
-
-		/**
-		 * @spec exclude computed read of loading state from store, UI plumbing
-		 */
-		loading() {
-			return !!this.store.loading[this.key]
-		},
-
 		/**
 		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
 		 */
@@ -197,59 +144,13 @@ export default {
 		},
 	},
 
-	watch: {
-		objectId: {
-			immediate: true,
-			/**
-			 * @param newId
-			 * @spec exclude watcher refetching deck cards on objectId change, UI plumbing
-			 */
-			handler(newId) {
-				if (newId) {
-					this.fetchCards()
-				}
-			},
-		},
-	},
-
 	methods: {
-		t,
-
 		/**
-		 * Fetch linked Deck cards for the current object via the per-object store.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
-		 * @return {Promise<void>}
-		 */
-		async fetchCards() {
-			this.error = false
-			this.errorMessage = ''
-			try {
-				await this.store.fetch(this.register, this.schema, this.objectId)
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
-			}
-		},
-
-		/**
-		 * @param card
+		 * @param {object} card
 		 * @spec exclude store passthrough unlinking card + change emit; deck-relations contract owned by integration-deck capability
 		 */
-		async unlinkCard(card) {
-			const ref = card.ref || card.deckRef || card.id
-			try {
-				await this.store.unlink(
-					this.register,
-					this.schema,
-					this.objectId,
-					ref,
-				)
-				this.$emit('deck-changed', this.cards.length)
-			} catch (err) {
-				this.error = true
-				this.errorMessage = err.response?.data?.error || err.message || ''
-			}
+		unlinkCard(card) {
+			return this.unlink(card.ref || card.deckRef || card.id, 'deck-changed')
 		},
 
 		/**
@@ -258,90 +159,12 @@ export default {
 		openCreateDialog() {
 			this.$emit('add-deck-card')
 		},
-
-		/**
-		 * @param value
-		 * @spec exclude computed date-format display helper, UI plumbing
-		 */
-		formatDate(value) {
-			if (!value) {
-				return ''
-			}
-
-			try {
-				const d = new Date(value)
-				if (Number.isNaN(d.getTime())) {
-					return value
-				}
-
-				return d.toLocaleString()
-			} catch (e) {
-				return value
-			}
-		},
 	},
 }
 </script>
 
-<style scoped>
-.deck-tab__toolbar {
-	display: flex;
-	gap: 8px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../styles/components.scss' as *;
 
-.deck-tab__loading {
-	display: flex;
-	justify-content: center;
-	padding: 2em 0;
-}
-
-.deck-tab__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-}
-
-.deck-tab__item {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: 8px 12px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.deck-tab__item:last-child {
-	border-bottom: none;
-}
-
-.deck-tab__icon {
-	flex-shrink: 0;
-	color: var(--color-text-maxcontrast);
-}
-
-.deck-tab__content {
-	flex-grow: 1;
-	min-width: 0;
-}
-
-.deck-tab__title {
-	font-weight: 500;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.deck-tab__meta {
-	display: flex;
-	gap: 6px;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.85em;
-}
-
-.deck-tab__board {
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
+@include relation-tab-list('deck-tab', 'title', 'board');
 </style>

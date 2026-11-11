@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -45,9 +45,9 @@ use Throwable;
  * The probes ship as a default list so the service is usable without wiring,
  * and are injectable so a test can hand in one that misbehaves.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+ * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
  */
-class ConsistencyCheckService {
+class ConsistencyCheckService implements ConsistencyCheckServiceInterface {
 
 	/**
 	 * How many offending rows one probe reports.
@@ -85,7 +85,7 @@ class ConsistencyCheckService {
 	 *
 	 * @return array<string, mixed> The findings, and what was checked.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	public function check(): array {
 		$findings = [];
@@ -109,7 +109,7 @@ class ConsistencyCheckService {
 	 *
 	 * @return array<string, mixed>|null The finding, or null when no such probe.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 */
 	public function checkOne(string $slug): ?array {
 		if (array_key_exists($slug, $this->probes) === false) {
@@ -125,7 +125,7 @@ class ConsistencyCheckService {
 	 *
 	 * @return array<int, string> The probe slugs.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	public function slugs(): array {
 		return array_keys($this->probes);
@@ -216,72 +216,118 @@ class ConsistencyCheckService {
 	 */
 	private function shippedProbes(): array {
 		return [
-			'orphan-relations' => [
-				'title' => 'Relations pointing at an object that is gone',
-				'description' => 'A relation row whose target object no longer exists in the object table.',
-				'repair' => 'Delete the relation rows.',
-				'table' => 'openregister_object_relations',
-				'query' => static function (IQueryBuilder $qb): IQueryBuilder {
-					$sub = $qb->getConnection()->getQueryBuilder();
-					$sub->select('uuid')->from('openregister_objects');
-
-					return $qb->select('id', 'uuid', 'source_uuid', 'target_uuid')
-						->from('openregister_object_relations')
-						->where($qb->expr()->isNotNull('target_uuid'))
-						->andWhere(
-							$qb->expr()->notIn(
-								'target_uuid',
-								$qb->createFunction($sub->getSQL())
-							)
-						);
-				},
-			],
+			'orphan-relations' => $this->orphanRelationsProbe(),
 			// It was `orphan-favourites` on `openregister_object_favourites`, a
 			// table no migration ever created. Favourites are follows now
 			// (`merge-follow-and-favourites`), so the probe reads the follows.
-			'orphan-follows' => [
-				'title' => 'Follows on an object that is gone',
-				'description' => 'A follow row whose object no longer exists in the object table.',
-				'repair' => 'Delete the follow rows.',
-				'table' => 'openregister_watchers',
-				'query' => static function (IQueryBuilder $qb): IQueryBuilder {
-					$sub = $qb->getConnection()->getQueryBuilder();
-					$sub->select('uuid')->from('openregister_objects');
-
-					return $qb->select('id', 'object_uuid', 'user_id')
-						->from('openregister_watchers')
-						->where($qb->expr()->isNotNull('object_uuid'))
-						->andWhere(
-							$qb->expr()->notIn(
-								'object_uuid',
-								$qb->createFunction($sub->getSQL())
-							)
-						);
-				},
-			],
-			'runs-never-closed' => [
-				'title' => 'Job runs that never reported an end',
-				'description' => 'A run row still marked running, left behind by a worker that died mid-run.',
-				'repair' => 'Mark the runs failed, naming the worker that did not come back.',
-				'table' => 'openregister_job_runs',
-				'query' => static function (IQueryBuilder $qb): IQueryBuilder {
-					return $qb->select('id', 'job_class', 'started')
-						->from('openregister_job_runs')
-						->where($qb->expr()->eq('outcome', $qb->createNamedParameter('running')))
-						->andWhere(
-							$qb->expr()->lt(
-								'started',
-								$qb->createNamedParameter(
-									(new DateTime('-1 day')),
-									IQueryBuilder::PARAM_DATETIME_MUTABLE
-								)
-							)
-						);
-				},
-			],
+			'orphan-follows' => $this->orphanFollowsProbe(),
+			'runs-never-closed' => $this->neverClosedRunsProbe(),
 		];
 
 	}//end shippedProbes()
+
+	/**
+	 * The probe for relation rows whose target object is gone.
+	 *
+	 * @return array<string, mixed> The probe.
+	 */
+	private function orphanRelationsProbe(): array {
+		return [
+			'title' => 'Relations pointing at an object that is gone',
+			'description' => 'A relation row whose target object no longer exists in the object table.',
+			'repair' => 'Delete the relation rows.',
+			'table' => 'openregister_object_relations',
+			'query' => static function (IQueryBuilder $qb): IQueryBuilder {
+				$qb->select('id', 'uuid', 'source_uuid', 'target_uuid')
+					->from('openregister_object_relations');
+
+				return self::whereObjectIsGone(qb: $qb, column: 'target_uuid');
+			},
+		];
+
+	}//end orphanRelationsProbe()
+
+	/**
+	 * The probe for follow rows whose object is gone.
+	 *
+	 * @return array<string, mixed> The probe.
+	 */
+	private function orphanFollowsProbe(): array {
+		return [
+			'title' => 'Follows on an object that is gone',
+			'description' => 'A follow row whose object no longer exists in the object table.',
+			'repair' => 'Delete the follow rows.',
+			'table' => 'openregister_watchers',
+			'query' => static function (IQueryBuilder $qb): IQueryBuilder {
+				$qb->select('id', 'object_uuid', 'user_id')
+					->from('openregister_watchers');
+
+				return self::whereObjectIsGone(qb: $qb, column: 'object_uuid');
+			},
+		];
+
+	}//end orphanFollowsProbe()
+
+	/**
+	 * Narrow a query to rows whose object column names an object that no longer exists.
+	 *
+	 * @param IQueryBuilder $qb     The query, already selecting from the table.
+	 * @param string        $column The column holding the object uuid.
+	 *
+	 * @return IQueryBuilder The narrowed query.
+	 */
+	private static function whereObjectIsGone(IQueryBuilder $qb, string $column): IQueryBuilder {
+		$sub = $qb->getConnection()->getQueryBuilder();
+		$sub->select('uuid')->from('openregister_objects');
+
+		return $qb->where($qb->expr()->isNotNull($column))
+			->andWhere(
+				$qb->expr()->notIn(
+					$column,
+					$qb->createFunction($sub->getSQL())
+				)
+			);
+
+	}//end whereObjectIsGone()
+
+	/**
+	 * The probe for job runs still marked running a day after they started.
+	 *
+	 * @return array<string, mixed> The probe.
+	 */
+	private function neverClosedRunsProbe(): array {
+		return [
+			'title' => 'Job runs that never reported an end',
+			'description' => 'A run row still marked running, left behind by a worker that died mid-run.',
+			'repair' => 'Mark the runs failed, naming the worker that did not come back.',
+			'table' => 'openregister_job_runs',
+			'query' => self::neverClosedRunsQuery(...),
+		];
+
+	}//end neverClosedRunsProbe()
+
+	/**
+	 * Select the runs still marked running that started more than a day ago.
+	 *
+	 * @param IQueryBuilder $qb The query builder to build on.
+	 *
+	 * @return IQueryBuilder The query.
+	 */
+	private static function neverClosedRunsQuery(IQueryBuilder $qb): IQueryBuilder {
+		return $qb->select('id', 'job_class', 'started')
+			->from('openregister_job_runs')
+			->where($qb->expr()->eq('outcome', $qb->createNamedParameter('running')))
+			->andWhere(
+				$qb->expr()->lt(
+					'started',
+					$qb->createNamedParameter(
+						(new DateTime('-1 day')),
+						IQueryBuilder::PARAM_DATETIME_MUTABLE
+					)
+				)
+			);
+
+	}//end neverClosedRunsQuery()
 
 	/**
 	 * What a probe's repair would do, and where.
@@ -290,7 +336,7 @@ class ConsistencyCheckService {
 	 *
 	 * @return array<string, mixed>|null The repair plan, or null when no such probe.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	public function repairPlan(string $slug): ?array {
 		if (array_key_exists($slug, $this->probes) === false) {

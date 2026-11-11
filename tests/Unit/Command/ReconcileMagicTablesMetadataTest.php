@@ -18,14 +18,16 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
- * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-the-upgrade-step-and-reconcile-share-the-healer-req-mth-004
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+ * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-upgrade-step-and-reconcile-share-the-healer-req-mth-004
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Command;
 
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use OCA\OpenRegister\Command\ReconcileMagicTablesCommand;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
@@ -71,8 +73,7 @@ class ReconcileMagicTablesMetadataTest extends TestCase {
 
 		// The command and the step reach the healer through MagicMapper, as in production.
 		$healer = new MagicMetadataColumnHealer(
-			db: $db,
-			logger: $this->createMock(LoggerInterface::class),
+			sql: new MagicTableSql(db: $db, config: $this->createMock(IConfig::class), logger: $this->createMock(LoggerInterface::class)),
 			magicMapper: $this->magicMapper
 		);
 		$this->magicMapper->method('listMagicTableNames')->willReturn([MagicMetadataColumnHealerTest::TABLE]);

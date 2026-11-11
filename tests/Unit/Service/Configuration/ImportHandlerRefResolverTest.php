@@ -84,8 +84,6 @@ class ImportHandlerRefResolverTest extends TestCase {
 	 *
 	 * @var Client&MockObject
 	 */
-	private Client&MockObject $client;
-
 	/**
 	 * The app config mock.
 	 *
@@ -105,8 +103,6 @@ class ImportHandlerRefResolverTest extends TestCase {
 	 *
 	 * @var UploadHandler&MockObject
 	 */
-	private UploadHandler&MockObject $uploadHandler;
-
 	/**
 	 * The object service mock.
 	 *
@@ -134,24 +130,25 @@ class ImportHandlerRefResolverTest extends TestCase {
 		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
 		$this->configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$this->mappingMapper = $this->createMock(MappingMapper::class);
-		$this->client = $this->createMock(Client::class);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->uploadHandler = $this->createMock(UploadHandler::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->handler = new ImportHandler(
-			schemaMapper:        $this->schemaMapper,
-			registerMapper:      $this->registerMapper,
-			objectEntityMapper:  $this->objectEntityMapper,
-			configurationMapper: $this->configurationMapper,
-			mappingMapper:       $this->mappingMapper,
-			client:              $this->client,
-			appConfig:           $this->appConfig,
-			logger:              $this->logger,
-			appDataPath:         '/tmp',
-			uploadHandler:       $this->uploadHandler,
-			objectService:       $this->objectService
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $this->objectEntityMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->configurationMapper,
+				mappings: $this->mappingMapper,
+				appConfig: $this->appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->logger,
+			appDataPath: '/tmp',
+			objectService: $this->objectService
 		);
 	}//end setUp()
 

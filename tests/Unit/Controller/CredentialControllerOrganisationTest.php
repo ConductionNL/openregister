@@ -29,11 +29,15 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\CredentialControllerFactory;
 use OCA\OpenRegister\Controller\CredentialController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -50,9 +54,15 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialVault
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialTokens
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\CredentialControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Organisation
  * @uses \OCA\OpenRegister\Service\Credential\CredentialBrokerService
+ * @uses \OCA\OpenRegister\Service\WriteCause
  */
 class CredentialControllerOrganisationTest extends TestCase {
 	private const ACTIVE_ORG = 'org-active-uuid';
@@ -284,16 +294,22 @@ class CredentialControllerOrganisationTest extends TestCase {
 		// behaviour under test (the D4 admin gate, the persisted property bag, the vault
 		// scope) is unchanged — only the seam the call travels through moved.
 		$broker = new CredentialBrokerService(
-			$this->objectService,
-			$this->store,
-			$catalogue,
-			$session,
-			$this->createMock(IClientService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->orgService
+			sources: new CredentialSources(
+				objectService: $this->objectService,
+				credentialStore: $this->store,
+				catalogue: $catalogue
+			),
+			principals: new CredentialPrincipals(
+				userSession: $session,
+				organisationService: $this->orgService
+			),
+			outbound: new CredentialOutbound(
+				clientService: $this->createMock(IClientService::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
-		return new CredentialController(
+		return CredentialControllerFactory::create(
 			'openregister',
 			$request,
 			$session,

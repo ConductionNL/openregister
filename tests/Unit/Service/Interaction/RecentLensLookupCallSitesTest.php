@@ -12,7 +12,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+ * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
  */
 
 declare(strict_types=1);
@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\CauseFrame;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
@@ -48,7 +49,7 @@ class RecentLensLookupCallSitesTest extends TestCase {
 	 * @var array<string, array<int, string>>
 	 */
 	private const OPENED = [
-		'lib/Controller/ObjectsController.php' => ['show'],
+		'lib/Controller/ObjectsController.php' => ['foundForShow'],
 		'lib/Controller/TmloController.php' => ['exportSingle'],
 		'lib/Controller/ObjectShareLinkController.php' => ['show'],
 		'lib/Service/CaseTokenService.php' => ['resolve'],
@@ -63,6 +64,20 @@ class RecentLensLookupCallSitesTest extends TestCase {
 	private const NOT_OBJECT_SERVICE = [
 		'lib/Controller/ContentReportController.php' => ['create'],
 		'lib/Service/Portal/PortalPartyResolver.php' => ['resolveFromObject'],
+		'lib/Service/Object/SaveObject/InverseRelations.php' => ['relatedObject'],
+		'lib/Service/Object/SaveObject/InverseWriteBack.php' => ['writeToTarget'],
+	];
+
+	/**
+	 * Lookups whose `fn ()` sits on the line after `WriteCause::asLookup(`.
+	 *
+	 * Keyed by file, valued by the enclosing method. A listed call still has to
+	 * be wrapped in the lookup: being listed decides nothing by itself.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private const WRAPPED_LOOKUPS = [
+		'lib/Files/Controller/FilesController.php' => ['objectUnderReadCheck'],
 	];
 
 	/**
@@ -125,8 +140,7 @@ class RecentLensLookupCallSitesTest extends TestCase {
 		);
 		$accessor->load(caseUuid: 'case-1');
 		WriteCause::runAs(
-			cause: WriteCause::SCHEDULED,
-			run: 'sweep-1',
+			frame: new CauseFrame(cause: WriteCause::SCHEDULED, run: 'sweep-1'),
 			operation: static fn () => $accessor->load(caseUuid: 'case-1')
 		);
 
@@ -171,6 +185,8 @@ class RecentLensLookupCallSitesTest extends TestCase {
 					|| preg_match('/_audit:\s*false/', $call) === 1
 					|| in_array($method, (self::OPENED[$relative] ?? []), true) === true
 					|| in_array($method, (self::NOT_OBJECT_SERVICE[$relative] ?? []), true) === true
+					|| (in_array($method, (self::WRAPPED_LOOKUPS[$relative] ?? []), true) === true
+					&& preg_match('/WriteCause::asLookup\(\s+fn \(\) => $/', $prefix) === 1)
 				) {
 					continue;
 				}

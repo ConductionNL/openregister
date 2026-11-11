@@ -28,8 +28,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\BuiltIn;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Rbac\DefinitionWriteRightsInterface;
+use OCA\OpenRegister\Service\Rbac\RbacChecks;
+use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
+use RuntimeException;
 
 /**
  * SchemasToolProvider
@@ -42,7 +46,7 @@ use OCA\OpenRegister\Mcp\IMcpToolProvider;
  *
  * @psalm-suppress UnusedClass - Injected via DI container
  */
-class SchemasToolProvider implements IMcpToolProvider {
+class SchemasToolProvider extends AbstractBuiltInToolProvider {
 
 	/**
 	 * Tool id for the schemas tool
@@ -52,63 +56,43 @@ class SchemasToolProvider implements IMcpToolProvider {
 	/**
 	 * Constructor
 	 *
-	 * @param SchemaMapper $schemaMapper Schema database mapper
+	 * @param SchemaMapperInterface          $schemaMapper Schema database mapper
+	 * @param DefinitionWriteRightsInterface $rights       The rights of the signed-in user
 	 */
 	public function __construct(
-		private readonly SchemaMapper $schemaMapper,
+		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly DefinitionWriteRightsInterface $rights,
 	) {
 	}//end __construct()
 
 	/**
-	 * Returns the owning app id.
+	 * The tool definitions.
 	 *
-	 * @return string Always "openregister"
+	 * @var array<int, array<string, mixed>>
 	 */
-	public function getAppId(): string {
-		return 'openregister';
-	}//end getAppId()
-
-	/**
-	 * Returns tool descriptors.
-	 *
-	 * @return list<array{id: string, name: string, description: string, inputSchema: array}>
-	 */
-	public function getTools(): array {
-		return [
-			[
-				'id' => self::TOOL_ID,
-				'name' => 'schemas',
-				'description' => 'Manage schemas (data definitions that describe the structure of objects)',
-				'inputSchema' => [
-					'type' => 'object',
-					'properties' => [
-						'action' => [
-							'type' => 'string',
-							'enum' => ['list', 'get', 'create', 'update', 'delete'],
-							'description' => 'The CRUD action to perform',
-						],
-						'id' => [
-							'type' => 'integer',
-							'description' => 'Schema ID (required for get, update, delete)',
-						],
-						'data' => [
-							'type' => 'object',
-							'description' => 'Schema fields (for create and update)',
-						],
-						'limit' => [
-							'type' => 'integer',
-							'description' => 'Maximum number of results (for list)',
-						],
-						'offset' => [
-							'type' => 'integer',
-							'description' => 'Number of results to skip (for list)',
-						],
+	protected const TOOLS = [
+		[
+			'id' => self::TOOL_ID,
+			'name' => 'schemas',
+			'description' => 'Manage schemas (data definitions that describe the structure of objects)',
+			'inputSchema' => [
+				'type' => 'object',
+				'properties' => [
+					...CrudToolSchema::ACTION,
+					'id' => [
+						'type' => 'integer',
+						'description' => 'Schema ID (required for get, update, delete)',
 					],
-					'required' => ['action'],
+					'data' => [
+						'type' => 'object',
+						'description' => 'Schema fields (for create and update)',
+					],
+					...CrudToolSchema::PAGING,
 				],
+				'required' => ['action'],
 			],
-		];
-	}//end getTools()
+		],
+	];
 
 	/**
 	 * Invoke the schemas tool.
@@ -184,7 +168,11 @@ class SchemasToolProvider implements IMcpToolProvider {
 	 */
 	private function createSchema(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'data');
-		$schema = $this->schemaMapper->createFromArray(object: $arguments['data']);
+		if ($this->rights->isAdmin() === false) {
+			throw new RuntimeException('Only administrators may create schemas');
+		}
+
+		$schema = $this->schemaMapper->createFromArray(object: $this->checkedBody(data: $arguments['data'], old: null));
 		return $schema->jsonSerialize();
 	}//end createSchema()
 
@@ -198,12 +186,34 @@ class SchemasToolProvider implements IMcpToolProvider {
 	private function updateSchema(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
 		$this->requireParam(arguments: $arguments, param: 'data');
+		$stored = $this->manageableSchema(id: $arguments['id']);
+		$this->refuseOrphanCleanupChange(schema: $stored, document: $arguments['data']);
+		$data = $this->checkedBody(data: $arguments['data'], old: $stored->getAuthorization());
+		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
 		$schema = $this->schemaMapper->updateFromArray(
 			id: $arguments['id'],
-			object: $arguments['data']
+			object: $data
 		);
 		return $schema->jsonSerialize();
 	}//end updateSchema()
+
+	/**
+	 * Refuse a non-administrator's change of `orphanCleanup`, as the schema routes do.
+	 *
+	 * @param Schema               $schema   The schema as stored, or a new one.
+	 * @param array<string, mixed> $document The incoming fields.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the caller may not change the flag.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function refuseOrphanCleanupChange(Schema $schema, array $document): void {
+		if (RbacRuleChecks::orphanCleanupFlag()->changedBy(schema: $schema, document: $document) === true && $this->rights->isAdmin() === false) {
+			throw new InvalidArgumentException('Only an administrator can change orphanCleanup on a schema');
+		}
+	}//end refuseOrphanCleanupChange()
 
 	/**
 	 * Delete a schema.
@@ -224,24 +234,87 @@ class SchemasToolProvider implements IMcpToolProvider {
 	 */
 	private function deleteSchema(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
-		$schema = $this->schemaMapper->find($arguments['id']);
+		$schema = $this->manageableSchema(id: $arguments['id']);
 		$this->schemaMapper->delete($schema);
 		return ['deleted' => true, 'id' => $arguments['id']];
 	}//end deleteSchema()
 
 	/**
-	 * Assert a parameter is present in arguments.
+	 * The schema with this id, when the signed-in user may manage it.
 	 *
-	 * @param array<string, mixed> $arguments Tool arguments
-	 * @param string $param Required parameter name
+	 * @param mixed $id The schema id
+	 *
+	 * @return Schema The schema
+	 *
+	 * @throws RuntimeException When the user may not manage it
+	 */
+	private function manageableSchema(mixed $id): Schema {
+		$schema = $this->schemaMapper->find($id);
+		if ($this->rights->mayManage(authorization: $schema->getAuthorization()) === false) {
+			throw new RuntimeException('User does not have permission to manage this schema');
+		}
+
+		return $schema;
+	}//end manageableSchema()
+
+	/**
+	 * The body to write, after the checks the REST routes make on an authorization.
+	 *
+	 * @param array<string, mixed> $data The schema body
+	 * @param array|null           $old  The stored authorization, null for a new schema
+	 *
+	 * @return array<string, mixed> The body with its authorization in the form it is stored
+	 *
+	 * @throws RuntimeException When the block adds a crossing or an external grant without an end
+	 */
+	private function checkedBody(array $data, ?array $old): array {
+		if (array_key_exists('authorization', $data) === false) {
+			return $data;
+		}
+
+		$stored = $this->storedAuthorization(authorization: $data['authorization'], old: $old);
+		if (is_array($stored) === false) {
+			return $data;
+		}
+
+		$this->refuseOpenEndedExternalGrant(stored: $stored);
+		$data['authorization'] = $stored;
+
+		return $data;
+	}//end checkedBody()
+
+	/**
+	 * The authorization in the form it is stored, refused when a non-administrator widens a crossing.
+	 *
+	 * @param mixed      $authorization The authorization block as written.
+	 * @param array|null $old           The stored authorization, null for a new schema.
+	 *
+	 * @return mixed The block as stored.
+	 *
+	 * @throws RuntimeException When the block adds a crossing and the caller is not an administrator
+	 */
+	private function storedAuthorization(mixed $authorization, ?array $old): mixed {
+		$change = RbacRuleChecks::crossOrganisationMarkerChange();
+		$stored = $change->asStored(authorization: $authorization);
+		if ($change->widens(old: $old, new: $stored) === true && $this->rights->isAdmin() === false) {
+			throw new RuntimeException('Only an administrator may let a rule read across organisations (crossOrganisation: true)');
+		}
+
+		return $stored;
+	}//end storedAuthorization()
+
+	/**
+	 * Refuse an external grant that has no end date.
+	 *
+	 * @param array<string, mixed> $stored The authorization block as stored.
 	 *
 	 * @return void
 	 *
-	 * @throws InvalidArgumentException If parameter is missing
+	 * @throws RuntimeException When an external grant has no end
 	 */
-	private function requireParam(array $arguments, string $param): void {
-		if (isset($arguments[$param]) === false) {
-			throw new InvalidArgumentException('Missing required parameter: ' . $param);
+	private function refuseOpenEndedExternalGrant(array $stored): void {
+		if (RbacChecks::externalGrants()->refusalFor($stored) !== null) {
+			throw new RuntimeException('An external grant needs an end date');
 		}
-	}//end requireParam()
+	}//end refuseOpenEndedExternalGrant()
 }//end class
