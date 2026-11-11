@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -115,7 +116,8 @@ class ObjectsControllerPatchReadScopeTest extends TestCase {
 		$this->objectService->method('getRegister')->willReturn(1);
 		$this->objectService->method('getSchema')->willReturn(2);
 		$this->objectService->method('findSilent')->willReturnCallback(
-			function (string $id, ?array $_extend = [], bool $files = false, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+			function (...$args): ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy] = FindCallShape::findSilent(args: $args);
 				$this->reads[] = [$_rbac, $_multitenancy];
 				if ($this->inScope === true || ($_rbac === false && $_multitenancy === false)) {
 					return $this->stored;

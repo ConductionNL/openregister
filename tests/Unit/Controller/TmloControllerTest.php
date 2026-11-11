@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -317,7 +318,7 @@ class TmloControllerTest extends TestCase {
 
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('uuid-1', [], false, 1, 7)
+			->with(...FindCallShape::findArgs('uuid-1', [], false, 1, 7))
 			->willReturn(new ObjectEntity());
 
 		$this->tmloService->expects($this->once())

@@ -32,7 +32,7 @@ use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
-use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionBackends;
+use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;

@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -329,7 +330,7 @@ class ObjectsControllerPatchGoldenTest extends TestCase {
 	private function storeService(array $setup): ObjectService {
 		$service = $this->createMock(ObjectService::class);
 		$service->method('findSilent')->willReturnCallback(function (...$args) use ($setup): ObjectEntity {
-			$this->calls[] = ['findSilent' => $args];
+			$this->calls[] = ['findSilent' => FindCallShape::findSilent(args: $args)];
 			return match ($setup['read'] ?? 'found') {
 				'found' => $this->entity(($setup['stored'] ?? [])),
 				'gone' => throw new DoesNotExistException('gone'),
