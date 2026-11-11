@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 use OCP\IUser;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * One partial update: the object, the fields that change, where to find it and who acts.

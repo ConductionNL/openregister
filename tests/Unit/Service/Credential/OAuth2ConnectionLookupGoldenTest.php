@@ -38,6 +38,7 @@ use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Golden outcomes of the shared credential lookups.
@@ -105,7 +106,10 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true) use (&$calls): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$calls): bool {
+				$uuid = $deletion->uuid;
+				$register = $deletion->target->register;
+				$schema = $deletion->target->schema;
 				$calls[] = ['delete', $uuid, $register, $schema, $_rbac, $_multitenancy];
 				return true;
 			}

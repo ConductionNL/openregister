@@ -57,6 +57,8 @@ use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * SchemaDerivedToolProvider
@@ -707,9 +709,10 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 
 		$id = $arguments['id'];
 		$this->objectService->deleteObject(
-			uuid: $id,
-			register: $register,
-			schema: $schema
+			deletion: new ObjectDeletion(
+				uuid: $id,
+				target: new ObjectFindTarget(register: $register, schema: $schema)
+			)
 		);
 
 		return ['deleted' => true, 'id' => $id];

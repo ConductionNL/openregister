@@ -136,7 +136,7 @@ class StateHistoryRebuildJobTest extends TestCase {
 		$schema->setConfiguration(['x-openregister-lifecycle' => ['field' => 'status']]);
 
 		$this->audit->method('findObjectUuidsAfter')->with('c-0', StateHistoryRebuildJob::BATCH)->willReturn(['o-1', 'o-2']);
-		$this->audit->method('findForObjectByAction')->willReturnCallback(
+		$this->audit->method('findObjectActions')->willReturnCallback(
 			function (string $objectUuid) use ($entry): array {
 				if ($objectUuid === 'o-1') {
 					return [$entry];
