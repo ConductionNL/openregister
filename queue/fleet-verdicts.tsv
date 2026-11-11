@@ -2436,3 +2436,4 @@ dossiq	5497	2ce61facf73aca4e01399fea8e6a290f81863218	GREEN	FXL	development merge
 dossiq	5446	b6715f18cab8732cb0cd2a2e603476c575b8c299	GREEN	FXL	supplier scope spec reads the emitter loop; merged
 dossiq	5434	670127c0db220268616bb5752a71dd9333c83257	GREEN	FXL	overdue filter spec accepts run->today; merged
 shillinq	2477	40733a5bb231b64dff8cd52b8899de2a5139b79a	GREEN	FXL	hand-computed tests restored beside the golden, pass on the new code; merged
+shillinq	2445	54ba149694f2a30d6103d4ab14948daca9d2be44	GREEN	FXL	fragments collected incrementally so a stream error keeps them, as on development; merged
