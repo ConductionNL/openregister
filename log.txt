@@ -3138,3 +3138,4 @@
 2026-11-11T18:33:58Z integrator-20261111T115842-a749432d GREEN tree efec5b77e4 on dev c66a475f77 prs 5 front=skip: Tests: 56763, Assertions: 188022, Errors: 3, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-11T18:35:12Z integrator-20261111T115842-a749432d MERGED-TREE efec5b77e4: 5 PRs in one push, main now efec5b77e4 = tested tree
 2026-11-11T19:19:52Z session-20261111T190046-c4d95d2f FV9-04 hermiq: stopped, no verdicts recorded. composer install fails: proxy answers 403 for every third-party GitHub zipball (123/123 packages, e.g. opis/uri), so the PHP unit suite cannot run in this cloud session. 24 quality/i PR leases taken and released untested; hermiq has ~65 quality/* PRs without a verdict at head (52 quality/i). Needs a local verify lane.
+2026-11-11T19:50:29Z integrator-20261111T115842-a749432d MERGED-TREE 60a263292c: 1 PRs in one push, main now 60a263292c = tested tree
