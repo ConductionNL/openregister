@@ -74,6 +74,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
@@ -354,8 +355,9 @@ class ObjectServiceContextRestorationTest extends TestCase {
 	private function saveIntoBrokerScope(): void {
 		$this->service->saveObject(
 			object: ['name' => 'example credential'],
-			register: self::BROKER_REGISTER,
-			schema: self::BROKER_SCHEMA,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -503,8 +505,9 @@ class ObjectServiceContextRestorationTest extends TestCase {
 		try {
 			$this->service->saveObject(
 				object: ['name' => 'doomed'],
-				register: self::BROKER_REGISTER,
-				schema: self::BROKER_SCHEMA,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::BROKER_REGISTER, schema: self::BROKER_SCHEMA)
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

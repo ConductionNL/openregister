@@ -37,6 +37,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Every branch of a correction.
@@ -135,7 +136,7 @@ class CorrectionServiceBehaviourTest extends TestCase {
 		$saved->setLastLog($lastLog);
 		$this->objects->method('findSilent')->with(...FindCallShape::findSilentArgs('obj-1', [], false, 'reg', 'sch', false, false))->willReturn($existing);
 		$this->objects->expects($this->once())->method('saveObject')
-			->with(['name' => 'New', 'size' => 3, 'id' => 'u-1', 'colour' => 'red'], [], 'reg', 'sch', 'u-1')
+			->with(['name' => 'New', 'size' => 3, 'id' => 'u-1', 'colour' => 'red'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'reg' && $options->target->schema == 'sch' && $options->uuid == 'u-1'))
 			->willReturn($saved);
 
 		return $saved;

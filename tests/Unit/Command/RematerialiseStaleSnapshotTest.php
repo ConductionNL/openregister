@@ -49,6 +49,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
@@ -155,7 +156,8 @@ class RematerialiseStaleSnapshotTest extends TestCase {
 		);
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object, ?array $extend = [], $reg = null, $sch = null, ?string $uuid = null) use ($rules, $schema): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($rules, $schema): ObjectEntity {
+				$uuid = $options->uuid;
 				$this->saves[] = (string) $uuid;
 				$violations = $rules->validateReadOnlyConstraints(check: new WriteConstraintCheck(incoming: $object, stored: $this->store[$uuid]), schema: $schema);
 				if ($violations !== []) {
