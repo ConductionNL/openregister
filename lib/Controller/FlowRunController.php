@@ -774,7 +774,7 @@ class FlowRunController extends Controller {
 		// caller the contents of anyone's run.
 		$run = $this->visibleRun(uuid: $uuid);
 		if ($run === null) {
-			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+			return $this->noSuchRun();
 		}
 
 		return new JSONResponse($run->jsonSerialize());
@@ -804,7 +804,7 @@ class FlowRunController extends Controller {
 		// access without anything looking like an access change.
 		$run = $this->visibleRun(uuid: $uuid);
 		if ($run === null) {
-			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+			return $this->noSuchRun();
 		}
 
 		if ($this->auditTrails === null) {
@@ -924,15 +924,9 @@ class FlowRunController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function retry(string $uuid): JSONResponse {
-		try {
-			$run = $this->mapper->findByUuid($uuid);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
-		}
-
-		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
-		if ($refusal !== null) {
-			return $refusal;
+		$run = $this->runnableRun(uuid: $uuid);
+		if ($run instanceof JSONResponse) {
+			return $run;
 		}
 
 		$new = $this->runner->retry($run);
@@ -975,15 +969,9 @@ class FlowRunController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function resume(string $uuid): JSONResponse {
-		try {
-			$run = $this->mapper->findByUuid($uuid);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
-		}
-
-		$refusal = $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId());
-		if ($refusal !== null) {
-			return $refusal;
+		$run = $this->runnableRun(uuid: $uuid);
+		if ($run instanceof JSONResponse) {
+			return $run;
 		}
 
 		$payload = $this->request->getParams();
@@ -1089,6 +1077,32 @@ class FlowRunController extends Controller {
 
 		return $matches[0];
 	}//end soleSuspendedRun()
+
+	/**
+	 * Resolve a run the caller may run, or the answer that refuses it.
+	 *
+	 * @param string $uuid The run uuid.
+	 *
+	 * @return FlowRun|JSONResponse The run, a 404 when there is no such run, or the guard's refusal.
+	 */
+	private function runnableRun(string $uuid): FlowRun|JSONResponse {
+		try {
+			$run = $this->mapper->findByUuid($uuid);
+		} catch (DoesNotExistException $e) {
+			return $this->noSuchRun();
+		}
+
+		return $this->guard->refusalUnlessRunnable(flowId: (string)$run->getFlowId()) ?? $run;
+	}//end runnableRun()
+
+	/**
+	 * The 404 for a run that does not exist or that the caller cannot see.
+	 *
+	 * @return JSONResponse
+	 */
+	private function noSuchRun(): JSONResponse {
+		return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
+	}//end noSuchRun()
 
 	/**
 	 * Translate the seam's typed refusal into this endpoint's HTTP contract.
