@@ -49,9 +49,7 @@ export function relationUrl(kind, ref) {
  */
 export async function loadRelations(store, request) {
 	const k = request.key
-	store.loading = { ...store.loading, [k]: true }
-	store.errors = { ...store.errors, [k]: null }
-	store[request.flag] = false
+	startLoading(store, request)
 
 	try {
 		const response = await axios.get(request.url)
@@ -60,19 +58,52 @@ export async function loadRelations(store, request) {
 		return list
 	} catch (err) {
 		if (err.response?.status === 501) {
-			store[request.flag] = true
-			store.byObject = { ...store.byObject, [k]: [] }
-			return []
+			return markUnavailable(store, request)
 		}
 
-		store.errors = {
-			...store.errors,
-			[k]: err.response?.data?.error || err.message || '',
-		}
+		store.errors = { ...store.errors, [k]: relationErrorText(err) }
 		throw err
 	} finally {
 		store.loading = { ...store.loading, [k]: false }
 	}
+}
+
+/**
+ * Mark an object's relations as loading: no error yet, and the backing app
+ * assumed present.
+ *
+ * @param {object} store The relation store.
+ * @param {{key: string, flag: string}} request The cache key and the name of the unavailable flag.
+ * @return {void}
+ */
+function startLoading(store, request) {
+	const k = request.key
+	store.loading = { ...store.loading, [k]: true }
+	store.errors = { ...store.errors, [k]: null }
+	store[request.flag] = false
+}
+
+/**
+ * Mark the backing app as missing and cache an empty list for the object.
+ *
+ * @param {object} store The relation store.
+ * @param {{key: string, flag: string}} request The cache key and the name of the unavailable flag.
+ * @return {Array} The empty list.
+ */
+function markUnavailable(store, request) {
+	store[request.flag] = true
+	store.byObject = { ...store.byObject, [request.key]: [] }
+	return []
+}
+
+/**
+ * What a failed relation read stores as the object's error.
+ *
+ * @param {object} err The failure.
+ * @return {string} The server's error, else the failure's message, else empty.
+ */
+function relationErrorText(err) {
+	return err.response?.data?.error || err.message || ''
 }
 
 /**

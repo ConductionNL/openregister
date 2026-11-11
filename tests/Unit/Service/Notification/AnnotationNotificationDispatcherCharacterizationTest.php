@@ -44,7 +44,9 @@ use OCA\OpenRegister\Notifications\Service\Notification\DeliveryHold;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\DigestScheduleEvaluator;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
+use OCA\OpenRegister\Notifications\Service\Notification\InAppNotice;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
+use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationCoalescer;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
@@ -615,15 +617,34 @@ class AnnotationNotificationDispatcherCharacterizationTest extends TestCase {
 		$time->method('getDateTime')->willReturn(new DateTime('2026-07-12T20:15:00+02:00'));
 
 		$ncSender = $this->createMock(NcNotificationSender::class);
-		$ncSender->method('send')->willReturnCallback(
-			function (...$args): string {
-				$this->record(what: 'nc.send', args: $args);
+		$ncSender->method('notify')->willReturnCallback(
+			function (InAppNotice $notice): string {
+				$this->record(what: 'nc.send', args: [
+					$notice->uid,
+					$notice->object,
+					$notice->content->subjectKey,
+					$notice->rule->name,
+					$notice->content->subject,
+					$notice->content->message,
+					$notice->content->context,
+					$notice->rule->originApp,
+					$notice->rule->actions,
+					$notice->rule->webPushActive,
+				]);
 				return 'dispatched';
 			}
 		);
-		$ncSender->method('enqueueWebPush')->willReturnCallback(
-			function (...$args): void {
-				$this->record(what: 'nc.enqueueWebPush', args: $args);
+		$ncSender->method('enqueuePush')->willReturnCallback(
+			function (PushRideAlong $push): void {
+				$this->record(what: 'nc.enqueueWebPush', args: [
+					$push->recipients,
+					$push->rule->name,
+					$push->rule->originApp,
+					$push->content->subject,
+					$push->content->message,
+					$push->rule->actions,
+					$push->object,
+				]);
 			}
 		);
 

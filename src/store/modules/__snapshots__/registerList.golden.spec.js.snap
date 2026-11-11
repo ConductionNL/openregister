@@ -1,0 +1,57 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`register store refreshRegisterList asks with a search, without sharing 1`] = `
+[
+  [
+    "/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats&_search=a%20b%26c",
+    {
+      "method": "GET",
+    },
+  ],
+  [
+    "/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats&_search=a%20b%26c",
+    {
+      "method": "GET",
+    },
+  ],
+]
+`;
+
+exports[`register store refreshRegisterList asks with an empty search, without sharing 1`] = `
+[
+  [
+    "/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats",
+    {
+      "method": "GET",
+    },
+  ],
+  [
+    "/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats",
+    {
+      "method": "GET",
+    },
+  ],
+]
+`;
+
+exports[`register store refreshRegisterList shares one request between plain refreshes in flight 1`] = `
+{
+  "calls": [
+    [
+      "/index.php/apps/openregister/api/registers?_extend[]=schemas&_extend[]=@self.stats",
+      {
+        "method": "GET",
+      },
+    ],
+  ],
+  "data": [
+    {
+      "id": 1,
+      "title": "R1",
+    },
+  ],
+  "list": [
+    "R1",
+  ],
+}
+`;

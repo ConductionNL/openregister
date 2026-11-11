@@ -190,14 +190,26 @@ class ExampleSetTalkConversations extends ExampleSetEngineRows {
 		$this->holdCall(conversation: $conversation);
 		$link = $this->link(object: $object, conversation: $conversation);
 
+		return self::entryOf(conversation: $conversation, link: $link);
+	}//end writeOn()
+
+	/**
+	 * The record entry of a written conversation: its room, the object and the link.
+	 *
+	 * @param array<string, mixed> $conversation The conversation, with its room.
+	 * @param mixed                $link         The object link.
+	 *
+	 * @return array<string, mixed> The entry.
+	 */
+	private static function entryOf(array $conversation, mixed $link): array {
 		return [
 			'token'       => $conversation['room']['token'],
 			'room'        => $conversation['room']['id'],
 			'createdRoom' => $conversation['room']['created'],
-			'object'      => (string) $data['object'],
+			'object'      => (string) $conversation['data']['object'],
 			'link'        => $link,
 		];
-	}//end writeOn()
+	}//end entryOf()
 
 	/**
 	 * Hold the declared call in a conversation the set created.

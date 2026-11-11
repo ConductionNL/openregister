@@ -270,36 +270,58 @@ class DraftExpiry implements DraftExpiryInterface {
 	 *         The counts of this pair; the caller fills in the lifetime.
 	 */
 	private function removeWithin(DraftExpiryPair $pair, DraftExpiryBatch $batch): array {
-		$register = $pair->register;
-		$schema = $pair->schema;
-		$expired = $batch->expired;
-		$unread = $batch->unread;
-		$row = [
-			'register' => (string)($register->getSlug() ?? $register->getId()),
-			'schema' => (string)($schema->getSlug() ?? $schema->getId()),
-			'lifetimeDays' => 0,
-			'expired' => (count($expired) + $unread),
-			'removed' => 0,
-			'refused' => 0,
-			'deferred' => $unread,
-		];
+		$row = self::reportRow(pair: $pair, batch: $batch);
 
-		foreach ($expired as $uuid) {
+		foreach ($batch->expired as $uuid) {
 			if (($row['removed'] + $row['refused']) >= $batch->budget) {
 				$row['deferred']++;
 				continue;
 			}
 
-			if ($this->remove(pair: $pair, uuid: $uuid) === true) {
-				$row['removed']++;
-				continue;
-			}
-
-			$row['refused']++;
+			$row[$this->removalOutcome(pair: $pair, uuid: $uuid)]++;
 		}
 
 		return $row;
 	}//end removeWithin()
+
+	/**
+	 * A register and schema's report row before any draft is removed.
+	 *
+	 * @param DraftExpiryPair  $pair  The register and schema.
+	 * @param DraftExpiryBatch $batch The expired uuids, the unread count and the budget.
+	 *
+	 * @return array{register: string, schema: string, lifetimeDays: int, expired: int, removed: int, refused: int, deferred: int}
+	 */
+	private static function reportRow(DraftExpiryPair $pair, DraftExpiryBatch $batch): array {
+		$register = $pair->register;
+		$schema = $pair->schema;
+
+		return [
+			'register' => (string)($register->getSlug() ?? $register->getId()),
+			'schema' => (string)($schema->getSlug() ?? $schema->getId()),
+			'lifetimeDays' => 0,
+			'expired' => (count($batch->expired) + $batch->unread),
+			'removed' => 0,
+			'refused' => 0,
+			'deferred' => $batch->unread,
+		];
+	}//end reportRow()
+
+	/**
+	 * Remove one expired draft and say how it went.
+	 *
+	 * @param DraftExpiryPair $pair The register and schema.
+	 * @param string          $uuid The draft.
+	 *
+	 * @return string `removed`, or `refused` when the delete was refused.
+	 */
+	private function removalOutcome(DraftExpiryPair $pair, string $uuid): string {
+		if ($this->remove(pair: $pair, uuid: $uuid) === true) {
+			return 'removed';
+		}
+
+		return 'refused';
+	}//end removalOutcome()
 
 	/**
 	 * A register's schema, or null when it cannot be loaded.
@@ -458,18 +480,10 @@ class DraftExpiry implements DraftExpiryInterface {
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-one-background-job-must-remove-drafts-past-their-schemas-lifetime
 	 */
 	private function readPage(ExpiredDraftListRun $run, int $page): ?array {
-		$pair = $run->pair;
 		try {
-			$found = $this->objects->searchObjects(
-				query: ($run->query + ['_limit' => self::PAGE_SIZE, '_offset' => ($page * self::PAGE_SIZE)]),
-				_rbac: false,
-				_multitenancy: false
-			);
+			$found = $this->searchPage(run: $run, page: $page);
 		} catch (Throwable $exception) {
-			$this->logger->warning(
-				message: '[DraftExpiry] The drafts of a schema could not be listed',
-				context: ['register' => $pair->register->getSlug(), 'schema' => $pair->schema->getSlug(), 'exception' => $exception->getMessage()]
-			);
+			$this->logListingFailure(pair: $run->pair, exception: $exception);
 			return null;
 		}
 
@@ -479,6 +493,37 @@ class DraftExpiry implements DraftExpiryInterface {
 
 		return $found;
 	}//end readPage()
+
+	/**
+	 * One page of a list of expired drafts, read outside RBAC and multitenancy.
+	 *
+	 * @param ExpiredDraftListRun $run  The list.
+	 * @param int                 $page The page, from 0.
+	 *
+	 * @return mixed What the search returned.
+	 */
+	private function searchPage(ExpiredDraftListRun $run, int $page): mixed {
+		return $this->objects->searchObjects(
+			query: ($run->query + ['_limit' => self::PAGE_SIZE, '_offset' => ($page * self::PAGE_SIZE)]),
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end searchPage()
+
+	/**
+	 * Warn that a schema's drafts could not be listed.
+	 *
+	 * @param DraftExpiryPair $pair      The register and schema.
+	 * @param Throwable       $exception Why they could not be listed.
+	 *
+	 * @return void
+	 */
+	private function logListingFailure(DraftExpiryPair $pair, Throwable $exception): void {
+		$this->logger->warning(
+			message: '[DraftExpiry] The drafts of a schema could not be listed',
+			context: ['register' => $pair->register->getSlug(), 'schema' => $pair->schema->getSlug(), 'exception' => $exception->getMessage()]
+		);
+	}//end logListingFailure()
 
 	/**
 	 * The UUIDs of the listed objects that are expired drafts.

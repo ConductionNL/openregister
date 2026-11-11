@@ -40,6 +40,7 @@ use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -225,13 +226,12 @@ class TransitionEngine {
 			$this->eventDispatcher->dispatchTyped(
 				new ObjectTransitionedEvent(
 					object: $object,
-					action: $move->action,
-					from: $move->from,
-					to: $move->to,
-					userId: $userId,
-					register: $scope['register'],
-					schema: $scope['schema'],
-					automatic: ($applying !== null && $applying === $move->action)
+					move: $move,
+					scope: new RegisterSchemaRef(register: $scope['register'], schema: $scope['schema']),
+					actor: new TransitionActor(
+						userId: $userId,
+						automatic: ($applying !== null && $applying === $move->action)
+					)
 				)
 			);
 		} catch (Throwable $e) {

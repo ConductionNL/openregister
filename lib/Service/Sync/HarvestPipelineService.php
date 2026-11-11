@@ -155,19 +155,31 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 				$this->syncRecordMapper->transitionStatus(record: $record, newStatus: SyncRecordStatus::FETCHED);
 				$fetched[] = $record;
 			} catch (Throwable $e) {
-				$record->setAttempts((int)$record->getAttempts() + 1);
-				$this->syncRecordMapper->recordFailure(
-					record: $record,
-					failure: SyncRecordInputs::failure(status: SyncRecordStatus::FETCH_ERROR, message: $e->getMessage())
-				);
-				$this->logger->warning(
-					message: sprintf('[HarvestPipeline] Fetch failed for %s: %s', $record->getExternalId(), $e->getMessage())
-				);
-			}//end try
+				$this->markFetchFailed(record: $record, error: $e);
+			}
 		}//end foreach
 
 		return $fetched;
 	}//end fetchAll()
+
+	/**
+	 * Count a failed fetch as an attempt, record it as fetch_error, and say so.
+	 *
+	 * @param SyncRecord $record The record whose fetch failed.
+	 * @param Throwable  $error  Why it failed.
+	 *
+	 * @return void
+	 */
+	private function markFetchFailed(SyncRecord $record, Throwable $error): void {
+		$record->setAttempts((int)$record->getAttempts() + 1);
+		$this->syncRecordMapper->recordFailure(
+			record: $record,
+			failure: SyncRecordInputs::failure(status: SyncRecordStatus::FETCH_ERROR, message: $error->getMessage())
+		);
+		$this->logger->warning(
+			message: sprintf('[HarvestPipeline] Fetch failed for %s: %s', $record->getExternalId(), $error->getMessage())
+		);
+	}//end markFetchFailed()
 
 	/**
 	 * Import stage: map, validate, resolve conflicts and persist.
@@ -544,16 +556,7 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 			return false;
 		}
 
-		try {
-			$local = WriteCause::asLookup(fn () => $this->importServices->objectService->find(
-				id: (string)$previous->getObjectUuid(),
-				register: $source->getTargetRegister(),
-				schema: $source->getTargetSchema()
-			));
-		} catch (Throwable $e) {
-			return false;
-		}
-
+		$local = $this->localObject(source: $source, previous: $previous);
 		if ($local === null) {
 			return false;
 		}
@@ -562,4 +565,24 @@ class HarvestPipelineService implements HarvestPipelineServiceInterface {
 
 		return $localHash !== $previous->getContentHash();
 	}//end localChangedSinceSync()
+
+	/**
+	 * The local object a previous sync wrote, read as a lookup, or null when it cannot be read.
+	 *
+	 * @param Source     $source   The source, for the target register and schema.
+	 * @param SyncRecord $previous The previous sync record, for the object uuid.
+	 *
+	 * @return \OCA\OpenRegister\Db\ObjectEntity|null The object, or null.
+	 */
+	private function localObject(Source $source, SyncRecord $previous): mixed {
+		try {
+			return WriteCause::asLookup(fn () => $this->importServices->objectService->find(
+				id: (string)$previous->getObjectUuid(),
+				register: $source->getTargetRegister(),
+				schema: $source->getTargetSchema()
+			));
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end localObject()
 }//end class

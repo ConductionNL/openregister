@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Controller\Support\DsarCaseControllerServices;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControlInterface;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
@@ -44,6 +45,7 @@ use OCA\OpenRegister\Service\Gdpr\Export\ExportBundleServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolverInterface;
 use OCA\OpenRegister\Service\Gdpr\Redaction\FieldRedaction;
+use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateResult;
 use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
@@ -308,6 +310,29 @@ class DsarCaseController extends Controller {
 			return $guard;
 		}
 
+		$redaction = $this->requestedRedaction();
+		if ($redaction instanceof JSONResponse) {
+			return $redaction;
+		}
+
+		try {
+			$result = $this->redactionService->applyRedaction(caseUuid: $id, redaction: $redaction);
+		} catch (Throwable $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage()],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return new JSONResponse(data: $result);
+	}//end redact()
+
+	/**
+	 * The field redaction the request asks for.
+	 *
+	 * @return FieldRedaction|JSONResponse The redaction, or a 400 when the field or ground is missing
+	 */
+	private function requestedRedaction(): FieldRedaction|JSONResponse {
 		$field = (string)($this->request->getParam(key: 'field') ?? '');
 		$after = (string)($this->request->getParam(key: 'after') ?? '');
 		$ground = (string)($this->request->getParam(key: 'ground') ?? '');
@@ -318,20 +343,8 @@ class DsarCaseController extends Controller {
 			);
 		}
 
-		try {
-			$result = $this->redactionService->applyRedaction(
-				caseUuid: $id,
-				redaction: new FieldRedaction(field: $field, after: $after, ground: $ground)
-			);
-		} catch (Throwable $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
-		}
-
-		return new JSONResponse(data: $result);
-	}//end redact()
+		return new FieldRedaction(field: $field, after: $after, ground: $ground);
+	}//end requestedRedaction()
 
 	/**
 	 * POST /api/gdpr/cases/{id}/bundle — generate the signed export bundle.
@@ -391,10 +404,7 @@ class DsarCaseController extends Controller {
 		// caller must pass the case-level access control.
 		$case = $this->accessor->load(caseUuid: $id);
 		if ($case === null || $this->accessControl->mayAct(case: $case->getObject()) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Not found or not authorised.'],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+			return $this->notFoundOrDenied();
 		}
 
 		$token = (string)($this->request->getParam(key: 'token') ?? '');
@@ -463,17 +473,9 @@ class DsarCaseController extends Controller {
 	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function identityVerify(string $id): JSONResponse {
-		$guard = $this->guardCase(caseUuid: $id);
-		if ($guard !== null) {
-			return $guard;
-		}
-
-		$case = $this->accessor->load(caseUuid: $id);
-		if ($case === null) {
-			return new JSONResponse(
-				data: ['error' => 'Not found or not authorised.'],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+		$case = $this->actionableCase(caseUuid: $id);
+		if ($case instanceof JSONResponse) {
+			return $case;
 		}
 
 		$data = $case->getObject();
@@ -487,16 +489,12 @@ class DsarCaseController extends Controller {
 		$result = $provider->verify(caseUuid: $id, case: $data);
 
 		// Record the three-state outcome on the case (audited via the accessor).
+		// A failed save does not undo the verification DECISION: it is answered
+		// as a 400 rather than pretending the case verified.
 		$data['identityVerification'] = $result->toArray();
-		try {
-			$this->accessor->save(case: $case, data: $data);
-		} catch (Throwable $e) {
-			// Persisting the record failed, but the verification DECISION stands
-			// — surface it as a 400 rather than pretend the case verified.
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'status' => $result->getStatus()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+		$failure = $this->saveFailure(case: $case, data: $data);
+		if ($failure !== null) {
+			return $this->unsavedOutcome(message: $failure, status: $result->getStatus());
 		}
 
 		return new JSONResponse(data: $result->toArray());
@@ -523,17 +521,9 @@ class DsarCaseController extends Controller {
 	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function escalate(string $id): JSONResponse {
-		$guard = $this->guardCase(caseUuid: $id);
-		if ($guard !== null) {
-			return $guard;
-		}
-
-		$case = $this->accessor->load(caseUuid: $id);
-		if ($case === null) {
-			return new JSONResponse(
-				data: ['error' => 'Not found or not authorised.'],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+		$case = $this->actionableCase(caseUuid: $id);
+		if ($case instanceof JSONResponse) {
+			return $case;
 		}
 
 		$data = $case->getObject();
@@ -542,25 +532,100 @@ class DsarCaseController extends Controller {
 		$provider = $this->regulatorRegistry->resolve(selectorId: $selectorId);
 		$result = $provider->escalate(caseUuid: $id, case: $data);
 
-		// Record the outcome. Only a positive escalation writes the
-		// regulatorReference the denial-finalise gate + dossier consume — a
-		// refusal MUST NOT mint or claim a reference.
+		$failure = $this->saveFailure(case: $case, data: $this->withEscalation(data: $data, result: $result));
+		if ($failure !== null) {
+			return $this->unsavedOutcome(message: $failure, status: $result->getStatus());
+		}
+
+		return new JSONResponse(data: $result->toArray());
+	}//end escalate()
+
+	/**
+	 * The case data with the escalation outcome recorded.
+	 *
+	 * Only a positive escalation writes the regulatorReference the
+	 * denial-finalise gate + dossier consume — a refusal MUST NOT mint or claim
+	 * a reference.
+	 *
+	 * @param array<string, mixed>    $data   The case data
+	 * @param RegulatorEscalateResult $result The escalation outcome
+	 *
+	 * @return array<string, mixed> The data to save
+	 */
+	private function withEscalation(array $data, RegulatorEscalateResult $result): array {
 		$data['regulatorEscalation'] = $result->toArray();
 		if ($result->isEscalated() === true && $result->getReference() !== '') {
 			$data['regulatorReference'] = $result->getReference();
 		}
 
+		return $data;
+	}//end withEscalation()
+
+	/**
+	 * A case the caller may act on, loaded for the action.
+	 *
+	 * @param string $caseUuid The case
+	 *
+	 * @return ObjectEntity|JSONResponse The case, or the guard's refusal / the 404
+	 */
+	private function actionableCase(string $caseUuid): ObjectEntity|JSONResponse {
+		$guard = $this->guardCase(caseUuid: $caseUuid);
+		if ($guard !== null) {
+			return $guard;
+		}
+
+		$case = $this->accessor->load(caseUuid: $caseUuid);
+		if ($case === null) {
+			return $this->notFoundOrDenied();
+		}
+
+		return $case;
+	}//end actionableCase()
+
+	/**
+	 * Save an outcome on the case.
+	 *
+	 * @param ObjectEntity         $case The case
+	 * @param array<string, mixed> $data The case data with the outcome recorded
+	 *
+	 * @return string|null Why the save failed, or null when it was saved
+	 */
+	private function saveFailure(ObjectEntity $case, array $data): ?string {
 		try {
 			$this->accessor->save(case: $case, data: $data);
 		} catch (Throwable $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage(), 'status' => $result->getStatus()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $e->getMessage();
 		}
 
-		return new JSONResponse(data: $result->toArray());
-	}//end escalate()
+		return null;
+	}//end saveFailure()
+
+	/**
+	 * The answer to an outcome that was decided but could not be saved.
+	 *
+	 * @param string $message Why the save failed
+	 * @param string $status  The decided outcome
+	 *
+	 * @return JSONResponse 400 with the message and the decided status
+	 */
+	private function unsavedOutcome(string $message, string $status): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => $message, 'status' => $status],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end unsavedOutcome()
+
+	/**
+	 * The 404 for a case that is absent or that the caller may not see — indistinguishable (no oracle).
+	 *
+	 * @return JSONResponse 404
+	 */
+	private function notFoundOrDenied(): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => 'Not found or not authorised.'],
+			statusCode: Http::STATUS_NOT_FOUND
+		);
+	}//end notFoundOrDenied()
 
 	/**
 	 * Reject anonymous callers before any case is read or written.
@@ -599,10 +664,7 @@ class DsarCaseController extends Controller {
 		$case = $this->accessor->load(caseUuid: $caseUuid);
 		if ($case === null) {
 			// Absent OR object-RBAC-denied — indistinguishable (no oracle).
-			return new JSONResponse(
-				data: ['error' => 'Not found or not authorised.'],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+			return $this->notFoundOrDenied();
 		}
 
 		if ($this->accessControl->mayAct(case: $case->getObject()) === false) {

@@ -12,7 +12,7 @@ use OCA\OpenRegister\Controller\Support\ObjectShow;
 use OCA\OpenRegister\Controller\Support\ShowServices;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Object\RenderSelection;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;

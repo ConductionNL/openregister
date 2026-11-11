@@ -1,0 +1,164 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`AccessLinkPage.open opens when allowed 1`] = `
+{
+  "data": {
+    "anchor": "abc",
+    "body": {
+      "title": "Shared",
+    },
+    "error": "",
+    "password": "",
+    "state": "open",
+  },
+  "seen": [
+    [
+      [
+        "/public/abc",
+        {},
+      ],
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`AccessLinkPage.open opens when allowed with a password 1`] = `
+{
+  "data": {
+    "anchor": "abc",
+    "body": {
+      "title": "Shared",
+    },
+    "error": "",
+    "password": "secret",
+    "state": "open",
+  },
+  "seen": [
+    [
+      [
+        "/public/abc",
+        {
+          "headers": {
+            "X-Password": "secret",
+          },
+        },
+      ],
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`AccessLinkPage.open opens when asking for a password 1`] = `
+{
+  "data": {
+    "anchor": "abc",
+    "body": null,
+    "error": "",
+    "password": "",
+    "state": "password",
+  },
+  "seen": [
+    [
+      [
+        "/public/abc",
+        {},
+      ],
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`AccessLinkPage.open opens when forbidden after a password 1`] = `
+{
+  "data": {
+    "anchor": "abc",
+    "body": null,
+    "error": "",
+    "password": "secret",
+    "state": "gone",
+  },
+  "seen": [
+    [
+      [
+        "/public/abc",
+        {
+          "headers": {
+            "X-Password": "secret",
+          },
+        },
+      ],
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`AccessLinkPage.open opens when gone 1`] = `
+{
+  "data": {
+    "anchor": "abc",
+    "body": null,
+    "error": "",
+    "password": "",
+    "state": "gone",
+  },
+  "seen": [
+    [
+      [
+        "/public/abc",
+        {},
+      ],
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`AccessLinkPage.open opens when refusing a wrong password 1`] = `
+{
+  "data": {
+    "anchor": "abc",
+    "body": null,
+    "error": "t:That password is not right.",
+    "password": "wrong",
+    "state": "password",
+  },
+  "seen": [
+    [
+      [
+        "/public/abc",
+        {
+          "headers": {
+            "X-Password": "wrong",
+          },
+        },
+      ],
+      "",
+    ],
+  ],
+}
+`;
+
+exports[`AccessLinkPage.open opens when unreachable 1`] = `
+{
+  "data": {
+    "anchor": "abc",
+    "body": null,
+    "error": "",
+    "password": "",
+    "state": "gone",
+  },
+  "seen": [
+    [
+      [
+        "/public/abc",
+        {},
+      ],
+      "",
+    ],
+  ],
+}
+`;

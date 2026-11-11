@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;

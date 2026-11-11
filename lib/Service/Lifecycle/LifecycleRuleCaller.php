@@ -60,11 +60,6 @@ final class LifecycleRuleCaller {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function describe(): array {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return ['uid' => '', 'groups' => []];
-		}
-
-		return ['uid' => $user->getUID(), 'groups' => $this->groupManager->getUserGroupIds($user)];
+		return ConditionUser::of(userSession: $this->userSession, groupManager: $this->groupManager);
 	}//end describe()
 }//end class

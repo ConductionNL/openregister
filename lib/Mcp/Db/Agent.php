@@ -407,6 +407,25 @@ class Agent extends Entity implements JsonSerializable, AgentInterface {
 	 *     title: null|string}|null}
 	 */
 	public function jsonSerialize(): array {
+		return array_merge(
+			$this->definitionFields(),
+			$this->ownershipFields(),
+			$this->ragFields(),
+			$this->usageScopeFields(),
+			[
+				'created' => $this->created?->format('Y-m-d\TH:i:s\Z'),
+				'updated' => $this->updated?->format('Y-m-d\TH:i:s\Z'),
+				'managedByConfiguration' => $this->getManagedByConfigurationData(),
+			]
+		);
+	}//end jsonSerialize()
+
+	/**
+	 * The serialised identity and LLM definition: what the agent is and which model it runs.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function definitionFields(): array {
 		return [
 			'id' => $this->id,
 			'uuid' => $this->uuid,
@@ -419,14 +438,44 @@ class Agent extends Entity implements JsonSerializable, AgentInterface {
 			'temperature' => $this->temperature,
 			'maxTokens' => $this->maxTokens,
 			'configuration' => $this->configuration,
+		];
+	}//end definitionFields()
+
+	/**
+	 * The serialised ownership: organisation, owner and whether the agent is active.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function ownershipFields(): array {
+		return [
 			'organisation' => $this->organisation,
 			'owner' => $this->owner,
 			'active' => $this->active,
+		];
+	}//end ownershipFields()
+
+	/**
+	 * The serialised retrieval (RAG) settings.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function ragFields(): array {
+		return [
 			'enableRag' => $this->enableRag,
 			'ragSearchMode' => $this->ragSearchMode,
 			'ragNumSources' => $this->ragNumSources,
 			'ragIncludeFiles' => $this->ragIncludeFiles,
 			'ragIncludeObjects' => $this->ragIncludeObjects,
+		];
+	}//end ragFields()
+
+	/**
+	 * The serialised usage scope: quotas, searchable views and sources, sharing, tools and user.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function usageScopeFields(): array {
+		return [
 			'requestQuota' => $this->requestQuota,
 			'tokenQuota' => $this->tokenQuota,
 			'views' => $this->views,
@@ -437,11 +486,8 @@ class Agent extends Entity implements JsonSerializable, AgentInterface {
 			'groups' => $this->groups,
 			'tools' => $this->tools,
 			'user' => $this->user,
-			'created' => $this->created?->format('Y-m-d\TH:i:s\Z'),
-			'updated' => $this->updated?->format('Y-m-d\TH:i:s\Z'),
-			'managedByConfiguration' => $this->getManagedByConfigurationData(),
 		];
-	}//end jsonSerialize()
+	}//end usageScopeFields()
 
 	/**
 	 * Get managed by configuration data for JSON serialization

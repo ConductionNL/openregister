@@ -262,39 +262,62 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 *                   duplicate (409), Cospend unavailable (503).
 	 */
 	private function linkBillEntry(LinkTarget $target, CospendEntryKey $entry): CospendLink {
-		$uid       = $this->requireUid();
-		$projectId = $entry->projectId;
-		$billId    = (int)$entry->billId();
-		$this->requireBillRequest(projectId: $projectId, billId: $billId);
+		$uid = $this->requireUid();
+		$this->assertBillLinkable(target: $target, entry: $entry);
+
+		$bill = $this->fetchBill(projectId: $entry->projectId, billId: (int)$entry->billId());
+		if ($bill === null) {
+			throw new Exception('Cospend bill not found', 404);
+		}
+
+		$link = $this->hydrateLink(
+			target: $target,
+			opts: $this->billLinkFields(entry: $entry, bill: $bill) + ['uid' => $uid]
+		);
+
+		return $this->cospendLinkMapper->insert($link);
+	}//end linkBillEntry()
+
+	/**
+	 * Refuse a bill link while Cospend is unavailable, without both ids, or when the object already links the bill.
+	 *
+	 * @param LinkTarget      $target The object to link to.
+	 * @param CospendEntryKey $entry  The project and bill.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception 503 when Cospend is unavailable, 400 without both ids, 409 on a duplicate.
+	 */
+	private function assertBillLinkable(LinkTarget $target, CospendEntryKey $entry): void {
+		$this->requireBillRequest(projectId: $entry->projectId, billId: (int)$entry->billId());
 
 		$existing = $this->cospendLinkMapper->findDuplicate(objectUuid: $target->objectUuid, entry: $entry);
 		if ($existing !== null) {
 			throw new Exception('Bill already linked to this object', 409);
 		}
+	}//end assertBillLinkable()
 
-		$bill = $this->fetchBill(projectId: $projectId, billId: $billId);
-		if ($bill === null) {
-			throw new Exception('Cospend bill not found', 404);
-		}
-
+	/**
+	 * The link fields of a bill link, before its owner; named after the bill, else its project.
+	 *
+	 * @param CospendEntryKey      $entry The project and bill.
+	 * @param array<string, mixed> $bill  The bill row.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function billLinkFields(CospendEntryKey $entry, array $bill): array {
+		$projectId = $entry->projectId;
 		$project = $this->fetchProject(projectId: $projectId);
-		$currency = $project['currency'] ?? null;
 
-		$link = $this->hydrateLink(
-			target: $target,
-			opts: [
-				'entryType' => self::ENTRY_BILL,
-				'projectId' => $projectId,
-				'billId' => $billId,
-				'name' => (string)($bill['what'] ?? ($project['name'] ?? $projectId)),
-				'amount' => ($bill['amount'] ?? null),
-				'currency' => $currency,
-				'uid' => $uid,
-			]
-		);
-
-		return $this->cospendLinkMapper->insert($link);
-	}//end linkBillEntry()
+		return [
+			'entryType' => self::ENTRY_BILL,
+			'projectId' => $projectId,
+			'billId' => (int)$entry->billId(),
+			'name' => (string)($bill['what'] ?? ($project['name'] ?? $projectId)),
+			'amount' => ($bill['amount'] ?? null),
+			'currency' => ($project['currency'] ?? null),
+		];
+	}//end billLinkFields()
 
 	/**
 	 * Refuse a bill link while Cospend is unavailable or without a project and bill id.
@@ -330,31 +353,55 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 * @spec exclude ADR-019 Tier-2 integration link-service facade; the create-and-link contract is owned by the integration-cospend capability.
 	 */
 	public function createAndLinkProject(LinkTarget $target, CospendProjectDraft $draft): CospendLink {
-		$uid = $this->requireUid();
-
-		$name = trim($draft->name);
-		if ($name === '') {
-			throw new Exception('Project name is required', 400);
-		}
+		$uid  = $this->requireUid();
+		$name = self::requiredProjectName(draft: $draft);
 
 		$projectId     = $this->createNamedProject(name: $name, uid: $uid);
 		$currencyValue = $this->resolveCurrency(projectId: $projectId, currency: $draft->currency);
 
 		$link = $this->hydrateLink(
 			target: $target,
-			opts: [
-				'entryType' => self::ENTRY_PROJECT,
-				'projectId' => $projectId,
-				'billId' => null,
-				'name' => $name,
-				'amount' => null,
-				'currency' => $currencyValue,
-				'uid' => $uid,
-			]
+			opts: self::newProjectFields(projectId: $projectId, name: $name) + ['currency' => $currencyValue, 'uid' => $uid]
 		);
 
 		return $this->cospendLinkMapper->insert($link);
 	}//end createAndLinkProject()
+
+	/**
+	 * The trimmed name of a project to create.
+	 *
+	 * @param CospendProjectDraft $draft The project to create.
+	 *
+	 * @return string
+	 *
+	 * @throws Exception When the name is empty (400).
+	 */
+	private static function requiredProjectName(CospendProjectDraft $draft): string {
+		$name = trim($draft->name);
+		if ($name === '') {
+			throw new Exception('Project name is required', 400);
+		}
+
+		return $name;
+	}//end requiredProjectName()
+
+	/**
+	 * The link fields of a newly created project, before its currency and owner.
+	 *
+	 * @param string $projectId The created project id.
+	 * @param string $name      The project name.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function newProjectFields(string $projectId, string $name): array {
+		return [
+			'entryType' => self::ENTRY_PROJECT,
+			'projectId' => $projectId,
+			'billId' => null,
+			'name' => $name,
+			'amount' => null,
+		];
+	}//end newProjectFields()
 
 	/**
 	 * The currency for a new project link: the given one, else the project's own, else none.
@@ -491,30 +538,59 @@ class CospendLinkService implements CospendLinkServiceInterface {
 		$link = new CospendLink();
 		$link->setEntryType((string)$opts['entryType']);
 		$link->setProjectId((string)$opts['projectId']);
-		$billId = null;
-		if (isset($opts['billId']) === true) {
-			$billId = (int)$opts['billId'];
-		}
-
-		$link->setBillId($billId);
+		$link->setBillId(self::intOrNull(value: ($opts['billId'] ?? null)));
 		$link->setName((string)($opts['name'] ?? ''));
-
-		$amount = null;
-		if (isset($opts['amount']) === true) {
-			$amount = (float)$opts['amount'];
-		}
-
-		$currency = null;
-		if (isset($opts['currency']) === true) {
-			$currency = (string)$opts['currency'];
-		}
-
-		$link->setAmount($amount);
-		$link->setCurrency($currency);
+		$link->setAmount(self::floatOrNull(value: ($opts['amount'] ?? null)));
+		$link->setCurrency(self::stringOrNull(value: ($opts['currency'] ?? null)));
 		$target->stamp(link: $link, linkedBy: (string)$opts['uid']);
 
 		return $link;
 	}//end hydrateLink()
+
+	/**
+	 * A value as an int, null staying null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return int|null
+	 */
+	private static function intOrNull(mixed $value): ?int {
+		if ($value === null) {
+			return null;
+		}
+
+		return (int)$value;
+	}//end intOrNull()
+
+	/**
+	 * A value as a float, null staying null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return float|null
+	 */
+	private static function floatOrNull(mixed $value): ?float {
+		if ($value === null) {
+			return null;
+		}
+
+		return (float)$value;
+	}//end floatOrNull()
+
+	/**
+	 * A value as a string, null staying null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null
+	 */
+	private static function stringOrNull(mixed $value): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		return (string)$value;
+	}//end stringOrNull()
 
 	/**
 	 * Unlink a project / bill from an object.
@@ -642,13 +718,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 */
 	private function queryProjects(string $uid, ?string $needle): array {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')
-				->from(self::PROJECTS_TABLE)
-				->where($qb->expr()->eq('user_id', $qb->createNamedParameter($uid)))
-				->orderBy('name', 'ASC');
-
-			$result = $qb->executeQuery();
+			$result = $this->userProjectsQuery(uid: $uid)->executeQuery();
 			$out = $this->collectProjects(result: $result, needle: $needle);
 			$result->closeCursor();
 			return $out;
@@ -657,6 +727,23 @@ class CospendLinkService implements CospendLinkServiceInterface {
 			return [];
 		}//end try
 	}//end queryProjects()
+
+	/**
+	 * The query for a user's projects, by name.
+	 *
+	 * @param string $uid The user id.
+	 *
+	 * @return \OCP\DB\QueryBuilder\IQueryBuilder
+	 */
+	private function userProjectsQuery(string $uid): \OCP\DB\QueryBuilder\IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::PROJECTS_TABLE)
+			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($uid)))
+			->orderBy('name', 'ASC');
+
+		return $qb;
+	}//end userProjectsQuery()
 
 	/**
 	 * Normalise the fetched project rows, keeping those whose name contains the needle.
@@ -768,13 +855,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 */
 	private function fetchProject(string $projectId): ?array {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')
-				->from(self::PROJECTS_TABLE)
-				->where($qb->expr()->eq('id', $qb->createNamedParameter($projectId)))
-				->setMaxResults(1);
-
-			$result = $qb->executeQuery();
+			$result = $this->projectQuery(projectId: $projectId)->executeQuery();
 			$row = $result->fetch();
 			$result->closeCursor();
 
@@ -790,6 +871,23 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	}//end fetchProject()
 
 	/**
+	 * The query for one project.
+	 *
+	 * @param string $projectId The Cospend project id.
+	 *
+	 * @return \OCP\DB\QueryBuilder\IQueryBuilder
+	 */
+	private function projectQuery(string $projectId): \OCP\DB\QueryBuilder\IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::PROJECTS_TABLE)
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($projectId)))
+			->setMaxResults(1);
+
+		return $qb;
+	}//end projectQuery()
+
+	/**
 	 * Fetch a normalised Cospend bill row by project + bill id.
 	 *
 	 * @param string $projectId The Cospend project id.
@@ -799,14 +897,7 @@ class CospendLinkService implements CospendLinkServiceInterface {
 	 */
 	private function fetchBill(string $projectId, int $billId): ?array {
 		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('*')
-				->from(self::BILLS_TABLE)
-				->where($qb->expr()->eq('id', $qb->createNamedParameter($billId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
-				->andWhere($qb->expr()->eq('project_id', $qb->createNamedParameter($projectId)))
-				->setMaxResults(1);
-
-			$result = $qb->executeQuery();
+			$result = $this->billQuery(projectId: $projectId, billId: $billId)->executeQuery();
 			$row = $result->fetch();
 			$result->closeCursor();
 
@@ -814,22 +905,53 @@ class CospendLinkService implements CospendLinkServiceInterface {
 				return null;
 			}
 
-			$amount = null;
-			if (isset($row['amount']) === true) {
-				$amount = (float)$row['amount'];
-			}
-
-			return [
-				'id' => (int)($row['id'] ?? 0),
-				'projectId' => (string)($row['project_id'] ?? $projectId),
-				'what' => (string)($row['what'] ?? ''),
-				'amount' => $amount,
-			];
+			return self::billRow(row: $row, projectId: $projectId);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('CospendLinkService::fetchBill failed: ' . $e->getMessage());
 			return null;
 		}//end try
 	}//end fetchBill()
+
+	/**
+	 * The query for one bill of a project.
+	 *
+	 * @param string $projectId The Cospend project id.
+	 * @param int    $billId    The Cospend bill id.
+	 *
+	 * @return \OCP\DB\QueryBuilder\IQueryBuilder
+	 */
+	private function billQuery(string $projectId, int $billId): \OCP\DB\QueryBuilder\IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::BILLS_TABLE)
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($billId, \OCP\DB\QueryBuilder\IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('project_id', $qb->createNamedParameter($projectId)))
+			->setMaxResults(1);
+
+		return $qb;
+	}//end billQuery()
+
+	/**
+	 * A bill row in the shape the link service uses.
+	 *
+	 * @param array<string, mixed> $row       The bill row.
+	 * @param string               $projectId The project it was read under.
+	 *
+	 * @return array{id: int, projectId: string, what: string, amount: float|null}
+	 */
+	private static function billRow(array $row, string $projectId): array {
+		$amount = null;
+		if (isset($row['amount']) === true) {
+			$amount = (float)$row['amount'];
+		}
+
+		return [
+			'id' => (int)($row['id'] ?? 0),
+			'projectId' => (string)($row['project_id'] ?? $projectId),
+			'what' => (string)($row['what'] ?? ''),
+			'amount' => $amount,
+		];
+	}//end billRow()
 
 	/**
 	 * Normalise a raw cospend_projects row into the picker / cache shape.

@@ -57,14 +57,25 @@ class ValueNormaliser {
 			return $value;
 		}
 
+		return $this->normalisedArray(value: $value);
+
+	}//end normalised()
+
+	/**
+	 * An array with each entry normalised, a map sorted by key.
+	 *
+	 * @param array $value The array.
+	 *
+	 * @return array The normalised array.
+	 */
+	private function normalisedArray(array $value): array {
 		$normal = array_map(fn ($entry): mixed => $this->normalised(value: $entry), $value);
 		if (array_is_list($normal) === false) {
 			ksort($normal);
 		}
 
 		return $normal;
-
-	}//end normalised()
+	}//end normalisedArray()
 
 	/**
 	 * A list or map stored as its JSON text, decoded; any other value as given.

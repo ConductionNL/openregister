@@ -37,6 +37,9 @@ namespace Unit\Service\Credential;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialMint;
 use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
@@ -389,13 +392,19 @@ class CredentialBrokerMintTest extends TestCase {
 	 */
 	private function makeBroker(): CredentialBrokerService {
 		return new CredentialBrokerService(
-			$this->objectService,
-			$this->store,
-			$this->createMock(ProviderCatalogue::class),
-			$this->session,
-			$this->createMock(IClientService::class),
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(OrganisationService::class)
+			sources: new CredentialSources(
+				objectService: $this->objectService,
+				credentialStore: $this->store,
+				catalogue: $this->createMock(ProviderCatalogue::class)
+			),
+			principals: new CredentialPrincipals(
+				userSession: $this->session,
+				organisationService: $this->createMock(OrganisationService::class)
+			),
+			outbound: new CredentialOutbound(
+				clientService: $this->createMock(IClientService::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}
 }//end class

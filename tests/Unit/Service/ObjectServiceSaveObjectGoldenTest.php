@@ -75,6 +75,7 @@ use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\SavePolicy;
 use OCA\OpenRegister\Service\Object\SaveActor;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 use OCA\OpenRegister\Service\Object\WriteConstraintCheck;
 
 /**
@@ -294,7 +295,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			]);
 		}
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->recorder(DataManipulationHandler::class, 'dataManip', []),
 			deleteHandler: $this->recorder(DeleteObject::class, 'deleteHandler', []),
 			getHandler: $this->recorder(GetObject::class, 'getHandler', []),
@@ -378,7 +379,7 @@ class ObjectServiceSaveObjectGoldenTest extends TestCase {
 			container: $container,
 			objectSourceRegistry: $this->recorder(ObjectSourceRegistry::class, 'objectSources', []),
 			autoTransitions: $autoTransitions
-		);
+		));
 	}//end service()
 
 	/**

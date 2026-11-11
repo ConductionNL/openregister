@@ -65,7 +65,7 @@ use OCA\OpenRegister\Controller\Support\WriteCaller;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -101,8 +101,8 @@ use OCA\OpenRegister\Service\Hinge\InheritedGeoCollectorInterface;
 use OCA\OpenRegister\Service\Hinge\ReferencedByServiceInterface;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\QueryHandlerInterface;
-use OCA\OpenRegister\Service\Object\RenderSelection;
-use OCA\OpenRegister\Service\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyRequest;
@@ -147,6 +147,7 @@ use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
+use OCA\OpenRegister\Service\Object\VerbListing;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
@@ -3306,7 +3307,8 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$renderedData['@self']['actions'] = $shown->show->services->permissions->permittedActionsFor(schema: $schema, object: $shown->entity);
+			$listing = new VerbListing(schema: $schema, object: $shown->entity);
+			$renderedData['@self']['actions'] = $shown->show->services->permissions->permittedActionsFor(listing: $listing);
 		} catch (\Throwable $e) {
 			$context = ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'error' => $e->getMessage()];
 			$this->logger->warning(message: '[ObjectsController] Could not resolve the actions for a record; returning it without them', context: $context);
@@ -5208,14 +5210,9 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
-		try {
-			$object = $this->presenceObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		}
-
-		if ($object === null) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		$object = $this->presenceObjectOrRefusal(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+		if ($object instanceof JSONResponse) {
+			return $object;
 		}
 
 		return $this->moveToRequestedTarget(object: $object, source: [$register, $schema]);
@@ -5431,14 +5428,9 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
-		try {
-			$object = $this->presenceObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		}
-
-		if ($object === null) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		$object = $this->presenceObjectOrRefusal(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+		if ($object instanceof JSONResponse) {
+			return $object;
 		}
 
 		$service = $this->container->get(\OCA\OpenRegister\Notifications\Service\PresenceServiceInterface::class);
@@ -5559,14 +5551,9 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
-		try {
-			$object = $this->presenceObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		}
-
-		if ($object === null) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		$object = $this->presenceObjectOrRefusal(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+		if ($object instanceof JSONResponse) {
+			return $object;
 		}
 
 		return new JSONResponse(
@@ -5626,6 +5613,25 @@ class ObjectsController extends Controller {
 
 		return null;
 	}//end presenceObject()
+
+	/**
+	 * The object on a route as {@see presenceObject()} reads it, or the answer when it cannot be read.
+	 *
+	 * @param ObjectRef $ref The register, schema and object.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or 409 for an ambiguous id and 404 when it cannot be read.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 */
+	private function presenceObjectOrRefusal(ObjectRef $ref): ObjectEntity|JSONResponse {
+		try {
+			$object = $this->presenceObject(ref: $ref);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $ref->id);
+		}
+
+		return $object ?? new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+	}//end presenceObjectOrRefusal()
 
 	/**
 	 * Export objects to specified format
@@ -7051,30 +7057,14 @@ class ObjectsController extends Controller {
 		ObjectOperationsInterface $objectService,
 		ReferencedByServiceInterface $referencedByService,
 	): JSONResponse {
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = ($isAdmin === false);
-
-		try {
-			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
-				id: $id,
-				files: false,
-				register: $register,
-				schema: $schema,
-				_rbac: $rbac,
-				_multitenancy: $rbac,
-				_render: false
-			));
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
-		}
-
-		if ($objectEntity === null) {
-			return new JSONResponse(
-				data: ['error' => "Object with id {$id} not found"],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+		$rbac = ($this->isCurrentUserAdmin() === false);
+		$objectEntity = $this->readableObject(
+			ref: new ObjectRef(register: $register, schema: $schema, id: $id),
+			objectService: $objectService,
+			rbac: $rbac
+		);
+		if ($objectEntity instanceof JSONResponse) {
+			return $objectEntity;
 		}
 
 		$query = $this->request->getParams();
@@ -7118,30 +7108,14 @@ class ObjectsController extends Controller {
 		ObjectOperationsInterface $objectService,
 		InheritedGeoCollectorInterface $collector,
 	): JSONResponse {
-		$isAdmin = $this->isCurrentUserAdmin();
-		$rbac = ($isAdmin === false);
-
-		try {
-			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
-				id: $id,
-				files: false,
-				register: $register,
-				schema: $schema,
-				_rbac: $rbac,
-				_multitenancy: $rbac,
-				_render: false
-			));
-		} catch (MultipleObjectsReturnedException $e) {
-			return $this->ambiguousIdentifierResponse(id: $id);
-		} catch (\Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
-		}
-
-		if ($objectEntity === null) {
-			return new JSONResponse(
-				data: ['error' => "Object with id {$id} not found"],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+		$rbac = ($this->isCurrentUserAdmin() === false);
+		$objectEntity = $this->readableObject(
+			ref: new ObjectRef(register: $register, schema: $schema, id: $id),
+			objectService: $objectService,
+			rbac: $rbac
+		);
+		if ($objectEntity instanceof JSONResponse) {
+			return $objectEntity;
 		}
 
 		$schemaEntity = null;
@@ -7161,6 +7135,40 @@ class ObjectsController extends Controller {
 			data: $collector->collect(object: $objectEntity, schema: $schemaEntity, _rbac: $rbac)
 		);
 	}//end geoFeatures()
+
+	/**
+	 * The object on a route as this caller may read it, without files or rendering.
+	 *
+	 * @param ObjectRef                 $ref           The register, schema and object.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 * @param bool                      $rbac          Whether RBAC and multitenancy apply.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or 409 for an ambiguous id and 404 when it cannot be read.
+	 *
+	 * @spec openspec/specs/linked-entity-types/spec.md
+	 */
+	private function readableObject(ObjectRef $ref, ObjectOperationsInterface $objectService, bool $rbac): ObjectEntity|JSONResponse {
+		try {
+			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
+				id: $ref->id,
+				files: false,
+				register: $ref->register,
+				schema: $ref->schema,
+				_rbac: $rbac,
+				_multitenancy: $rbac,
+				_render: false
+			));
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $ref->id);
+		} catch (\Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		return $objectEntity ?? new JSONResponse(
+			data: ['error' => "Object with id {$ref->id} not found"],
+			statusCode: Http::STATUS_NOT_FOUND
+		);
+	}//end readableObject()
 
 	/**
 	 * Put any soft-uniqueness warnings this write produced onto the response.

@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\ProvenanceRequest;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -217,7 +218,7 @@ class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 
 		$handler = $this->newHandler($caller);
 		$answers['provenance'] = $this->answer(
-			static fn () => $handler->provenanceFor(schema: $schema, actions: self::ACTIONS, userId: $userId, object: $object)
+			static fn () => $handler->provenanceFor(request: new ProvenanceRequest(schema: $schema, actions: self::ACTIONS, userId: $userId, object: $object))
 		);
 
 		return $answers;

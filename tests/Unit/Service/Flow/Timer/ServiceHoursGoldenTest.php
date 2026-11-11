@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden test for ServiceHours::fromArray(): which declarations it accepts,
+ * Golden test for ServiceHours::fromDeclaration(): which declarations it accepts,
  * the windows and minutes it derives from them, and every refusal message
  * with its fault order. Re-record with UPDATE_GOLDEN=1.
  *
@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
 use OCA\OpenRegister\Service\Flow\Timer\ServiceHours;
+use OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration;
 use PHPUnit\Framework\TestCase;
 use Throwable;
 
@@ -89,7 +90,7 @@ class ServiceHoursGoldenTest extends TestCase {
 		$actual = [];
 		foreach (self::declarations() as $name => [$value, $weekdays]) {
 			try {
-				$hours = ServiceHours::fromArray(value: $value, workingWeekdays: $weekdays, slug: 'cal');
+				$hours = ServiceHours::fromDeclaration(value: $value, declaration: new ServiceHoursDeclaration(slug: 'cal', workingWeekdays: $weekdays));
 				$minutes = [];
 				foreach (range(0, 8) as $iso) {
 					$minutes[$iso] = [$hours->minutesOn(iso: $iso), $hours->forWeekday(iso: $iso)];

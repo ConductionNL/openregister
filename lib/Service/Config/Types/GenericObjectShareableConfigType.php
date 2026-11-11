@@ -123,6 +123,24 @@ class GenericObjectShareableConfigType implements IShareableConfigType {
 		$wanted = array_map('strval', (array)($selection['ids'] ?? []));
 
 		$objects = [];
+		foreach ($this->setObjects() as $object) {
+			if ($wanted !== [] && in_array((string)$object->getUuid(), $wanted, true) === false) {
+				continue;
+			}
+
+			$objects[] = $this->portable(data: $object->getObject());
+		}
+
+		return $this->bundle(objects: $objects);
+
+	}//end serialise()
+
+	/**
+	 * The objects of this type's register/schema the caller may read, RBAC and multitenancy on.
+	 *
+	 * @return array<int|string, ObjectEntity> The objects; none when the read fails.
+	 */
+	private function setObjects(): array {
 		try {
 			$found = $this->objectService->findAll(
 				config: ['filters' => ['register' => $this->register, 'schema' => $this->schema]],
@@ -133,18 +151,17 @@ class GenericObjectShareableConfigType implements IShareableConfigType {
 			$found = [];
 		}
 
-		foreach ($found as $object) {
-			if (($object instanceof ObjectEntity) === false) {
-				continue;
-			}
+		return array_filter($found, static fn (mixed $object): bool => $object instanceof ObjectEntity);
+	}//end setObjects()
 
-			if ($wanted !== [] && in_array((string)$object->getUuid(), $wanted, true) === false) {
-				continue;
-			}
-
-			$objects[] = $this->portable(data: $object->getObject());
-		}
-
+	/**
+	 * A bundle of this type around its portable objects.
+	 *
+	 * @param array<int, array<string, mixed>> $objects The portable objects.
+	 *
+	 * @return array `{type, version, register, schema, objects: [...]}`.
+	 */
+	private function bundle(array $objects): array {
 		return [
 			'type' => $this->identity->id,
 			'version' => '1.0',
@@ -152,8 +169,7 @@ class GenericObjectShareableConfigType implements IShareableConfigType {
 			'schema' => $this->schema,
 			'objects' => $objects,
 		];
-
-	}//end serialise()
+	}//end bundle()
 
 	/**
 	 * Install a bundle's objects into this instance.

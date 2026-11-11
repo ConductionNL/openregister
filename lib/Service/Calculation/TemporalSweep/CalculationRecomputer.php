@@ -74,29 +74,40 @@ final class CalculationRecomputer {
 	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
 	public function changes(ObjectEntity $object, SweepTarget $target): bool {
-		$payload = $this->payloadBuilder->build(object: $object, schema: $target->schema);
-		$changed = false;
+		$run = new RecomputeRun(object: $object, payload: $this->payloadBuilder->build(object: $object, schema: $target->schema));
 		foreach ($target->calcs as $name => $spec) {
-			$expression = ($spec['expression'] ?? null);
-			if ($this->isSkipped(payload: $payload, expression: $expression) === true) {
-				continue;
-			}
-
-			try {
-				$value = $this->evaluate(payload: $payload, expression: $expression);
-			} catch (EvaluationException $e) {
-				// A failing calculation is skipped like the save-time listener skips it.
-				$this->warnFailed(label: sprintf('"%s" failed on %s', (string)$name, (string)$object->getUuid()), failure: $e);
-				continue;
-			}
-
-			$changed = ($changed || ($payload[(string)$name] ?? null) !== $value);
-			// Later calculations may reference this one's fresh value.
-			$payload[(string)$name] = $value;
+			$run->name = (string)$name;
+			$this->recompute(run: $run, expression: ($spec['expression'] ?? null));
 		}
 
-		return $changed;
+		return $run->changed;
 	}//end changes()
+
+	/**
+	 * Recompute the run's current calculation into its payload, noting whether the value changed.
+	 *
+	 * @param RecomputeRun $run        The pass, positioned on one calculation.
+	 * @param mixed        $expression The calculation's expression.
+	 *
+	 * @return void
+	 */
+	private function recompute(RecomputeRun $run, mixed $expression): void {
+		if ($this->isSkipped(payload: $run->payload, expression: $expression) === true) {
+			return;
+		}
+
+		try {
+			$value = $this->evaluate(payload: $run->payload, expression: $expression);
+		} catch (EvaluationException $e) {
+			// A failing calculation is skipped like the save-time listener skips it.
+			$this->warnFailed(label: sprintf('"%s" failed on %s', $run->name, (string)$run->object->getUuid()), failure: $e);
+			return;
+		}
+
+		$run->changed = ($run->changed || ($run->payload[$run->name] ?? null) !== $value);
+		// Later calculations may reference this one's fresh value.
+		$run->payload[$run->name] = $value;
+	}//end recompute()
 
 	/**
 	 * Log a failing calculation; it never fails the sweep.

@@ -80,6 +80,7 @@ use Psr\Log\NullLogger;
 use ReflectionMethod;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * The create check sees the incoming object, so a `match` on it can pass.
@@ -169,7 +170,7 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 			$container
 		);
 
-		$this->objectService = new ObjectService(
+		$this->objectService = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->createMock(DeleteObject::class),
 			$this->createMock(GetObject::class),
@@ -208,7 +209,7 @@ class ObjectServiceHiddenRowOrganisationTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		// planninq's plannedTimeEntry: a member books time for themselves.
 		$schema = new Schema();

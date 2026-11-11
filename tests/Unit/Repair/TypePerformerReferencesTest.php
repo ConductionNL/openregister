@@ -31,7 +31,7 @@ namespace Unit\Repair;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Repair\TypePerformerReferences;
 use OCA\OpenRegister\Service\Flow\Principal\IPrincipalResolver;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry;

@@ -145,18 +145,29 @@ class FlowTriggerMapper implements FlowTriggerMapperInterface {
 		$result = $qb->executeQuery();
 		$rows = [];
 		while (($row = $result->fetch()) !== false) {
-			$rows[] = [
-				'flow_uuid' => (string)$row['flow_uuid'],
-				'event' => (string)$row['event'],
-				'register' => (string)$row['register'],
-				'enabled' => (bool)$row['enabled'],
-			];
+			$rows[] = $this->typedTriggerRow(row: $row);
 		}
 
 		$result->closeCursor();
 
 		return $rows;
 	}//end findBySchema()
+
+	/**
+	 * A trigger row with its values typed.
+	 *
+	 * @param array<string, mixed> $row The stored row.
+	 *
+	 * @return array{flow_uuid: string, event: string, register: string, enabled: bool}
+	 */
+	private function typedTriggerRow(array $row): array {
+		return [
+			'flow_uuid' => (string)$row['flow_uuid'],
+			'event' => (string)$row['event'],
+			'register' => (string)$row['register'],
+			'enabled' => (bool)$row['enabled'],
+		];
+	}//end typedTriggerRow()
 
 	/**
 	 * The UUIDs of every flow represented in the index.

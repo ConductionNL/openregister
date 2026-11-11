@@ -370,20 +370,7 @@ class AwaitSignalNode implements IFlowNode, AwaitSignalNodeInterface, IFlowNodeC
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-run-suspended-on-an-external-signal-must-be-reachable
 	 */
 	private function placeAnswer(NodeInvocation $step, array $signal): array {
-		$key = $this->answerKey(config: $step->config);
-		$items = $step->items;
-		foreach ($items as $index => $item) {
-			if (is_array($item) === false) {
-				continue;
-			}
-
-			$json = (array)($item[FlowItems::JSON] ?? []);
-			$json[$key] = $signal;
-			$item[FlowItems::JSON] = $json;
-			$items[$index] = $item;
-		}
-
-		return $items;
+		return (new EveryItemField(key: $this->answerKey(config: $step->config), value: $signal))->placedOn(items: $step->items);
 	}//end placeAnswer()
 
 	/**

@@ -82,6 +82,7 @@ use Psr\Log\NullLogger;
 use ReflectionMethod;
 use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * The permission handler and the condition matcher here are the REAL ones.
@@ -167,7 +168,7 @@ class ObjectServiceAppendOnlyHiddenRowTest extends TestCase {
 			$container
 		);
 
-		$this->objectService = new ObjectService(
+		$this->objectService = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->createMock(DeleteObject::class),
 			$this->createMock(GetObject::class),
@@ -206,7 +207,7 @@ class ObjectServiceAppendOnlyHiddenRowTest extends TestCase {
 			$this->createMock(DateTimeNormalizer::class),
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 
 		$this->objectService->setSchema($this->schema([]));
