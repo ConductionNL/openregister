@@ -159,19 +159,7 @@ export default {
 		additionalFields() {
 			if (!auditTrailStore.auditTrailItem) return []
 
-			const mainFields = [
-				'id',
-				'action',
-				'created',
-				'object',
-				'register',
-				'schema',
-				'user',
-				'userName',
-				'size',
-				'changed',
-				'request',
-			]
+			const mainFields = mainFieldNames()
 
 			return Object.entries(auditTrailStore.auditTrailItem)
 				.filter(([key]) => !mainFields.includes(key))
@@ -262,6 +250,28 @@ export default {
 			}
 		},
 	},
+}
+
+/**
+ * The fields of an audit trail entry the modal shows on their own, rather
+ * than among the additional fields.
+ *
+ * @return {Array<string>} The field names
+ */
+function mainFieldNames() {
+	return [
+		'id',
+		'action',
+		'created',
+		'object',
+		'register',
+		'schema',
+		'user',
+		'userName',
+		'size',
+		'changed',
+		'request',
+	]
 }
 </script>
 
