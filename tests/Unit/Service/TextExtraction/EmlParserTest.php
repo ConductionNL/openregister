@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
-use OCA\OpenRegister\Service\TextExtraction\EmlAttachment;
-use OCA\OpenRegister\Service\TextExtraction\EmlBody;
-use OCA\OpenRegister\Service\TextExtraction\EmlParser;
-use OCA\OpenRegister\Service\TextExtraction\EmlStructure;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlAttachment;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlAttachmentFile;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlBody;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Files\Service\TextExtraction\EmlStructure;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -284,9 +285,7 @@ class EmlParserTest extends TestCase {
 	public function testEmlAttachmentJsonSerialisesContentAsBase64(): void {
 		$bytes = "binary\x00\xff";
 		$attachment = new EmlAttachment(
-			filename: 'f.bin',
-			mimeType: 'application/octet-stream',
-			content: $bytes,
+			file: new EmlAttachmentFile(filename: 'f.bin', mimeType: 'application/octet-stream', content: $bytes),
 			isInline: false,
 			contentId: null,
 			nestedEml: null

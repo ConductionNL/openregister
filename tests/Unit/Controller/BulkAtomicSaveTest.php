@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\BulkControllerFactory;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use OCA\OpenRegister\Controller\BulkController;
@@ -43,6 +44,12 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\BulkController
+ * @uses \OCA\OpenRegister\Controller\Support\BulkStore
+ * @uses \OCA\OpenRegister\Controller\Support\BulkPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\BulkControllerServices
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Dto\BulkSaveOutcome
+ * @uses \OCA\OpenRegister\Service\Rbac\SchemaManageGate
  */
 class BulkAtomicSaveTest extends TestCase {
 
@@ -104,7 +111,7 @@ class BulkAtomicSaveTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn(true);
 
-		$this->controller = new BulkController(
+		$this->controller = BulkControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectService,

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:openregister="https://openregister.app/schema/bpmn/1.0" id="Definitions_id_0a1b2c3d-0000-4000-8000-000000000005" targetNamespace="https://openregister.app/schema/bpmn/1.0">
+  <bpmn:process id="Process_id_0a1b2c3d-0000-4000-8000-000000000005" name="Golden empty" isExecutable="false"/>
+  <bpmndi:BPMNDiagram id="Diagram_Process_id_0a1b2c3d-0000-4000-8000-000000000005">
+    <bpmndi:BPMNPlane id="Plane_Process_id_0a1b2c3d-0000-4000-8000-000000000005" bpmnElement="Process_id_0a1b2c3d-0000-4000-8000-000000000005"/>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

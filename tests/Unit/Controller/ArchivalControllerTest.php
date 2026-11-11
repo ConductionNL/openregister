@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ArchivalControllerFactory;
 use OCA\OpenRegister\Controller\ArchivalController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -25,6 +26,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
+use OCA\OpenRegister\Service\Archival\ApprovalChoice;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
 use OCA\OpenRegister\Service\Archival\ReviewOutcomeService;
@@ -58,6 +60,9 @@ class ArchivalControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->destructionService = $this->createMock(DestructionService::class);
+		$this->destructionService->method('approvalChoice')->willReturnCallback(
+			static fn (string $action, array $excludedIds, array $exclusionReasons): ApprovalChoice => new ApprovalChoice($action, $excludedIds, $exclusionReasons)
+		);
 		$this->legalHoldService = $this->createMock(LegalHoldService::class);
 		// `update` must be stubbed: approveDestructionList now PERSISTS the approved
 		// list (openregister#393 D3). Without it the real MagicMapper::update() runs.
@@ -76,7 +81,7 @@ class ArchivalControllerTest extends TestCase {
 		$this->outcomes = $this->createMock(ReviewOutcomeService::class);
 		$this->auditMapper = $this->createMock(AuditTrailMapper::class);
 
-		$this->controller = new ArchivalController(
+		$this->controller = ArchivalControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->destructionService,
@@ -239,8 +244,15 @@ class ArchivalControllerTest extends TestCase {
 		$response = $this->controller->listDestructionLists();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertFalse($response->getData()['configured']);
-		$this->assertArrayHasKey('error', $response->getData());
+		$this->assertSame(
+			[
+				'results' => [],
+				'total' => 0,
+				'configured' => false,
+				'error' => 'No destruction list register and schema are configured',
+			],
+			$response->getData()
+		);
 	}
 
 	/**
@@ -723,18 +735,17 @@ class ArchivalControllerTest extends TestCase {
 	// ==================================================================================
 
 	/**
-	 * Test listing legal holds returns OK with empty results.
+	 * Listing legal holds answers the held records the service found.
 	 */
 	public function testListLegalHoldsOk(): void {
 		$this->setUpArchivist();
+		$held = ['results' => [['id' => 'z-1', 'register' => '5', 'schema' => '9', 'name' => 'Zaak', 'holds' => [['reason' => 'Bezwaar loopt']]]], 'total' => 1, 'truncated' => false];
+		$this->legalHoldService->expects($this->once())->method('listActiveHolds')->willReturn($held);
 
 		$response = $this->controller->listLegalHolds();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$data = $response->getData();
-		$this->assertArrayHasKey('results', $data);
-		$this->assertArrayHasKey('total', $data);
-		$this->assertSame(0, $data['total']);
+		$this->assertSame($held, $response->getData());
 	}
 
 	// ==================================================================================

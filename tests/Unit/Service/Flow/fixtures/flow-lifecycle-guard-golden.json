@@ -1,0 +1,435 @@
+{
+    "refuseEditUnlessDraft NULL": {
+        "outcome": "allowed",
+        "calls": []
+    },
+    "refuseEditUnlessDraft 'draft'": {
+        "outcome": "allowed",
+        "calls": []
+    },
+    "refuseEditUnlessDraft 'published'": {
+        "outcome": {
+            "reason": "version-immutable",
+            "flow": "flow-1",
+            "state": "published",
+            "message": "This version of the flow is published and cannot be edited. Create a draft version to make changes; the published version keeps serving until you publish the draft. (flow flow-1, state published)"
+        },
+        "calls": [
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: This version of the flow is published and cannot be edited. Create a draft version to make changes; the published version keeps serving until you publish the draft. (flow flow-1, state published)",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "version-immutable",
+                    "state": "published"
+                }
+            }
+        ]
+    },
+    "refuseEditUnlessDraft 'deprecated'": {
+        "outcome": {
+            "reason": "version-immutable",
+            "flow": "flow-1",
+            "state": "deprecated",
+            "message": "This version of the flow is published and cannot be edited. Create a draft version to make changes; the published version keeps serving until you publish the draft. (flow flow-1, state deprecated)"
+        },
+        "calls": [
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: This version of the flow is published and cannot be edited. Create a draft version to make changes; the published version keeps serving until you publish the draft. (flow flow-1, state deprecated)",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "version-immutable",
+                    "state": "deprecated"
+                }
+            }
+        ]
+    },
+    "refuseEditUnlessDraft 'odd'": {
+        "outcome": {
+            "reason": "version-immutable",
+            "flow": "flow-1",
+            "state": "odd",
+            "message": "This version of the flow is published and cannot be edited. Create a draft version to make changes; the published version keeps serving until you publish the draft. (flow flow-1, state odd)"
+        },
+        "calls": [
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: This version of the flow is published and cannot be edited. Create a draft version to make changes; the published version keeps serving until you publish the draft. (flow flow-1, state odd)",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "version-immutable",
+                    "state": "odd"
+                }
+            }
+        ]
+    },
+    "refusePublishUnlessDraft NULL": {
+        "outcome": {
+            "reason": "not-a-draft",
+            "flow": "flow-1",
+            "state": null,
+            "message": "Only a draft version can be published. (flow flow-1)"
+        },
+        "calls": [
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: Only a draft version can be published. (flow flow-1)",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "not-a-draft",
+                    "state": null
+                }
+            }
+        ]
+    },
+    "refusePublishUnlessDraft 'draft'": {
+        "outcome": "allowed",
+        "calls": []
+    },
+    "refusePublishUnlessDraft 'published'": {
+        "outcome": {
+            "reason": "not-a-draft",
+            "flow": "flow-1",
+            "state": "published",
+            "message": "Only a draft version can be published. (flow flow-1, state published)"
+        },
+        "calls": [
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: Only a draft version can be published. (flow flow-1, state published)",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "not-a-draft",
+                    "state": "published"
+                }
+            }
+        ]
+    },
+    "refusePublishUnlessDraft 'deprecated'": {
+        "outcome": {
+            "reason": "not-a-draft",
+            "flow": "flow-1",
+            "state": "deprecated",
+            "message": "Only a draft version can be published. (flow flow-1, state deprecated)"
+        },
+        "calls": [
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: Only a draft version can be published. (flow flow-1, state deprecated)",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "not-a-draft",
+                    "state": "deprecated"
+                }
+            }
+        ]
+    },
+    "refusePublishUnlessDraft 'odd'": {
+        "outcome": {
+            "reason": "not-a-draft",
+            "flow": "flow-1",
+            "state": "odd",
+            "message": "Only a draft version can be published. (flow flow-1, state odd)"
+        },
+        "calls": [
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: Only a draft version can be published. (flow flow-1, state odd)",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "not-a-draft",
+                    "state": "odd"
+                }
+            }
+        ]
+    },
+    "refuseDeprecateUnlessPublished NULL": {
+        "outcome": {
+            "reason": "not-published",
+            "flow": "flow-1",
+            "state": null,
+            "message": "Only a published version can be deprecated. (flow flow-1)"
+        },
+        "calls": [
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: Only a published version can be deprecated. (flow flow-1)",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "not-published",
+                    "state": null
+                }
+            }
+        ]
+    },
+    "refuseDeprecateUnlessPublished 'draft'": {
+        "outcome": {
+            "reason": "not-published",
+            "flow": "flow-1",
+            "state": "draft",
+            "message": "Only a published version can be deprecated. (flow flow-1, state draft)"
+        },
+        "calls": [
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: Only a published version can be deprecated. (flow flow-1, state draft)",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "not-published",
+                    "state": "draft"
+                }
+            }
+        ]
+    },
+    "refuseDeprecateUnlessPublished 'published'": {
+        "outcome": "allowed",
+        "calls": []
+    },
+    "refuseDeprecateUnlessPublished 'deprecated'": {
+        "outcome": {
+            "reason": "not-published",
+            "flow": "flow-1",
+            "state": "deprecated",
+            "message": "Only a published version can be deprecated. (flow flow-1, state deprecated)"
+        },
+        "calls": [
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: Only a published version can be deprecated. (flow flow-1, state deprecated)",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "not-published",
+                    "state": "deprecated"
+                }
+            }
+        ]
+    },
+    "refuseDeprecateUnlessPublished 'odd'": {
+        "outcome": {
+            "reason": "not-published",
+            "flow": "flow-1",
+            "state": "odd",
+            "message": "Only a published version can be deprecated. (flow flow-1, state odd)"
+        },
+        "calls": [
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: Only a published version can be deprecated. (flow flow-1, state odd)",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "not-published",
+                    "state": "odd"
+                }
+            }
+        ]
+    },
+    "refusePublishOnDeadEnd full graph, sound": {
+        "outcome": "allowed",
+        "calls": [
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        {
+                            "id": "a"
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "refusePublishOnDeadEnd full graph, no warnings key": {
+        "outcome": "allowed",
+        "calls": [
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        {
+                            "id": "a"
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "refusePublishOnDeadEnd full graph, other warnings": {
+        "outcome": "allowed",
+        "calls": [
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        {
+                            "id": "a"
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "refusePublishOnDeadEnd full graph, dead ends": {
+        "outcome": {
+            "reason": "dead-end",
+            "flow": "flow-1",
+            "state": "draft",
+            "message": "This version cannot be published while it has a node a token cannot leave. (flow flow-1, state draft) Offending steps: b, , e."
+        },
+        "calls": [
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        {
+                            "id": "a"
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a"
+                        }
+                    ]
+                }
+            },
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: This version cannot be published while it has a node a token cannot leave. (flow flow-1, state draft) Offending steps: b, , e.",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "dead-end",
+                    "state": "draft"
+                }
+            }
+        ]
+    },
+    "refusePublishOnDeadEnd empty graph, sound": {
+        "outcome": "allowed",
+        "calls": [
+            {
+                "preflight.inspect": {
+                    "nodes": [],
+                    "edges": []
+                }
+            }
+        ]
+    },
+    "refusePublishOnDeadEnd empty graph, no warnings key": {
+        "outcome": "allowed",
+        "calls": [
+            {
+                "preflight.inspect": {
+                    "nodes": [],
+                    "edges": []
+                }
+            }
+        ]
+    },
+    "refusePublishOnDeadEnd empty graph, other warnings": {
+        "outcome": "allowed",
+        "calls": [
+            {
+                "preflight.inspect": {
+                    "nodes": [],
+                    "edges": []
+                }
+            }
+        ]
+    },
+    "refusePublishOnDeadEnd empty graph, dead ends": {
+        "outcome": {
+            "reason": "dead-end",
+            "flow": "flow-1",
+            "state": "draft",
+            "message": "This version cannot be published while it has a node a token cannot leave. (flow flow-1, state draft) Offending steps: b, , e."
+        },
+        "calls": [
+            {
+                "preflight.inspect": {
+                    "nodes": [],
+                    "edges": []
+                }
+            },
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: This version cannot be published while it has a node a token cannot leave. (flow flow-1, state draft) Offending steps: b, , e.",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "dead-end",
+                    "state": "draft"
+                }
+            }
+        ]
+    },
+    "refusePublishOnDeadEnd scalar parts, sound": {
+        "outcome": "allowed",
+        "calls": [
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        "x"
+                    ],
+                    "edges": [
+                        5
+                    ]
+                }
+            }
+        ]
+    },
+    "refusePublishOnDeadEnd scalar parts, no warnings key": {
+        "outcome": "allowed",
+        "calls": [
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        "x"
+                    ],
+                    "edges": [
+                        5
+                    ]
+                }
+            }
+        ]
+    },
+    "refusePublishOnDeadEnd scalar parts, other warnings": {
+        "outcome": "allowed",
+        "calls": [
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        "x"
+                    ],
+                    "edges": [
+                        5
+                    ]
+                }
+            }
+        ]
+    },
+    "refusePublishOnDeadEnd scalar parts, dead ends": {
+        "outcome": {
+            "reason": "dead-end",
+            "flow": "flow-1",
+            "state": "draft",
+            "message": "This version cannot be published while it has a node a token cannot leave. (flow flow-1, state draft) Offending steps: b, , e."
+        },
+        "calls": [
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        "x"
+                    ],
+                    "edges": [
+                        5
+                    ]
+                }
+            },
+            {
+                "log.warning": "[FlowLifecycleGuard] Refused: This version cannot be published while it has a node a token cannot leave. (flow flow-1, state draft) Offending steps: b, , e.",
+                "context": {
+                    "flow": "flow-1",
+                    "reason": "dead-end",
+                    "state": "draft"
+                }
+            }
+        ]
+    }
+}

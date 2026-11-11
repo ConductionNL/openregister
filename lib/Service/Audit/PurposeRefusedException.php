@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use Exception;
-use Throwable;
 
 /**
  * The refusal, carrying the reason and the purpose that was named.
@@ -35,7 +34,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Audit
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class PurposeRefusedException extends Exception {
 	/**
@@ -73,7 +72,6 @@ class PurposeRefusedException extends Exception {
 	 * @param string               $reason   The sentence a person reads.
 	 * @param string|null          $purpose  The purpose the caller named, quoted back. Null when none was.
 	 * @param array<string, mixed> $context  Anything else the caller needs to act.
-	 * @param Throwable|null       $previous Previous exception.
 	 *
 	 * @return void
 	 */
@@ -82,9 +80,8 @@ class PurposeRefusedException extends Exception {
 		private readonly string $reason,
 		private readonly ?string $purpose = null,
 		private readonly array $context = [],
-		?Throwable $previous = null,
 	) {
-		parent::__construct(message: $reason, code: 403, previous: $previous);
+		parent::__construct(message: $reason, code: 403);
 	}//end __construct()
 
 	/**
@@ -92,7 +89,7 @@ class PurposeRefusedException extends Exception {
 	 *
 	 * @return string The rule id.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function getRule(): string {
 		return $this->rule;
@@ -103,7 +100,7 @@ class PurposeRefusedException extends Exception {
 	 *
 	 * @return string|null The purpose code, or null when none was named.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function getPurpose(): ?string {
 		return $this->purpose;
@@ -116,7 +113,7 @@ class PurposeRefusedException extends Exception {
 	 *
 	 * @return int The status code.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function getStatusCode(): int {
 		return 403;
@@ -127,7 +124,7 @@ class PurposeRefusedException extends Exception {
 	 *
 	 * @return array<string, mixed> The response body.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function toResponseBody(): array {
 		return array_merge(

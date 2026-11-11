@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectActionsControllerFactory;
 use OCA\OpenRegister\Controller\ObjectActionsController;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -22,16 +23,20 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionRequest;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelection;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 class ObjectActionsControllerTest extends TestCase {
 
@@ -49,6 +54,8 @@ class ObjectActionsControllerTest extends TestCase {
 
 	private IRequest&MockObject $request;
 
+	private LoggerInterface&MockObject $logger;
+
 	private ObjectActionsController $controller;
 
 	protected function setUp(): void {
@@ -61,9 +68,9 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->history = $this->createMock(ObjectActionHistory::class);
 		$this->bulk = $this->createMock(ObjectActionBulk::class);
 		$this->request = $this->createMock(IRequest::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new ObjectActionsController(
-			'openregister',
+		$this->controller = ObjectActionsControllerFactory::create(
 			$this->request,
 			$this->objects,
 			$this->macros,
@@ -71,7 +78,8 @@ class ObjectActionsControllerTest extends TestCase {
 			$this->list,
 			$this->runner,
 			$this->history,
-			$this->bulk
+			$this->bulk,
+			$this->logger
 		);
 	}//end setUp()
 
@@ -155,7 +163,7 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->objects->method('find')->willReturn($this->object());
 		$this->macros->method('loadSchema')->willReturn($this->schema());
 		$this->runner->expects($this->once())->method('run')
-			->with($this->anything(), $this->anything(), 'publish', ['from' => '2026-11-01'], ['uuid' => 'obj-1', 'register' => 'r', 'schema' => 'ticket'])
+			->with($this->callback(static fn (ObjectActionTarget $target): bool => $target->subject() === ['uuid' => 'obj-1', 'register' => 'r', 'schema' => 'ticket']), new ObjectActionRequest('publish', ['from' => '2026-11-01']))
 			->willReturn(['status' => Http::STATUS_ACCEPTED, 'body' => ['status' => 'queued']]);
 
 		$response = $this->controller->invoke('r', 'ticket', 'obj-1', 'publish');
@@ -180,6 +188,22 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 		$this->assertStringContainsString('"publish"', $response->getData()['error']);
 	}//end testAnActionNotOfferedOnBulkIsRefusedForASelection()
+
+	public function testASchemaWhoseDeclarationsCannotBeReadIsNotOfferedOnASelection(): void {
+		$this->params(['ids' => ['a']]);
+		$broken = $this->createMock(Schema::class);
+		$broken->method('getConfiguration')->willThrowException(new \RuntimeException('unreadable configuration'));
+		$this->macros->method('loadSchema')->willReturn($broken);
+		$this->runner->expects($this->never())->method('run');
+		$this->logger->expects($this->once())->method('warning')->with(
+			$this->anything(),
+			$this->callback(static fn (array $context): bool => ($context['message'] ?? null) === 'unreadable configuration')
+		);
+
+		$response = $this->controller->invokeOnSelection('r', 'ticket', 'assign-to-me');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testASchemaWhoseDeclarationsCannotBeReadIsNotOfferedOnASelection()
 
 	public function testASelectionRunsEachObjectThroughTheSinglePath(): void {
 		$this->params(['ids' => ['a', 'b', 'a'], 'inputs' => []]);
@@ -216,7 +240,14 @@ class ObjectActionsControllerTest extends TestCase {
 		$job->setId(42);
 		$job->setTotal(250);
 		$this->bulk->expects($this->once())->method('start')
-			->with($this->anything(), 'r', 'ticket', 'assign-to-me', $ids, [])
+			->with(
+				$this->callback(
+					static fn (ObjectActionSelection $selection): bool => $selection->register === 'r'
+						&& $selection->schemaRef === 'ticket'
+						&& $selection->ids === $ids
+				),
+				new ObjectActionRequest('assign-to-me', [])
+			)
 			->willReturn($job);
 		$this->runner->expects($this->never())->method('run');
 

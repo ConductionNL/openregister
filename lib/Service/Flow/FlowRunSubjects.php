@@ -54,14 +54,7 @@ use UnexpectedValueException;
 /**
  * Reads and records a run's declared subject set.
  */
-class FlowRunSubjects {
-
-	/**
-	 * The role a trigger's own object is recorded under.
-	 *
-	 * @var string
-	 */
-	public const ROLE_TRIGGER = 'trigger';
+class FlowRunSubjects implements FlowRunSubjectsInterface {
 
 	/**
 	 * Constructor.
@@ -125,11 +118,8 @@ class FlowRunSubjects {
 	 * silently attaches to the wrong record, so the log entry is what makes
 	 * "why is this task on the old decision" answerable in under a minute.
 	 *
-	 * @param FlowRun $run      The run to record on.
-	 * @param string  $role     The author's word for what this object is.
-	 * @param string  $uuid     The object.
-	 * @param string  $register Its register, when known.
-	 * @param string  $schema   Its schema, when known.
+	 * @param FlowRun          $run   The run to record on.
+	 * @param FlowSubjectClaim $claim The author's word for what the object is, the object, and its register and schema when known.
 	 *
 	 * @return void
 	 *
@@ -137,50 +127,117 @@ class FlowRunSubjects {
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	public function record(
-		FlowRun $run,
-		string $role,
-		string $uuid,
-		string $register = '',
-		string $schema = ''
-	): void {
-		$role = trim($role);
-		$uuid = trim($uuid);
-
-		if ($role === '' || $uuid === '') {
-			throw new UnexpectedValueException(
-				'A declared subject needs both a role and an object; "' . $role . '" => "' . $uuid . '" has one of them.'
-			);
-		}
+	public function record(FlowRun $run, FlowSubjectClaim $claim): void {
+		$claim = $this->trimmed(claim: $claim);
+		$this->refuseHalfNamed(claim: $claim);
 
 		$subjects = $this->all(run: $run);
-		$held = ($subjects[$role] ?? null);
+		$held = ($subjects[$claim->role] ?? null);
 
-		if (is_array($held) === true && trim((string)($held['uuid'] ?? '')) === $uuid) {
+		if (is_array($held) === true && trim((string)($held['uuid'] ?? '')) === $claim->uuid) {
 			// The same object under the same role. A heartbeat re-entering the
 			// node must not make the run look like it touched it twice.
 			return;
 		}
 
-		if ($held !== null) {
-			$this->logger?->info(
-				message: '[FlowRunSubjects] Run "' . (string)$run->getUuid() . '" re-pointed the role "'
-					. $role . '" from "' . trim((string)($held['uuid'] ?? '')) . '" to "' . $uuid
-					. '". Anything attached to that role from here on addresses the new object.',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'run' => (string)$run->getUuid()]
-			);
-		}
-
-		$subjects[$role] = [
-			'uuid' => $uuid,
-			'register' => trim($register),
-			'schema' => trim($schema),
-			'recordedAt' => (new DateTime())->format(DATE_ATOM),
-		];
-
+		$this->noteRepointing(run: $run, claim: $claim);
+		$subjects[$claim->role] = $this->entryFor(claim: $claim);
 		$run->setSubjects($subjects);
 
 	}//end record()
+
+	/**
+	 * The claim with every part trimmed.
+	 *
+	 * @param FlowSubjectClaim $claim The claim as declared.
+	 *
+	 * @return FlowSubjectClaim The trimmed claim.
+	 */
+	private function trimmed(FlowSubjectClaim $claim): FlowSubjectClaim {
+		return new FlowSubjectClaim(
+			role: trim($claim->role),
+			uuid: trim($claim->uuid),
+			register: trim($claim->register),
+			schema: trim($claim->schema)
+		);
+	}//end trimmed()
+
+	/**
+	 * Refuse a claim that names only one of its role and its object.
+	 *
+	 * @param FlowSubjectClaim $claim The trimmed claim.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the role or the object is empty.
+	 */
+	private function refuseHalfNamed(FlowSubjectClaim $claim): void {
+		if ($claim->role === '' || $claim->uuid === '') {
+			throw new UnexpectedValueException(
+				'A declared subject needs both a role and an object; "' . $claim->role . '" => "' . $claim->uuid . '" has one of them.'
+			);
+		}
+	}//end refuseHalfNamed()
+
+	/**
+	 * Say so when a claim re-points a role the run already holds.
+	 *
+	 * @param FlowRun          $run   The run.
+	 * @param FlowSubjectClaim $claim The trimmed claim taking the role over.
+	 *
+	 * @return void
+	 */
+	private function noteRepointing(FlowRun $run, FlowSubjectClaim $claim): void {
+		$held = ($this->all(run: $run)[$claim->role] ?? null);
+		if ($held === null) {
+			return;
+		}
+
+		$this->logger?->info(
+			message: '[FlowRunSubjects] Run "' . (string)$run->getUuid() . '" re-pointed the role "'
+				. $claim->role . '" from "' . trim((string)($held['uuid'] ?? '')) . '" to "' . $claim->uuid
+				. '". Anything attached to that role from here on addresses the new object.',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'run' => (string)$run->getUuid()]
+		);
+	}//end noteRepointing()
+
+	/**
+	 * The subject entry a trimmed claim records, stamped now.
+	 *
+	 * @param FlowSubjectClaim $claim The trimmed claim.
+	 *
+	 * @return array{uuid: string, register: string, schema: string, recordedAt: string} The entry.
+	 */
+	private function entryFor(FlowSubjectClaim $claim): array {
+		return [
+			'uuid' => $claim->uuid,
+			'register' => $claim->register,
+			'schema' => $claim->schema,
+			'recordedAt' => (new DateTime())->format(DATE_ATOM),
+		];
+	}//end entryFor()
+
+	/**
+	 * Record the object the run fired on (its `subject_*` columns) under the `trigger` role.
+	 *
+	 * @param FlowRun $run The run to record on.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When the run carries no subject uuid.
+	 *
+	 * @spec openspec/specs/flow-run-subjects/spec.md
+	 */
+	public function recordTrigger(FlowRun $run): void {
+		$claim = new FlowSubjectClaim(
+			role: self::ROLE_TRIGGER,
+			uuid: trim((string)$run->getSubjectUuid()),
+			register: trim((string)$run->getSubjectRegister()),
+			schema: trim((string)$run->getSubjectSchema())
+		);
+		$this->record(run: $run, claim: $claim);
+
+	}//end recordTrigger()
 
 	/**
 	 * The object a role names, for a step that addresses one.

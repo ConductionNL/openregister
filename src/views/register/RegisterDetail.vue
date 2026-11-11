@@ -81,51 +81,13 @@ import {
 			</template>
 
 			<!-- Charts -->
-			<div class="chartGrid">
-				<!-- Audit Trail Actions Chart -->
-				<div class="chartCard">
-					<h3>Audit Trail Actions</h3>
-					<Apexchart
-						type="line"
-						height="350"
-						:options="auditTrailChartOptions"
-						:series="
-							dashboardStore.chartData.auditTrailActions?.series || []
-						" />
-				</div>
-
-				<!-- Objects by Schema Chart -->
-				<div class="chartCard">
-					<h3>Objects by Schema</h3>
-					<Apexchart
-						type="pie"
-						height="350"
-						:options="schemaChartOptions"
-						:series="
-							dashboardStore.chartData.objectsBySchema?.series || []
-						"
-						:labels="
-							dashboardStore.chartData.objectsBySchema?.labels || []
-						" />
-				</div>
-
-				<!-- Objects by Size Chart -->
-				<div class="chartCard">
-					<h3>Objects by Size Distribution</h3>
-					<Apexchart
-						type="bar"
-						height="350"
-						:options="sizeChartOptions"
-						:series="[
-							{
-								name: 'Objects',
-								data:
-									dashboardStore.chartData.objectsBySize?.series
-									|| [],
-							},
-						]" />
-				</div>
-			</div>
+			<DetailChartGrid
+				:chartData="dashboardStore.chartData"
+				distributionKey="objectsBySchema"
+				distributionTitle="Objects by Schema"
+				:auditOptions="auditTrailChartOptions"
+				:distributionOptions="schemaChartOptions"
+				:sizeOptions="sizeChartOptions" />
 
 			<!-- Schemas -->
 			<div v-if="loadingSchemas" class="loadingContainer">
@@ -220,50 +182,16 @@ import {
 			</div>
 		</CnDetailPage>
 
-		<CnFormDialog
+		<EditRegisterFormDialog
 			v-if="showEditDialog"
-			ref="editRegisterDialog"
-			:schema="registerSchema"
 			:item="register"
-			:dialogTitle="t('openregister', 'Edit Register')"
-			@confirm="onSaveRegister"
-			@close="showEditDialog = false">
-			<template #form="{ formData, errors, updateField }">
-				<div class="formContainer">
-					<NcTextField
-						:label="t('openregister', 'Title') + ' *'"
-						:modelValue="formData.title || ''"
-						:error="!!errors.title"
-						:helperText="errors.title"
-						@update:modelValue="(v) => updateField('title', v)" />
-					<NcTextField
-						:label="t('openregister', 'Slug') + ' *'"
-						:modelValue="formData.slug || ''"
-						:error="!!errors.slug"
-						:helperText="errors.slug"
-						@update:modelValue="(v) => updateField('slug', v)" />
-					<NcTextArea
-						:label="t('openregister', 'Description')"
-						:modelValue="formData.description || ''"
-						@update:modelValue="(v) => updateField('description', v)" />
-					<NcSelect
-						:inputLabel="t('openregister', 'Schemas')"
-						:options="schemaSelectOptions"
-						:modelValue="getSchemaSelectValue(formData.schemas)"
-						:multiple="true"
-						:closeOnSelect="false"
-						:loading="schemasLoading"
-						@update:modelValue="
-							(vals) => updateField('schemas', vals)
-						" />
-				</div>
-			</template>
-		</CnFormDialog>
+			:afterSave="() => dashboardStore.fetchRegisters()"
+			@close="showEditDialog = false" />
 	</NcAppContent>
 </template>
 
 <script>
-import { CnDetailPage, CnFormDialog } from '@conduction/nextcloud-vue'
+import { CnDetailPage } from '@conduction/nextcloud-vue'
 import {
 	NcActionButton,
 	NcActions,
@@ -271,9 +199,6 @@ import {
 	NcButton,
 	NcEmptyContent,
 	NcLoadingIcon,
-	NcSelect,
-	NcTextArea,
-	NcTextField,
 } from '@nextcloud/vue'
 import VueApexCharts from 'vue3-apexcharts'
 import Database from 'vue-material-design-icons/Database.vue'
@@ -282,22 +207,28 @@ import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TableEye from 'vue-material-design-icons/TableEye.vue'
+import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
+import DetailChartGrid from './DetailChartGrid.vue'
+import { findActiveRegister } from './activeRegister.js'
+import {
+	auditTrailChartOptions,
+	distributionChartOptions,
+	sizeChartOptions,
+} from './detailChartOptions.js'
 import { getTheme } from '@/services/getTheme.js'
 
 export default {
 	name: 'RegisterDetail',
 	components: {
+		EditRegisterFormDialog,
 		NcAppContent,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcActions,
 		NcActionButton,
 		NcButton,
-		NcTextField,
-		NcTextArea,
-		NcSelect,
 		CnDetailPage,
-		CnFormDialog,
+		DetailChartGrid,
 		Apexchart: VueApexCharts,
 		FileCodeOutline,
 		FolderOutline,
@@ -316,8 +247,6 @@ export default {
 			loadingSchemas: false,
 			managingConfiguration: null,
 			showEditDialog: false,
-			schemaSelectOptions: [],
-			schemasLoading: false,
 			// True until mounted() has hydrated the register, so a deep link shows
 			// the loading state instead of flashing "Register not found".
 			hydrating: true,
@@ -326,66 +255,13 @@ export default {
 
 	computed: {
 		/**
-		 * Inline JSON-schema describing the register edit form.
-		 *
-		 * @spec exclude UI plumbing — static form-schema for the edit dialog, no observable contract.
-		 * @return {object}
-		 */
-		registerSchema() {
-			return {
-				title: t('openregister', 'Register'),
-				properties: {
-					title: {
-						type: 'string',
-						title: t('openregister', 'Title'),
-						required: true,
-						minLength: 1,
-						order: 1,
-					},
-
-					slug: {
-						type: 'string',
-						title: t('openregister', 'Slug'),
-						required: true,
-						minLength: 1,
-						order: 2,
-					},
-
-					description: {
-						type: 'string',
-						title: t('openregister', 'Description'),
-						order: 3,
-					},
-
-					schemas: {
-						type: 'array',
-						title: t('openregister', 'Schemas'),
-						order: 4,
-					},
-				},
-
-				required: ['title', 'slug'],
-			}
-		},
-
-		/**
 		 * Resolve the active register from the dashboard store.
 		 *
 		 * @spec exclude UI plumbing — store lookup; register dashboard contract owned by built-in-dashboards.
 		 * @return {object|undefined}
 		 */
 		register() {
-			// Find the register in the dashboard store using the ID from the register
-			// store, falling back to the route param on a deep link / page refresh.
-			const registerId =
-				registerStore.getRegisterItem?.id || this.$route.params.id
-			if (!registerId) {
-				return undefined
-			}
-			// Route params are strings, the API returns numeric ids — compare as strings.
-			return dashboardStore.registers.find(
-				(r) => String(r.id) === String(registerId),
-			)
+			return findActiveRegister(this.$route)
 		},
 
 		/**
@@ -395,47 +271,10 @@ export default {
 		 * @return {object}
 		 */
 		auditTrailChartOptions() {
-			return {
-				chart: {
-					type: 'line',
-					toolbar: {
-						show: true,
-					},
-
-					zoom: {
-						enabled: true,
-					},
-				},
-
-				xaxis: {
-					categories:
-						dashboardStore.chartData.auditTrailActions?.labels || [],
-
-					title: {
-						text: 'Date',
-					},
-				},
-
-				yaxis: {
-					title: {
-						text: 'Number of Actions',
-					},
-				},
-
-				colors: ['#41B883', '#E46651', '#00D8FF'],
-				stroke: {
-					curve: 'smooth',
-					width: 2,
-				},
-
-				legend: {
-					position: 'top',
-				},
-
-				theme: {
-					mode: getTheme(),
-				},
-			}
+			return auditTrailChartOptions(
+				dashboardStore.chartData.auditTrailActions?.labels || [],
+				getTheme(),
+			)
 		},
 
 		/**
@@ -445,31 +284,9 @@ export default {
 		 * @return {object}
 		 */
 		schemaChartOptions() {
-			return {
-				chart: {
-					type: 'pie',
-				},
-
-				labels: dashboardStore.chartData.objectsBySchema?.labels || [],
-				legend: {
-					position: 'bottom',
-				},
-
-				responsive: [
-					{
-						breakpoint: 480,
-						options: {
-							chart: {
-								width: 200,
-							},
-
-							legend: {
-								position: 'bottom',
-							},
-						},
-					},
-				],
-			}
+			return distributionChartOptions(
+				dashboardStore.chartData.objectsBySchema?.labels || [],
+			)
 		},
 
 		/**
@@ -479,36 +296,9 @@ export default {
 		 * @return {object}
 		 */
 		sizeChartOptions() {
-			return {
-				chart: {
-					type: 'bar',
-				},
-
-				plotOptions: {
-					bar: {
-						horizontal: false,
-						columnWidth: '55%',
-						endingShape: 'rounded',
-					},
-				},
-
-				xaxis: {
-					categories: dashboardStore.chartData.objectsBySize?.labels || [],
-					title: {
-						text: 'Size Range',
-					},
-				},
-
-				yaxis: {
-					title: {
-						text: 'Number of Objects',
-					},
-				},
-
-				fill: {
-					opacity: 1,
-				},
-			}
+			return sizeChartOptions(
+				dashboardStore.chartData.objectsBySize?.labels || [],
+			)
 		},
 	},
 
@@ -527,19 +317,6 @@ export default {
 			},
 
 			deep: true,
-		},
-
-		/**
-		 * Lazy-load schema options when the edit dialog opens.
-		 *
-		 * @spec exclude UI plumbing — watcher triggering option load on dialog open.
-		 * @param {boolean} val - dialog visibility
-		 * @return {void}
-		 */
-		showEditDialog(val) {
-			if (val) {
-				this.loadSchemaOptions()
-			}
 		},
 	},
 
@@ -652,68 +429,6 @@ export default {
 						},
 					},
 				},
-			}
-		},
-
-		/**
-		 * Load schema select options for the edit dialog.
-		 *
-		 * @spec exclude UI plumbing — store delegation hydrating select options.
-		 * @return {Promise<void>}
-		 */
-		async loadSchemaOptions() {
-			this.schemasLoading = true
-			try {
-				await schemaStore.refreshSchemaList()
-				this.schemaSelectOptions = schemaStore.schemaList.map((s) => ({
-					id: s.id,
-					label: s.title,
-				}))
-			} catch (error) {
-				console.error('Failed to load schemas:', error)
-			} finally {
-				this.schemasLoading = false
-			}
-		},
-
-		/**
-		 * Map schema ids/objects to NcSelect option values.
-		 *
-		 * @spec exclude UI plumbing — select-value normalizer for the edit form.
-		 * @param {Array} schemas - schema ids or objects
-		 * @return {Array} option objects
-		 */
-		getSchemaSelectValue(schemas) {
-			if (!Array.isArray(schemas)) return []
-			return schemas.map((s) => {
-				const id = typeof s === 'object' ? s.id : s
-				return (
-					this.schemaSelectOptions.find(
-						(o) => String(o.id) === String(id),
-					) || { id, label: String(id) }
-				)
-			})
-		},
-
-		/**
-		 * Persist the register edit form and refresh dashboard data.
-		 *
-		 * @spec exclude UI plumbing — store delegation + dialog result; register CRUD contract owned elsewhere.
-		 * @param {object} formData - edited register fields
-		 * @return {Promise<void>}
-		 */
-		async onSaveRegister(formData) {
-			try {
-				await registerStore.saveRegister({
-					...formData,
-					schemas: (formData.schemas || []).map((s) =>
-						typeof s === 'object' ? s.id : s,
-					),
-				})
-				this.$refs.editRegisterDialog.setResult({ success: true })
-				await dashboardStore.fetchRegisters()
-			} catch (error) {
-				this.$refs.editRegisterDialog.setResult({ error: error.message })
 			}
 		},
 
@@ -854,6 +569,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@use '../../styles/views.scss' as *;
+
 .loadingContainer {
 	display: flex;
 	align-items: center;
@@ -868,20 +585,6 @@ export default {
 	grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
 	gap: 20px;
 	padding: 20px;
-}
-
-.chartCard {
-	background: var(--color-main-background);
-	border-radius: 8px;
-	padding: 20px;
-	box-shadow: 0 2px 8px var(--color-box-shadow);
-	border: 1px solid var(--color-border);
-
-	h3 {
-		margin: 0 0 20px 0;
-		font-size: 1.2em;
-		color: var(--color-main-text);
-	}
 }
 
 .cardGrid {
@@ -950,11 +653,7 @@ export default {
 	font-weight: 600;
 }
 
-@media screen and (max-width: 1024px) {
-	.chartGrid {
-		grid-template-columns: 1fr;
-	}
-}
+@include media-screen-and-max-width-1024px;
 
 .schemaChart {
 	margin-top: 16px;

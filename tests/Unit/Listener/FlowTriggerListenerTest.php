@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\CaseItemTransitionedEvent;
@@ -21,9 +23,12 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Listener\FlowTriggerListener;
 use OCA\OpenRegister\Service\Flow\FlowTriggerService;
 use OCA\OpenRegister\Service\Flow\FlowTriggerSlugs;
+use OCA\OpenRegister\Service\Lifecycle\TransitionActor;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\Event;
 use OCP\IUserSession;
@@ -99,7 +104,7 @@ class FlowTriggerListenerTest extends TestCase {
 			}
 		);
 
-		return new FlowTriggerSlugs($registers, $schemas, new NullLogger());
+		return new FlowTriggerSlugs(new SchemaCatalog($registers, $schemas, $this->createMock(MagicMapperInterface::class)), new NullLogger());
 	}
 
 	private function object(): ObjectEntity {
@@ -145,7 +150,7 @@ class FlowTriggerListenerTest extends TestCase {
 			->willReturn(1);
 
 		$this->listener->handle(
-			new ObjectTransitionedEvent($this->object(), 'approve', 'draft', 'published', null, 'reg', 'sch')
+			new ObjectTransitionedEvent(object: $this->object(), move: new TransitionMove(action: 'approve', from: 'draft', to: 'published'), scope: new RegisterSchemaRef(register: 'reg', schema: 'sch'))
 		);
 	}
 
@@ -163,14 +168,10 @@ class FlowTriggerListenerTest extends TestCase {
 
 		$this->listener->handle(
 			new ObjectTransitionedEvent(
-				$this->object(),
-				'beslissen',
-				'open',
-				'besloten',
-				null,
-				'reg',
-				'sch',
-				true
+				object: $this->object(),
+				move: new TransitionMove(action: 'beslissen', from: 'open', to: 'besloten'),
+				scope: new RegisterSchemaRef(register: 'reg', schema: 'sch'),
+				actor: new TransitionActor(userId: null, automatic: true),
 			)
 		);
 	}

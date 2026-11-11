@@ -1,0 +1,27 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ObjectReferenceWidget renders a empty rich object 1`] = `
+"<a href="#" class="openregister-reference-widget" target="_blank" rel="noopener noreferrer" title="t:View object">
+  <div class="openregister-reference-widget__icon"><img src="" alt="t:Unknown Object" class="openregister-reference-widget__icon-img"></div>
+  <div class="openregister-reference-widget__content">
+    <h3 class="openregister-reference-widget__title">t:Unknown Object</h3>
+    <p class="openregister-reference-widget__subtitle"><span class="openregister-reference-widget__tag">t:Schema: t:Unknown Schema</span><span class="openregister-reference-widget__separator">|</span><span class="openregister-reference-widget__tag">t:Register: t:Unknown Register</span></p>
+    <!--v-if-->
+    <!--v-if-->
+  </div>
+</a>"
+`;
+
+exports[`ObjectReferenceWidget renders a full rich object 1`] = `
+"<a href="https://cloud.example/apps/openregister/objects/1" class="openregister-reference-widget" target="_blank" rel="noopener noreferrer" title="t:View object">
+  <div class="openregister-reference-widget__icon"><img src="" alt="Dune" class="openregister-reference-widget__icon-img"></div>
+  <div class="openregister-reference-widget__content">
+    <h3 class="openregister-reference-widget__title">Dune</h3>
+    <p class="openregister-reference-widget__subtitle"><span class="openregister-reference-widget__tag">t:Schema: Book</span><span class="openregister-reference-widget__separator">|</span><span class="openregister-reference-widget__tag">t:Register: Library</span></p>
+    <ul class="openregister-reference-widget__properties">
+      <li class="openregister-reference-widget__property"><span class="openregister-reference-widget__property-label">Author:</span><span class="openregister-reference-widget__property-value">Herbert</span></li>
+    </ul>
+    <!--v-if-->
+  </div>
+</a>"
+`;

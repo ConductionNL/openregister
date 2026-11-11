@@ -19,7 +19,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Service\ObjectSource\OrganisationActingUser;
 use OCA\OpenRegister\Service\ObjectSource\OrganisationObjectSourceProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -207,8 +210,10 @@ class OrganisationObjectSourceProviderTest extends TestCase {
 	public function testTheProviderIsAlwaysEnabled(): void {
 		$provider = new OrganisationObjectSourceProvider(
 			organisationMapper: $this->createMock(\OCA\OpenRegister\Db\OrganisationMapper::class),
-			userSession: $this->createMock(\OCP\IUserSession::class),
-			groupManager: $this->createMock(\OCP\IGroupManager::class),
+			actingUser: new OrganisationActingUser(
+				userSession: $this->createMock(\OCP\IUserSession::class),
+				groupManager: $this->createMock(\OCP\IGroupManager::class)
+			),
 			logger: $this->createMock(\Psr\Log\LoggerInterface::class),
 			organisationService: $this->createMock(\OCA\OpenRegister\Service\OrganisationService::class)
 		);
@@ -231,8 +236,7 @@ class OrganisationObjectSourceProviderTest extends TestCase {
 
 		$provider = new OrganisationObjectSourceProvider(
 			organisationMapper: $this->createMock(\OCA\OpenRegister\Db\OrganisationMapper::class),
-			userSession: $userSession,
-			groupManager: $this->createMock(\OCP\IGroupManager::class),
+			actingUser: new OrganisationActingUser(userSession: $userSession, groupManager: $this->createMock(\OCP\IGroupManager::class)),
 			logger: $this->createMock(\Psr\Log\LoggerInterface::class),
 			organisationService: $this->createMock(\OCA\OpenRegister\Service\OrganisationService::class)
 		);
@@ -240,8 +244,7 @@ class OrganisationObjectSourceProviderTest extends TestCase {
 		$this->assertSame(
 			[],
 			$provider->findAll(
-				register: new \OCA\OpenRegister\Db\Register(),
-				schema: new \OCA\OpenRegister\Db\Schema()
+				source: new SourcedTable(new RegisterSchema(new \OCA\OpenRegister\Db\Register(), new \OCA\OpenRegister\Db\Schema()))
 			)
 		);
 

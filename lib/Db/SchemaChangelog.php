@@ -56,6 +56,9 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class SchemaChangelog extends Entity implements JsonSerializable {
+	use JsonFieldsTrait;
+	use HydrateEmptyJsonAsNullTrait;
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * The schema this changelog entry belongs to.
@@ -129,72 +132,13 @@ class SchemaChangelog extends Entity implements JsonSerializable {
 	}//end __construct()
 
 	/**
-	 * The field names registered with the 'json' type.
+	 * The serialised values that differ from the stored ones, by field name.
 	 *
-	 * @return array<int, string> The json-typed field names.
+	 * @return array<string, mixed>
 	 */
-	public function getJsonFields(): array {
-		return array_keys(
-			array_filter(
-				$this->getFieldTypes(),
-				static function ($field) {
-					return $field === 'json';
-				}
-			)
-		);
-	}//end getJsonFields()
-
-	/**
-	 * Hydrate the entity from an array.
-	 *
-	 * Without this, SchemaChangelogMapper::createFromArray()'s `$entry->hydrate()`
-	 * call hit Entity::__call and threw "hydrate does not exist", so every schema
-	 * changelog write failed silently (swallowed by the caller's try/catch) and
-	 * the schema-change audit trail was never recorded.
-	 *
-	 * @param array<string, mixed> $object The source data.
-	 *
-	 * @return static This entity, hydrated.
-	 *
-	 * @spec openspec/specs/schema-migration/spec.md
-	 */
-	public function hydrate(array $object): static {
-		$jsonFields = $this->getJsonFields();
-
-		foreach ($object as $key => $value) {
-			if (in_array($key, $jsonFields, true) === true && $value === []) {
-				$value = null;
-			}
-
-			$method = 'set' . ucfirst($key);
-
-			try {
-				$this->$method($value);
-			} catch (\Exception $exception) {
-				// Silently ignore invalid properties.
-			}
-		}
-
-		return $this;
-	}//end hydrate()
-
-	/**
-	 * JSON serialisation.
-	 *
-	 * @return array<string, mixed> The serialised changelog entry.
-	 */
-	public function jsonSerialize(): array {
+	protected function jsonOverrides(): array {
 		return [
-			'id' => $this->id,
-			'schemaId' => $this->schemaId,
-			'version' => $this->version,
-			'classification' => $this->classification,
 			'changes' => ($this->changes ?? []),
-			'actor' => $this->actor,
-			'acknowledgedBy' => $this->acknowledgedBy,
-			'acknowledgedAt' => $this->acknowledgedAt?->format(DateTime::ATOM),
-			'created' => $this->created?->format(DateTime::ATOM),
 		];
-
-	}//end jsonSerialize()
+	}//end jsonOverrides()
 }//end class

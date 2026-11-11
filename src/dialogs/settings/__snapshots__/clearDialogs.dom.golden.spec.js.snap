@@ -1,0 +1,141 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`clear dialog audit renders with clearing false 1`] = `
+"<x-ncdialog name="Confirm Clear Audit Trails" size="small" noclose="false" class="" open="true">
+  <slot-default>
+    <div class="clear-dialog-content">
+      <h3>⚠️ Confirm Clear All Audit Trails</h3>
+      <p>This operation will permanently delete all audit trail logs from the database. This action cannot be undone.</p>
+      <p><strong>Current audit trails: 12</strong></p>
+      <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="false">
+          <slot-default> Confirm Clear All</slot-default>
+          <slot-icon>
+            <x-delete size="20"></x-delete>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`clear dialog audit renders with clearing true 1`] = `
+"<x-ncdialog name="Confirm Clear Audit Trails" size="small" noclose="false" class="" open="true">
+  <slot-default>
+    <div class="clear-dialog-content">
+      <h3>⚠️ Confirm Clear All Audit Trails</h3>
+      <p>This operation will permanently delete all audit trail logs from the database. This action cannot be undone.</p>
+      <p><strong>Current audit trails: 12</strong></p>
+      <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="true">
+          <slot-default> Clearing...</slot-default>
+          <slot-icon>
+            <x-ncloadingicon size="20"></x-ncloadingicon>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`clear dialog blob renders with clearing false 1`] = `
+"<x-ncdialog name="Confirm Clear Blob Objects" size="small" noclose="false" class="" open="true">
+  <slot-default>
+    <div class="clear-dialog-content">
+      <h3>⚠️ Confirm Clear All Blob Storage Objects</h3>
+      <p>This operation will permanently delete all objects stored in blob storage mode from the database. Magic Mapper objects will NOT be affected.</p>
+      <p><strong>Current blob storage objects: 12</strong></p>
+      <p class="warning-text">⚠️ This action cannot be undone!</p>
+      <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="false">
+          <slot-default> Confirm Clear All</slot-default>
+          <slot-icon>
+            <x-delete size="20"></x-delete>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`clear dialog blob renders with clearing true 1`] = `
+"<x-ncdialog name="Confirm Clear Blob Objects" size="small" noclose="false" class="" open="true">
+  <slot-default>
+    <div class="clear-dialog-content">
+      <h3>⚠️ Confirm Clear All Blob Storage Objects</h3>
+      <p>This operation will permanently delete all objects stored in blob storage mode from the database. Magic Mapper objects will NOT be affected.</p>
+      <p><strong>Current blob storage objects: 12</strong></p>
+      <p class="warning-text">⚠️ This action cannot be undone!</p>
+      <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="true">
+          <slot-default> Clearing...</slot-default>
+          <slot-icon>
+            <x-ncloadingicon size="20"></x-ncloadingicon>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`clear dialog search renders with clearing false 1`] = `
+"<x-ncdialog name="Confirm Clear Search Trails" size="small" noclose="false" class="" open="true">
+  <slot-default>
+    <div class="clear-dialog-content">
+      <h3>⚠️ Confirm Clear All Search Trails</h3>
+      <p>This operation will permanently delete all search trail logs from the database. This action cannot be undone.</p>
+      <p><strong>Current search trails: 12</strong></p>
+      <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="false">
+          <slot-default> Confirm Clear All</slot-default>
+          <slot-icon>
+            <x-delete size="20"></x-delete>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`clear dialog search renders with clearing true 1`] = `
+"<x-ncdialog name="Confirm Clear Search Trails" size="small" noclose="false" class="" open="true">
+  <slot-default>
+    <div class="clear-dialog-content">
+      <h3>⚠️ Confirm Clear All Search Trails</h3>
+      <p>This operation will permanently delete all search trail logs from the database. This action cannot be undone.</p>
+      <p><strong>Current search trails: 12</strong></p>
+      <p><strong>This operation may take some time to complete.</strong></p>
+      <div class="dialog-actions">
+        <x-ncbutton>
+          <slot-default>t:Cancel</slot-default>
+        </x-ncbutton>
+        <x-ncbutton variant="error" disabled="true">
+          <slot-default> Clearing...</slot-default>
+          <slot-icon>
+            <x-ncloadingicon size="20"></x-ncloadingicon>
+          </slot-icon>
+        </x-ncbutton>
+      </div>
+    </div></slot-default>
+</x-ncdialog>"
+`;

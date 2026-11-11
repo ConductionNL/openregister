@@ -38,7 +38,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Export;
 use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\File;
@@ -125,8 +129,9 @@ class ExportRunRecorderTest extends TestCase {
 				return $this->rows[$uuid];
 			}
 		);
-		$mapper->method('findForActor')->willReturnCallback(
-			function (?string $actor, array $filters = []): array {
+		$mapper->method('listForActor')->willReturnCallback(
+			function (?string $actor, ListQuery $query): array {
+				$filters = $query->filters;
 				$found = [];
 				foreach ($this->rows as $row) {
 					if ($actor !== null && $row->getActor() !== $actor) {
@@ -208,16 +213,22 @@ class ExportRunRecorderTest extends TestCase {
 	 */
 	private function recordOne(?int $retention = null, ?int $fileId = 4242, string $actor = 'alice'): ExportRun {
 		return $this->recorder->record(
-			source: 'scheduled-report',
-			actor: $actor,
-			format: 'csv',
-			rowCount: 12,
-			profile: 'weekly-cases',
-			filename: 'weekly-cases.csv',
-			registerName: 'cases',
-			schemaName: 'case',
-			fileId: $fileId,
-			filePath: 'Reports/weekly-cases.csv',
+			origin: new ExportRunOrigin(
+				source: 'scheduled-report',
+				actor: $actor,
+				profile: 'weekly-cases'
+			),
+			content: new ExportRunContent(
+				format: 'csv',
+				rowCount: 12,
+				registerName: 'cases',
+				schemaName: 'case'
+			),
+			file: new ExportRunFile(
+				filename: 'weekly-cases.csv',
+				fileId: $fileId,
+				filePath: 'Reports/weekly-cases.csv'
+			),
 			retentionSeconds: $retention
 		);
 	}//end recordOne()

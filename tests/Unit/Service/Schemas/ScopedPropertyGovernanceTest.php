@@ -30,7 +30,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Schemas;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
+use OCA\OpenRegister\Service\Schemas\ScopedField;
+use OCA\OpenRegister\Service\Schemas\ScopedPropertyCensus;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance;
+use OCA\OpenRegister\Service\Schemas\ScopedPropertyPromotion;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -41,6 +44,9 @@ use PHPUnit\Framework\TestCase;
  * `ScopedPropertyGovernance`.
  *
  * @covers \OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedField
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyCensus
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyPromotion
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  */
@@ -177,7 +183,7 @@ class ScopedPropertyGovernanceTest extends TestCase {
 		$schema     = $this->schemaWithScopedProperties(3, 'team-a');
 
 		try {
-			$governance->assertBelowCeiling(schema: $schema, scope: 'team-a', property: 'salary');
+			$governance->assertBelowCeiling(schema: $schema, field: new ScopedField(property: 'salary', scope: 'team-a'));
 			$this->fail('A scope at its ceiling must refuse the next property.');
 		} catch (ScopedPropertyException $e) {
 			$this->assertStringContainsString('3', $e->getMessage());
@@ -196,11 +202,7 @@ class ScopedPropertyGovernanceTest extends TestCase {
 	public function testAScopeBelowItsCeilingIsAllowed(): void {
 		$governance = $this->governanceFor('alice', ['team-a'], 3);
 
-		$governance->assertBelowCeiling(
-			schema: $this->schemaWithScopedProperties(2, 'team-a'),
-			scope: 'team-a',
-			property: 'salary'
-		);
+		$governance->assertBelowCeiling(schema: $this->schemaWithScopedProperties(2, 'team-a'), field: new ScopedField(property: 'salary', scope: 'team-a'));
 
 		$this->expectNotToPerformAssertions();
 	}//end testAScopeBelowItsCeilingIsAllowed()
@@ -224,7 +226,7 @@ class ScopedPropertyGovernanceTest extends TestCase {
 					'b' => ['scope' => 'team-b'],
 					'c' => ['scope' => 'team-b'],
 				]),
-				scope: 'team-a'
+				field: new ScopedField(property: '', scope: 'team-a')
 			)
 		);
 	}//end testTheCeilingIsPerScope()
@@ -240,14 +242,10 @@ class ScopedPropertyGovernanceTest extends TestCase {
 	public function testEditingAnExistingPropertyIsNotCountedTwice(): void {
 		$governance = $this->governanceFor('alice', ['team-a'], 2);
 
-		$governance->assertBelowCeiling(
-			schema: $this->schemaWith([
+		$governance->assertBelowCeiling(schema: $this->schemaWith([
 				'a' => ['scope' => 'team-a'],
 				'b' => ['scope' => 'team-a'],
-			]),
-			scope: 'team-a',
-			property: 'b'
-		);
+			]), field: new ScopedField(property: 'b', scope: 'team-a'));
 
 		$this->expectNotToPerformAssertions();
 	}//end testEditingAnExistingPropertyIsNotCountedTwice()
@@ -272,8 +270,7 @@ class ScopedPropertyGovernanceTest extends TestCase {
 	public function testAPropertyWithNoValuesIsReportedUnused(): void {
 		$report = $this->governanceFor('alice', ['team-a'])->unusedReport(
 			schema: $this->schemaWith(['salary' => ['scope' => 'team-a'], 'name' => ['type' => 'string']]),
-			counts: ['salary' => 0],
-			asOf: new DateTimeImmutable('2026-09-18')
+			census: new ScopedPropertyCensus(counts: ['salary' => 0], asOf: new DateTimeImmutable('2026-09-18'))
 		);
 
 		$this->assertCount(1, $report, 'Only scoped properties belong in this report.');
@@ -292,8 +289,7 @@ class ScopedPropertyGovernanceTest extends TestCase {
 	public function testAPropertyWithNoCountIsUnknownNotUnused(): void {
 		$report = $this->governanceFor('alice', ['team-a'])->unusedReport(
 			schema: $this->schemaWith(['salary' => ['scope' => 'team-a']]),
-			counts: [],
-			asOf: new DateTimeImmutable('2026-09-18')
+			census: new ScopedPropertyCensus(counts: [], asOf: new DateTimeImmutable('2026-09-18'))
 		);
 
 		$this->assertSame('unknown', $report[0]['state']);
@@ -308,8 +304,7 @@ class ScopedPropertyGovernanceTest extends TestCase {
 	public function testAPropertyWithValuesIsInUse(): void {
 		$report = $this->governanceFor('alice', ['team-a'])->unusedReport(
 			schema: $this->schemaWith(['salary' => ['scope' => 'team-a']]),
-			counts: ['salary' => 40],
-			asOf: new DateTimeImmutable('2026-09-18')
+			census: new ScopedPropertyCensus(counts: ['salary' => 40], asOf: new DateTimeImmutable('2026-09-18'))
 		);
 
 		$this->assertSame('in use', $report[0]['state']);
@@ -366,9 +361,10 @@ class ScopedPropertyGovernanceTest extends TestCase {
 	 */
 	public function testThePromotionRecordNamesItsActor(): void {
 		$record = $this->governanceFor('alice', ['team-a'])->promotionRecord(
-			schema: $this->schemaWith(['salary' => ['scope' => 'team-a']]),
-			property: 'salary',
-			scope: 'team-a',
+			promotion: new ScopedPropertyPromotion(
+				schema: $this->schemaWith(['salary' => ['scope' => 'team-a']]),
+				field: new ScopedField(property: 'salary', scope: 'team-a')
+			),
 			stampedAt: new DateTimeImmutable('2026-09-18T10:00:00+00:00')
 		);
 

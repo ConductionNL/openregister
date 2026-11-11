@@ -1,0 +1,61 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EditConfiguration close and reset (golden) closeModal 1`] = `
+{
+  "setModal": [
+    [
+      false,
+    ],
+  ],
+  "state": {
+    "error": null,
+    "loading": false,
+    "selectedAgents": [],
+    "selectedApplication": null,
+    "selectedManagedApplications": [
+      7,
+    ],
+    "selectedObjects": [],
+    "selectedRegisters": [],
+    "selectedSchemas": [],
+    "selectedSourceType": {
+      "value": "github",
+    },
+    "selectedSources": [],
+    "selectedType": {
+      "value": "other",
+    },
+    "selectedViews": [],
+  },
+}
+`;
+
+exports[`EditConfiguration close and reset (golden) resetSelections 1`] = `
+{
+  "setModal": [],
+  "state": {
+    "error": "x",
+    "loading": true,
+    "selectedAgents": [],
+    "selectedApplication": null,
+    "selectedManagedApplications": [
+      7,
+    ],
+    "selectedObjects": [],
+    "selectedRegisters": [],
+    "selectedSchemas": [],
+    "selectedSourceType": {
+      "description": "Manually managed configuration",
+      "label": "Local",
+      "value": "local",
+    },
+    "selectedSources": [],
+    "selectedType": {
+      "description": "Standard configuration type",
+      "label": "Default",
+      "value": "default",
+    },
+    "selectedViews": [],
+  },
+}
+`;

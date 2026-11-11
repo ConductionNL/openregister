@@ -3,7 +3,7 @@
 /**
  * PdfTextReplacerTest
  *
- * Unit tests for {@see \OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer}
+ * Unit tests for {@see \OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer}
  * covering the replace → validate → fail-closed pipeline plus the
  * adjacent-duplicate placeholder collapse helper.
  *
@@ -27,9 +27,12 @@ declare(strict_types=1);
 namespace Unit\Service\File\Pdf;
 
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
-use OCA\OpenRegister\Service\File\Pdf\PdfStructureInspector;
-use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
-use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
+use OCA\OpenRegister\Files\Service\File\Pdf\PdfStructureInspector;
+use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
+use OCA\OpenRegister\Files\Service\File\Pdf\SerialisedPdf;
+use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
+use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -221,17 +224,16 @@ class PdfTextReplacerTest extends TestCase {
 
 		$output = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]']
-		);
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false)
+		)->bytes;
 
 		// Output MUST be a valid PDF (starts with %PDF-, ends with %%EOF).
 		$this->assertStringStartsWith(prefix: '%PDF-', string: $output);
 		$this->assertStringEndsWith(suffix: "%%EOF\n", string: $output);
 
-		// Re-extract via smalot/pdfparser and assert the placeholder is
-		// present and the original entity text is gone.
-		$parser = new \Smalot\PdfParser\Parser();
-		$extracted = $parser->parseContent($output)->getText();
+		// Re-extract and assert the placeholder is present and the original
+		// entity text is gone.
+		$extracted = (new PdfExtractor(logger: $this->logger))->extractText(pdfBytes: $output);
 
 		$this->assertStringContainsString(needle: '[PERSON: 1]', haystack: $extracted);
 		$this->assertStringNotContainsString(needle: 'Jan Jansen', haystack: $extracted);
@@ -244,7 +246,7 @@ class PdfTextReplacerTest extends TestCase {
 	 */
 	public function testReplaceInPdfEmptySubstitutionsIsNoOp(): void {
 		$pdf = self::buildFixture(bodyText: 'Aanvraag van Jan Jansen voor het loket.');
-		$output = $this->replacer->replaceInPdf(pdfBytes: $pdf, substitutions: []);
+		$output = $this->replacer->replaceInPdf(pdfBytes: $pdf, plan: new RedactionPlan(substitutions: [], strict: false))->bytes;
 
 		$this->assertSame(expected: $pdf, actual: $output);
 	}//end testReplaceInPdfEmptySubstitutionsIsNoOp()
@@ -276,8 +278,8 @@ class PdfTextReplacerTest extends TestCase {
 			);
 
 		$this->replacer->validateOutput(
-			outputBytes: $pdfContainingNeedle,
-			substitutions: ['Jansen' => '[PERSON: 1]']
+			output: new SerialisedPdf(bytes: $pdfContainingNeedle),
+			plan: new RedactionPlan(substitutions: ['Jansen' => '[PERSON: 1]'], strict: false)
 		);
 	}//end testValidateOutputLogsWarningOnResidualWithoutThrowing()
 
@@ -294,15 +296,64 @@ class PdfTextReplacerTest extends TestCase {
 		$pdfContainingNeedle = self::buildFixture(bodyText: 'De heer Jansen bezocht het loket.');
 
 		$residuals = $this->replacer->validateOutput(
-			outputBytes: $pdfContainingNeedle,
-			substitutions: ['Jansen' => '[PERSON: 1]'],
-			replaceStats: [],
-			strict: true
+			output: new SerialisedPdf(bytes: $pdfContainingNeedle),
+			plan: new RedactionPlan(substitutions: ['Jansen' => '[PERSON: 1]'], strict: true)
 		);
 
 		// The unredacted needle is reported back (no exception thrown).
 		self::assertContains(needle: 'Jansen', haystack: $residuals);
 	}//end testValidateOutputReturnsResidualsWhenStrict()
+
+	/**
+	 * A strict run refuses an output the parser cannot re-read: the residual
+	 * check cannot run, so no unchecked file may be written. The refusal
+	 * carries counts only, never document text.
+	 *
+	 * @return void
+	 */
+	public function testValidateOutputRefusesUnreadableOutputWhenStrict(): void {
+		$unreadable = 'Jan Jansen is not a PDF';
+
+		try {
+			$this->replacer->validateOutput(
+				output: new SerialisedPdf(bytes: $unreadable),
+				plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: true)
+			);
+			self::fail(message: 'A strict run must refuse an output it cannot re-read.');
+		} catch (PdfAnonymisationException $e) {
+			self::assertSame(expected: PdfAnonymisationException::REASON_VALIDATION_FAILED, actual: $e->getReason());
+			self::assertSame(
+				expected: ['stage' => 'validate.extract', 'output_bytes' => strlen($unreadable)],
+				actual: $e->getDiagnostic()
+			);
+			self::assertStringNotContainsString(needle: 'Jansen', haystack: $e->getMessage());
+		}
+	}//end testValidateOutputRefusesUnreadableOutputWhenStrict()
+
+	/**
+	 * A lenient run returns an unreadable output unchecked, with a PII-free warning.
+	 *
+	 * @return void
+	 */
+	public function testValidateOutputSkipsUnreadableOutputWhenLenient(): void {
+		$this->logger
+			->expects(matcher: self::once())
+			->method(constraint: 'warning')
+			->with(
+				self::matchesRegularExpression(pattern: '/re-extraction skipped/i'),
+				self::callback(callback: static function (array $context): bool {
+					return strpos((string)json_encode($context), 'Jansen') === false
+						&& ($context['stage'] ?? null) === 'validate.extract';
+				})
+			);
+
+		$residuals = $this->replacer->validateOutput(
+			output: new SerialisedPdf(bytes: 'Jan Jansen is not a PDF'),
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false)
+		);
+
+		self::assertSame(expected: [], actual: $residuals);
+	}//end testValidateOutputSkipsUnreadableOutputWhenLenient()
 
 	/**
 	 * Validation gate passes silently when the PDF contains only the
@@ -315,8 +366,8 @@ class PdfTextReplacerTest extends TestCase {
 
 		// No exception expected; no residual needles returned.
 		$residuals = $this->replacer->validateOutput(
-			outputBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]']
+			output: new SerialisedPdf(bytes: $pdf),
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false)
 		);
 
 		self::assertSame(expected: [], actual: $residuals);
@@ -382,13 +433,10 @@ class PdfTextReplacerTest extends TestCase {
 	public function testTaggedPreservationAttested(): void {
 		$pdf = self::buildTaggedFixture(bodyText: 'Aanvraag met tags.', structElemCount: 4);
 
-		$structureResult = null;
-		$this->replacer->replaceInPdf(
+		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['NietAanwezigeNaam' => '[PERSON: 1]'],
-			preserveStructure: true,
-			structureResult: $structureResult
-		);
+			plan: new RedactionPlan(substitutions: ['NietAanwezigeNaam' => '[PERSON: 1]'], strict: false, preserveStructure: true)
+		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
 		self::assertTrue($structureResult->requested);
@@ -408,13 +456,10 @@ class PdfTextReplacerTest extends TestCase {
 	public function testTaggedLossIsReportedNotSilent(): void {
 		$pdf = self::buildTaggedFixture(bodyText: 'Aanvraag van Jan Jansen.', structElemCount: 2);
 
-		$structureResult = null;
-		$this->replacer->replaceInPdf(
+		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			preserveStructure: true,
-			structureResult: $structureResult
-		);
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false, preserveStructure: true)
+		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
 		self::assertTrue($structureResult->requested);
@@ -454,13 +499,10 @@ class PdfTextReplacerTest extends TestCase {
 
 		$pdf = self::buildTaggedFixture(bodyText: 'Aanvraag met tags.', structElemCount: 3);
 
-		$structureResult = null;
-		$replacer->replaceInPdf(
+		$structureResult = $replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Onbekend' => '[PERSON: 1]'],
-			preserveStructure: true,
-			structureResult: $structureResult
-		);
+			plan: new RedactionPlan(substitutions: ['Onbekend' => '[PERSON: 1]'], strict: false, preserveStructure: true)
+		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
 		self::assertFalse($structureResult->preserved);
@@ -476,12 +518,10 @@ class PdfTextReplacerTest extends TestCase {
 	public function testAutoPreservesTaggedByDefault(): void {
 		$pdf = self::buildTaggedFixture(bodyText: 'Aanvraag met tags.', structElemCount: 1);
 
-		$structureResult = null;
-		$this->replacer->replaceInPdf(
+		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Onbekend' => '[PERSON: 1]'],
-			structureResult: $structureResult
-		);
+			plan: new RedactionPlan(substitutions: ['Onbekend' => '[PERSON: 1]'], strict: false)
+		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
 		self::assertTrue($structureResult->requested);
@@ -496,13 +536,10 @@ class PdfTextReplacerTest extends TestCase {
 	public function testExplicitFalseSkipsButMeasures(): void {
 		$pdf = self::buildTaggedFixture(bodyText: 'Aanvraag van Jan Jansen.', structElemCount: 3);
 
-		$structureResult = null;
-		$this->replacer->replaceInPdf(
+		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			preserveStructure: false,
-			structureResult: $structureResult
-		);
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false, preserveStructure: false)
+		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
 		self::assertFalse($structureResult->requested);
@@ -521,12 +558,10 @@ class PdfTextReplacerTest extends TestCase {
 	public function testUntaggedReportsNotApplicable(): void {
 		$pdf = self::buildFixture(bodyText: 'Aanvraag van Jan Jansen voor het loket.');
 
-		$structureResult = null;
-		$this->replacer->replaceInPdf(
+		$structureResult = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			structureResult: $structureResult
-		);
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false)
+		)->structurePreservation;
 
 		self::assertInstanceOf(StructurePreservation::class, $structureResult);
 		self::assertSame(0, $structureResult->tagCountBefore);
@@ -547,20 +582,18 @@ class PdfTextReplacerTest extends TestCase {
 
 		$outputWithoutOption = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]']
-		);
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false)
+		)->bytes;
 
 		$outputExplicitFalse = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			preserveStructure: false
-		);
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false, preserveStructure: false)
+		)->bytes;
 
 		$outputExplicitTrue = $this->replacer->replaceInPdf(
 			pdfBytes: $pdf,
-			substitutions: ['Jan Jansen' => '[PERSON: 1]'],
-			preserveStructure: true
-		);
+			plan: new RedactionPlan(substitutions: ['Jan Jansen' => '[PERSON: 1]'], strict: false, preserveStructure: true)
+		)->bytes;
 
 		self::assertSame($outputWithoutOption, $outputExplicitFalse);
 		self::assertSame($outputWithoutOption, $outputExplicitTrue);

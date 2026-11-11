@@ -23,7 +23,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/sequential-cross-table-search-orders-like-union/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+ * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
  */
 
 declare(strict_types=1);
@@ -31,7 +31,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use DateTime;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -39,7 +43,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -85,27 +91,32 @@ class MagicMapperSequentialOrderTest extends TestCase {
 	private function mapper(): MagicMapper {
 		$container = $this->createMock(ContainerInterface::class);
 		$services = [
-			DateTimeNormalizer::class => $this->createMock(DateTimeNormalizer::class),
+			DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
-			SchemaTypeConverter::class => $this->createMock(SchemaTypeConverter::class),
+			SchemaTypeConverterInterface::class => $this->createMock(SchemaTypeConverter::class),
 		];
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 
 		$mapper = $this->getMockBuilder(MagicMapper::class)
 			->setConstructorArgs(
 				[
-					$this->createMock(IDBConnection::class),
-					$this->createMock(SchemaMapper::class),
-					$this->createMock(RegisterMapper::class),
-					$this->createMock(IConfig::class),
-					$this->createMock(IEventDispatcher::class),
-					$this->createMock(IUserSession::class),
-					$this->createMock(IGroupManager::class),
-					$this->createMock(IUserManager::class),
-					$this->createMock(IAppConfig::class),
-					$this->createMock(LoggerInterface::class),
-					$this->createMock(SettingsService::class),
-					$container,
+					$this->mysqlConnection(),
+					new MagicMapperLookups(
+						$this->createMock(SchemaMapper::class),
+						$this->createMock(RegisterMapper::class),
+						$container
+					),
+					new MagicMapperIdentity(
+						$this->createMock(IUserSession::class),
+						$this->createMock(IGroupManager::class),
+						$this->createMock(IUserManager::class)
+					),
+					new MagicMapperRuntime(
+						$this->createMock(IConfig::class),
+						$this->createMock(IAppConfig::class),
+						$this->createMock(IEventDispatcher::class),
+						$this->createMock(LoggerInterface::class)
+					),
 				]
 			)
 			->onlyMethods(['searchObjectsInRegisterSchemaTable'])
@@ -240,8 +251,7 @@ class MagicMapperSequentialOrderTest extends TestCase {
 		$rows = $method->invoke(
 			$this->mapper(),
 			array_merge(self::ROWS['zaak'], self::ROWS['taak']),
-			$query,
-			false
+			$query
 		);
 
 		return array_column($rows, '_uuid');
@@ -260,6 +270,7 @@ class MagicMapperSequentialOrderTest extends TestCase {
 			'a search term: the score, then the uuid' => [['_search' => 'x']],
 			'relevance asked by name' => [['_search' => 'x', '_order' => ['_relevance' => 'DESC']]],
 			'an unknown metadata key is dropped' => [['_order' => ['@self.bogus' => 'ASC', 'title' => 'DESC']]],
+			'an unknown field is dropped' => [['_order' => ['_foo' => 'ASC', 'nope' => 'ASC', 'title' => 'DESC']]],
 		];
 	}//end orders()
 
@@ -316,4 +327,15 @@ class MagicMapperSequentialOrderTest extends TestCase {
 			$this->sequentialPage(query: ['_recentViews' => $views, '_offset' => 2, '_limit' => 2])
 		);
 	}//end testTheRecentLensOrdersByTheReadHistory()
+	/**
+	 * A connection on a MySQL platform, the non-PostgreSQL dialect the union merge assertions are written for.
+	 *
+	 * @return IDBConnection The connection.
+	 */
+	private function mysqlConnection(): IDBConnection {
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabasePlatform')->willReturn($this->createMock(AbstractMySQLPlatform::class));
+
+		return $db;
+	}//end mysqlConnection()
 }//end class

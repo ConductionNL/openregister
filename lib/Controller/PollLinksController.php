@@ -28,12 +28,20 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use Closure;
 use Exception;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\PollLinksControllerServices;
+use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
+use OCA\OpenRegister\Controller\Support\LinkedSourceActions;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
+use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\PollLinkService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\PollLinkServiceInterface;
+use OCA\OpenRegister\Service\PollDraft;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Throwable;
@@ -45,21 +53,35 @@ use Throwable;
  * @package  OCA\OpenRegister\Controller
  */
 class PollLinksController extends Controller {
+	use ObjectLinkActionsTrait;
+
+	/**
+	 * Backing service.
+	 *
+	 * @var PollLinkServiceInterface
+	 */
+	private readonly PollLinkServiceInterface $pollLinkService;
+
+	/**
+	 * OR object resolver.
+	 *
+	 * @var ObjectOperationsInterface
+	 */
+	private readonly ObjectOperationsInterface $objectService;
+
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App id.
-	 * @param IRequest $request HTTP request.
-	 * @param PollLinkService $pollLinkService Backing service.
-	 * @param ObjectService $objectService OR object resolver.
+	 * @param IRequest                    $request  HTTP request.
+	 * @param PollLinksControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly PollLinkService $pollLinkService,
-		private readonly ObjectService $objectService,
+		PollLinksControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->pollLinkService = $services->pollLinkService;
+		$this->objectService = $services->objectService;
 	}//end __construct()
 
 	/**
@@ -77,28 +99,24 @@ class PollLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		if ($this->pollLinkService->isPollsAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Polls app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
-
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$results = $this->pollLinkService->getLinkedPolls($object->getUuid());
-
-			return new JSONResponse(['results' => $results, 'total' => count($results)]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
-		}//end try
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexForObject(ObjectRef $ref): JSONResponse {
+		return $this->whenPollsInstalled(
+			answer: fn (): JSONResponse => $this->listLinkedObject(
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->pollLinkService->getLinkedPolls($object->getUuid()))
+			)
+		);
+	}//end indexForObject()
 
 	/**
 	 * Link an existing poll.
@@ -117,38 +135,27 @@ class PollLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
-		if ($this->pollLinkService->isPollsAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Polls app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
-
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$pollId = (int)$this->request->getParam('pollId', 0);
-			if ($pollId === 0) {
-				return new JSONResponse(['error' => 'pollId is required'], 400);
-			}
-
-			$link = $this->pollLinkService->linkPoll(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$pollId
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->linkForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end link()
+
+	/**
+	 * link() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function linkForObject(ObjectRef $ref): JSONResponse {
+		return $this->whenPollsInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				action: (new LinkedSourceActions(request: $this->request))->linkById(
+					param: 'pollId',
+					link: fn (ObjectEntity $object, int $pollId) => $this->pollLinkService->linkPoll($this->linkTargetOf(object: $object), $pollId)
+				)
+			)
+		);
+	}//end linkForObject()
 
 	/**
 	 * Create a new poll and link it.
@@ -165,72 +172,27 @@ class PollLinksController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function createNew(string $register, string $schema, string $id): JSONResponse {
-		if ($this->pollLinkService->isPollsAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Polls app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
-
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$title = (string)$this->request->getParam('title', '');
-			$description = (string)$this->request->getParam('description', '');
-			$type = (string)$this->request->getParam('type', 'textPoll');
-			$rawOptions = $this->request->getParam('options', []);
-			$deadline = $this->request->getParam('deadline');
-
-			if (trim($title) === '') {
-				return new JSONResponse(['error' => 'title is required'], 400);
-			}
-
-			$options = [];
-			if (is_array($rawOptions) === true) {
-				foreach ($rawOptions as $option) {
-					if (is_string($option) === true) {
-						$options[] = $option;
-					} elseif (is_array($option) === true) {
-						$options[] = (string)($option['text'] ?? $option['label'] ?? '');
-					}
-				}
-			}
-
-			$deadlineObj = null;
-			if ($deadline !== null && $deadline !== '') {
-				try {
-					$deadlineObj = new DateTime((string)$deadline);
-				} catch (Throwable $e) {
-					$deadlineObj = null;
-				}
-			}
-
-			$link = $this->pollLinkService->createAndLinkPoll(
-				$object->getUuid(),
-				(int)$object->getRegister(),
-				(int)$object->getSchema(),
-				$title,
-				$description,
-				$type,
-				$options,
-				$deadlineObj
-			);
-
-			return new JSONResponse($link->jsonSerialize(), 201);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->createNewForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
 	}//end createNew()
+
+	/**
+	 * createNew() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function createNewForObject(ObjectRef $ref): JSONResponse {
+		return $this->whenPollsInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				action: $this->createPoll(...)
+			)
+		);
+	}//end createNewForObject()
 
 	/**
 	 * Unlink a poll.
@@ -248,28 +210,25 @@ class PollLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function destroy(string $register, string $schema, string $id, string $pollId): JSONResponse {
-		if ($this->pollLinkService->isPollsAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Polls app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
-
-		try {
-			$object = $this->validateObject(register: $register, schema: $schema, id: $id);
-			if ($object === null) {
-				return new JSONResponse(['error' => 'Object not found'], 404);
-			}
-
-			$this->pollLinkService->unlinkPoll($object->getUuid(), (int)$pollId);
-
-			return new JSONResponse(['success' => true]);
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(['error' => 'Object not found'], 404);
-		} catch (Exception $e) {
-			return $this->mapException(exception: $e);
-		}//end try
+		return $this->destroyForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), pollId: $pollId);
 	}//end destroy()
+
+	/**
+	 * destroy() for the object the route names.
+	 *
+	 * @param ObjectRef $ref    The object the route names.
+	 * @param string    $pollId Polls poll id (numeric).
+	 *
+	 * @return JSONResponse
+	 */
+	private function destroyForObject(ObjectRef $ref, string $pollId): JSONResponse {
+		return $this->whenPollsInstalled(
+			answer: fn (): JSONResponse => $this->onLinkedObject(
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				action: LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->pollLinkService->unlinkPoll($uuid, (int)$pollId))
+			)
+		);
+	}//end destroyForObject()
 
 	/**
 	 * List polls visible to the current user (picker source).
@@ -285,46 +244,117 @@ class PollLinksController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
 	public function available(): JSONResponse {
-		if ($this->pollLinkService->isPollsAvailable() === false) {
-			return new JSONResponse(
-				['error' => 'Nextcloud Polls app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
-				501
-			);
-		}
-
-		$search = $this->request->getParam('search');
-		if ($search !== null) {
-			$search = (string)$search;
-		}
-
-		$polls = $this->pollLinkService->getAvailablePolls($search);
-		return new JSONResponse(['results' => $polls, 'total' => count($polls)]);
+		return $this->whenPollsInstalled(
+			answer: fn (): JSONResponse => LinkedSourceResponses::listed(
+				items: $this->pollLinkService->getAvailablePolls(LinkedSourceActions::search(request: $this->request))
+			)
+		);
 	}//end available()
 
 	/**
-	 * Resolve an OR object from register/schema/id.
+	 * Create the poll the body describes and link it: 400 without a title, 201 with the link.
 	 *
-	 * @param string $register Register slug or id.
-	 * @param string $schema Schema slug or id.
-	 * @param string $id Object id.
+	 * @param ObjectEntity $object The object.
 	 *
-	 * @return ObjectEntity|null
+	 * @return JSONResponse The response.
 	 *
-	 * @spec exclude Private helper: resolves an object from register/schema/id; the link REST contract is
-	 *              owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
-	 *
-	 * @throws DoesNotExistException When no such object exists. Deliberately propagated rather
-	 *                               than caught: every call site already wraps this helper and translates it to a 404.
-	 *                               Swallowing it here would collapse "no such object" into the same null this method
-	 *                               returns for other reasons, which the caller could no longer tell apart.
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
 	 */
-	private function validateObject(string $register, string $schema, string $id): ?ObjectEntity {
-		$this->objectService->setRegister($register);
-		$this->objectService->setSchema($schema);
-		$this->objectService->setObject($id);
+	private function createPoll(ObjectEntity $object): JSONResponse {
+		$draft      = $this->pollDraft();
+		$rawOptions = $this->request->getParam('options', []);
+		$deadline   = $this->request->getParam('deadline');
 
-		return $this->objectService->getObject();
-	}//end validateObject()
+		if (trim($draft->title) === '') {
+			return LinkedSourceResponses::required(param: 'title');
+		}
+
+		$link = $this->pollLinkService->createAndLinkPoll(
+			target: $this->linkTargetOf(object: $object),
+			draft: $draft->withOptions(options: $this->pollOptions(rawOptions: $rawOptions), deadline: $this->pollDeadline(deadline: $deadline))
+		);
+
+		return LinkedSourceResponses::created(link: $link);
+	}//end createPoll()
+
+	/**
+	 * The draft of the `title`, `description` and `type` params, without options yet.
+	 *
+	 * @return PollDraft The draft.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function pollDraft(): PollDraft {
+		$title       = (string)$this->request->getParam('title', '');
+		$description = (string)$this->request->getParam('description', '');
+		$type        = (string)$this->request->getParam('type', 'textPoll');
+
+		return (new PollDraft(title: $title, description: $description))->withType(type: $type);
+	}//end pollDraft()
+
+	/**
+	 * The option texts of the `options` param: strings as given, `{text|label}` objects by their text.
+	 *
+	 * @param mixed $rawOptions The param's value.
+	 *
+	 * @return string[] The texts; anything else is skipped.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function pollOptions(mixed $rawOptions): array {
+		if (is_array($rawOptions) === false) {
+			return [];
+		}
+
+		$options = [];
+		foreach ($rawOptions as $option) {
+			if (is_string($option) === true) {
+				$options[] = $option;
+			} elseif (is_array($option) === true) {
+				$options[] = (string)($option['text'] ?? $option['label'] ?? '');
+			}
+		}
+
+		return $options;
+	}//end pollOptions()
+
+	/**
+	 * The deadline the `deadline` param names; null when absent, empty or unparsable.
+	 *
+	 * @param mixed $deadline The param's value.
+	 *
+	 * @return DateTime|null The deadline.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function pollDeadline(mixed $deadline): ?DateTime {
+		if ($deadline === null || $deadline === '') {
+			return null;
+		}
+
+		try {
+			return new DateTime((string)$deadline);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end pollDeadline()
+
+	/**
+	 * Run the answer when the Polls app is installed; 501 otherwise.
+	 *
+	 * @param Closure $answer Returns the response.
+	 *
+	 * @return JSONResponse The answer, or 501.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1
+	 */
+	private function whenPollsInstalled(Closure $answer): JSONResponse {
+		if ($this->pollLinkService->isPollsAvailable() === false) {
+			return $this->appNotInstalled(appName: 'Nextcloud Polls');
+		}
+
+		return $answer();
+	}//end whenPollsInstalled()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -343,24 +373,7 @@ class PollLinksController extends Controller {
 	 * @spec exclude Private helper: maps a service exception code to an HTTP status; the link REST contract
 	 *              is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
 	 */
-	private function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if ($code === 409) {
-			return new JSONResponse(['error' => $exception->getMessage()], 409);
-		}
-
-		if ($code === 404) {
-			return new JSONResponse(['error' => $exception->getMessage()], 404);
-		}
-
-		if ($code === 503) {
-			return new JSONResponse(['error' => $exception->getMessage()], 503);
-		}
-
-		if ($code === 400) {
-			return new JSONResponse(['error' => $exception->getMessage()], 400);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+	protected function mapException(Exception $exception): JSONResponse {
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [409, 404, 503, 400]);
 	}//end mapException()
 }//end class

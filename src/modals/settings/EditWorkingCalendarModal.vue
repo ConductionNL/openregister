@@ -106,25 +106,16 @@
 							v-model="window.end"
 							type="time"
 							:label="t('openregister', 'Closes at')" />
-						<NcButton
-							variant="tertiary"
-							:ariaLabel="t('openregister', 'Remove these hours')"
-							@click="removeWindow(weekday.iso, index)">
-							<template #icon>
-								<Delete :size="20" />
-							</template>
-						</NcButton>
+						<CalendarRowButton
+							action="remove"
+							:label="t('openregister', 'Remove these hours')"
+							@click="removeWindow(weekday.iso, index)" />
 					</div>
 
-					<NcButton
-						variant="secondary"
+					<CalendarRowButton
 						:data-testid="'working-calendar-add-window-' + weekday.iso"
-						@click="addWindow(weekday.iso)">
-						<template #icon>
-							<Plus :size="20" />
-						</template>
-						{{ t('openregister', 'Add hours') }}
-					</NcButton>
+						:label="t('openregister', 'Add hours')"
+						@click="addWindow(weekday.iso)" />
 				</div>
 			</section>
 
@@ -180,25 +171,16 @@
 							type="number"
 							:label="t('openregister', 'Moves by days')" />
 					</template>
-					<NcButton
-						variant="tertiary"
-						:ariaLabel="t('openregister', 'Remove this rule')"
-						@click="removeRule(index)">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-					</NcButton>
+					<CalendarRowButton
+						action="remove"
+						:label="t('openregister', 'Remove this rule')"
+						@click="removeRule(index)" />
 				</div>
 
-				<NcButton
-					variant="secondary"
+				<CalendarRowButton
 					data-testid="working-calendar-add-rule"
-					@click="addRule">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					{{ t('openregister', 'Add a rule') }}
-				</NcButton>
+					:label="t('openregister', 'Add a rule')"
+					@click="addRule" />
 			</section>
 
 			<section class="calendar-form__block">
@@ -224,25 +206,16 @@
 					<NcTextField
 						v-model="exception.name"
 						:label="t('openregister', 'Why it is closed')" />
-					<NcButton
-						variant="tertiary"
-						:ariaLabel="t('openregister', 'Remove this closure day')"
-						@click="removeException(index)">
-						<template #icon>
-							<Delete :size="20" />
-						</template>
-					</NcButton>
+					<CalendarRowButton
+						action="remove"
+						:label="t('openregister', 'Remove this closure day')"
+						@click="removeException(index)" />
 				</div>
 
-				<NcButton
-					variant="secondary"
+				<CalendarRowButton
 					data-testid="working-calendar-add-exception"
-					@click="addException">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					{{ t('openregister', 'Add a closure day') }}
-				</NcButton>
+					:label="t('openregister', 'Add a closure day')"
+					@click="addException" />
 			</section>
 
 			<section class="calendar-form__block">
@@ -294,23 +267,12 @@
 		</div>
 
 		<template #actions>
-			<NcButton :disabled="saving" @click="$emit('close')">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
-			<NcButton
-				variant="primary"
+			<CloseCancelButton :label="t('openregister', 'Cancel')" :disabled="saving" @click="$emit('close')" />
+			<SaveButton
+				:saving="saving"
 				:disabled="saving"
 				data-testid="working-calendar-save"
-				@click="save">
-				<template #icon>
-					<NcLoadingIcon v-if="saving" :size="20" />
-					<ContentSave v-else :size="20" />
-				</template>
-				{{ t('openregister', 'Save') }}
-			</NcButton>
+				@click="save" />
 		</template>
 	</NcDialog>
 </template>
@@ -328,10 +290,9 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import Calendar from 'vue-material-design-icons/Calendar.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import ContentSave from 'vue-material-design-icons/ContentSave.vue'
-import Delete from 'vue-material-design-icons/Delete.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
+import SaveButton from '../../components/shared/SaveButton.vue'
+import CalendarRowButton from './CalendarRowButton.vue'
 
 /**
  * Edits one working calendar and previews what its rules mean in a year.
@@ -346,14 +307,95 @@ import Plus from 'vue-material-design-icons/Plus.vue'
  * shape that produced half-written rules in the form this replaces. It is
  * rebuilt on the way out.
  */
+/**
+ * A stored calendar's working weekdays, Monday to Friday when it has none.
+ *
+ * @param {object} value The stored calendar
+ * @return {Array<number>} The ISO weekdays, as a copy
+ */
+function storedWeekdays(value) {
+	return Array.isArray(value.workingWeekdays)
+		? [...value.workingWeekdays]
+		: [1, 2, 3, 4, 5]
+}
+
+/**
+ * One stored rule as a form row, its nested shift flattened.
+ *
+ * @param {object} rule The stored rule
+ * @return {object} The form row
+ */
+function ruleToForm(rule) {
+	return {
+		kind: rule.kind === 'easter' ? 'easter' : 'fixed',
+		name: rule.name || '',
+		month: String(rule.month ?? ''),
+		day: String(rule.day ?? ''),
+		offset: String(rule.offset ?? ''),
+		shiftWeekday: rule.observedShift?.whenWeekday || '',
+		shiftDays: String(rule.observedShift?.days ?? ''),
+	}
+}
+
+/**
+ * One stored exception as a form row.
+ *
+ * @param {object} entry The stored exception
+ * @return {object} The form row
+ */
+function exceptionToForm(entry) {
+	return {
+		date: entry.date || '',
+		name: entry.name || '',
+	}
+}
+
+/**
+ * The exception rows that have a date, named `exception` when unnamed.
+ *
+ * @param {Array<object>} exceptions The form rows
+ * @return {Array<object>} The exceptions as the engine stores them
+ */
+function datedExceptions(exceptions) {
+	return exceptions
+		.filter((entry) => entry.date)
+		.map((entry) => ({
+			date: entry.date,
+			name: entry.name || 'exception',
+		}))
+}
+
+/**
+ * A fixed-date rule from its form row, with its observed shift when one is set.
+ *
+ * @param {object} rule The form row
+ * @return {object} The rule as the engine stores it
+ */
+function fixedRule(rule) {
+	const fixed = {
+		kind: 'fixed',
+		name: rule.name,
+		month: Number(rule.month),
+		day: Number(rule.day),
+	}
+
+	if (rule.shiftWeekday) {
+		fixed.observedShift = {
+			whenWeekday: rule.shiftWeekday,
+			days: Number(rule.shiftDays),
+		}
+	}
+
+	return fixed
+}
+
 export default {
 	name: 'EditWorkingCalendarModal',
 
 	components: {
 		Calendar,
-		Cancel,
-		ContentSave,
-		Delete,
+		CalendarRowButton,
+		CloseCancelButton,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcDialog,
@@ -361,7 +403,7 @@ export default {
 		NcNoteCard,
 		NcSelect,
 		NcTextField,
-		Plus,
+		SaveButton,
 	},
 
 	props: {
@@ -678,26 +720,12 @@ export default {
 				slug: value.slug || '',
 				title: value.title || '',
 				organisation: value.organisation || '',
-				workingWeekdays: Array.isArray(value.workingWeekdays)
-					? [...value.workingWeekdays]
-					: [1, 2, 3, 4, 5],
+				workingWeekdays: storedWeekdays(value),
 
 				hoursPerWorkingDay: String(value.hoursPerWorkingDay ?? '8'),
 				serviceHours: this.serviceHoursToForm(value.serviceHours),
-				rules: (value.rules || []).map((rule) => ({
-					kind: rule.kind === 'easter' ? 'easter' : 'fixed',
-					name: rule.name || '',
-					month: String(rule.month ?? ''),
-					day: String(rule.day ?? ''),
-					offset: String(rule.offset ?? ''),
-					shiftWeekday: rule.observedShift?.whenWeekday || '',
-					shiftDays: String(rule.observedShift?.days ?? ''),
-				})),
-
-				exceptions: (value.exceptions || []).map((entry) => ({
-					date: entry.date || '',
-					name: entry.name || '',
-				})),
+				rules: (value.rules || []).map(ruleToForm),
+				exceptions: (value.exceptions || []).map(exceptionToForm),
 			}
 		},
 
@@ -718,14 +746,23 @@ export default {
 
 				hoursPerWorkingDay: Number(this.form.hoursPerWorkingDay),
 				rules: this.form.rules.map((rule) => this.toRule(rule)),
-				exceptions: this.form.exceptions
-					.filter((entry) => entry.date)
-					.map((entry) => ({
-						date: entry.date,
-						name: entry.name || 'exception',
-					})),
+				exceptions: datedExceptions(this.form.exceptions),
 			}
 
+			this.addOptionalFields(definition)
+			return definition
+		},
+
+		/**
+		 * Add the organisation and the service hours to a definition, each
+		 * only when the form sets it.
+		 *
+		 * @param {object} definition The definition being built.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-every-write-of-a-working-calendar-is-validated-the-same-way
+		 */
+		addOptionalFields(definition) {
 			if (this.form.organisation.trim()) {
 				definition.organisation = this.form.organisation.trim()
 			}
@@ -734,8 +771,6 @@ export default {
 			if (serviceHours) {
 				definition.serviceHours = serviceHours
 			}
-
-			return definition
 		},
 
 		/**
@@ -755,21 +790,7 @@ export default {
 				}
 			}
 
-			const fixed = {
-				kind: 'fixed',
-				name: rule.name,
-				month: Number(rule.month),
-				day: Number(rule.day),
-			}
-
-			if (rule.shiftWeekday) {
-				fixed.observedShift = {
-					whenWeekday: rule.shiftWeekday,
-					days: Number(rule.shiftDays),
-				}
-			}
-
-			return fixed
+			return fixedRule(rule)
 		},
 
 		/**

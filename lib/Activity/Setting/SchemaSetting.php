@@ -24,25 +24,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Activity\Setting;
 
-use OCP\Activity\ActivitySettings;
-use OCP\IL10N;
-
 /**
  * Activity setting for schema events.
  */
-class SchemaSetting extends ActivitySettings {
-	/**
-	 * Constructor.
-	 *
-	 * @param IL10N $l The localization service.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	public function __construct(
-		private IL10N $l,
-	) {
-	}//end __construct()
-
+class SchemaSetting extends OpenRegisterActivitySetting {
 	/**
 	 * Get the identifier for this setting.
 	 *
@@ -66,28 +51,6 @@ class SchemaSetting extends ActivitySettings {
 	}//end getName()
 
 	/**
-	 * Get the group identifier for this setting.
-	 *
-	 * @return string The group identifier.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	public function getGroupIdentifier(): string {
-		return 'openregister';
-	}//end getGroupIdentifier()
-
-	/**
-	 * Get the group name for this setting.
-	 *
-	 * @return string The group name.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	public function getGroupName(): string {
-		return $this->l->t('Open Register');
-	}//end getGroupName()
-
-	/**
 	 * Get the priority for this setting.
 	 *
 	 * @return int The priority.
@@ -97,48 +60,4 @@ class SchemaSetting extends ActivitySettings {
 	public function getPriority(): int {
 		return 53;
 	}//end getPriority()
-
-	/**
-	 * Whether the user can change the stream setting.
-	 *
-	 * @return bool True if changeable.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	public function canChangeStream(): bool {
-		return true;
-	}//end canChangeStream()
-
-	/**
-	 * Whether the stream is enabled by default.
-	 *
-	 * @return bool True if enabled by default.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	public function isDefaultEnabledStream(): bool {
-		return true;
-	}//end isDefaultEnabledStream()
-
-	/**
-	 * Whether the user can change the mail setting.
-	 *
-	 * @return bool True if changeable.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	public function canChangeMail(): bool {
-		return true;
-	}//end canChangeMail()
-
-	/**
-	 * Whether mail is enabled by default.
-	 *
-	 * @return bool True if enabled by default.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 */
-	public function isDefaultEnabledMail(): bool {
-		return false;
-	}//end isDefaultEnabledMail()
 }//end class

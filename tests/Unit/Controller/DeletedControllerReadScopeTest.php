@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DeletedControllerFactory;
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -27,7 +28,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer;
+use OCA\OpenRegister\Service\Rbac\CallerContext;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
+use OCA\OpenRegister\Service\Deletion\DestructionServices;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\Deletion\DestroyRightService;
 use OCA\OpenRegister\Service\Deletion\DestructionRecorder;
@@ -82,19 +85,17 @@ class DeletedControllerReadScopeTest extends TestCase {
 		$deletion = new DeletionServiceBundle(
 			$this->createMock(DeletionWindowService::class),
 			$this->createMock(DestroyRightService::class),
-			$this->createMock(DestructionScopeService::class),
-			$this->createMock(DestructionRecorder::class),
 			$this->createMock(RetentionClockService::class),
+			new DestructionServices($this->createMock(DestructionScopeService::class), $this->createMock(DestructionRecorder::class)),
 		);
 
 		$authorizer = new DeletedObjectAuthorizer(
 			$this->createMock(SchemaMapper::class),
-			$this->userSession,
-			$this->groupManager,
+			new CallerContext($this->userSession, $this->groupManager),
 			$this->createMock(PermissionHandler::class),
 		);
 
-		$this->controller = new DeletedController(
+		$this->controller = DeletedControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectMapper,
@@ -209,7 +210,7 @@ class DeletedControllerReadScopeTest extends TestCase {
 	public function testNonAdminCannotReadSomeoneElsesDestructionRecord(): void {
 		$this->signIn(uid: 'burger', isAdmin: false);
 
-		$this->auditTrails->method('findForObjectByAction')->willReturn([$this->destructionRecord(actor: 'recordmanager')]);
+		$this->auditTrails->method('findObjectActions')->willReturn([$this->destructionRecord(actor: 'recordmanager')]);
 
 		$response = $this->controller->destructionRecord('destroyed-1');
 
@@ -226,7 +227,7 @@ class DeletedControllerReadScopeTest extends TestCase {
 	public function testTheActorReadsTheirOwnDestructionRecord(): void {
 		$this->signIn(uid: 'recordmanager', isAdmin: false);
 
-		$this->auditTrails->method('findForObjectByAction')->willReturn([$this->destructionRecord(actor: 'recordmanager')]);
+		$this->auditTrails->method('findObjectActions')->willReturn([$this->destructionRecord(actor: 'recordmanager')]);
 
 		$response = $this->controller->destructionRecord('destroyed-1');
 
@@ -241,7 +242,7 @@ class DeletedControllerReadScopeTest extends TestCase {
 	public function testAdminReadsEveryDestructionRecord(): void {
 		$this->signIn(uid: 'admin', isAdmin: true);
 
-		$this->auditTrails->method('findForObjectByAction')->willReturn([$this->destructionRecord(actor: 'recordmanager')]);
+		$this->auditTrails->method('findObjectActions')->willReturn([$this->destructionRecord(actor: 'recordmanager')]);
 
 		$this->assertSame(1, $this->controller->destructionRecord('destroyed-1')->getData()['total']);
 	}//end testAdminReadsEveryDestructionRecord()

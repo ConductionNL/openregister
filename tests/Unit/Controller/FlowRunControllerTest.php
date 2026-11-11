@@ -12,9 +12,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FlowRunControllerFactory;
 use OCA\OpenRegister\Controller\FlowRunController;
+use OCA\OpenRegister\Db\FlowActivityWindow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunSubjectScope;
+use OCA\OpenRegister\Db\FlowRunViewer;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
@@ -134,7 +138,7 @@ class FlowRunControllerTest extends TestCase {
 		// and failing as a TypeError. Positionally, both look like a correct
 		// call right up until the type happens not to match — and a nullable
 		// parameter would have accepted the wrong value in silence.
-		$this->controller = new FlowRunController(
+		$this->controller = FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,
@@ -199,7 +203,7 @@ class FlowRunControllerTest extends TestCase {
 		// No `subject` on the request means NO subject predicate reaches the
 		// mapper: the org-wide widget's read is bit-identical to before.
 		$this->mapper->expects($this->once())->method('findActive')
-			->with('org-a', 10, null)
+			->with(new FlowRunSubjectScope(organisation: 'org-a', subject: null), 10)
 			->willReturn([]);
 		$this->mapper->expects($this->once())->method('countActive')
 			->with('org-a', null)
@@ -216,7 +220,7 @@ class FlowRunControllerTest extends TestCase {
 		// the total is counted with the same filter, so a case widget can say
 		// "2 running" rather than the tenant-wide number.
 		$this->mapper->expects($this->once())->method('findActive')
-			->with('org-a', 10, 'case-x')
+			->with(new FlowRunSubjectScope(organisation: 'org-a', subject: 'case-x'), 10)
 			->willReturn([]);
 		$this->mapper->expects($this->once())->method('countActive')
 			->with('org-a', 'case-x')
@@ -245,7 +249,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->activeOrganisation('org-a');
 
 		$this->mapper->expects($this->once())->method('findActive')
-			->with('org-a', 10, null)
+			->with(new FlowRunSubjectScope(organisation: 'org-a', subject: null), 10)
 			->willReturn([]);
 		$this->mapper->method('countActive')->willReturn(0);
 
@@ -297,7 +301,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->activeOrganisation('org-a');
 
 		$this->mapper->expects($this->once())->method('findCompletedForSubject')
-			->with('org-a', 'case-x', 50)
+			->with(new FlowRunSubjectScope(organisation: 'org-a', subject: 'case-x'), 50)
 			->willReturn([]);
 		$this->mapper->expects($this->once())->method('countCompletedForSubject')
 			->with('org-a', 'case-x')
@@ -432,7 +436,7 @@ class FlowRunControllerTest extends TestCase {
 		$this->activeOrganisation('org-a');
 
 		$this->mapper->expects($this->once())->method('findActive')
-			->with('org-a', 50)
+			->with(new FlowRunSubjectScope(organisation: 'org-a', subject: null), 50)
 			->willReturn([]);
 		$this->mapper->method('countActive')->willReturn(0);
 
@@ -459,11 +463,7 @@ class FlowRunControllerTest extends TestCase {
 			->method('findAllRuns')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				'alice',
-				['owned-flow']
+				new FlowRunViewer(requesterUid: 'alice', ownedFlowIds: ['owned-flow'])
 			)
 			->willReturn([]);
 
@@ -482,7 +482,7 @@ class FlowRunControllerTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn(null);
 
-		$controller = new FlowRunController(
+		$controller = FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,
@@ -505,11 +505,11 @@ class FlowRunControllerTest extends TestCase {
 
 		$this->mapper->expects($this->once())
 			->method('summarizeByFlow')
-			->willReturnCallback(function (array $flowIds, \DateTime $since, ?string $requesterUid, array $ownedFlowIds): array {
-				$this->assertSame(['flow-a', 'flow-b'], $flowIds);
-				$this->assertSame('alice', $requesterUid);
-				$this->assertSame(['flow-a'], $ownedFlowIds);
-				$this->assertEqualsWithDelta((new \DateTime('-7 days'))->getTimestamp(), $since->getTimestamp(), 60);
+			->willReturnCallback(function (FlowActivityWindow $window, FlowRunViewer $viewer): array {
+				$this->assertSame(['flow-a', 'flow-b'], $window->flowIds);
+				$this->assertSame('alice', $viewer->requesterUid);
+				$this->assertSame(['flow-a'], $viewer->ownedFlowIds);
+				$this->assertEqualsWithDelta((new \DateTime('-7 days'))->getTimestamp(), $window->since->getTimestamp(), 60);
 				return ['flow-a' => ['lastRun' => null, 'runsSince' => 3]];
 			});
 
@@ -524,7 +524,7 @@ class FlowRunControllerTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn(null);
 
-		$controller = new FlowRunController(
+		$controller = FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,
@@ -557,8 +557,8 @@ class FlowRunControllerTest extends TestCase {
 		$this->mapper->expects($this->once())
 			->method('findAllRuns')
 			->willReturnCallback(function (...$args): array {
-				$this->assertSame('2026-10-12', $args[6]->format('Y-m-d'));
-				$this->assertSame(['flow-a', 'flow-b'], $args[7]);
+				$this->assertSame('2026-10-12', $args[0]->filter->since->format('Y-m-d'));
+				$this->assertSame(['flow-a', 'flow-b'], $args[0]->filter->flowIds);
 				return [];
 			});
 
@@ -579,8 +579,8 @@ class FlowRunControllerTest extends TestCase {
 		$this->mapper->expects($this->once())
 			->method('findAllRuns')
 			->willReturnCallback(function (...$args): array {
-				$this->assertSame('2026-10-19 10:00:00', $args[6]->format('Y-m-d H:i:s'));
-				$this->assertSame('UTC', $args[6]->getTimezone()->getName());
+				$this->assertSame('2026-10-19 10:00:00', $args[0]->filter->since->format('Y-m-d H:i:s'));
+				$this->assertSame('UTC', $args[0]->filter->since->getTimezone()->getName());
 				return [];
 			});
 		$this->controller->index();
@@ -597,8 +597,8 @@ class FlowRunControllerTest extends TestCase {
 
 		$this->mapper->expects($this->once())
 			->method('summarizeByFlow')
-			->willReturnCallback(function (array $flowIds, \DateTime $since): array {
-				$this->assertSame('2026-10-19 10:00:00', $since->format('Y-m-d H:i:s'));
+			->willReturnCallback(function (FlowActivityWindow $window): array {
+				$this->assertSame('2026-10-19 10:00:00', $window->since->format('Y-m-d H:i:s'));
 				return [];
 			});
 		$this->controller->summary();
@@ -660,6 +660,33 @@ class FlowRunControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 		$this->assertStringContainsString('No such flow', $response->getData()['error']);
 	}//end testResumeIsNotFoundWhenTheCallerMayNotSeeTheFlow()
+
+	public function testRetryIsNotFoundForAnUnknownRun(): void {
+		$this->mapper->method('findByUuid')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no such run'));
+		$this->runner->expects($this->never())->method('retry');
+
+		$response = $this->controller->retry('nope');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertSame('No such run', $response->getData()['error']);
+	}//end testRetryIsNotFoundForAnUnknownRun()
+
+	public function testRetryIsNotFoundWhenTheCallerMayNotSeeTheFlow(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setFlowId('someone-elses-flow');
+		$run->setStatus(FlowRun::STATUS_FAILED);
+
+		$this->mapper->method('findByUuid')->willReturn($run);
+		$this->flows->method('find')->willThrowException(new \RuntimeException('not visible'));
+		$this->runner->expects($this->never())->method('retry');
+
+		$response = $this->controller->retry('run-1');
+
+		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		$this->assertStringContainsString('No such flow', $response->getData()['error']);
+	}//end testRetryIsNotFoundWhenTheCallerMayNotSeeTheFlow()
 
 	public function testResumeConflictsWhenTheRunIsNotSuspended(): void {
 		$run = new FlowRun();
@@ -797,7 +824,7 @@ class FlowRunControllerTest extends TestCase {
 		IUserSession $session,
 		?IGroupManager $groupManager = null,
 	): FlowRunController {
-		return new FlowRunController(
+		return FlowRunControllerFactory::create(
 			appName: 'openregister',
 			request: $this->request,
 			mapper: $this->mapper,

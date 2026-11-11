@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+ * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
  */
 
 declare(strict_types=1);
@@ -33,14 +33,12 @@ interface IFlowNodePreview {
 	/**
 	 * What this step would do with these items, without doing it.
 	 *
-	 * @param array $items The input items.
-	 * @param array $config The step configuration.
-	 * @param array $context Run-level metadata.
+	 * @param FlowNodeCall $call The input items, the step configuration and the run context.
 	 *
 	 * @return array Any of `summary` (one sentence), `changes` (`[{field, value}]`)
 	 *               and `messages` (`[{channel, to, subject, body}]`).
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
 	 */
-	public function preview(array $items, array $config, array $context): array;
+	public function preview(FlowNodeCall $call): array;
 }//end interface

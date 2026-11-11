@@ -1,0 +1,3 @@
+- [x] T01 PartyController: create, replacePrimary and destroy ask the update right on the object before writing
+- [x] T02 PHPUnit: a reader gets 403 on each write and nothing below the controller runs; an editor still writes
+- [x] T03 docs/Features/parties.md: who may write parties

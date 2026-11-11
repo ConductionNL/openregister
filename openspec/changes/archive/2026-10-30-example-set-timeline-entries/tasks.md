@@ -1,0 +1,2 @@
+- [x] 1.1 ExampleSetTimelineEntries part, wired in EngineKinds, Catalogue and Record
+- [x] 1.2 tests (ExampleSetTimelineEntriesTest)

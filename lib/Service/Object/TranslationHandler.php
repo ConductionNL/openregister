@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class TranslationHandler {
+class TranslationHandler implements TranslationHandlerInterface {
 	/**
 	 * Constructor.
 	 *
@@ -96,99 +96,115 @@ class TranslationHandler {
 	 * - Otherwise, resolves to the single value for the best matching language
 	 * - Falls back to the register's default language if requested language is missing
 	 *
-	 * @param array $objectData The object data array
-	 * @param Schema $schema The schema for property definitions
-	 * @param Register|null $register The register for language configuration
+	 * @param array            $objectData The object data array
+	 * @param TranslationScope $scope      The schema for property definitions and the register for language configuration
 	 *
 	 * @return array The object data with resolved translations
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function resolveTranslationsForRender(
-		array $objectData,
-		Schema $schema,
-		?Register $register = null,
-	): array {
-		// If returning all translations, no resolution needed.
-		if ($this->languageService->shouldReturnAllTranslations() === true) {
-			return $objectData;
-		}
-
-		$translatableProps = $this->getTranslatableProperties(schema: $schema);
-
+	public function resolveTranslationsForRender(array $objectData, TranslationScope $scope): array {
+		$translatableProps = $this->propertiesToResolve(schema: $scope->schema);
 		if (empty($translatableProps) === true) {
 			return $objectData;
 		}
 
-		// Determine register languages and resolve best language.
-		$registerLanguages = [];
-		$defaultLanguage = 'nl';
-		if ($register !== null) {
-			$registerLanguages = $register->getLanguages() ?? [];
-			$defaultLanguage = $register->getDefaultLanguage();
-		}
-
-		$resolvedLanguage = $this->languageService->resolveLanguageForRegister($registerLanguages);
-
-		// Build the per-property fallback chain (Decision 2 from
-		// register-i18n architecture pass): try the user's resolved
-		// language first, then walk the register's languages list in
-		// declared order, then any remaining variant. Each property
-		// resolves independently — a missing NL value for `body`
-		// doesn't force `title` (which has NL) to fall back too.
-		$chain = [$resolvedLanguage];
-		foreach ($registerLanguages as $long) {
-			if (in_array($long, $chain, true) === false) {
-				$chain[] = $long;
-			}
-		}
-
-		if (in_array($defaultLanguage, $chain, true) === false) {
-			$chain[] = $defaultLanguage;
-		}
-
+		$chain = $this->languageChain(register: $scope->register);
 		foreach ($translatableProps as $propName) {
-			if (isset($objectData[$propName]) === false) {
-				continue;
+			$value = ($objectData[$propName] ?? null);
+			if ($this->isLanguageKeyedValue(value: $value) === true) {
+				$objectData[$propName] = $this->translatedValue(value: $value, chain: $chain);
 			}
-
-			$value = $objectData[$propName];
-
-			// Only resolve if the value is a language-keyed object (associative array).
-			if (is_array($value) === false || $this->isLanguageKeyedObject(value: $value) === false) {
-				continue;
-			}
-
-			// Walk the configured chain. If the picked language isn't
-			// the user's resolved one, mark fallback-used so the
-			// Content-Language response header can advertise it.
-			$picked = null;
-			foreach ($chain as $candidate) {
-				if (isset($value[$candidate]) === true) {
-					$picked = $candidate;
-					$objectData[$propName] = $value[$candidate];
-					if ($candidate !== $resolvedLanguage) {
-						$this->languageService->setFallbackUsed(true);
-					}
-
-					break;
-				}
-			}
-
-			// Final fallback: any available variant (useful when an
-			// object carries a translation in a language not in the
-			// register's configured chain — e.g. legacy data).
-			if ($picked === null) {
-				$firstValue = reset($value);
-				if ($firstValue !== false) {
-					$objectData[$propName] = $firstValue;
-					$this->languageService->setFallbackUsed(true);
-				}
-			}
-		}//end foreach
+		}
 
 		return $objectData;
 	}//end resolveTranslationsForRender()
+
+	/**
+	 * The translatable properties a render resolves: none when all translations are returned.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array The property names.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function propertiesToResolve(Schema $schema): array {
+		if ($this->languageService->shouldReturnAllTranslations() === true) {
+			return [];
+		}
+
+		return $this->getTranslatableProperties(schema: $schema);
+	}//end propertiesToResolve()
+
+	/**
+	 * The languages a property is looked up in, in order: the user's resolved
+	 * language, then the register's languages as declared, then the register's
+	 * default ('nl' without a register). Each property resolves independently.
+	 *
+	 * @param Register|null $register The register for language configuration
+	 *
+	 * @return list<string> The language chain, resolved language first
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function languageChain(?Register $register): array {
+		$registerLanguages = ($register?->getLanguages() ?? []);
+		$defaultLanguage = ($register?->getDefaultLanguage() ?? 'nl');
+
+		$chain = [$this->languageService->resolveLanguageForRegister($registerLanguages)];
+		foreach ([...$registerLanguages, $defaultLanguage] as $language) {
+			if (in_array($language, $chain, true) === false) {
+				$chain[] = $language;
+			}
+		}
+
+		return $chain;
+	}//end languageChain()
+
+	/**
+	 * The value of a language-keyed property in the first chain language it
+	 * has, else its first variant (legacy data in a language outside the
+	 * chain). Any pick other than the resolved language marks the fallback as
+	 * used, for the Content-Language header.
+	 *
+	 * @param array        $value The language-keyed value
+	 * @param list<string> $chain The language chain, resolved language first
+	 *
+	 * @return mixed The picked value, or the language-keyed value when it has no usable variant
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function translatedValue(array $value, array $chain): mixed {
+		foreach ($chain as $candidate) {
+			if (isset($value[$candidate]) === true) {
+				if ($candidate !== $chain[0]) {
+					$this->languageService->setFallbackUsed(true);
+				}
+
+				return $value[$candidate];
+			}
+		}
+
+		return $this->anyLanguageValue(value: $value);
+	}//end translatedValue()
+
+	/**
+	 * The first language's value when none of the chain has one; the map itself when it is empty.
+	 *
+	 * @param array $value The language map.
+	 *
+	 * @return mixed
+	 */
+	private function anyLanguageValue(array $value): mixed {
+		$firstValue = reset($value);
+		if ($firstValue === false) {
+			return $value;
+		}
+
+		$this->languageService->setFallbackUsed(true);
+		return $firstValue;
+	}//end anyLanguageValue()
 
 	/**
 	 * Normalize translatable properties in object data for saving.
@@ -203,9 +219,8 @@ class TranslationHandler {
 	 *  - Scalar value AND no target header: wrap under the register
 	 *    default (legacy behaviour preserved).
 	 *
-	 * @param array $objectData The incoming object data.
-	 * @param Schema $schema The schema for property definitions.
-	 * @param Register|null $register The register for language configuration.
+	 * @param array            $objectData The incoming object data.
+	 * @param TranslationScope $scope      The schema for property definitions and the register for language configuration.
 	 *
 	 * @return array The normalized object data with translations wrapped correctly.
 	 *
@@ -214,71 +229,79 @@ class TranslationHandler {
 	 *
 	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
 	 */
-	public function normalizeTranslationsForSave(
-		array $objectData,
-		Schema $schema,
-		?Register $register = null,
-	): array {
-		$translatableProps = $this->getTranslatableProperties(schema: $schema);
-
+	public function normalizeTranslationsForSave(array $objectData, TranslationScope $scope): array {
+		$translatableProps = $this->getTranslatableProperties(schema: $scope->schema);
 		if (empty($translatableProps) === true) {
 			return $objectData;
 		}
 
-		$defaultLanguage = 'nl';
-		if ($register !== null) {
-			$defaultLanguage = $register->getDefaultLanguage();
-		}
-
-		$targetLanguage = $this->languageService->getTargetLanguage();
-
+		$target = $this->saveTarget(scope: $scope);
 		foreach ($translatableProps as $propName) {
-			if (isset($objectData[$propName]) === false) {
-				continue;
+			if (isset($objectData[$propName]) === true) {
+				$objectData[$propName] = $this->valueForSave(value: $objectData[$propName], target: $target->forProperty(property: (string)$propName));
 			}
-
-			$value = $objectData[$propName];
-
-			// If it's already a language-keyed object, validate and keep.
-			if (is_array($value) === true && $this->isLanguageKeyedObject(value: $value) === true) {
-				if ($targetLanguage !== null && $targetLanguage !== '') {
-					// Shape D — conflicting intent. Fail fast.
-					throw new TranslationTargetConflictException(
-						property: $propName,
-						targetLanguage: $targetLanguage
-					);
-				}
-
-				// Ensure default language has a value.
-				if (isset($value[$defaultLanguage]) === false || $value[$defaultLanguage] === null) {
-					$this->logger->warning(
-						message: '[TranslationHandler] Translatable property missing default language value',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'property' => $propName,
-							'defaultLanguage' => $defaultLanguage,
-						]
-					);
-				}
-
-				$objectData[$propName] = $value;
-				continue;
-			}//end if
-
-			// Simple value path. $value is non-null by this point — the null
-			// case is handled by the continue above.
-			if ($targetLanguage !== null && $targetLanguage !== '') {
-				// Shape B — wrap under the target language.
-				$objectData[$propName] = [$targetLanguage => $value];
-			} else {
-				// Shape A — legacy: wrap under register default.
-				$objectData[$propName] = [$defaultLanguage => $value];
-			}
-		}//end foreach
+		}
 
 		return $objectData;
 	}//end normalizeTranslationsForSave()
+
+	/**
+	 * The default and target language a save is normalised for.
+	 *
+	 * @param TranslationScope $scope The register and schema of the save.
+	 *
+	 * @return TranslationSaveTarget
+	 */
+	private function saveTarget(TranslationScope $scope): TranslationSaveTarget {
+		return new TranslationSaveTarget(
+			defaultLanguage: ($scope->register?->getDefaultLanguage() ?? 'nl'),
+			targetLanguage: $this->languageService->getTargetLanguage()
+		);
+	}//end saveTarget()
+
+	/**
+	 * A language-keyed value after its check, or a simple value wrapped under its language.
+	 *
+	 * @param mixed                 $value  The non-null value.
+	 * @param TranslationSaveTarget $target The languages and the property.
+	 *
+	 * @return mixed The value to save.
+	 *
+	 * @throws TranslationTargetConflictException When a language-keyed value meets a target language.
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+	 */
+	private function valueForSave(mixed $value, TranslationSaveTarget $target): mixed {
+		if ($this->isLanguageKeyedValue(value: $value) === false) {
+			return [$target->wrappingLanguage() => $value];
+		}
+
+		if ($target->hasTarget() === true) {
+			throw new TranslationTargetConflictException(property: $target->property, targetLanguage: (string)$target->targetLanguage);
+		}
+
+		if (isset($value[$target->defaultLanguage]) === false) {
+			$this->logger->warning(
+				message: '[TranslationHandler] Translatable property missing default language value',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $target->property, 'defaultLanguage' => $target->defaultLanguage]
+			);
+		}
+
+		return $value;
+	}//end valueForSave()
+
+	/**
+	 * Whether a value is an array keyed by language.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function isLanguageKeyedValue(mixed $value): bool {
+		return is_array($value) === true && $this->isLanguageKeyedObject(value: $value) === true;
+	}//end isLanguageKeyedValue()
 
 	/**
 	 * Check if an array is a language-keyed object.
@@ -293,22 +316,6 @@ class TranslationHandler {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function isLanguageKeyedObject(array $value): bool {
-		if (empty($value) === true) {
-			return false;
-		}
-
-		// Check that all keys are strings that match language code patterns.
-		foreach (array_keys($value) as $key) {
-			if (is_string($key) === false) {
-				return false;
-			}
-
-			// BCP 47 language tag pattern: 2-3 lowercase letters, optionally followed by hyphen + subtag.
-			if (preg_match('/^[a-z]{2,3}(-[a-zA-Z0-9]{2,8})*$/', $key) !== 1) {
-				return false;
-			}
-		}
-
-		return true;
+		return (new LanguageKeyedMap(value: $value))->isLanguageKeyed();
 	}//end isLanguageKeyedObject()
 }//end class

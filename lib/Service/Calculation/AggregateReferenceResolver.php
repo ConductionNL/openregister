@@ -39,8 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
-use DateTimeImmutable;
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -53,7 +52,9 @@ use Throwable;
  *
  * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-1
  */
-class AggregateReferenceResolver {
+class AggregateReferenceResolver implements AggregateReferenceResolverInterface {
+
+	use PayloadTokenReading;
 	/**
 	 * Wire the aggregation runner used to fold referenced objects and the logger.
 	 *
@@ -79,19 +80,18 @@ class AggregateReferenceResolver {
 	 * `$payload['@aggregate']` so calculations can read `@aggregate.<name>`
 	 * (or `@aggregate.<name>.<groupKey>`).
 	 *
-	 * @param array<string, mixed> $payload Object data WITH `@self` already injected.
+	 * The referrer's register (slug/uuid/id) is the default aggregation context
+	 * when a spec omits its own `register`.
+	 *
+	 * @param ReferringObject      $referrer   The saving object: payload WITH `@self` injected, and its register.
 	 * @param array<string, mixed> $aggregates The `x-openregister-aggregate-refs` map.
-	 * @param string|int|null $registerRef Saving object's register (slug/uuid/id) — the default
-	 *                                     aggregation context when a spec omits its own `register`.
 	 *
 	 * @return array<string, mixed> Map of aggregate-reference name to resolved value (or null).
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-1
 	 */
-	public function resolveAll(array $payload, array $aggregates, mixed $registerRef = null): array {
-		return $this->resolveAllWithOutcome(payload: $payload, aggregates: $aggregates, registerRef: $registerRef)['values'];
+	public function resolveAll(ReferringObject $referrer, array $aggregates): array {
+		return $this->resolveOutcome(referrer: $referrer, aggregates: $aggregates)['values'];
 	}//end resolveAll()
 
 	/**
@@ -101,80 +101,119 @@ class AggregateReferenceResolver {
 	 * a caller that must not read that null as a real value (the rematerialise
 	 * command: live pass O9 counted 205 rows "unchanged") reads `failed`.
 	 *
-	 * @param array<string, mixed> $payload    The object payload.
+	 * @param ReferringObject      $referrer   The saving object: payload and register.
 	 * @param array<string, mixed> $aggregates The declared aggregate-references.
-	 * @param mixed                $registerRef The saving object's register.
 	 *
 	 * @return array{values: array<string, mixed>, failed: array<string, string>} Values and failures by name.
 	 *
 	 * @spec openspec/changes/rematerialise-writes-calculated-values/specs/computed-fields/spec.md
 	 */
-	public function resolveAllWithOutcome(array $payload, array $aggregates, mixed $registerRef = null): array {
+	public function resolveOutcome(ReferringObject $referrer, array $aggregates): array {
 		$values = [];
 		$failed = [];
-		foreach ($aggregates as $name => $spec) {
-			if ((string)$name === '' || is_array($spec) === false) {
-				continue;
-			}
-
+		foreach ($this->usableDeclarations(declarations: $aggregates) as $name => $spec) {
 			try {
-				$values[$name] = $this->resolveOne(payload: $payload, spec: $spec, registerRef: $registerRef);
+				$values[$name] = $this->resolveOne(referrer: $referrer, spec: $spec);
 			} catch (Throwable $e) {
-				$this->logger->warning(
-					sprintf('Aggregate-reference resolution failed for schema "%s": %s', (string)($spec['schema'] ?? ''), $e->getMessage())
-				);
 				$values[$name] = null;
-				$failed[(string)$name] = $e->getMessage();
+				$failed[(string)$name] = $this->failureOf(spec: $spec, error: $e);
 			}
 		}
 
 		return ['values' => $values, 'failed' => $failed];
-	}//end resolveAllWithOutcome()
+	}//end resolveOutcome()
+
+	/**
+	 * Log a failed aggregate-reference and name why it failed.
+	 *
+	 * @param array<string, mixed> $spec The aggregate-reference declaration.
+	 * @param Throwable $error The failure.
+	 *
+	 * @return string The failure message.
+	 */
+	private function failureOf(array $spec, Throwable $error): string {
+		$this->logger->warning(
+			sprintf('Aggregate-reference resolution failed for schema "%s": %s', (string)($spec['schema'] ?? ''), $error->getMessage())
+		);
+
+		return $error->getMessage();
+	}//end failureOf()
 
 	/**
 	 * Resolve a single aggregate-reference spec to a scalar / grouped map, or null.
 	 *
-	 * @param array<string, mixed> $payload Object data with `@self` injected.
-	 * @param array<string, mixed> $spec Single aggregate-reference declaration.
-	 * @param string|int|null $registerRef Saving object's register ref (default context).
+	 * @param ReferringObject      $referrer The saving object: payload and register (default context).
+	 * @param array<string, mixed> $spec     Single aggregate-reference declaration.
 	 *
 	 * @return mixed The scalar value, a `{stringKey: value}` grouped map, or null.
 	 *
-	 * @throws RuntimeException When the aggregation cannot run (resolveAllWithOutcome() records it).
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.StaticAccess)         AggregationQuery::create() is the engine's
-	 *   fail-fast static factory (mirrors AggregationRunner's own usage); no instance
-	 *   alternative exists.
+	 * @throws RuntimeException When the aggregation cannot run (resolveOutcome() records it).
 	 *
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-1
 	 */
-	private function resolveOne(array $payload, array $spec, mixed $registerRef): mixed {
+	private function resolveOne(ReferringObject $referrer, array $spec): mixed {
+		$target = $this->targetOf(spec: $spec, registerRef: $referrer->register);
+		if ($target === null) {
+			return null;
+		}
+
+		['schema' => $schema, 'register' => $register] = $target;
+		try {
+			$query = $this->queryFor(payload: $referrer->payload, spec: $spec);
+			// As the system, whoever saves: a materialised aggregate is the
+			// schema author's derived value, the same rule references follow
+			// (calculations-resolve-references-regardless-of-saver). Under occ
+			// there is no session at all, and every aggregate resolved to null
+			// (live pass O9: 410 "no permission to aggregate" warnings).
+			$result = $this->aggregationRunner->runAdhocByRef(registerRef: $register, schemaRef: $schema, query: $query, bypassRbac: true);
+		} catch (Throwable $e) {
+			throw new RuntimeException($e->getMessage(), 0, $e);
+		}
+
+		return $this->envelopeToValue(result: $result);
+	}//end resolveOne()
+
+	/**
+	 * The schema, metric and register an aggregate-reference folds, or null
+	 * when one of them is missing.
+	 *
+	 * The aggregate-reference may override the register; it defaults to the
+	 * saving object's register so the fold stays within the same dataset.
+	 *
+	 * @param array<string, mixed> $spec Single aggregate-reference declaration.
+	 * @param string|int|null $registerRef Saving object's register ref (default context).
+	 *
+	 * @return array{schema: string, metric: string, register: string}|null The target, or null.
+	 */
+	private function targetOf(array $spec, mixed $registerRef): ?array {
 		$schema = (string)($spec['schema'] ?? '');
 		$metric = (string)($spec['metric'] ?? '');
 		if ($schema === '' || $metric === '') {
 			return null;
 		}
 
-		// Allow the aggregate-reference to override the register; default to
-		// the saving object's register so the fold stays within the same dataset.
-		$aggRegister = (string)($spec['register'] ?? $registerRef ?? '');
-		if ($aggRegister === '') {
+		$register = (string)($spec['register'] ?? $registerRef ?? '');
+		if ($register === '') {
 			return null;
 		}
 
-		// Parameterise the filter map by the saving object: literals pass
-		// through, `@self.<field>` tokens resolve against the payload. This
-		// keeps the pure evaluator out of the resolution path.
-		$filters = [];
-		$rawFilters = ($spec['filters'] ?? []);
-		if (is_array($rawFilters) === true) {
-			foreach ($rawFilters as $target => $criterion) {
-				$filters[(string)$target] = $this->resolveToken(payload: $payload, token: $criterion);
-			}
-		}
+		return ['schema' => $schema, 'metric' => $metric, 'register' => $register];
+	}//end targetOf()
 
+	/**
+	 * Build the aggregation query of an aggregate-reference whose target targetOf() found.
+	 *
+	 * @param array<string, mixed> $payload Object data with `@self` injected.
+	 * @param array<string, mixed> $spec Single aggregate-reference declaration; its metric is set.
+	 *
+	 * @return AggregationQuery The query.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AggregationQuery::create() is the engine's
+	 *   fail-fast static factory (mirrors AggregationRunner's own usage); no instance
+	 *   alternative exists.
+	 */
+	private function queryFor(array $payload, array $spec): AggregationQuery {
+		$metric = (string)($spec['metric'] ?? '');
 		$field = ($spec['field'] ?? null);
 		if (is_string($field) === false) {
 			$field = null;
@@ -185,30 +224,28 @@ class AggregateReferenceResolver {
 			$groupBy = null;
 		}
 
-		try {
-			$query = AggregationQuery::create(
-				metric: $metric,
-				field: $field,
-				filter: $filters,
-				groupBy: $groupBy
-			);
-			// As the system, whoever saves: a materialised aggregate is the
-			// schema author's derived value, the same rule references follow
-			// (calculations-resolve-references-regardless-of-saver). Under occ
-			// there is no session at all, and every aggregate resolved to null
-			// (live pass O9: 410 "no permission to aggregate" warnings).
-			$result = $this->aggregationRunner->runAdhocByRef(
-				registerRef: $aggRegister,
-				schemaRef: $schema,
-				query: $query,
-				bypassRbac: true
-			);
-		} catch (Throwable $e) {
-			throw new RuntimeException($e->getMessage(), 0, $e);
-		}//end try
+		$filters = $this->filtersFor(payload: $payload, spec: $spec);
+		return AggregationQuery::create(metric: $metric, field: $field, filter: $filters, groupBy: $groupBy);
+	}//end queryFor()
 
-		return $this->envelopeToValue(result: $result);
-	}//end resolveOne()
+	/**
+	 * Parameterise the filter map by the saving object: literals pass
+	 * through, `@self.<field>` tokens resolve against the payload. This
+	 * keeps the pure evaluator out of the resolution path.
+	 *
+	 * @param array<string, mixed> $payload Object data with `@self` injected.
+	 * @param array<string, mixed> $spec Single aggregate-reference declaration.
+	 *
+	 * @return array<string, mixed> The resolved filters.
+	 */
+	private function filtersFor(array $payload, array $spec): array {
+		$rawFilters = ($spec['filters'] ?? []);
+		if (is_array($rawFilters) === false) {
+			return [];
+		}
+
+		return $this->resolveTokens(payload: $payload, criteria: $rawFilters);
+	}//end filtersFor()
 
 	/**
 	 * Map an AggregationRunner result envelope to the injected value.
@@ -225,17 +262,7 @@ class AggregateReferenceResolver {
 	 */
 	private function envelopeToValue(array $result): mixed {
 		if (array_key_exists('groups', $result) === true && is_array($result['groups']) === true) {
-			$map = [];
-			foreach ($result['groups'] as $group) {
-				if (is_array($group) === false || array_key_exists('key', $group) === false) {
-					continue;
-				}
-
-				$key = $group['key'];
-				$map[(string)$key] = ($group['value'] ?? null);
-			}
-
-			return $map;
+			return $this->groupMap(groups: $result['groups']);
 		}
 
 		if (array_key_exists('value', $result) === true) {
@@ -246,102 +273,22 @@ class AggregateReferenceResolver {
 	}//end envelopeToValue()
 
 	/**
-	 * Resolve a criterion token to a concrete value.
+	 * The `{stringKey: value}` map of a grouped envelope.
 	 *
-	 * Supported tokens (kept deliberately small to avoid coupling to the pure
-	 * CalculationEvaluator), mirroring ReferenceResolver:
-	 * - A literal scalar (passed through unchanged).
-	 * - A `@self.<field>` / `@ref`-prefixed dotted-path string, resolved against the payload.
-	 * - A single-key AST node `{ "year": <token> }`.
+	 * @param array<int, mixed> $groups The envelope's groups.
 	 *
-	 * @param array<string, mixed> $payload Object data with `@self` injected.
-	 * @param mixed $token The criterion token.
-	 *
-	 * @return mixed The resolved value.
-	 *
-	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-1
+	 * @return array<string, mixed> The map.
 	 */
-	private function resolveToken(array $payload, mixed $token): mixed {
-		if (is_string($token) === true) {
-			if (str_starts_with($token, '@self.') === true || str_starts_with($token, '@ref.') === true) {
-				return $this->readPath(payload: $payload, path: $token);
+	private function groupMap(array $groups): array {
+		$map = [];
+		foreach ($groups as $group) {
+			if (is_array($group) === false || array_key_exists('key', $group) === false) {
+				continue;
 			}
 
-			return $token;
+			$map[(string)$group['key']] = ($group['value'] ?? null);
 		}
 
-		if (is_array($token) === true && count($token) === 1) {
-			$op = (string)array_key_first($token);
-			if ($op === 'year') {
-				return $this->yearToken(payload: $payload, arg: $token[$op]);
-			}
-		}
-
-		return $token;
-	}//end resolveToken()
-
-	/**
-	 * Resolve a `{ "year": <token> }` criterion to a four-digit year integer.
-	 *
-	 * @param array<string, mixed> $payload Object data with `@self` injected.
-	 * @param mixed $arg The inner token (typically a `@self.<date>` reference).
-	 *
-	 * @return int|null The year, or null when the inner token is not a parseable date.
-	 *
-	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-1
-	 */
-	private function yearToken(array $payload, mixed $arg): ?int {
-		$raw = $this->resolveToken(payload: $payload, token: $arg);
-		if (is_string($raw) === false || $raw === '') {
-			return null;
-		}
-
-		try {
-			return (int)(new DateTimeImmutable($raw))->format('Y');
-		} catch (Throwable) {
-			return null;
-		}
-	}//end yearToken()
-
-	/**
-	 * Read a dotted path (e.g. `@self.resourceId`) from the payload.
-	 *
-	 * `@self.<field>` may address either the injected `@self` system metadata
-	 * (id/created/…) OR one of the object's OWN data fields; the listener
-	 * injects user data at the top level, so when `@self.<field>` is not a
-	 * system field fall back to the top-level field. This mirrors
-	 * ReferenceResolver so aggregate filters parameterise by the saving object
-	 * exactly as the schema author expects.
-	 *
-	 * @param array<string, mixed> $payload Object data.
-	 * @param string $path Dotted path.
-	 *
-	 * @return mixed The resolved value, or null when the path is missing.
-	 *
-	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-1
-	 */
-	private function readPath(array $payload, string $path): mixed {
-		$parts = explode('.', $path);
-
-		if ($parts[0] === '@self' && count($parts) === 2) {
-			$field = $parts[1];
-			$self = ($payload['@self'] ?? []);
-			if (is_array($self) === true && array_key_exists($field, $self) === true) {
-				return $self[$field];
-			}
-
-			return ($payload[$field] ?? null);
-		}
-
-		$current = $payload;
-		foreach ($parts as $part) {
-			if (is_array($current) === false || array_key_exists($part, $current) === false) {
-				return null;
-			}
-
-			$current = $current[$part];
-		}
-
-		return $current;
-	}//end readPath()
+		return $map;
+	}//end groupMap()
 }//end class

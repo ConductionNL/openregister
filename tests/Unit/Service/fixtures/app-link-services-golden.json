@@ -1,0 +1,1279 @@
+{
+    "collective available": {
+        "result": [
+            {
+                "id": 1,
+                "name": "Team",
+                "emoji": "🚀"
+            },
+            {
+                "id": 2,
+                "name": "Side",
+                "emoji": null
+            }
+        ],
+        "calls": [
+            "container.get(OCA\\Collectives\\Service\\CollectiveService)",
+            "getCollectives(alice)"
+        ]
+    },
+    "collective available no user": {
+        "result": [],
+        "calls": [
+            "container.get(OCA\\Collectives\\Service\\CollectiveService)"
+        ]
+    },
+    "collective available off": {
+        "result": [],
+        "calls": []
+    },
+    "collective available no service": {
+        "result": [],
+        "calls": [
+            "container.get(OCA\\Collectives\\Service\\CollectiveService)",
+            "debug CollectiveLinkService: OCA\\Collectives\\Service\\CollectiveService unavailable: no OCA\\Collectives\\Service\\CollectiveService"
+        ]
+    },
+    "collective available listing throws": {
+        "result": [],
+        "calls": [
+            "container.get(OCA\\Collectives\\Service\\CollectiveService)",
+            "getCollectives(alice)",
+            "warning CollectiveLinkService::getAvailableCollectives failed: listing down"
+        ]
+    },
+    "collective link first collective": {
+        "result": {
+            "id": null,
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "pageId": 11,
+            "collectiveId": 1,
+            "collectiveName": "Team",
+            "pageTitle": "Notes",
+            "slug": null,
+            "emoji": "📝",
+            "lastModified": "2023-11-14T22:13:20+00:00",
+            "url": "/apps/collectives.start.index?fileId=11",
+            "linkedBy": "alice",
+            "linkedAt": "NOW"
+        },
+        "calls": [
+            "findByObjectAndPage(obj-1, 11)",
+            "container.get(OCA\\Collectives\\Service\\CollectiveService)",
+            "container.get(OCA\\Collectives\\Service\\PageService)",
+            "getCollectives(alice)",
+            "find(1, 11, alice)",
+            "insert"
+        ]
+    },
+    "collective link second collective": {
+        "result": {
+            "id": null,
+            "objectUuid": "obj-1",
+            "registerId": 3,
+            "schemaId": 4,
+            "pageId": 12,
+            "collectiveId": 2,
+            "collectiveName": "Side",
+            "pageTitle": "Plan",
+            "slug": null,
+            "emoji": null,
+            "lastModified": null,
+            "url": "/apps/collectives.start.index?fileId=12",
+            "linkedBy": "alice",
+            "linkedAt": "NOW"
+        },
+        "calls": [
+            "findByObjectAndPage(obj-1, 12)",
+            "container.get(OCA\\Collectives\\Service\\CollectiveService)",
+            "container.get(OCA\\Collectives\\Service\\PageService)",
+            "getCollectives(alice)",
+            "find(1, 12, alice)",
+            "find(2, 12, alice)",
+            "insert"
+        ]
+    },
+    "collective link missing page": {
+        "result": {
+            "throws": "Exception",
+            "message": "Collectives page not found",
+            "code": 404
+        },
+        "calls": [
+            "findByObjectAndPage(obj-1, 99)",
+            "container.get(OCA\\Collectives\\Service\\CollectiveService)",
+            "container.get(OCA\\Collectives\\Service\\PageService)",
+            "getCollectives(alice)",
+            "find(1, 99, alice)",
+            "find(2, 99, alice)"
+        ]
+    },
+    "collective link listing throws": {
+        "result": {
+            "throws": "Exception",
+            "message": "Collectives page not found",
+            "code": 404
+        },
+        "calls": [
+            "findByObjectAndPage(obj-1, 11)",
+            "container.get(OCA\\Collectives\\Service\\CollectiveService)",
+            "container.get(OCA\\Collectives\\Service\\PageService)",
+            "getCollectives(alice)",
+            "debug CollectiveLinkService::fetchPageInfo getCollectives failed: listing down"
+        ]
+    },
+    "collective link no service": {
+        "result": {
+            "throws": "Exception",
+            "message": "Collectives page not found",
+            "code": 404
+        },
+        "calls": [
+            "findByObjectAndPage(obj-1, 11)",
+            "container.get(OCA\\Collectives\\Service\\CollectiveService)",
+            "debug CollectiveLinkService: OCA\\Collectives\\Service\\CollectiveService unavailable: no OCA\\Collectives\\Service\\CollectiveService",
+            "container.get(OCA\\Collectives\\Service\\PageService)",
+            "debug CollectiveLinkService: OCA\\Collectives\\Service\\PageService unavailable: no OCA\\Collectives\\Service\\PageService"
+        ]
+    },
+    "collective link duplicate": {
+        "result": {
+            "throws": "Exception",
+            "message": "Page already linked to this object",
+            "code": 409
+        },
+        "calls": [
+            "findByObjectAndPage(obj-1, 11)"
+        ]
+    },
+    "collective link off": {
+        "result": {
+            "throws": "Exception",
+            "message": "NC Collectives is not available",
+            "code": 503
+        },
+        "calls": []
+    },
+    "collective link no user": {
+        "result": {
+            "throws": "Exception",
+            "message": "No user logged in",
+            "code": 401
+        },
+        "calls": []
+    },
+    "email cursor null limit 1": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": 1
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 2, 0)"
+        ]
+    },
+    "email cursor null limit 2": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 2,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": 2
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 3, 0)"
+        ]
+    },
+    "email cursor null limit 500": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 2,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 3,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 4,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": null
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 201, 0)"
+        ]
+    },
+    "email cursor null limit 0": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": 1
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 2, 0)"
+        ]
+    },
+    "email cursor empty limit 1": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": 1
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 2, 0)"
+        ]
+    },
+    "email cursor empty limit 2": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 2,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": 2
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 3, 0)"
+        ]
+    },
+    "email cursor empty limit 500": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 2,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 3,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 4,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": null
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 201, 0)"
+        ]
+    },
+    "email cursor empty limit 0": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": 1
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 2, 0)"
+        ]
+    },
+    "email cursor negative limit 1": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": 1
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 2, 0)"
+        ]
+    },
+    "email cursor negative limit 2": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 2,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": 2
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 3, 0)"
+        ]
+    },
+    "email cursor negative limit 500": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 2,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 3,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 4,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": null
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 201, 0)"
+        ]
+    },
+    "email cursor negative limit 0": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": 1
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 2, 0)"
+        ]
+    },
+    "email cursor number limit 1": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 4,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": null
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 2, 3)"
+        ]
+    },
+    "email cursor number limit 2": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 4,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": null
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 3, 3)"
+        ]
+    },
+    "email cursor number limit 500": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 4,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": null
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 201, 3)"
+        ]
+    },
+    "email cursor number limit 0": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 4,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": null
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 2, 3)"
+        ]
+    },
+    "email cursor junk limit 1": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": 1
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 2, 0)"
+        ]
+    },
+    "email cursor junk limit 2": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 2,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": 2
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 3, 0)"
+        ]
+    },
+    "email cursor junk limit 500": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 2,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 3,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                },
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 4,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": null
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 201, 0)"
+        ]
+    },
+    "email cursor junk limit 0": {
+        "result": {
+            "items": [
+                {
+                    "id": null,
+                    "objectUuid": null,
+                    "registerId": null,
+                    "schemaId": null,
+                    "mailAccountId": null,
+                    "mailMessageId": 1,
+                    "mailMessageUid": null,
+                    "subject": null,
+                    "sender": null,
+                    "senderName": null,
+                    "mailDate": null,
+                    "metadata": null,
+                    "details": {
+                        "direction": null,
+                        "recipientName": null,
+                        "attachmentCount": null,
+                        "linkedVia": null,
+                        "archivedAs": null,
+                        "mailboxName": null
+                    },
+                    "linkedBy": null,
+                    "linkedAt": null
+                }
+            ],
+            "total": 4,
+            "nextCursor": 1
+        },
+        "calls": [
+            "findByObjectUuid(obj-1, 2, 0)"
+        ]
+    },
+    "analytics timestamp null": {
+        "result": null,
+        "calls": []
+    },
+    "analytics timestamp empty": {
+        "result": null,
+        "calls": []
+    },
+    "analytics timestamp zero": {
+        "result": null,
+        "calls": []
+    },
+    "analytics timestamp string zero": {
+        "result": "1970-01-01T00:00:00+00:00",
+        "calls": []
+    },
+    "analytics timestamp epoch": {
+        "result": "2023-11-14T22:13:20+00:00",
+        "calls": []
+    },
+    "analytics timestamp iso": {
+        "result": "2026-01-02T03:04:05+00:00",
+        "calls": []
+    },
+    "analytics timestamp garbage": {
+        "result": null,
+        "calls": []
+    }
+}

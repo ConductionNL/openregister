@@ -29,6 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 
+use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider;
@@ -144,7 +146,7 @@ class UserDirectoryObjectSourceProviderTest extends TestCase {
 		$admin = $this->user('admin', 'Administrator', 'admin@example.org');
 		$bob = $this->user('bob', 'Bob Bakker', 'bob@example.org');
 
-		$objects = $this->provider($admin, true, [$admin, $bob])->findAll($register, $schema);
+		$objects = $this->provider($admin, true, [$admin, $bob])->findAll(new SourcedTable(new RegisterSchema($register, $schema)));
 
 		$this->assertCount(2, $objects);
 		$data = $objects[0]->getObject();
@@ -165,7 +167,7 @@ class UserDirectoryObjectSourceProviderTest extends TestCase {
 		$alice = $this->user('alice', 'Alice', 'alice@example.org');
 		$bob = $this->user('bob', 'Bob', 'bob@example.org');
 
-		$objects = $this->provider($alice, false, [$alice, $bob])->findAll($register, $schema);
+		$objects = $this->provider($alice, false, [$alice, $bob])->findAll(new SourcedTable(new RegisterSchema($register, $schema)));
 
 		$this->assertCount(1, $objects);
 		$this->assertSame('alice', $objects[0]->getUuid());
@@ -182,8 +184,8 @@ class UserDirectoryObjectSourceProviderTest extends TestCase {
 		$bob = $this->user('bob', 'Bob', 'bob@example.org');
 
 		$provider = $this->provider($admin, true, [$admin, $bob]);
-		$this->assertSame('Bob', $provider->find($register, $schema, 'bob')?->getObject()['displayName']);
-		$this->assertNull($provider->find($register, $schema, 'ghost'));
+		$this->assertSame('Bob', $provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'bob')?->getObject()['displayName']);
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'ghost'));
 	}//end testFindByUidAsAdmin()
 
 	/**
@@ -197,8 +199,8 @@ class UserDirectoryObjectSourceProviderTest extends TestCase {
 		$bob = $this->user('bob', 'Bob', 'bob@example.org');
 
 		$provider = $this->provider($alice, false, [$alice, $bob]);
-		$this->assertNull($provider->find($register, $schema, 'bob'));
-		$this->assertSame('Alice', $provider->find($register, $schema, 'alice')?->getObject()['displayName']);
+		$this->assertNull($provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'bob'));
+		$this->assertSame('Alice', $provider->find(new SourcedTable(new RegisterSchema($register, $schema)), 'alice')?->getObject()['displayName']);
 	}//end testFindDeniedForOtherUser()
 
 	/**
@@ -208,6 +210,6 @@ class UserDirectoryObjectSourceProviderTest extends TestCase {
 	 */
 	public function testNoActingUserEmptyList(): void {
 		[$register, $schema] = $this->binding();
-		$this->assertCount(0, $this->provider(null, false, [])->findAll($register, $schema));
+		$this->assertCount(0, $this->provider(null, false, [])->findAll(new SourcedTable(new RegisterSchema($register, $schema))));
 	}//end testNoActingUserEmptyList()
 }//end class

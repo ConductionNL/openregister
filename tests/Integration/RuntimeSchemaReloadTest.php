@@ -22,7 +22,7 @@
  *      * SchemaMapper, MagicMapper, AuditTrailMapper, RegisterMapper
  *      * IDBConnection (writes hit the actual DB)
  *      * SchemaService, UploadService, OrganisationService,
- *        FacetCacheHandler, IAppConfig, LoggerInterface
+ *        FacetResultCacheClearer, IAppConfig, LoggerInterface
  *  - MOCKED:
  *      * IRequest — used as a thin data carrier so we can inject query params
  *        (`?force=true`) and POST bodies without spinning up a real HTTP stack
@@ -57,10 +57,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;

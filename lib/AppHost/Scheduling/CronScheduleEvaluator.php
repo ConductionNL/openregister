@@ -30,12 +30,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\AppHost\Scheduling;
 
 use Cron\CronExpression;
-use DateTime;
-use DateTimeInterface;
 use Throwable;
 
 /**
- * Evaluates cron expressions to their next fire time via a vendored library.
+ * Answers whether a cron expression parses, via a vendored library.
  *
  * @spec openspec/specs/apphost-scheduling/spec.md
  */
@@ -54,28 +52,4 @@ class CronScheduleEvaluator {
 	public function isValid(string $expression): bool {
 		return CronExpression::isValidExpression($expression);
 	}//end isValid()
-
-	/**
-	 * Compute the next fire time strictly after `$from` (default now).
-	 *
-	 * @param string $expression The cron expression.
-	 * @param DateTimeInterface|null $from Reference time; defaults to now.
-	 *
-	 * @return DateTime|null The next fire time, or null when the expression is unparseable.
-	 *
-	 * @spec openspec/specs/apphost-scheduling/spec.md
-	 */
-	public function nextRun(string $expression, ?DateTimeInterface $from = null): ?DateTime {
-		if ($this->isValid(expression: $expression) === false) {
-			return null;
-		}
-
-		try {
-			$cron = new CronExpression($expression);
-			$current = ($from ?? new DateTime());
-			return $cron->getNextRunDate($current);
-		} catch (Throwable $e) {
-			return null;
-		}
-	}//end nextRun()
 }//end class

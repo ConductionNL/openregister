@@ -18,11 +18,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCP\IDBConnection;
 
@@ -34,13 +33,13 @@ use OCP\IDBConnection;
  *
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
-class MigrationService {
+class MigrationService implements MigrationServiceInterface {
 
 	/**
 	 * The shared register-scoped schema resolver.
 	 *
 	 * Built here rather than injected: it is a stateless collaborator over the
-	 * `RegisterMapper` + `SchemaMapper` this class already holds, so constructing
+	 * `RegisterMapper` + `SchemaMapper` the catalog already holds, so constructing
 	 * it directly keeps every existing unit test — all of which mock those two
 	 * mappers — exercising the REAL resolution path instead of a mock of the very
 	 * thing under test.
@@ -50,22 +49,26 @@ class MigrationService {
 	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
 
 	/**
+	 * Migration reports of the retired blob-storage migrations, by direction.
+	 *
+	 * @var array<string, string>
+	 */
+	private const RETIRED_MESSAGES = [
+		'to-magic' => 'Blob storage mapper has been removed. Use BlobMigrationJob background job instead.',
+		'to-blob'  => 'Blob storage mapper has been removed. Reverse migration is no longer supported.',
+	];
+
+	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $magicMapper The magic mapper.
-	 * @param RegisterMapper $registerMapper The register mapper.
-	 * @param SchemaMapper $schemaMapper The schema mapper.
-	 * @param IDBConnection $db The database connection.
+	 * @param SchemaCatalogInterface $catalog The register, schema and magic-table mappers.
 	 */
 	public function __construct(
-		private readonly MagicMapper $magicMapper,
-		RegisterMapper $registerMapper,
-		SchemaMapper $schemaMapper,
-		private readonly IDBConnection $db,
+		private readonly SchemaCatalogInterface $catalog,
 	) {
 		$this->scopedSchemaResolver = new RegisterScopedSchemaResolver(
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper
+			registerMapper: $catalog->registers(),
+			schemaMapper: $catalog->schemas()
 		);
 	}//end __construct()
 
@@ -107,37 +110,34 @@ class MigrationService {
 	 * @spec exclude Reporting shim: assembles register/schema/magic-table-count read into a response array; no business rule.
 	 */
 	public function getStorageStatus(Register $register, Schema $schema): array {
-		$magicTableExists = $this->magicMapper->existsTableForRegisterSchema(
-			register: $register,
-			schema: $schema
-		);
-
-		$magicCount = 0;
-		if ($magicTableExists === true) {
-			$magicCount = $this->magicMapper->countObjectsInRegisterSchemaTable(
-				query: [],
-				register: $register,
-				schema: $schema
-			);
-		}
-
 		return [
-			'register' => [
-				'id' => $register->getId(),
-				'name' => $register->getTitle(),
-				'slug' => $register->getSlug(),
-			],
-			'schema' => [
-				'id' => $schema->getId(),
-				'name' => $schema->getTitle(),
-				'slug' => $schema->getSlug(),
-			],
-			'magicTable' => [
-				'exists' => $magicTableExists,
-				'count' => $magicCount,
-			],
+			'register' => $this->identity(entity: $register),
+			'schema' => $this->identity(entity: $schema),
+			'magicTable' => $this->magicTableStatus(table: new RegisterSchema(register: $register, schema: $schema)),
 		];
 	}//end getStorageStatus()
+
+	/**
+	 * Whether a register and schema have a magic table, and how many rows it holds.
+	 *
+	 * @param RegisterSchema $table The register and schema.
+	 *
+	 * @return array{exists: bool, count: int}
+	 */
+	private function magicTableStatus(RegisterSchema $table): array {
+		$magicTableExists = $this->catalog->tables()->existsTableForRegisterSchema(
+			register: $table->register,
+			schema: $table->schema
+		);
+
+		return [
+			'exists' => $magicTableExists,
+			'count' => $this->magicCount(
+				table: $table,
+				exists: $magicTableExists
+			),
+		];
+	}//end magicTableStatus()
 
 	/**
 	 * Migrate objects from blob storage to a magic table.
@@ -157,22 +157,8 @@ class MigrationService {
 	 *
 	 * @spec exclude Deprecated no-op stub; blob storage retired, returns a static report pointing to BlobMigrationJob.
 	 */
-	public function migrateToMagicTable(
-		Register $register,
-		Schema $schema,
-		int $batchSize = 100,
-		bool $dryRun = false,
-	): array {
-		return [
-			'direction' => 'to-magic',
-			'dryRun' => $dryRun,
-			'total' => 0,
-			'migrated' => 0,
-			'skipped' => 0,
-			'failed' => 0,
-			'errors' => [],
-			'message' => 'Blob storage mapper has been removed. Use BlobMigrationJob background job instead.',
-		];
+	public function migrateToMagicTable(Register $register, Schema $schema, int $batchSize = 100, bool $dryRun = false): array {
+		return $this->retiredReport(direction: 'to-magic', dryRun: $dryRun);
 	}//end migrateToMagicTable()
 
 	/**
@@ -192,21 +178,63 @@ class MigrationService {
 	 *
 	 * @spec exclude Deprecated no-op stub; reverse migration to retired blob storage is no longer supported.
 	 */
-	public function migrateToBlobStorage(
-		Register $register,
-		Schema $schema,
-		int $batchSize = 100,
-		bool $dryRun = false,
-	): array {
+	public function migrateToBlobStorage(Register $register, Schema $schema, int $batchSize = 100, bool $dryRun = false): array {
+		return $this->retiredReport(direction: 'to-blob', dryRun: $dryRun);
+	}//end migrateToBlobStorage()
+
+	/**
+	 * The id, name and slug a status report gives a register or a schema.
+	 *
+	 * @param Register|Schema $entity The register or schema.
+	 *
+	 * @return array{id: int|null, name: string|null, slug: string|null}
+	 */
+	private function identity(Register|Schema $entity): array {
 		return [
-			'direction' => 'to-blob',
+			'id' => $entity->getId(),
+			'name' => $entity->getTitle(),
+			'slug' => $entity->getSlug(),
+		];
+	}//end identity()
+
+	/**
+	 * The number of objects in the magic table, or 0 when it does not exist.
+	 *
+	 * @param RegisterSchema $table  The register and schema of the magic table.
+	 * @param bool           $exists Whether the magic table exists.
+	 *
+	 * @return int The object count.
+	 */
+	private function magicCount(RegisterSchema $table, bool $exists): int {
+		if ($exists === false) {
+			return 0;
+		}
+
+		return $this->catalog->tables()->countObjectsInRegisterSchemaTable(
+			query: [],
+			register: $table->register,
+			schema: $table->schema
+		);
+	}//end magicCount()
+
+	/**
+	 * The report of a migration that the removal of blob storage made impossible.
+	 *
+	 * @param string $direction The migration direction, a key of RETIRED_MESSAGES.
+	 * @param bool   $dryRun    Whether the caller asked for a dry run.
+	 *
+	 * @return array The migration report.
+	 */
+	private function retiredReport(string $direction, bool $dryRun): array {
+		return [
+			'direction' => $direction,
 			'dryRun' => $dryRun,
 			'total' => 0,
 			'migrated' => 0,
 			'skipped' => 0,
 			'failed' => 0,
 			'errors' => [],
-			'message' => 'Blob storage mapper has been removed. Reverse migration is no longer supported.',
+			'message' => self::RETIRED_MESSAGES[$direction],
 		];
-	}//end migrateToBlobStorage()
+	}//end retiredReport()
 }//end class

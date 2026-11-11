@@ -1,0 +1,857 @@
+{
+    "actor captured once": {
+        "jobs": [
+            "-- after defer",
+            "-- after switchUser",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        },
+                        {
+                            "uuid": "e2",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "all entries too large": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            "-- after flush"
+        ],
+        "errors": [
+            [
+                "[ListenerDeferralService] A deferred listener entry is larger than a background job may carry; it was not enqueued",
+                {
+                    "jobClass": "JobA",
+                    "uuid": "u4",
+                    "length": 435,
+                    "limit": 100
+                }
+            ],
+            [
+                "[ListenerDeferralService] A deferred listener entry is larger than a background job may carry; it was not enqueued",
+                {
+                    "jobClass": "JobA",
+                    "uuid": "u3",
+                    "length": 473,
+                    "limit": 100
+                }
+            ]
+        ],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "anonymous actor": {
+        "jobs": [
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": null,
+                    "organisationUuid": null,
+                    "entries": [
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "chunk size below one": {
+        "jobs": [
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e1",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e2",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after defer",
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "chunk size reached": {
+        "jobs": [
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e1",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        },
+                        {
+                            "uuid": "e2",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e3",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "dedupe empty string key": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e1",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "dedupe is per job class": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e1",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            [
+                "JobB",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e2",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "dedupe key": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e1",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        },
+                        {
+                            "uuid": "e3",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        },
+                        {
+                            "uuid": "e4",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "dedupe resets after flush": {
+        "jobs": [
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e1",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e2",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "dedupe resets after full chunk": {
+        "jobs": [
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e1",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e2",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after defer",
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "enqueue fails": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobB",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [
+            [
+                "[ListenerDeferralService] Failed to enqueue deferred listener job",
+                {
+                    "jobClass": "JobA",
+                    "entries": 1,
+                    "error": "job list full"
+                }
+            ]
+        ],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "enqueue fails in defer": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer"
+        ],
+        "errors": [
+            [
+                "[ListenerDeferralService] Failed to enqueue deferred listener job",
+                {
+                    "jobClass": "JobA",
+                    "entries": 1,
+                    "error": "job list full"
+                }
+            ],
+            [
+                "[ListenerDeferralService] Failed to enqueue deferred listener job",
+                {
+                    "jobClass": "JobA",
+                    "entries": 1,
+                    "error": "job list full"
+                }
+            ]
+        ],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "exact fit": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e1",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        },
+                        {
+                            "uuid": "e2",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "first chunk size sticks": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e1",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        },
+                        {
+                            "uuid": "e2",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        },
+                        {
+                            "uuid": "e3",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "large entry starts new chunk": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        }
+                    ]
+                }
+            ],
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e9",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "nothing deferred": {
+        "jobs": [
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 0
+    },
+    "old data dropped": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        },
+                        {
+                            "uuid": "u2",
+                            "event": "updated",
+                            "object": {
+                                "n": "x"
+                            }
+                        },
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [
+            [
+                "[ListenerDeferralService] A deferred listener entry was too large for a background job; it was enqueued without its previous data; conditioned updated rules and calculatedChange rules are skipped for this object",
+                {
+                    "jobClass": "JobA",
+                    "uuid": "u2",
+                    "length": 373,
+                    "limit": 300
+                }
+            ]
+        ],
+        "shutdownHooks": 1
+    },
+    "one entry flushed": {
+        "jobs": [
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "one over the fit": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e1",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e2",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "organisation lookup throws": {
+        "jobs": [
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": null,
+                    "entries": [
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "session throws in defer": {
+        "jobs": [
+            "-- after defer",
+            "-- after flush"
+        ],
+        "errors": [
+            [
+                "[ListenerDeferralService] Failed to buffer deferred listener entry",
+                {
+                    "jobClass": "JobA",
+                    "error": "session gone"
+                }
+            ]
+        ],
+        "warnings": [],
+        "shutdownHooks": 0
+    },
+    "shutdown after flush": {
+        "jobs": [
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush",
+            "-- after shutdown"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "shutdown flushes": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        }
+                    ]
+                }
+            ],
+            [
+                "JobB",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        }
+                    ]
+                }
+            ],
+            "-- after shutdown"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "split by argument limit": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e1",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        },
+                        {
+                            "uuid": "e2",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e3",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        },
+                        {
+                            "uuid": "e4",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "too large and no old data": {
+        "jobs": [
+            "-- after defer",
+            "-- after flush"
+        ],
+        "errors": [
+            [
+                "[ListenerDeferralService] A deferred listener entry is larger than a background job may carry; it was not enqueued",
+                {
+                    "jobClass": "JobA",
+                    "uuid": "u4",
+                    "length": 435,
+                    "limit": 300
+                }
+            ]
+        ],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "too large even without old": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "u1",
+                            "event": "created"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [
+            [
+                "[ListenerDeferralService] A deferred listener entry is larger than a background job may carry; it was not enqueued",
+                {
+                    "jobClass": "JobA",
+                    "uuid": "u3",
+                    "length": 473,
+                    "limit": 300
+                }
+            ]
+        ],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "too large without uuid": {
+        "jobs": [
+            "-- after defer",
+            "-- after flush"
+        ],
+        "errors": [
+            [
+                "[ListenerDeferralService] A deferred listener entry is larger than a background job may carry; it was not enqueued",
+                {
+                    "jobClass": "JobA",
+                    "uuid": "",
+                    "length": 423,
+                    "limit": 300
+                }
+            ]
+        ],
+        "warnings": [],
+        "shutdownHooks": 1
+    },
+    "two job classes": {
+        "jobs": [
+            "-- after defer",
+            "-- after defer",
+            "-- after defer",
+            [
+                "JobA",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e1",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        },
+                        {
+                            "uuid": "e3",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            [
+                "JobB",
+                {
+                    "userId": "alice",
+                    "organisationUuid": "org-1",
+                    "entries": [
+                        {
+                            "uuid": "e2",
+                            "pad": "pppppppppppppppppppppppppppppppppppppppp"
+                        }
+                    ]
+                }
+            ],
+            "-- after flush"
+        ],
+        "errors": [],
+        "warnings": [],
+        "shutdownHooks": 1
+    }
+}

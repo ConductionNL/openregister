@@ -1,0 +1,640 @@
+{
+    "nothing due": {
+        "result": {
+            "expiriesFired": 0,
+            "rungsFired": 0,
+            "taskTimeouts": 0,
+            "truncated": false,
+            "errors": 0
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            }
+        ]
+    },
+    "batch zero is one": {
+        "result": {
+            "expiriesFired": 1,
+            "rungsFired": 0,
+            "taskTimeouts": 0,
+            "truncated": true,
+            "errors": 0
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    1
+                ]
+            },
+            {
+                "fireExpiry": [
+                    "e1",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    1
+                ]
+            }
+        ]
+    },
+    "batch negative is one": {
+        "result": {
+            "expiriesFired": 0,
+            "rungsFired": 1,
+            "taskTimeouts": 0,
+            "truncated": true,
+            "errors": 0
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    1
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    1
+                ]
+            },
+            {
+                "fireRungs": [
+                    "r1",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            }
+        ]
+    },
+    "expiries counted when fired": {
+        "result": {
+            "expiriesFired": 2,
+            "rungsFired": 0,
+            "taskTimeouts": 0,
+            "truncated": false,
+            "errors": 0
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "fireExpiry": [
+                    "e1",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "fireExpiry": [
+                    "e2",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "fireExpiry": [
+                    "e3",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            }
+        ]
+    },
+    "expiries truncate": {
+        "result": {
+            "expiriesFired": 2,
+            "rungsFired": 0,
+            "taskTimeouts": 0,
+            "truncated": true,
+            "errors": 0
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    2
+                ]
+            },
+            {
+                "fireExpiry": [
+                    "e1",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "fireExpiry": [
+                    "e2",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    2
+                ]
+            }
+        ]
+    },
+    "rungs summed": {
+        "result": {
+            "expiriesFired": 0,
+            "rungsFired": 3,
+            "taskTimeouts": 0,
+            "truncated": false,
+            "errors": 0
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "fireRungs": [
+                    "r1",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "fireRungs": [
+                    "r2",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            }
+        ]
+    },
+    "rungs truncate": {
+        "result": {
+            "expiriesFired": 0,
+            "rungsFired": 3,
+            "taskTimeouts": 0,
+            "truncated": true,
+            "errors": 0
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    2
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    2
+                ]
+            },
+            {
+                "fireRungs": [
+                    "r1",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "fireRungs": [
+                    "r2",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "fireRungs": [
+                    "r3",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            }
+        ]
+    },
+    "expiry failure continues": {
+        "result": {
+            "expiriesFired": 1,
+            "rungsFired": 1,
+            "taskTimeouts": 0,
+            "truncated": false,
+            "errors": 1
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "fireExpiry": [
+                    "e1",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "error": [
+                    "[FlowTimerSweep] Expiry fire failed: expiry broke for e1",
+                    {
+                        "timer": "e1",
+                        "exception": "RuntimeException: expiry broke for e1"
+                    }
+                ]
+            },
+            {
+                "fireExpiry": [
+                    "e2",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "fireRungs": [
+                    "r1",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            }
+        ]
+    },
+    "rung failure continues": {
+        "result": {
+            "expiriesFired": 0,
+            "rungsFired": 1,
+            "taskTimeouts": 0,
+            "truncated": false,
+            "errors": 1
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "fireRungs": [
+                    "r1",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "error": [
+                    "[FlowTimerSweep] Rung fire failed: rungs broke for r1",
+                    {
+                        "timer": "r1",
+                        "exception": "RuntimeException: rungs broke for r1"
+                    }
+                ]
+            },
+            {
+                "fireRungs": [
+                    "r2",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            }
+        ]
+    },
+    "task sweep without mapper": {
+        "result": {
+            "expiriesFired": 0,
+            "rungsFired": 0,
+            "taskTimeouts": 0,
+            "truncated": false,
+            "errors": 0
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            }
+        ]
+    },
+    "tasks applied": {
+        "result": {
+            "expiriesFired": 0,
+            "rungsFired": 0,
+            "taskTimeouts": 2,
+            "truncated": false,
+            "errors": 0
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "findDueTimeouts": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "applyTimerOutcome": [
+                    "t1",
+                    "complete",
+                    "task-expiry-sweep",
+                    "Task expired at 2026-09-01T08:00:00+00:00; declared onTimeout 'complete' applied."
+                ]
+            },
+            {
+                "applyTimerOutcome": [
+                    "t2",
+                    "escalate",
+                    "task-expiry-sweep",
+                    "Task expired at ; declared onTimeout 'escalate' applied."
+                ]
+            }
+        ]
+    },
+    "task failure continues": {
+        "result": {
+            "expiriesFired": 0,
+            "rungsFired": 0,
+            "taskTimeouts": 1,
+            "truncated": false,
+            "errors": 1
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "findDueTimeouts": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "applyTimerOutcome": [
+                    "t1",
+                    "complete",
+                    "task-expiry-sweep",
+                    "Task expired at 2026-09-01T08:00:00+00:00; declared onTimeout 'complete' applied."
+                ]
+            },
+            {
+                "error": [
+                    "[FlowTimerSweep] Task timeout failed: task broke for t1",
+                    {
+                        "task": "t1",
+                        "exception": "RuntimeException: task broke for t1"
+                    }
+                ]
+            },
+            {
+                "applyTimerOutcome": [
+                    "t2",
+                    "cancel",
+                    "task-expiry-sweep",
+                    "Task expired at 2026-09-01T09:00:00+00:00; declared onTimeout 'cancel' applied."
+                ]
+            }
+        ]
+    },
+    "tasks truncate": {
+        "result": {
+            "expiriesFired": 0,
+            "rungsFired": 0,
+            "taskTimeouts": 1,
+            "truncated": true,
+            "errors": 0
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    1
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    1
+                ]
+            },
+            {
+                "findDueTimeouts": [
+                    "2026-09-01T10:00:00+00:00",
+                    1
+                ]
+            },
+            {
+                "applyTimerOutcome": [
+                    "t1",
+                    "complete",
+                    "task-expiry-sweep",
+                    "Task expired at ; declared onTimeout 'complete' applied."
+                ]
+            }
+        ]
+    },
+    "tasks without service": {
+        "result": {
+            "expiriesFired": 0,
+            "rungsFired": 0,
+            "taskTimeouts": 0,
+            "truncated": false,
+            "errors": 0
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    10
+                ]
+            }
+        ]
+    },
+    "everything": {
+        "result": {
+            "expiriesFired": 0,
+            "rungsFired": 0,
+            "taskTimeouts": 1,
+            "truncated": true,
+            "errors": 3
+        },
+        "calls": [
+            {
+                "reset": []
+            },
+            {
+                "findDueExpiries": [
+                    "2026-09-01T10:00:00+00:00",
+                    2
+                ]
+            },
+            {
+                "fireExpiry": [
+                    "e1",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "error": [
+                    "[FlowTimerSweep] Expiry fire failed: expiry broke for e1",
+                    {
+                        "timer": "e1",
+                        "exception": "RuntimeException: expiry broke for e1"
+                    }
+                ]
+            },
+            {
+                "findDueRungs": [
+                    "2026-09-01T10:00:00+00:00",
+                    2
+                ]
+            },
+            {
+                "fireRungs": [
+                    "r1",
+                    "2026-09-01T10:00:00+00:00"
+                ]
+            },
+            {
+                "error": [
+                    "[FlowTimerSweep] Rung fire failed: rungs broke for r1",
+                    {
+                        "timer": "r1",
+                        "exception": "RuntimeException: rungs broke for r1"
+                    }
+                ]
+            },
+            {
+                "findDueTimeouts": [
+                    "2026-09-01T10:00:00+00:00",
+                    2
+                ]
+            },
+            {
+                "applyTimerOutcome": [
+                    "t1",
+                    "complete",
+                    "task-expiry-sweep",
+                    "Task expired at ; declared onTimeout 'complete' applied."
+                ]
+            },
+            {
+                "applyTimerOutcome": [
+                    "t2",
+                    "complete",
+                    "task-expiry-sweep",
+                    "Task expired at ; declared onTimeout 'complete' applied."
+                ]
+            },
+            {
+                "error": [
+                    "[FlowTimerSweep] Task timeout failed: task broke for t2",
+                    {
+                        "task": "t2",
+                        "exception": "RuntimeException: task broke for t2"
+                    }
+                ]
+            }
+        ]
+    }
+}

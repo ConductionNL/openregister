@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Service\Task;
 use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 
 /**
  * Computes overdue, days-until-due and days-overdue from the stored deadlines.
@@ -65,7 +66,7 @@ final class TaskTemporalProjection {
 	 * task's state is untouched by the clock (due_at advises; the enforcing
 	 * sweep on expires_at belongs to flow-business-timers).
 	 *
-	 * @param Task $task The task to project.
+	 * @param TaskInterface $task The task to project.
 	 * @param DateTimeInterface|null $now The clock, injectable for tests;
 	 *                                    null means the real clock.
 	 *
@@ -73,22 +74,27 @@ final class TaskTemporalProjection {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
 	 */
-	public function project(Task $task, ?DateTimeInterface $now = null): array {
+	public function project(TaskInterface $task, ?DateTimeInterface $now = null): array {
 		$now ??= $this->now();
 		$deadline = ($task->getDueAt() ?? $task->getExpiresAt());
-
 		if ($deadline === null) {
-			return [
-				'overdue' => false,
-				'daysUntilDue' => null,
-				'daysOverdue' => null,
-			];
+			return self::shape(overdue: false, days: null);
 		}
 
-		$overdue = ($deadline < $now);
 		$seconds = ($deadline->getTimestamp() - $now->getTimestamp());
-		$days = intdiv(abs($seconds), 86400);
 
+		return self::shape(overdue: ($deadline < $now), days: intdiv(abs($seconds), 86400));
+	}//end project()
+
+	/**
+	 * The projection's shape: the whole days count on the side the deadline is on.
+	 *
+	 * @param bool $overdue Whether the deadline has passed.
+	 * @param int|null $days Whole days between now and the deadline; null without a deadline.
+	 *
+	 * @return array{overdue: bool, daysUntilDue: int|null, daysOverdue: int|null} The projection.
+	 */
+	private static function shape(bool $overdue, ?int $days): array {
 		if ($overdue === true) {
 			return [
 				'overdue' => true,
@@ -102,5 +108,5 @@ final class TaskTemporalProjection {
 			'daysUntilDue' => $days,
 			'daysOverdue' => null,
 		];
-	}//end project()
+	}//end shape()
 }//end class

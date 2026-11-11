@@ -66,7 +66,7 @@ class InvalidViewAlertException extends InvalidArgumentException {
 	 *
 	 * @return int 422: the alert does not read.
 	 *
-	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function getStatus(): int {
 		return 422;
@@ -77,7 +77,7 @@ class InvalidViewAlertException extends InvalidArgumentException {
 	 *
 	 * @return array<string, mixed> None for a malformed alert.
 	 *
-	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function getDetails(): array {
 		return [];

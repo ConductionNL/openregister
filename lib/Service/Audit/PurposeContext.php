@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCP\IRequest;
  * property called `purpose`. The header wins when both are present, because it
  * is the one a proxy or an adapter sets deliberately.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class PurposeContext {
 	/**
@@ -101,25 +101,43 @@ class PurposeContext {
 	 *
 	 * @return string|null The declared code, or null when none was named.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function declared(): ?string {
 		if ($this->declared !== null && $this->declared !== '') {
 			return $this->declared;
 		}
 
+		return $this->requestDeclared();
+	}//end declared()
+
+	/**
+	 * The purpose code the request names: the header, else the underscored parameter.
+	 *
+	 * @return string|null The declared code, or null when the request names none.
+	 */
+	private function requestDeclared(): ?string {
 		$header = trim((string)$this->request->getHeader(self::HEADER));
 		if ($header !== '') {
 			return $header;
 		}
 
+		return $this->parameterDeclared();
+	}//end requestDeclared()
+
+	/**
+	 * The purpose code in the underscored request parameter, trimmed.
+	 *
+	 * @return string|null The declared code, or null when the parameter is absent, blank or not a string.
+	 */
+	private function parameterDeclared(): ?string {
 		$param = $this->request->getParam(key: self::PARAM);
 		if (is_string($param) === true && trim($param) !== '') {
 			return trim($param);
 		}
 
 		return null;
-	}//end declared()
+	}//end parameterDeclared()
 
 	/**
 	 * Declare a purpose from code, for a caller with no request headers.
@@ -128,7 +146,7 @@ class PurposeContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function setDeclared(?string $code): void {
 		$this->declared = $code;
@@ -146,7 +164,7 @@ class PurposeContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function accept(?ProcessingPurpose $purpose, ?Verwerkingsactiviteit $activity = null): void {
 		$this->accepted = $purpose;
@@ -158,7 +176,7 @@ class PurposeContext {
 	 *
 	 * @return Verwerkingsactiviteit|null The activity, or null when nothing was accepted.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function acceptedActivity(): ?Verwerkingsactiviteit {
 		return $this->activity;
@@ -169,7 +187,7 @@ class PurposeContext {
 	 *
 	 * @return ProcessingPurpose|null The accepted purpose, or null when none was.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function accepted(): ?ProcessingPurpose {
 		return $this->accepted;
@@ -180,7 +198,7 @@ class PurposeContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function clear(): void {
 		$this->declared = null;

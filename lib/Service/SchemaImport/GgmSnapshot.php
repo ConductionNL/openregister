@@ -162,25 +162,7 @@ class GgmSnapshot {
 			return;
 		}
 
-		if ($this->override !== null) {
-			$decoded = $this->override;
-		} else {
-			if (is_file($this->snapshotFile) === false) {
-				throw new SchemaImportException(message: 'GGM snapshot file is missing: ' . $this->snapshotFile, httpStatus: 500);
-			}
-
-			$raw = (string)file_get_contents($this->snapshotFile);
-			$decoded = json_decode($raw, associative: true);
-		}
-
-		if (is_array($decoded) === false || isset($decoded['objecttypen']) === false
-			|| is_array($decoded['objecttypen']) === false
-		) {
-			throw new SchemaImportException(
-				message: 'GGM source is not a valid normalised GGM intermediate (missing "objecttypen").',
-				httpStatus: 422
-			);
-		}
+		$decoded = $this->validIntermediate(decoded: $this->loadSource());
 
 		$this->loadedVersion = (string)($decoded['version'] ?? $this->version);
 		$this->objecttypes = [];
@@ -192,4 +174,46 @@ class GgmSnapshot {
 			$this->objecttypes[strtoupper((string)$objecttype['id'])] = $objecttype;
 		}
 	}//end ensureParsed()
+
+	/**
+	 * The decoded source: the in-memory override, else the bundled file.
+	 *
+	 * @return mixed The decoded source document.
+	 *
+	 * @throws SchemaImportException When the bundled file is missing.
+	 */
+	private function loadSource(): mixed {
+		if ($this->override !== null) {
+			return $this->override;
+		}
+
+		if (is_file($this->snapshotFile) === false) {
+			throw new SchemaImportException(message: 'GGM snapshot file is missing: ' . $this->snapshotFile, httpStatus: 500);
+		}
+
+		$raw = (string)file_get_contents($this->snapshotFile);
+		return json_decode($raw, associative: true);
+	}//end loadSource()
+
+	/**
+	 * Return the decoded source when it is a normalised GGM intermediate.
+	 *
+	 * @param mixed $decoded The decoded source document.
+	 *
+	 * @return array<string, mixed> The intermediate, carrying an `objecttypen` list.
+	 *
+	 * @throws SchemaImportException When `objecttypen` is missing or not a list.
+	 */
+	private function validIntermediate(mixed $decoded): array {
+		if (is_array($decoded) === false || isset($decoded['objecttypen']) === false
+			|| is_array($decoded['objecttypen']) === false
+		) {
+			throw new SchemaImportException(
+				message: 'GGM source is not a valid normalised GGM intermediate (missing "objecttypen").',
+				httpStatus: 422
+			);
+		}
+
+		return $decoded;
+	}//end validIntermediate()
 }//end class

@@ -26,11 +26,7 @@
 					inputId="email-digest"
 					@update:modelValue="save" />
 			</div>
-			<p
-				v-if="message"
-				:class="{ section__error: isError, section__success: !isError }">
-				{{ message }}
-			</p>
+			<SectionStatus :message="message" :isError="isError" />
 		</div>
 	</div>
 </template>
@@ -40,10 +36,15 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
+import SectionStatus from '../../../components/shared/SectionStatus.vue'
+import { sectionStatus } from '../../../composables/sectionStatus.js'
 
 export default {
 	name: 'NotificationsSection',
-	components: { NcCheckboxRadioSwitch, NcSelect },
+	components: { NcCheckboxRadioSwitch, NcSelect, SectionStatus },
+
+	mixins: [sectionStatus],
+
 	data() {
 		return {
 			loading: true,
@@ -55,8 +56,6 @@ export default {
 				emailDigest: 'daily',
 			},
 
-			message: '',
-			isError: false,
 			digestOptions: ['none', 'daily', 'weekly'],
 			toggleLabels: {
 				objectChanges: t('openregister', 'Object changes in owned objects'),
@@ -80,7 +79,7 @@ export default {
 				generateUrl('/apps/openregister/api/user/me/notifications'),
 			)
 			this.prefs = { ...this.prefs, ...data }
-		} catch (e) {
+		} catch {
 			// Use defaults.
 		} finally {
 			this.loading = false
@@ -100,39 +99,28 @@ export default {
 					this.prefs,
 				)
 				this.prefs = { ...this.prefs, ...data }
-				this.message = t('openregister', 'Preferences saved')
-				this.isError = false
+				this.setStatus(t('openregister', 'Preferences saved'))
 			} catch (e) {
-				this.message =
-					e.response?.data?.error
-					|| t('openregister', 'Failed to save preferences')
-				this.isError = true
+				this.setStatusError(
+					e,
+					t('openregister', 'Failed to save preferences'),
+				)
 			}
 		},
 	},
 }
 </script>
 
-<style scoped>
-.section {
-	margin-bottom: 32px;
-	padding: 16px;
-	border-bottom: 1px solid var(--color-border);
-}
+<style scoped lang="scss">
+@use '../../../styles/views.scss' as *;
+
+@include section;
 
 .section__loading {
 	color: var(--color-text-maxcontrast);
 }
 
-.section__error {
-	color: var(--color-error);
-	margin-top: 8px;
-}
-
-.section__success {
-	color: var(--color-success);
-	margin-top: 8px;
-}
+@include section-error-rules;
 
 .notifications-section__toggle {
 	margin-bottom: 8px;

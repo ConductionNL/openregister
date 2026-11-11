@@ -28,8 +28,15 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\MailMessageKey;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\EmailMessageRef;
+use OCA\OpenRegister\Service\LinkServiceRuntime;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
+use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IExpressionBuilder;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -69,10 +76,8 @@ class EmailLinkServiceTest extends TestCase {
 
 		$this->service = new EmailLinkService(
 			$this->mapper,
-			$this->appManager,
 			$this->db,
-			$this->userSession,
-			$this->logger
+			new LinkServiceRuntime($this->appManager, $this->userSession, $this->logger)
 		);
 	}
 
@@ -99,7 +104,7 @@ class EmailLinkServiceTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
-		$this->service->linkEmail('uuid', 1, 1, 42, '7', 'uid-7');
+		$this->service->linkEmail((new LinkTarget('uuid', 1))->inSchema(1), (new EmailMessageRef(42, '7'))->withUid('uid-7'));
 	}
 
 	public function testLinkEmailThrowsWhenMailDisabled(): void {
@@ -108,11 +113,43 @@ class EmailLinkServiceTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
-		$this->service->linkEmail('uuid', 1, 1, 42, '7', 'uid-7');
+		$this->service->linkEmail((new LinkTarget('uuid', 1))->inSchema(1), (new EmailMessageRef(42, '7'))->withUid('uid-7'));
+	}
+
+	/**
+	 * Answer the account-owner lookup with the given owner.
+	 *
+	 * @param string $owner The uid that owns the mail account.
+	 *
+	 * @return void
+	 */
+	private function accountOwnedBy(string $owner): void {
+		$result = $this->createMock(IResult::class);
+		$result->method('fetch')->willReturn(['user_id' => $owner]);
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('select')->willReturnSelf();
+		$qb->method('from')->willReturnSelf();
+		$qb->method('where')->willReturnSelf();
+		$qb->method('setMaxResults')->willReturnSelf();
+		$qb->method('expr')->willReturn($this->createMock(IExpressionBuilder::class));
+		$qb->method('executeQuery')->willReturn($result);
+		$this->db->method('getQueryBuilder')->willReturn($qb);
+	}
+
+	public function testLinkEmailRefusesAnAccountOfSomebodyElse(): void {
+		$this->setupUser('carol');
+		$this->appManager->method('isEnabledForUser')->willReturn(true);
+		$this->accountOwnedBy('alice');
+		$this->mapper->expects($this->never())->method('findByObjectAccountMessageUid');
+		$this->mapper->expects($this->never())->method('insert');
+
+		$this->expectExceptionCode(403);
+		$this->service->linkEmail((new LinkTarget('uuid', 1))->inSchema(1), (new EmailMessageRef(42, '7'))->withUid('uid-7'));
 	}
 
 	public function testLinkEmailReturnsExistingRowWhenAlreadyLinked(): void {
 		$this->setupUser();
+		$this->accountOwnedBy('admin');
 		$this->appManager->method('isEnabledForUser')->with('mail')->willReturn(true);
 
 		$existing = new EmailLink();
@@ -124,13 +161,13 @@ class EmailLinkServiceTest extends TestCase {
 		$this->mapper
 			->expects($this->once())
 			->method('findByObjectAccountMessageUid')
-			->with('uuid', 42, 7, 'uid-7')
+			->with('uuid', new MailMessageKey(42, 7, 'uid-7'))
 			->willReturn($existing);
 
 		// insert() must NOT be called.
 		$this->mapper->expects($this->never())->method('insert');
 
-		$result = $this->service->linkEmail('uuid', 1, 1, 42, '7', 'uid-7');
+		$result = $this->service->linkEmail((new LinkTarget('uuid', 1))->inSchema(1), (new EmailMessageRef(42, '7'))->withUid('uid-7'));
 		$this->assertSame($existing, $result);
 	}
 
@@ -140,7 +177,7 @@ class EmailLinkServiceTest extends TestCase {
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
-		$this->service->linkEmail('uuid', 1, 1, 42, '0', '');
+		$this->service->linkEmail((new LinkTarget('uuid', 1))->inSchema(1), (new EmailMessageRef(42, '0'))->withUid(''));
 	}
 
 	public function testUnlinkEmailThrowsWhenNotFound(): void {
@@ -243,7 +280,7 @@ class EmailLinkServiceTest extends TestCase {
 	public function testGetMessagesForMailboxReturnsEmptyShape(): void {
 		$this->appManager->method('isEnabledForUser')->with('mail')->willReturn(false);
 
-		$result = $this->service->getMessagesForMailbox(1, 'INBOX', null, 25);
+		$result = $this->service->getMessagesForMailbox((new \OCA\OpenRegister\Service\MailboxPage(1, 'INBOX'))->startingAfter(null, 25));
 		$this->assertSame(['items' => [], 'nextCursor' => null], $result);
 	}
 }//end class

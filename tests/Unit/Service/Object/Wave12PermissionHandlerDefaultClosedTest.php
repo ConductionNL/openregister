@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -39,6 +40,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
@@ -48,6 +50,9 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 
@@ -94,7 +99,7 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		// but on this lineage IAppConfig is already a REQUIRED constructor
 		// dependency sitting at position 7 (before $logger). The positional list
 		// wave-12 shipped would bind $logger into $appConfig here.
-		return new PermissionHandler(
+		return \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			userSession: $this->userSession,
 			userManager: $this->userManager,
 			groupManager: $this->groupManager,
@@ -138,11 +143,11 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase {
 		$this->container->method('get')
 			->willReturnCallback(
 				function (string $class) use ($register) {
-					if ($class === RegisterMapper::class) {
+					if ($class === RegisterMapperInterface::class) {
 						return $this->registerMapper;
 					}
 
-					if ($class === 'OCA\OpenRegister\Service\OrganisationService') {
+					if ($class === 'OCA\OpenRegister\Service\OrganisationServiceInterface') {
 						throw new \RuntimeException('Not available');
 					}
 

@@ -17,17 +17,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class BookmarkLinkMapper
  *
  * @template-extends QBMapper<BookmarkLink>
+ * @method list<BookmarkLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class BookmarkLinkMapper extends QBMapper {
+class BookmarkLinkMapper extends QBMapper implements BookmarkLinkMapperInterface {
+
+	use ObjectKeyLinkTrait;
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -38,40 +41,6 @@ class BookmarkLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find bookmark links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return BookmarkLink[] Array of bookmark links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
-
-	/**
-	 * Find bookmark links by bookmark id.
-	 *
-	 * @param int $bookmarkId The bookmark id.
-	 *
-	 * @return BookmarkLink[] Array of bookmark links.
-	 */
-	public function findByBookmarkId(int $bookmarkId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('bookmark_id', $qb->createNamedParameter($bookmarkId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByBookmarkId()
-
-	/**
 	 * Find a specific bookmark link by object UUID and bookmark id.
 	 *
 	 * @param string $objectUuid The object UUID.
@@ -80,35 +49,13 @@ class BookmarkLinkMapper extends QBMapper {
 	 * @return BookmarkLink|null The link or null if not found.
 	 */
 	public function findByObjectAndBookmark(string $objectUuid, int $bookmarkId): ?BookmarkLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere(
-				$qb->expr()->eq('bookmark_id', $qb->createNamedParameter($bookmarkId, IQueryBuilder::PARAM_INT))
-			);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'bookmark_id', value: $bookmarkId));
+		if ($link instanceof BookmarkLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndBookmark()
-
-	/**
-	 * Delete all bookmark links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a bookmark link by object UUID + bookmark id (Tier-2 unlink).
@@ -122,13 +69,6 @@ class BookmarkLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndBookmark(string $objectUuid, int $bookmarkId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere(
-				$qb->expr()->eq('bookmark_id', $qb->createNamedParameter($bookmarkId, IQueryBuilder::PARAM_INT))
-			);
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'bookmark_id', value: $bookmarkId));
 	}//end deleteByObjectAndBookmark()
 }//end class

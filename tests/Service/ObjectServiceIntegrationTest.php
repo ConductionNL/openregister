@@ -23,9 +23,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Integration tests for ObjectService
@@ -809,7 +811,7 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$this->service->setRegister($this->testRegister);
 		$this->service->setSchema($this->testSchema);
 
-		$result = $this->service->deleteObject($uuid, _rbac: false, _multitenancy: false);
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 
 		$this->assertTrue($result);
 
@@ -830,7 +832,7 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$uuid = $saved->getUuid();
 
 		// Don't set schema context - let delete derive it
-		$result = $this->service->deleteObject($uuid, _rbac: false, _multitenancy: false);
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 
 		$this->assertTrue($result);
 
@@ -1137,17 +1139,17 @@ class ObjectServiceIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test buildObjectSearchQuery produces valid query
+	 * Test buildSearchQuery produces valid query from search parameters
 	 *
 	 * @return void
 	 */
-	public function testBuildObjectSearchQuery(): void {
+	public function testBuildSearchQueryWithSearchTerm(): void {
 		$params = [
 			'_limit' => '5',
 			'_search' => 'test query',
 		];
 
-		$query = $this->service->buildObjectSearchQuery($params);
+		$query = $this->service->buildSearchQuery(requestParams: $params);
 
 		$this->assertIsArray($query);
 	}
@@ -1166,11 +1168,7 @@ class ObjectServiceIntegrationTest extends TestCase {
 
 		$rendered = $this->service->renderEntity(
 			$saved,
-			[],
-			0,
-			[],
-			[],
-			[],
+			null,
 			false,
 			false
 		);
@@ -1405,9 +1403,8 @@ class ObjectServiceIntegrationTest extends TestCase {
 	public function testDeleteObjectsBySchema(): void {
 		$this->createTestObject(['name' => 'Schema Delete Test']);
 
-		$result = $this->service->deleteObjectsBySchema(
-			$this->testRegister->getId(),
-			$this->testSchema->getId(),
+		$result = $this->service->deleteObjectsOfTable(
+			new RegisterSchemaRef(register: $this->testRegister->getId(), schema: $this->testSchema->getId()),
 			false
 		);
 
@@ -1510,18 +1507,6 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$this->expectExceptionMessage('Vectorization temporarily disabled');
 
 		$this->service->getVectorizationStatistics();
-	}
-
-	/**
-	 * Test getVectorizationCount throws disabled exception
-	 *
-	 * @return void
-	 */
-	public function testGetVectorizationCountThrowsDisabled(): void {
-		$this->expectException(\Exception::class);
-		$this->expectExceptionMessage('Vectorization temporarily disabled');
-
-		$this->service->getVectorizationCount();
 	}
 
 	// =========================================================================

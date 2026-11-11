@@ -1,0 +1,395 @@
+{
+    "scalar": {
+        "filled": 5,
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "plain text": {
+        "filled": "no placeholder",
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "null": {
+        "filled": null,
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "cast whole": {
+        "filled": "anna",
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "cast spaced": {
+        "filled": "anna",
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "cast int": {
+        "filled": 41,
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "cast list": {
+        "filled": [
+            "a"
+        ],
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "cast empty": {
+        "filled": "{{cast:anna.none}}",
+        "gaps": [
+            "earlier",
+            "{{cast:anna.none}}"
+        ]
+    },
+    "cast short ref": {
+        "filled": "{{cast:anna}}",
+        "gaps": [
+            "earlier",
+            "{{cast:anna}}"
+        ]
+    },
+    "cast missing": {
+        "filled": "{{cast:bob.uid}}",
+        "gaps": [
+            "earlier",
+            "{{cast:bob.uid}}"
+        ]
+    },
+    "cast through text": {
+        "filled": "{{cast:bad.uid}}",
+        "gaps": [
+            "earlier",
+            "{{cast:bad.uid}}"
+        ]
+    },
+    "object field": {
+        "filled": "D",
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "object planned": {
+        "filled": "example-set-stand-in:plan.number",
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "object planned key": {
+        "filled": "{{object:plan}}",
+        "gaps": [
+            "earlier",
+            "{{object:plan}}"
+        ]
+    },
+    "object missing": {
+        "filled": "{{object:nope.id}}",
+        "gaps": [
+            "earlier",
+            "{{object:nope.id}}"
+        ]
+    },
+    "file": {
+        "filled": [
+            11,
+            "{{file:case.1}}",
+            "{{file:case.2}}",
+            13,
+            "{{file:case.9}}",
+            "{{file:case.x}}",
+            "{{file:case}}",
+            "{{file:case.-1}}"
+        ],
+        "gaps": [
+            "earlier",
+            "{{file:case.1}}",
+            "{{file:case.2}}",
+            "{{file:case.9}}",
+            "{{file:case.x}}",
+            "{{file:case}}",
+            "{{file:case.-1}}"
+        ]
+    },
+    "view task": {
+        "filled": [
+            "v-1",
+            "t-1"
+        ],
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "flow": {
+        "filled": [
+            "f-self",
+            "run-1",
+            "f-1",
+            "f-self"
+        ],
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "access link": {
+        "filled": "https://example.test/s/x",
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "lookup": {
+        "filled": [
+            "zt-1",
+            "{{lookup:empty}}",
+            "{{lookup:none}}"
+        ],
+        "gaps": [
+            "earlier",
+            "{{lookup:empty}}",
+            "{{lookup:none}}"
+        ]
+    },
+    "account": {
+        "filled": "bot-1",
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "organisation": {
+        "filled": [
+            "org-1",
+            "{{organisation:x}}"
+        ],
+        "gaps": [
+            "earlier",
+            "{{organisation:x}}"
+        ]
+    },
+    "instance": {
+        "filled": [
+            "https://nc.test",
+            "{{instance:other}}"
+        ],
+        "gaps": [
+            "earlier",
+            "{{instance:other}}"
+        ]
+    },
+    "register schema": {
+        "filled": [
+            7,
+            9,
+            "{{schema:zaken}}"
+        ],
+        "gaps": [
+            "earlier",
+            "{{schema:zaken}}"
+        ]
+    },
+    "dates": {
+        "filled": [
+            "2026-03-04",
+            "2026-03-07",
+            "2026-02-22",
+            "2026-03-09",
+            "2026-03-04",
+            "2026-03-08",
+            "{{date:x}}",
+            "{{date:12345}}"
+        ],
+        "gaps": [
+            "earlier",
+            "{{date:x}}",
+            "{{date:12345}}"
+        ]
+    },
+    "datetimes": {
+        "filled": [
+            "2026-03-04T08:12:00+00:00",
+            "2026-03-06T22:59:00+00:00",
+            "{{datetime:0 24:00}}",
+            "{{datetime:0}}",
+            "2025-08-15T22:00:00+00:00"
+        ],
+        "gaps": [
+            "earlier",
+            "{{datetime:0 24:00}}",
+            "{{datetime:0}}"
+        ]
+    },
+    "unknown kind": {
+        "filled": [
+            "{{nope:x.y}}",
+            "{{plain}}"
+        ],
+        "gaps": [
+            "earlier",
+            "{{nope:x.y}}",
+            "{{plain}}"
+        ]
+    },
+    "in text": {
+        "filled": "Hi anna, age 41, admin true off false f 1.5",
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "in text gaps": {
+        "filled": "x {{cast:anna.tags}} y {{cast:nobody.uid}} z 2026-03-05",
+        "gaps": [
+            "earlier",
+            "{{cast:anna.tags}}",
+            "{{cast:nobody.uid}}"
+        ]
+    },
+    "trailing newline": {
+        "filled": "{{cast:nobody.uid}}\n",
+        "gaps": [
+            "earlier",
+            "{{cast:nobody.uid}}\n"
+        ]
+    },
+    "nested": {
+        "filled": {
+            "a": {
+                "b": "anna",
+                "3": "{{bad:x}}"
+            },
+            "c": [
+                true,
+                1.5,
+                null
+            ]
+        },
+        "gaps": [
+            "earlier",
+            "{{bad:x}}"
+        ]
+    },
+    "broken braces": {
+        "filled": [
+            "{{cast:anna.uid",
+            "{cast:anna.uid}",
+            "{{}}",
+            "{{ anna }}"
+        ],
+        "gaps": [
+            "earlier"
+        ]
+    },
+    "no today": [
+        "{{date:+1}}",
+        "a {{datetime:0 09:00}}"
+    ],
+    "owner absent": {
+        "owner": null,
+        "refusal": ""
+    },
+    "owner cast": {
+        "owner": "anna",
+        "refusal": ""
+    },
+    "owner literal": {
+        "owner": "anna",
+        "refusal": ""
+    },
+    "owner stranger": {
+        "owner": null,
+        "refusal": "owner \"\"zed\"\" is no account the cast declares"
+    },
+    "owner gap": {
+        "owner": null,
+        "refusal": "owner \"\"{{cast:nobody.uid}}\"\" is no account the cast declares"
+    },
+    "owner not text": {
+        "owner": null,
+        "refusal": "owner \"\"{{cast:anna.age}}\"\" is no account the cast declares"
+    },
+    "owner null": {
+        "owner": null,
+        "refusal": "owner \"null\" is no account the cast declares"
+    },
+    "fillObject": [
+        {
+            "a": "anna",
+            "tpl": "Hi {{zaakNummer}}",
+            "b": "{{cast:x.y}}"
+        },
+        [
+            "{{cast:x.y}}"
+        ],
+        []
+    ],
+    "fragment rows 0": [
+        {
+            "inbox": {
+                "uuid": "example-set-stand-in:view:inbox"
+            },
+            "gone": {
+                "uuid": "example-set-stand-in:view:gone"
+            }
+        },
+        {
+            "call": {
+                "uuid": "example-set-stand-in:task:call"
+            },
+            "7": {
+                "uuid": "example-set-stand-in:task:7"
+            }
+        },
+        {
+            "intake": {
+                "uuid": "example-set-stand-in:flow:intake",
+                "runs": {
+                    "r1": "example-set-stand-in:run:intake.r1",
+                    "r2": "example-set-stand-in:run:intake.r2",
+                    "r3": "example-set-stand-in:run:intake.r3"
+                },
+                "waitsOn": {
+                    "example-set-stand-in:run:intake.r1": "wait",
+                    "example-set-stand-in:run:intake.r3": ""
+                }
+            },
+            "plain": {
+                "uuid": "example-set-stand-in:flow:plain"
+            },
+            "objrun": {
+                "uuid": "example-set-stand-in:flow:objrun",
+                "runs": {
+                    "r9": "example-set-stand-in:run:objrun.r9"
+                }
+            }
+        },
+        [],
+        []
+    ],
+    "fragment rows 1": [
+        {
+            "inbox": {
+                "uuid": "v-1"
+            }
+        },
+        {
+            "call": {
+                "uuid": "t-1"
+            },
+            "7": {
+                "uuid": "t-7"
+            }
+        },
+        {
+            "intake": {
+                "uuid": "f-1"
+            }
+        },
+        [],
+        []
+    ]
+}

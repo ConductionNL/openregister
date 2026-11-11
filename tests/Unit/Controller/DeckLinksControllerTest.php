@@ -31,9 +31,13 @@ use Exception;
 use OCA\OpenRegister\Controller\DeckLinksController;
 use OCA\OpenRegister\Db\DeckLink;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\DeckPlacement;
 use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\CardDraft;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\DeckLinksControllerFactory;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -42,6 +46,7 @@ use PHPUnit\Framework\TestCase;
  * DeckLinksControllerTest.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class DeckLinksControllerTest extends TestCase {
 
@@ -88,7 +93,7 @@ class DeckLinksControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->settingsService = $this->createMock(SettingsService::class);
 
-		$this->controller = new DeckLinksController(
+		$this->controller = DeckLinksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,
@@ -166,7 +171,7 @@ class DeckLinksControllerTest extends TestCase {
 		$link->setCardId(99);
 
 		$this->service->method('linkCard')
-			->with('abc-123', 1, 2, 99)
+			->with($this->equalTo((new LinkTarget('abc-123', 1))->inSchema(2)), 99)
 			->willReturn($link);
 
 		$response = $this->controller->link('reg', 'sch', 'obj');
@@ -222,14 +227,8 @@ class DeckLinksControllerTest extends TestCase {
 		$this->service->expects($this->once())
 			->method('createAndLinkCard')
 			->with(
-				'abc-123',
-				1,
-				2,
-				10,
-				20,
-				'New card',
-				'Body',
-				'2026-06-01T12:00:00+00:00'
+				(new LinkTarget('abc-123', 1))->inSchema(2),
+				(new CardDraft('New card', 20))->onBoard(10)->withDetails('Body', '2026-06-01T12:00:00+00:00')
 			)
 			->willReturn($link);
 
@@ -333,7 +332,7 @@ class DeckLinksControllerTest extends TestCase {
 
 		$this->settingsService->expects($this->once())
 			->method('setDeckDefault')
-			->with('zaak', 7, 11);
+			->with('zaak', new DeckPlacement(boardId: 7, stackId: 11));
 
 		$response = $this->controller->setDefault('zaak');
 

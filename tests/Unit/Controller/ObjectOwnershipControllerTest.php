@@ -32,6 +32,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
+use OCA\OpenRegister\Service\Rbac\OwnedRecord;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectOwnershipControllerFactory;
 use OCA\OpenRegister\Controller\ObjectOwnershipController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -99,7 +102,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn(new Schema());
 
-		$this->controller = new ObjectOwnershipController(
+		$this->controller = ObjectOwnershipControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->objectService,
@@ -218,9 +221,11 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$this->ownership->expects($this->once())
 			->method('claim')
 			->with(
-				$this->isInstanceOf(Register::class),
-				$this->isInstanceOf(Schema::class),
-				$this->isInstanceOf(ObjectEntity::class),
+				$this->callback(
+					static fn (OwnedRecord $record): bool => $record->register instanceof Register
+						&& $record->schema instanceof Schema
+						&& $record->object instanceof ObjectEntity
+				),
 				false
 			)
 			->willReturn(
@@ -279,8 +284,6 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$this->ownership->expects($this->once())
 			->method('claim')
 			->with(
-				$this->anything(),
-				$this->anything(),
 				$this->anything(),
 				true
 			)
@@ -361,7 +364,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$this->requestCarries(['ownerGroup' => 'redactie']);
 
 		$this->ownership->expects($this->once())
-			->method('setOwnerGroup')
+			->method('setOwnerGroupFor')
 			->willReturn(['scope' => 'private', 'ownerGroup' => 'redactie']);
 
 		$response = $this->controller->setOwnerGroup('zaken', 'zaak', 'uuid-1');
@@ -375,7 +378,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$this->requestCarries([]);
 
 		$this->ownership->expects($this->once())
-			->method('setOwnerGroup')
+			->method('setOwnerGroupFor')
 			->willReturn(['scope' => 'private']);
 
 		$response = $this->controller->setOwnerGroup('zaken', 'zaak', 'uuid-1');
@@ -388,7 +391,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$this->resolvesToRecord('alice');
 		$this->requestCarries(['ownerGroup' => ['redactie']]);
 
-		$this->ownership->expects($this->never())->method('setOwnerGroup');
+		$this->ownership->expects($this->never())->method('setOwnerGroupFor');
 
 		$response = $this->controller->setOwnerGroup('zaken', 'zaak', 'uuid-1');
 
@@ -399,7 +402,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$this->resolvesToRecord('alice');
 		$this->requestCarries(['ownerGroup' => 'redactie']);
 
-		$this->ownership->method('setOwnerGroup')->willThrowException(
+		$this->ownership->method('setOwnerGroupFor')->willThrowException(
 			new NotAuthorizedException('Only the owner or an administrator may change who owns this record')
 		);
 
@@ -412,8 +415,8 @@ class ObjectOwnershipControllerTest extends TestCase {
 		$this->requestCarries(['owner' => 'carol', 'objects' => ['uuid-1', 'uuid-2']]);
 
 		$this->ownership->expects($this->once())
-			->method('reassignMany')
-			->with(['uuid-1', 'uuid-2'], 'carol', false)
+			->method('reassign')
+			->with(['uuid-1', 'uuid-2'], new OwnershipReassignment(newOwner: 'carol', cascade: false))
 			->willReturn(
 				[
 					'newOwner' => 'carol',
@@ -432,7 +435,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 	public function testReassignRequiresAnOwner(): void {
 		$this->requestCarries(['objects' => ['uuid-1']]);
 
-		$this->ownership->expects($this->never())->method('reassignMany');
+		$this->ownership->expects($this->never())->method('reassign');
 
 		$response = $this->controller->reassign();
 
@@ -442,7 +445,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 	public function testReassignRequiresAtLeastOneRecord(): void {
 		$this->requestCarries(['owner' => 'carol', 'objects' => []]);
 
-		$this->ownership->expects($this->never())->method('reassignMany');
+		$this->ownership->expects($this->never())->method('reassign');
 
 		$response = $this->controller->reassign();
 
@@ -452,7 +455,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 	public function testReassignAnswers403ForANonAdministrator(): void {
 		$this->requestCarries(['owner' => 'carol', 'objects' => ['uuid-1']]);
 
-		$this->ownership->method('reassignMany')->willThrowException(
+		$this->ownership->method('reassign')->willThrowException(
 			new NotAuthorizedException('Only an administrator may assign a record to somebody else')
 		);
 
@@ -464,7 +467,7 @@ class ObjectOwnershipControllerTest extends TestCase {
 	public function testReassignAnswers500AndHidesTheDetail(): void {
 		$this->requestCarries(['owner' => 'carol', 'objects' => ['uuid-1']]);
 
-		$this->ownership->method('reassignMany')->willThrowException(
+		$this->ownership->method('reassign')->willThrowException(
 			new \RuntimeException('pg_dump at /var/lib/postgresql exploded')
 		);
 

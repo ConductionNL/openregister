@@ -12,7 +12,7 @@
  * they already have.
  *
  * Only ObjectEventGate creates it, and only the listeners named in
- * Application::registerDraftListeners() listen to it.
+ * ListenerRegistrar::registerDraftListeners() listen to it.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2

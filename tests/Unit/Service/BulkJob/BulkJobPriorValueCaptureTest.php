@@ -32,6 +32,7 @@ namespace Unit\Service\BulkJob;
 
 use OCA\OpenRegister\BulkAction\BulkActionInterface;
 use OCA\OpenRegister\BulkAction\BulkActionResult;
+use OCA\OpenRegister\BulkAction\BulkStep;
 use OCA\OpenRegister\BulkAction\ReversibleBulkActionInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\BulkJob;
@@ -44,6 +45,12 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkJob\BulkJobExecutor;
+use OCA\OpenRegister\Service\BulkJob\BulkJobPass;
+use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorServices;
+use OCA\OpenRegister\Service\BulkJob\BulkJobExecutorStores;
+use OCA\OpenRegister\Service\BulkJob\BulkJobActionCall;
+use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
+use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
 use OCA\OpenRegister\Service\BulkJob\BulkJobService;
 use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -54,6 +61,9 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\BulkJob\BulkJobActions;
+use OCA\OpenRegister\Service\BulkJob\BulkJobEnvironment;
+use OCA\OpenRegister\Service\BulkJob\BulkJobStore;
 
 final class BulkJobPriorValueCaptureTest extends TestCase {
 
@@ -130,14 +140,18 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 		$schemaMapper->method('find')->willReturn($schema);
 
 		return new BulkJobExecutor(
-			$this->jobMapper,
-			$this->memberMapper,
-			$this->resolver,
-			$this->registry,
-			$this->permissionHandler,
-			$schemaMapper,
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(IUserManager::class),
+			new BulkJobExecutorStores(
+				$this->jobMapper,
+				$this->memberMapper,
+				$schemaMapper,
+				$this->createMock(AuditTrailMapper::class)
+			),
+			new BulkJobExecutorServices(
+				$this->resolver,
+				$this->registry,
+				$this->permissionHandler,
+				$this->createMock(IUserManager::class)
+			),
 			new NullLogger()
 		);
 	}
@@ -203,11 +217,8 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 
 	public function testThePriorStatusIsOnEveryMemberOutcomeAfterTheRehearsal(): void {
 		$this->executor()->writePreviewMembers(
-			$this->job(),
-			['case-1', 'case-2'],
-			['case-1' => $this->object('case-1'), 'case-2' => $this->object('case-2')],
-			$this->reversibleAction(),
-			null
+			new BulkJobPass($this->job(), $this->reversibleAction(), null, ['case-1' => $this->object('case-1'), 'case-2' => $this->object('case-2')]),
+			['case-1', 'case-2']
 		);
 
 		$this->assertCount(2, $this->written);
@@ -218,11 +229,8 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 
 	public function testAnActionThatIsNotReversibleRecordsNothingToGoBackTo(): void {
 		$this->executor()->writePreviewMembers(
-			$this->job(BulkJob::STATE_PREVIEWED, null),
-			['case-1'],
-			['case-1' => $this->object('case-1')],
-			$this->plainAction(),
-			null
+			new BulkJobPass($this->job(BulkJob::STATE_PREVIEWED, null), $this->plainAction(), null, ['case-1' => $this->object('case-1')]),
+			['case-1']
 		);
 
 		$this->assertNull($this->written[0]['priorValues']);
@@ -296,7 +304,7 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 			$objects[$uuid] = $this->object($uuid, ['status' => str_repeat('x', 200)]);
 		}
 
-		$this->resolver->method('resolveUuids')->willReturn($uuids);
+		$this->resolver->method('idsOf')->willReturn($uuids);
 		$this->resolver->method('hydrate')->willReturn($objects);
 		$this->registry->method('get')->willReturn($this->reversibleAction());
 		$this->jobMapper->expects($this->never())->method('createFromArray');
@@ -313,20 +321,26 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 		);
 
 		$service = new BulkJobService(
-			$this->jobMapper,
-			$this->memberMapper,
-			$this->registry,
-			$this->resolver,
-			$this->createMock(BulkJobExecutor::class),
-			$this->createMock(ObjectService::class),
-			$this->createMock(IUserManager::class),
-			$this->createMock(IJobList::class),
-			$appConfig,
-			new NullLogger()
+			new BulkJobStore(
+				$this->jobMapper,
+				$this->memberMapper,
+				$this->createMock(IJobList::class),
+				new NullLogger()
+			),
+			new BulkJobActions(
+				$this->registry,
+				$this->resolver,
+				$this->createMock(BulkJobExecutor::class)
+			),
+			new BulkJobEnvironment(
+				$this->createMock(ObjectService::class),
+				$this->createMock(IUserManager::class),
+				$appConfig
+			)
 		);
 
 		try {
-			$service->create('openregister:set-properties', [], ['ids' => $uuids], null, 'coordinator', 1, 2);
+			$service->createFromRequest(new BulkJobRequest(new BulkJobActionCall('openregister:set-properties', []), new BulkJobSelection(['ids' => $uuids], 1, 2), 'coordinator', null));
 			$this->fail('The undo ceiling should have refused this job.');
 		} catch (BulkJobRefusedException $exception) {
 			$this->assertSame('undo-ceiling', $exception->getReason());
@@ -351,19 +365,16 @@ final class BulkJobPriorValueCaptureTest extends TestCase {
 			]
 		);
 		$action->method('apply')->willReturnCallback(
-			static function (ObjectEntity $object, array $parameters, bool $commit, ?IUser $user = null) use (&$seen): BulkActionResult {
-				$seen[] = $user?->getUID();
+			static function (BulkStep $step) use (&$seen): BulkActionResult {
+				$seen[] = $step->actor?->getUID();
 
 				return BulkActionResult::applied();
 			}
 		);
 
 		$this->executor()->writePreviewMembers(
-			$this->job(),
-			['case-1'],
-			['case-1' => $this->object('case-1')],
-			$action,
-			$actor
+			new BulkJobPass($this->job(), $action, $actor, ['case-1' => $this->object('case-1')]),
+			['case-1']
 		);
 
 		$this->assertSame(['coordinator'], $seen);
