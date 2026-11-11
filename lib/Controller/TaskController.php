@@ -46,6 +46,7 @@ use DateTime;
 use OCA\OpenRegister\Controller\Support\TaskCompletionCommand;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TaskControllerServices;
+use OCA\OpenRegister\Controller\Support\TaskInboxRequest;
 use OCA\OpenRegister\Db\ListQuery;
 use OCA\OpenRegister\Db\TaskInboxAnchor;
 use OCA\OpenRegister\Db\TaskInboxAudience;
@@ -54,6 +55,7 @@ use OCA\OpenRegister\Db\TaskInboxDueWindow;
 use OCA\OpenRegister\Db\TaskInboxFilter;
 use OCA\OpenRegister\Db\TaskInboxOrder;
 use OCA\OpenRegister\Db\TaskInboxSelection;
+use OCA\OpenRegister\Exception\ActionParameterTypeException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
@@ -249,66 +251,37 @@ class TaskController extends Controller {
 	/**
 	 * The inbox: what is waiting for me, with subject context and a total.
 	 *
-	 * @param string $scope assigned|pooled|watched|all.
-	 * @param string|null $state Restrict to CMMN states (comma-separated).
-	 * @param string|null $isTerminal 'true'|'false' to restrict on terminality.
-	 * @param string|null $priority Restrict to one priority.
-	 * @param string|null $kind Restrict to one kind of work, as the creator
-	 *                          named it (`reminder`, and whatever else a
-	 *                          consuming app writes). The engine attaches no
-	 *                          behaviour to the value.
-	 * @param string|null $objectUuid Restrict to tasks anchored to this object.
-	 * @param string|null $runUuid Restrict to the tasks one flow run raised.
-	 *                             This ANCHORS the read rather than filtering
-	 *                             it: `scope` is ignored, because the run's
-	 *                             view asks what the run asked, not what it
-	 *                             asked the caller. Visibility still applies.
-	 * @param string|null $overdue 'true' to restrict to derived-overdue tasks.
-	 * @param string|null $dueAfter ISO-8601 instant; only tasks due at or
-	 *                              after it. Pairs with `dueBefore` to make a
-	 *                              window, which `overdue` cannot express.
-	 * @param string|null $dueBefore ISO-8601 instant; only tasks due strictly
-	 *                               before it.
-	 * @param string $sort dueAt|priority|created. A leading `-` inverts
-	 *                     the order (`-dueAt`), so sort and direction travel
-	 *                     as one parameter.
-	 * @param int $limit Page size.
-	 * @param int $offset Page offset.
-	 * @param string|null $includeBlocked 'true' to list tasks whose blocker is
-	 *                                    still open. An object or run anchor
-	 *                                    lists them regardless.
-	 * @param string|null $openFirst 'true' to list open tasks before finished
-	 *                               ones, each in the order `sort` asks.
+	 * Reads its query parameters from the request (TaskInboxRequest):
+	 * `scope` (assigned|pooled|watched|all), `state` (CMMN states,
+	 * comma-separated), `isTerminal` ('true'|'false'), `priority`, `kind`
+	 * (the kind of work as the creator named it; the engine attaches no
+	 * behaviour to it), `objectUuid` (tasks anchored to this object),
+	 * `runUuid` (the tasks one flow run raised; this ANCHORS the read, so
+	 * `scope` is ignored while visibility still applies), `overdue` ('true'
+	 * for derived-overdue tasks), `dueAfter` and `dueBefore` (ISO-8601
+	 * instants of a due window, at-or-after and strictly before), `sort`
+	 * (dueAt|priority|created, a leading `-` inverts it), `limit`, `offset`,
+	 * `includeBlocked` ('true' to list tasks whose blocker is still open; an
+	 * object or run anchor lists them regardless) and `openFirst` ('true' to
+	 * list open tasks before finished ones).
 	 *
-	 * @return JSONResponse The page: results, total, limit, offset.
+	 * @return JSONResponse The page: results, total, limit, offset; 400 for a parameter of the wrong type.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) TaskInboxRequest::fromParams() is the value object's named constructor (ADR-011 Rule 6).
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
-	public function index(
-		string $scope = TaskInboxCriteria::SCOPE_ASSIGNED,
-		?string $state = null,
-		?string $isTerminal = null,
-		?string $priority = null,
-		?string $kind = null,
-		?string $objectUuid = null,
-		?string $runUuid = null,
-		?string $overdue = null,
-		?string $dueAfter = null,
-		?string $dueBefore = null,
-		string $sort = TaskInboxCriteria::SORT_DUE,
-		int $limit = 25,
-		int $offset = 0,
-		?string $includeBlocked = null,
-		?string $openFirst = null,
-	): JSONResponse {
-		$filters = compact('state', 'isTerminal', 'priority', 'kind', 'objectUuid', 'runUuid');
-		$flags = compact('overdue', 'dueAfter', 'dueBefore', 'includeBlocked', 'openFirst');
-		$order = [ltrim($sort, '-') => (str_starts_with($sort, '-') === true ? 'desc' : 'asc')];
+	public function index(): JSONResponse {
+		try {
+			$request = TaskInboxRequest::fromParams(params: $this->request->getParams());
+		} catch (ActionParameterTypeException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
 
-		return $this->inboxPage(scope: $scope, query: new ListQuery(limit: $limit, offset: $offset, filters: $filters + $flags, sort: $order));
+		return $this->inboxPage(scope: $request->scope, query: $request->query);
 	}//end index()
 
 	/**
