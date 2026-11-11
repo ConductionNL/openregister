@@ -404,11 +404,23 @@ class ConnectionReporter implements ConnectionReporterInterface {
 			$this->eventDispatcher->dispatchTyped($event);
 			return true;
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[ConnectionReporter] Could not send a connection event to integriq',
-				context: ['key' => $key, 'exception' => $e->getMessage()]
-			);
+			$this->logSendFailure(key: $key, failure: $e);
 			return false;
 		}
 	}//end send()
+
+	/**
+	 * Log a connection event that could not be built or dispatched.
+	 *
+	 * @param string    $key     The connection key.
+	 * @param Throwable $failure What went wrong.
+	 *
+	 * @return void
+	 */
+	private function logSendFailure(string $key, Throwable $failure): void {
+		$this->logger->warning(
+			message: '[ConnectionReporter] Could not send a connection event to integriq',
+			context: ['key' => $key, 'exception' => $failure->getMessage()]
+		);
+	}//end logSendFailure()
 }//end class
