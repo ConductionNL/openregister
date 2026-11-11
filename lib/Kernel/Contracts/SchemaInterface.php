@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\Schema\GrantQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery;
 
 use DateTime;
 use Exception;

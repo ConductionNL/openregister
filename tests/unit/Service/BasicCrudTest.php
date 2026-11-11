@@ -86,9 +86,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Db\Schema\GrantActor;
-use OCA\OpenRegister\Db\Schema\GrantObject;
-use OCA\OpenRegister\Db\Schema\GrantQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantObject;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;

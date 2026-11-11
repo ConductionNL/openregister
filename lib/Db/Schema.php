@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\Schema\AnnotationVocabulary;
 use OCA\OpenRegister\Db\Schema\AuthorizationRulesValidator;
 use OCA\OpenRegister\Db\Schema\ConfigurationValidator;
 use OCA\OpenRegister\Db\Schema\DeclaredActions;
-use OCA\OpenRegister\Db\Schema\GrantQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery;
 use OCA\OpenRegister\Db\Schema\PropertyAuthorization;
 use OCA\OpenRegister\Db\Schema\SchemaGrantEvaluator;
 use OCA\OpenRegister\Db\Schema\VocabularyEntries;

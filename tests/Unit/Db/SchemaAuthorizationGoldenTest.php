@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\Schema\GrantActor;
-use OCA\OpenRegister\Db\Schema\GrantObject;
-use OCA\OpenRegister\Db\Schema\GrantQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantObject;
+use OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use PHPUnit\Framework\TestCase;
