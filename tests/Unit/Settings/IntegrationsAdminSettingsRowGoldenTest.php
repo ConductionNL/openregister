@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Settings;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -93,7 +94,7 @@ class IntegrationsAdminSettingsRowGoldenTest extends TestCase {
 				return false;
 			}
 
-			public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+			public function list(ObjectRef $ref, array $filters = []): array {
 				return [];
 			}
 
