@@ -2528,3 +2528,4 @@ integriq	3279	b70324b36e2b798ecbd5ed6f6d7051c12736c7f2	GREEN	vm1:19733	tree of 2
 integriq	3280	b56f9ea6417fc6d82c5d9a0f5c8eaa1c1b46c5d6	GREEN	vm1:19733	tree of 25 green on dae2686a17; unit failures only inherited (1); floor held
 integriq	3281	ad88c8bf65a3880ee900703423fd1c5d1e070061	GREEN	vm1:19733	tree of 25 green on dae2686a17; unit failures only inherited (1); floor held
 integriq	3282	395c1a405d4c4b811b2eceb2a16b1586908ee23b	GREEN	vm1:19733	tree of 25 green on dae2686a17; unit failures only inherited (1); floor held
+keepiq	1606	5df8ccfbd8f57d72b5da46aa12898d3e167db687	GREEN	vm2:7	tree of 22: unit 3545 OK (baseline 0), vitest 5460 + extension 8024 green, floor holds
