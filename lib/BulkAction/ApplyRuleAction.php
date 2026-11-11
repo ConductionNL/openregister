@@ -33,7 +33,7 @@ use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use Throwable;
 use OCA\OpenRegister\Service\Rules\ApplyRuleServices;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Applying a rule to objects that already exist.

@@ -36,7 +36,7 @@ use DateTime;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Mirrors status and result onto the anchoring object.

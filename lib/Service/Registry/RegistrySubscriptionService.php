@@ -39,7 +39,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Coordinates the registry subscription lifecycle and the inbound update.

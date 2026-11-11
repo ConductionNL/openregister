@@ -80,7 +80,7 @@ use OCA\OpenRegister\Service\Object\ObjectDeleteRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
 use OCA\OpenRegister\Service\Object\ObjectSaveRun;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\SchemaRevalidation;
 use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Object\BulkSaveOptions;

@@ -41,7 +41,7 @@ use OCA\OpenRegister\Db\BulkJobMember;
 use OCA\OpenRegister\Db\BulkJobMemberMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * The built-in inverse of a reversible bulk job.

@@ -149,7 +149,7 @@ use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Writes one OpenRegister object per flow item, as the run's owner.
