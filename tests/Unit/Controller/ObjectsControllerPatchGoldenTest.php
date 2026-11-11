@@ -52,6 +52,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 
 /**
  * Golden test for PATCH and POST .../{id}/patch: the read before the write, the merge, the save, every refusal.
@@ -341,8 +342,8 @@ class ObjectsControllerPatchGoldenTest extends TestCase {
 				'fails' => throw new RuntimeException('secret detail'),
 			};
 		});
-		$service->method('unlockObject')->willReturnCallback(function (...$args) {
-			$this->calls[] = ['unlockObject' => $args];
+		$service->method('unlockObject')->willReturnCallback(function (UnlockRequest $request) {
+			$this->calls[] = ['unlockObject' => [$request->identifier, $request->advisory, $request->runUuid]];
 			return true;
 		});
 		return $service;
