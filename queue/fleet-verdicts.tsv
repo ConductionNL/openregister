@@ -3054,6 +3054,7 @@ learniq	2287	ea36e690e1f212e71a248fe6098aaf5ac9f73136	GREEN	FV9-02:3	tree green 
 learniq	2288	aaa7035f78bec252095b6b6ad9f190697b8862d7	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
 learniq	2289	1042819c544a464ad669d99ae3cc9edc90640536	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
 learniq	2290	8e84c3e327afa37a470dbda35a66058666aa257c	GREEN	FV9-02:3	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
+stackiq	1667	a1bf89fbd90f15b8bc21e3d3c8dfa9d8ec86c674	RED	FV9-01:4	unit tests fail beyond development: OCA\Stackiq\Tests\Unit\Service\CmdbExportImportServiceTest::testAnUnresolvableOwnerIsSkippedWithAWarning (added test errors: OpenRegister PackDefinitionValidator is not available)
 buildiq	1301	8a57239a03233aa6ee8c67826c6c74e779e853b7	GREEN	FV9-06:5	unit + vitest green against baseline; floor holds
 buildiq	1302	db45d4731979e407e77162efb51e040e5b0e1d33	GREEN	FV9-06:5	unit + vitest green against baseline; floor holds
 buildiq	1303	0d1218cc834d74b2068169b26d5a38bcd5449bc3	GREEN	FV9-06:5	unit + vitest green against baseline; floor holds
