@@ -79,6 +79,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ObjectDeleteRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ObjectFindScope;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\ObjectSaveRun;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Service\Object\SchemaRevalidation;
@@ -117,7 +118,6 @@ use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\ObjectListRequest;
 use OCA\OpenRegister\Service\Object\ObjectSelection;
-use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\SearchOptions;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Object\LockRequest;
@@ -162,6 +162,7 @@ use OCA\OpenRegister\Service\Object\Collaborators\ObjectAccessServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectPlatformServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectQueryServices;
 use OCA\OpenRegister\Service\Object\Collaborators\ObjectWriteServices;
+use TypeError;
 
 /**
  * Primary Object Management Service for OpenRegister
@@ -1787,21 +1788,17 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @return ObjectEntity The object.
      *
      * @throws OcpDoesNotExistException When the object is not found in that scope.
+     * @throws TypeError                When the id is not a string: the get handler reads by string id only.
      *
      * @spec exclude Part of the find() facade; read behaviour owned by object-interactions.
      */
     private function getForFind(ObjectFindRequest $request, ObjectFindScope $scope): ObjectEntity
     {
-        return $this->getHandler->find(
-            id: $request->id,
-            register: $scope->register,
-            schema: $scope->schema,
-            _extend: $request->extend,
-            files: $request->files,
-            _rbac: $request->rbac,
-            _multitenancy: $request->multitenancy,
-            _audit: $request->audit
-        );
+        if (is_string($request->id) === false) {
+            throw new TypeError('GetObject::find(): Argument #1 ($id) must be of type string, '.get_debug_type($request->id).' given');
+        }
+
+        return $this->getHandler->find(request: $request, scope: new ReadScope(register: $scope->register, schema: $scope->schema));
     }//end getForFind()
 
     /**
@@ -2025,13 +2022,15 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 $this->applyScope(register: $target->register, schema: $target->schema);
 
                 return $this->getHandler->findSilent(
-                    id: (string) $request->id,
-                    register: $this->currentRegister,
-                    schema: $this->currentSchema,
-                    _extend: $request->extend,
-                    files: $request->files,
-                    _rbac: $request->rbac,
-                    _multitenancy: $request->multitenancy
+                    request: new ObjectFindRequest(
+                        id: (string) $request->id,
+                        extend: $request->extend,
+                        files: $request->files,
+                        rbac: $request->rbac,
+                        multitenancy: $request->multitenancy,
+                        audit: false
+                    ),
+                    scope: new ReadScope(register: $this->currentRegister, schema: $this->currentSchema)
                 );
             }
         );

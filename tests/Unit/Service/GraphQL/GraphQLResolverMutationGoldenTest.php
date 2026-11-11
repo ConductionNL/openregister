@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -132,8 +134,8 @@ class GraphQLResolverMutationGoldenTest extends TestCase {
 
 		$getObject = $this->createMock(GetObject::class);
 		$getObject->method('find')->willReturnCallback(
-			function (mixed $id, mixed $register, mixed $schema, ...$rest): ObjectEntity {
-				$this->calls[] = ['find', $id, ($register === $this->register), ($schema === $this->schema)];
+			function (ObjectFindRequest $request, ReadScope $scope): ObjectEntity {
+				$this->calls[] = ['find', $request->id, ($scope->register === $this->register), ($scope->schema === $this->schema)];
 				return $this->record();
 			}
 		);
