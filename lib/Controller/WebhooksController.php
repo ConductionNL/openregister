@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Controller\Support\RequestListPage;
 use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
 use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
 use OCA\OpenRegister\Db\ListQuery;
@@ -555,32 +556,9 @@ class WebhooksController extends Controller {
 			// Get request parameters for filtering and searching.
 			$params = $this->request->getParams();
 
-			// Extract pagination and search parameters.
-			$limit = null;
-			if (isset($params['_limit']) === true) {
-				$limit = (int)$params['_limit'];
-			}
-
-			$offset = null;
-			if (isset($params['_offset']) === true) {
-				$offset = (int)$params['_offset'];
-			}
-
-			$page = null;
-			if (isset($params['_page']) === true) {
-				$page = (int)$params['_page'];
-			}
-
-			// Extract extend parameter for additional properties.
-			$extend = $params['_extend'] ?? [];
-			if (is_string($extend) === true) {
-				$extend = [$extend];
-			}
-
-			// Convert page to offset if provided (page-based pagination).
-			if ($page !== null && $limit !== null) {
-				$offset = ($page - 1) * $limit;
-			}
+			$listPage = new RequestListPage(params: $params);
+			$limit = $listPage->limit();
+			$offset = $listPage->offset();
 
 			// Extract filters from request parameters.
 			$filters = $params['filters'] ?? [];
