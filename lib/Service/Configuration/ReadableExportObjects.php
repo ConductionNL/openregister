@@ -41,7 +41,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
-final class ReadableExportObjects {
+class ReadableExportObjects {
 	/**
 	 * Constructor.
 	 *
