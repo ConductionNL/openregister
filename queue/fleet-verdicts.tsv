@@ -387,3 +387,4 @@ portaliq	2109	ad492bc38fc272a8d0a4ebe606118e42173506bb	GREEN	FV06:2	unit suites 
 portaliq	2111	6c4e9e5debef9ca1f4f2e2b17ae0f0db906ecb9d	GREEN	FV06:2	unit suites green on the tree
 portaliq	2113	2e1a98ca96deebf57c6f09ca19e9ba16ef186106	GREEN	FV06:2	unit suites green on the tree
 portaliq	2115	e8f7c0489fc4ea70c5f2383c81932668eadfefc7	GREEN	FV06:2	unit suites green on the tree
+shillinq	2357	912eaf495129f8d9c8ff5e5129a1fb950a86dba1	RED	FV04:2	vitest tests/vitest/bankingPaymentRun.spec.js > Propose payment run > posts to a route the controller serves, with the parameters it reads
