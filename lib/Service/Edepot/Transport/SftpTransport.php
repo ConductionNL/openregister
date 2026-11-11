@@ -174,6 +174,10 @@ class SftpTransport implements SftpTransportInterface {
 		if (empty($config['password']) === true && empty($config['keyPath']) === true) {
 			throw new RuntimeException('SFTP requires either password or keyPath for authentication');
 		}
+
+		if (trim((string)($config['hostKeyFingerprint'] ?? '')) === '') {
+			throw new RuntimeException('SFTP requires hostKeyFingerprint to verify the server before sending credentials');
+		}
 	}//end validateConfig()
 
 	/**
@@ -200,21 +204,20 @@ class SftpTransport implements SftpTransportInterface {
 	}//end createSftpConnection()
 
 	/**
-	 * Refuse a server whose host key differs from `hostKeyFingerprint`, before any
-	 * credential is sent. Without a configured fingerprint the server is not verified.
+	 * Refuse a server whose host key differs from `hostKeyFingerprint`, or when no
+	 * fingerprint is configured, before any credential is sent.
 	 *
 	 * @param SFTP $sftp The connection.
 	 * @param array<string,mixed> $config SFTP configuration.
 	 *
 	 * @return void
 	 *
-	 * @throws RuntimeException When the host key differs.
+	 * @throws RuntimeException When no fingerprint is configured or the host key differs.
 	 */
 	private function assertHostKey(SFTP $sftp, array $config): void {
-		$pinned = (string)($config['hostKeyFingerprint'] ?? '');
+		$pinned = trim((string)($config['hostKeyFingerprint'] ?? ''));
 		if ($pinned === '') {
-			$this->logger->warning(message: '[SftpTransport] No hostKeyFingerprint configured, server identity not verified');
-			return;
+			throw new RuntimeException('SFTP requires hostKeyFingerprint to verify the server before sending credentials');
 		}
 
 		if (hash_equals($pinned, $this->fingerprint(hostKey: $sftp->getServerPublicHostKey())) === false) {

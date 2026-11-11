@@ -783,5 +783,30 @@
             "transferReference": null,
             "partial": false
         }
+    },
+    "sftp: no host key fingerprint": {
+        "calls": [
+            {
+                "log": "info",
+                "message": "[SftpTransport] Starting SFTP transfer",
+                "context": {
+                    "host": "h"
+                }
+            },
+            {
+                "log": "error",
+                "message": "[SftpTransport] SFTP transfer failed",
+                "context": {
+                    "error": "SFTP requires hostKeyFingerprint to verify the server before sending credentials"
+                }
+            }
+        ],
+        "result": {
+            "success": false,
+            "objectResults": [],
+            "errorMessage": "SFTP requires hostKeyFingerprint to verify the server before sending credentials",
+            "transferReference": null,
+            "partial": false
+        }
     }
 }

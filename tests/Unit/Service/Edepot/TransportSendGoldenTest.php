@@ -58,7 +58,13 @@ class TransportSendGoldenTest extends TestCase {
 		'apiKey' => 'a-real-key',
 	];
 
-	private const SFTP = ['host' => 'sftp.example.com', 'username' => 'u', 'password' => 'p', 'remotePath' => '/in/'];
+	private const SFTP = [
+		'host' => 'sftp.example.com',
+		'username' => 'u',
+		'password' => 'p',
+		'remotePath' => '/in/',
+		'hostKeyFingerprint' => 'SHA256:pinned',
+	];
 
 	/**
 	 * What the scenario saw.
@@ -265,6 +271,10 @@ class TransportSendGoldenTest extends TestCase {
 			'sftp: no credentials' => [
 				[],
 				fn ($c, $l) => $sftp($c, $l)->send($this->sip, ['host' => 'h', 'username' => 'u']),
+			],
+			'sftp: no host key fingerprint' => [
+				[],
+				fn ($c, $l) => $sftp($c, $l)->send($this->sip, ['host' => 'h', 'username' => 'u', 'password' => 'p']),
 			],
 		];
 	}//end scenarios()

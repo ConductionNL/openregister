@@ -119,6 +119,11 @@ SIP packages MUST be transmittable to e-Depot systems via SFTP, REST API, or Ope
 - **AND** the system MUST verify the upload by checking remote file size matches local file size
 - **AND** on success the transfer status MUST be updated to `completed`
 
+#### Scenario: SFTP refuses a server it cannot verify
+- **WHEN** the e-Depot is configured with transport `sftp` and no `hostKeyFingerprint` is set, or the server's host key does not match it
+- **THEN** the system MUST NOT send credentials or the SIP package
+- **AND** the transfer and the connection test MUST fail with a message naming `hostKeyFingerprint`
+
 #### Scenario: Transfer SIP via REST API
 - **WHEN** the e-Depot is configured with transport `rest_api`
 - **THEN** the system MUST POST the SIP as a multipart upload to the configured endpoint URL
