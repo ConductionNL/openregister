@@ -33,10 +33,13 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords;
 use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
+use OCA\OpenRegister\Service\Configuration\SchemaImportSteps;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -78,15 +81,16 @@ class ImportHandlerSchemaScopeLookupCharacterisationTest extends TestCase {
 		);
 
 		$this->handler = new ImportHandler(
-			schemaMapper:        $schemaMapper,
-			registerMapper:      $registerMapper,
-			objectEntityMapper:  $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper:       $this->createMock(MappingMapper::class),
-			appConfig:           $this->createMock(IAppConfig::class),
-			logger:              $logger,
-			appDataPath:         '/tmp',
-			objectService:       $this->createMock(ObjectService::class)
+			catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $this->createMock(MagicMapper::class)),
+			records: new ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new SchemaImportSteps(),
+			logger: $logger,
+			appDataPath: '/tmp',
+			objectService: $this->createMock(ObjectService::class)
 		);
 	}//end setUp()
 
@@ -139,7 +143,11 @@ class ImportHandlerSchemaScopeLookupCharacterisationTest extends TestCase {
 
 		$this->assertSame($own, $this->withinScope('zaakapp'));
 		$this->assertSame(
-			['schema.findBySlugInIds ["page",[3,4]]', 'schema.findBySlug ["page",50,0,false,true]', 'register.getAllRegisterIdsWithSchema [9]'],
+			[
+				'schema.findBySlugInIds ["page",[3,4]]',
+				'schema.findBySlug ["page",{"limit":50,"offset":null,"filters":[],"sort":[],"search":null},false,true]',
+				'register.getAllRegisterIdsWithSchema [9]',
+			],
 			$this->calls
 		);
 	}//end testTheAppsOwnUnlinkedRowIsAdopted()
