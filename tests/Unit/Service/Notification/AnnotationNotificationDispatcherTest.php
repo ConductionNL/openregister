@@ -382,26 +382,17 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	}//end testInlinePostFiresWhenWebhookNotPersistent()
 
 	/**
-	 * @return array<string, array{0: string}>
+	 * A webhook to a scheme other than http or https is not sent.
+	 *
+	 * @return void
 	 */
-	public static function nonPublicWebhookUrls(): array {
-		return [
-			'loopback' => ['http://127.0.0.1:8080/hooks/x'],
-			'mapped loopback' => ['http://[::ffff:127.0.0.1]/hooks/x'],
-			'link-local' => ['http://169.254.169.254/latest/meta-data'],
-			'private' => ['https://10.0.0.5/hooks/x'],
-			'other scheme' => ['ftp://93.184.215.14/hooks/x'],
-		];
-	}//end nonPublicWebhookUrls()
-
-	#[\PHPUnit\Framework\Attributes\DataProvider('nonPublicWebhookUrls')]
-	public function testInlinePostIsNotSentToANonPublicTarget(string $url): void {
+	public function testInlinePostToAnotherSchemeIsNotSent(): void {
 		$schema = $this->schemaWithNotification(
-			[
+			notifications: [
 				'inline-hook' => [
 					'trigger' => ['type' => 'updated'],
 					'channels' => ['webhook'],
-					'webhook' => ['url' => $url],
+					'webhook' => ['url' => 'ftp://93.184.215.14/hooks/x'],
 					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
 					'subject' => 'inline',
 				],
@@ -411,9 +402,45 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 
 		$this->httpClient->expects($this->never())->method('newClient');
 
-		$dispatcher = $this->makeDispatcher();
-		$dispatcher->dispatch($this->object($schema), 'updated');
-	}//end testInlinePostIsNotSentToANonPublicTarget()
+		$this->makeDispatcher()->dispatch($this->object(schema: $schema), 'updated');
+	}//end testInlinePostToAnotherSchemeIsNotSent()
+
+	/**
+	 * The target is checked by Nextcloud's client at connect time, on the address it calls.
+	 *
+	 * @return void
+	 */
+	public function testInlinePostLeavesTheAddressCheckToTheNextcloudClient(): void {
+		$schema = $this->schemaWithNotification(
+			notifications: [
+				'inline-hook' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['webhook'],
+					'webhook' => ['url' => 'http://169.254.169.254/latest/meta-data'],
+					'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+					'subject' => 'inline',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$calls = [];
+		$client = $this->createMock(originalClassName: IClient::class);
+		$client->method('request')->willReturnCallback(
+			static function (string $method, string $url, array $opts) use (&$calls) {
+				$calls[] = ['url' => $url, 'options' => $opts];
+				throw new \OCP\Http\Client\LocalServerException('Host "169.254.169.254" violates local access rules');
+			}
+		);
+		$this->httpClient->method('newClient')->willReturn($client);
+
+		$this->makeDispatcher()->dispatch($this->object(schema: $schema), 'updated');
+
+		$this->assertCount(expectedCount: 1, haystack: $calls);
+		$this->assertSame(expected: 'http://169.254.169.254/latest/meta-data', actual: $calls[0]['url']);
+		$this->assertSame(expected: ['allow_local_address' => false], actual: ($calls[0]['options']['nextcloud'] ?? null));
+		$this->assertFalse(condition: ($calls[0]['options']['allow_redirects'] ?? null));
+	}//end testInlinePostLeavesTheAddressCheckToTheNextcloudClient()
 
 	public function testInlinePostDoesNotFollowRedirects(): void {
 		$schema = $this->schemaWithNotification(

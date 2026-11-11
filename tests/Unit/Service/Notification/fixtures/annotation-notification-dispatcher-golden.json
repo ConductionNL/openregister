@@ -267,7 +267,10 @@
                         "X-A": "1"
                     },
                     "timeout": 5,
-                    "allow_redirects": false
+                    "allow_redirects": false,
+                    "nextcloud": {
+                        "allow_local_address": false
+                    }
                 }
             ]
         ],
@@ -3805,7 +3808,10 @@
                         "Content-Type": "application/json"
                     },
                     "timeout": 5,
-                    "allow_redirects": false
+                    "allow_redirects": false,
+                    "nextcloud": {
+                        "allow_local_address": false
+                    }
                 }
             ]
         ],

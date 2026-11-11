@@ -30,7 +30,6 @@ namespace OCA\OpenRegister\Notifications\Service\Notification;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
-use InvalidArgumentException;
 use OCA\OpenRegister\Notifications\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Notifications\Db\HistoryDelivery;
@@ -47,7 +46,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
-use OCA\OpenRegister\Service\Security\SafeFetchUrl;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
@@ -1689,15 +1687,15 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	/**
 	 * POST the firing to a declared, non-persistent webhook with a valid URL.
 	 *
-	 * The URL must be http or https and every address its host resolves to must
-	 * be public; redirects are not followed, so the checked host is the one called.
+	 * The URL must be http or https. The call goes through Nextcloud's HTTP client,
+	 * which pins the address it resolves and refuses local and private addresses at
+	 * connect time, so the address checked is the address called; redirects are not
+	 * followed.
 	 *
 	 * @param array<string, mixed> $hook   The rule's `webhook` block.
 	 * @param RuleFiring           $firing The rule, the object, its recipients and the default-locale subject.
 	 *
 	 * @return string|null Why the call did not land, or null when it did.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) The check lives in SafeFetchUrl, a static helper.
 	 */
 	private function postWebhook(array $hook, RuleFiring $firing): ?string {
 		$url = (string)($hook['url'] ?? '');
@@ -1705,10 +1703,9 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return 'webhook url missing or malformed';
 		}
 
-		try {
-			SafeFetchUrl::assert(url: $url);
-		} catch (InvalidArgumentException $e) {
-			return 'webhook url refused: ' . $e->getMessage();
+		$scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+		if ($scheme !== 'http' && $scheme !== 'https') {
+			return 'webhook url refused: only http and https are allowed';
 		}
 
 		return $this->sendWebhook(hook: $hook, options: $this->webhookOptions(hook: $hook, firing: $firing));
@@ -1733,6 +1730,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			'headers' => array_merge(['Content-Type' => 'application/json'], $headers),
 			'timeout' => 5,
 			'allow_redirects' => false,
+			'nextcloud' => ['allow_local_address' => false],
 		];
 	}//end webhookOptions()
 
