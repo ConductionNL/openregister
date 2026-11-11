@@ -88,6 +88,7 @@ use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface;
@@ -149,8 +150,10 @@ use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Notifications\Service\PresenceBeat;
 use OCA\OpenRegister\Notifications\Service\PresenceLookup;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\Object\VerbListing;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
@@ -2927,10 +2930,7 @@ class ObjectsController extends Controller {
 	private function storedForOptions(ReferenceOptionsAsk $ask): ?ObjectEntity {
 		return WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $ask->id,
-			files: false,
-			register: $ask->register,
-			schema: $ask->schema,
-			_render: false
+			options: new ObjectFindOptions(register: $ask->register, schema: $ask->schema, render: false)
 		));
 	}//end storedForOptions()
 
@@ -3073,13 +3073,9 @@ class ObjectsController extends Controller {
 	private function foundForShow(ObjectShow $show, ObjectReadOptions $read): ?ObjectEntity {
 		return $this->objectService->find(
 			id: $show->id,
-			_extend: $read->extend,
-			files: false,
-			register: $show->path[0],
-			schema: $show->path[1],
+			options: new ObjectFindOptions(register: $show->path[0], schema: $show->path[1], extend: $read->extend, render: false),
 			_rbac: $read->scoped,
-			_multitenancy: $read->scoped,
-			_render: false
+			_multitenancy: $read->scoped
 		);
 	}//end foundForShow()
 
@@ -3273,10 +3269,7 @@ class ObjectsController extends Controller {
 	private function silentPatchRead(ObjectUpdate $patch): ObjectEntity {
 		return $this->objectService->findSilent(
 			id: $patch->target->id,
-			_extend: [],
-			files: false,
-			register: $patch->target->resolved['registerEntity'],
-			schema: $patch->target->resolved['schemaEntity'],
+			options: new ObjectFindOptions(register: $patch->target->resolved['registerEntity'], schema: $patch->target->resolved['schemaEntity']),
 			_rbac: $patch->caller->scoped,
 			_multitenancy: $patch->caller->scoped
 		);
@@ -3649,7 +3642,7 @@ class ObjectsController extends Controller {
 		}
 
 		try {
-			$this->objectService->unlockObject($objectEntity->getUuid());
+			$this->objectService->unlockObject(request: new UnlockRequest(identifier: $objectEntity->getUuid()));
 		} catch (\Exception $e) {
 			// The write succeeded, so a failed release is not the caller's
 			// problem and must not turn a 200 into an error. The entity keeps
@@ -3829,10 +3822,7 @@ class ObjectsController extends Controller {
 	private function silentlyRead(ObjectUpdate $update): ObjectEntity {
 		return $this->objectService->findSilent(
 			id: $update->target->id,
-			_extend: [],
-			files: false,
-			register: $update->target->resolved['register'],
-			schema: $update->target->resolved['schema'],
+			options: new ObjectFindOptions(register: $update->target->resolved['register'], schema: $update->target->resolved['schema']),
 			_rbac: $update->caller->scoped,
 			_multitenancy: $update->caller->scoped
 		);
@@ -4499,8 +4489,7 @@ class ObjectsController extends Controller {
 		$scoped = ($this->isCurrentUserAdmin() === false);
 		$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 			id: $route->id,
-			register: $route->register,
-			schema: $route->schema,
+			options: new ObjectFindOptions(register: $route->register, schema: $route->schema),
 			_rbac: $scoped,
 			_multitenancy: $scoped
 		));
@@ -4983,9 +4972,7 @@ class ObjectsController extends Controller {
 		$data = $this->request->getParams();
 
 		$lockResult = $this->objectService->lockObject(
-			identifier: $id,
-			process: ($data['process'] ?? null),
-			duration: self::lockDuration(data: $data)
+			request: new LockRequest(identifier: $id, process: ($data['process'] ?? null), duration: self::lockDuration(data: $data))
 		);
 
 		// 🔴 `locked` WAS THE LITERAL `true`, WHICH IS WHY THE STEP
@@ -5047,7 +5034,7 @@ class ObjectsController extends Controller {
 		try {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
-			$released = $this->objectService->unlockObject($id);
+			$released = $this->objectService->unlockObject(request: new UnlockRequest(identifier: $id));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $e) {
@@ -7155,12 +7142,9 @@ class ObjectsController extends Controller {
 		try {
 			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $ref->id,
-				files: false,
-				register: $ref->register,
-				schema: $ref->schema,
+				options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema, render: false),
 				_rbac: $rbac,
-				_multitenancy: $rbac,
-				_render: false
+				_multitenancy: $rbac
 			));
 		} catch (MultipleObjectsReturnedException $e) {
 			return $this->ambiguousIdentifierResponse(id: $ref->id);

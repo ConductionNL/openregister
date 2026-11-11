@@ -57,17 +57,31 @@ class ExampleSetProfiles {
 	private const STATUS_SERVICE = 'OCA\UserStatus\Service\StatusService';
 
 	/**
+	 * The accounts.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $users;
+
+	/**
+	 * Hands out the other app's services.
+	 *
+	 * @var ContainerInterface
+	 */
+	private readonly ContainerInterface $container;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IUserManager       $users     The accounts.
-	 * @param IAccountManager    $profiles  The profile properties.
-	 * @param ContainerInterface $container Hands out the absence and status services when their apps are there.
+	 * @param ExampleSetAppReach $reach    The accounts, and the absence and status services when their apps are there.
+	 * @param IAccountManager    $profiles The profile properties.
 	 */
 	public function __construct(
-		private readonly IUserManager $users,
+		ExampleSetAppReach $reach,
 		private readonly IAccountManager $profiles,
-		private readonly ContainerInterface $container,
 	) {
+		$this->users     = $reach->users;
+		$this->container = $reach->container;
 	}//end __construct()
 
 	/**

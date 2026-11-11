@@ -1,16 +1,15 @@
 <?php
 
 /**
- * OpenRegister ObjectNotesQuery.
+ * OpenRegister NoteDraft.
  *
- * One read of the notes on an object: the object, the page and the
- * visibility the reader may see.
+ * A note about to be written on an object: the object, the text and the requested visibility.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Files\Service
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -23,28 +22,26 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Files\Service;
-
-use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
- * One read of the notes on an object.
+ * A note about to be written on an object: the object, the text and the requested visibility.
  *
  * @spec openspec/specs/file-actions/spec.md
  */
-final class ObjectNotesQuery {
+final class NoteDraft {
 	/**
 	 * Constructor.
 	 *
-	 * @param string      $objectUuid The object the notes are written on.
-	 * @param ListQuery   $page       The limit and offset of the page.
-	 * @param string|null $visibility Only notes with this visibility; null for every note.
+	 * @param string      $objectUuid The object the note is written on.
+	 * @param string      $message    The note text.
+	 * @param string|null $visibility Requested visibility; null for the default.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function __construct(
 		public readonly string $objectUuid,
-		public readonly ListQuery $page,
+		public readonly string $message,
 		public readonly ?string $visibility = null,
 	) {
 	}//end __construct()

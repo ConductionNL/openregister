@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Notifications\Service;
 
 use OCA\OpenRegister\Db\EmailLinkMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Notifications\Service\Notification\ReplyThreadResolver;
 use Throwable;
 
@@ -99,7 +100,7 @@ class ReplyThreadService {
 	 */
 	private function mayRead(string $uuid): bool {
 		try {
-			return $this->objects->find(id: $uuid, _rbac: true, _multitenancy: true, _render: false, _audit: false) !== null;
+			return $this->objects->find(id: $uuid, options: new ObjectFindOptions(render: false, audit: false), _rbac: true, _multitenancy: true) !== null;
 		} catch (Throwable) {
 			return false;
 		}

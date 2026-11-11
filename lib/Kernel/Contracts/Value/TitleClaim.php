@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Mcp\Service\Chat
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Mcp\Service\Chat;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
  * A title claim: the wanted title and the user-agent pair it must be unique for.
