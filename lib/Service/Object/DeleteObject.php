@@ -670,7 +670,7 @@ class DeleteObject {
 	private function deleteResolved(DeletionRun $run, DeletionOptions $options): bool {
 		// Root deletions: check referential integrity and handle cascade.
 		if ($options->isRoot() === true) {
-			$integrityResult = $this->handleIntegrityDeletion(run: $run);
+			$integrityResult = $this->handleIntegrityDeletion(run: $run, permanent: $options->permanent);
 			if ($integrityResult !== null) {
 				return $integrityResult;
 			}
@@ -799,7 +799,8 @@ class DeleteObject {
 	 * Returns the deletion result if integrity processing handled the delete,
 	 * or null if no integrity actions were needed (caller should do simple delete).
 	 *
-	 * @param DeletionRun $run The resolved context and the uuid asked for.
+	 * @param DeletionRun $run       The resolved context and the uuid asked for.
+	 * @param bool        $permanent Whether the root is destroyed instead of tombstoned.
 	 *
 	 * @return bool|null The result, or null if no integrity processing was needed
 	 *
@@ -808,7 +809,7 @@ class DeleteObject {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function handleIntegrityDeletion(DeletionRun $run): ?bool {
+	private function handleIntegrityDeletion(DeletionRun $run, bool $permanent): ?bool {
 		$object = $run->object();
 
 		// The root's guards answer before any child is cascaded away.
@@ -833,7 +834,7 @@ class DeleteObject {
 			$this->logAndThrowRestrict(run: $run, analysis: $analysis);
 		}
 
-		return $this->executeIntegrityTransaction(run: $run, analysis: $analysis);
+		return $this->executeIntegrityTransaction(run: $run, analysis: $analysis, permanent: $permanent);
 	}//end handleIntegrityDeletion()
 
 	/**
@@ -862,8 +863,9 @@ class DeleteObject {
 	/**
 	 * Execute integrity cascade actions and root deletion within a transaction.
 	 *
-	 * @param DeletionRun      $run      The resolved context and the uuid asked for.
-	 * @param DeletionAnalysis $analysis The deletion analysis
+	 * @param DeletionRun      $run       The resolved context and the uuid asked for.
+	 * @param DeletionAnalysis $analysis  The deletion analysis
+	 * @param bool             $permanent Whether the root is destroyed instead of tombstoned.
 	 *
 	 * @return bool True if deletion succeeded
 	 *
@@ -871,7 +873,7 @@ class DeleteObject {
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function executeIntegrityTransaction(DeletionRun $run, DeletionAnalysis $analysis): bool {
+	private function executeIntegrityTransaction(DeletionRun $run, DeletionAnalysis $analysis, bool $permanent): bool {
 		$this->db->beginTransaction();
 		try {
 			[$userId, $activeOrg] = $this->resolveUserContext();
@@ -900,7 +902,7 @@ class DeleteObject {
 
 			$result = $this->delete(
 				object: $run->object(),
-				options: new RemovalOptions(cascadeContext: $rootCascadeCtx, table: $run->table())
+				options: new RemovalOptions(cascadeContext: $rootCascadeCtx, permanent: $permanent, table: $run->table())
 			);
 			$this->db->commit();
 			return $result;
