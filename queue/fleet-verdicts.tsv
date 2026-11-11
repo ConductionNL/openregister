@@ -1836,3 +1836,4 @@ filinq	1882	6b165cb75cbfd4691ca7811b944c565ba17c73ca	GREEN	fv13:3	unit PHP+JS gr
 filinq	1883	f9efc71c7e69fc92380fa700df6fc89a620cfd3e	GREEN	fv13:3	unit PHP+JS green on tree; diff read clean
 filinq	1884	72859ef5062dce9db6f7744cb29ba8a9514a7902	GREEN	fv13:4	unit PHP green on tree (no JS touched); diff read clean
 filinq	1885	dcf26455a3d9b4750fb67a1ee2b0a1c72b031552	GREEN	fv13:4	unit PHP green on tree (no JS touched); diff read clean
+stackiq	1487	3a6e1f42a219be2586c5d9478cd5b0131d24d880	GREEN	FV14:s2	unit suites green on the tree (baseline failures excluded)
