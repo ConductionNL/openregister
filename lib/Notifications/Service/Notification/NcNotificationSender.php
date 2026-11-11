@@ -34,6 +34,7 @@ use OCA\OpenRegister\Notifications\BackgroundJob\WebPushDispatchJob;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUserManager;
 use OCP\Notification\IManager as INotificationManager;
+use OCP\Notification\INotification;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -175,21 +176,7 @@ class NcNotificationSender implements NcNotificationSenderInterface {
 	 */
 	private function persist(string $uid, array $notice): string {
 		try {
-			$notification = $this->notificationManager->createNotification();
-			$notification
-				->setApp('openregister')
-				->setUser($uid)
-				->setDateTime(new DateTime())
-				->setObject('object', $notice['ref'])
-				->setSubject(
-					$notice['subjectKey'],
-					array_merge(
-						$notice['context'],
-						$notice['linkParams'],
-						['_text' => $notice['subject'], 'notificationType' => $notice['name']]
-					)
-				);
-			$this->notificationManager->notify($notification);
+			$this->notificationManager->notify($this->newNotification(uid: $uid, notice: $notice));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf('Notification "%s" to "%s" failed: %s', $notice['name'], $uid, $e->getMessage())
@@ -199,6 +186,33 @@ class NcNotificationSender implements NcNotificationSenderInterface {
 
 		return self::OUTCOME_DISPATCHED;
 	}//end persist()
+
+	/**
+	 * The notification row for one recipient: app, user, time, object reference and subject parameters.
+	 *
+	 * @param string               $uid    Recipient user UID.
+	 * @param array<string, mixed> $notice The notice, with its `ref` and `linkParams`.
+	 *
+	 * @return INotification
+	 */
+	private function newNotification(string $uid, array $notice): INotification {
+		$notification = $this->notificationManager->createNotification();
+		$notification
+			->setApp('openregister')
+			->setUser($uid)
+			->setDateTime(new DateTime())
+			->setObject('object', $notice['ref'])
+			->setSubject(
+				$notice['subjectKey'],
+				array_merge(
+					$notice['context'],
+					$notice['linkParams'],
+					['_text' => $notice['subject'], 'notificationType' => $notice['name']]
+				)
+			);
+
+		return $notification;
+	}//end newNotification()
 
 	/**
 	 * Whether the nc-notification channel's kill switch is set.
@@ -256,20 +270,7 @@ class NcNotificationSender implements NcNotificationSenderInterface {
 			return;
 		}
 
-		$objectUuid = (string)($push['object']->getUuid() ?? '');
-		$tagSuffix = $push['ruleId'];
-		if ($objectUuid !== '') {
-			$tagSuffix = $objectUuid;
-		}
-
-		$payload = [
-			'ruleId' => $push['ruleId'],
-			'originApp' => $push['originApp'],
-			'title' => $push['title'],
-			'body' => $push['body'],
-			'tag' => sprintf('openregister-%s-%s', $push['ruleId'], $tagSuffix),
-			'actions' => $push['actions'],
-		];
+		$payload = $this->pushPayload(push: $push);
 
 		foreach ($recipients as $uid) {
 			if ($this->enqueueable(uid: $uid) === true) {
@@ -277,6 +278,30 @@ class NcNotificationSender implements NcNotificationSenderInterface {
 			}
 		}
 	}//end enqueueFor()
+
+	/**
+	 * The web-push job payload shared by every recipient, tagged by object (or by rule without one).
+	 *
+	 * @param array<string, mixed> $push The rule id, origin app, title, body, actions and object.
+	 *
+	 * @return array<string, mixed> ruleId, originApp, title, body, tag and actions.
+	 */
+	private function pushPayload(array $push): array {
+		$objectUuid = (string)($push['object']->getUuid() ?? '');
+		$tagSuffix = $push['ruleId'];
+		if ($objectUuid !== '') {
+			$tagSuffix = $objectUuid;
+		}
+
+		return [
+			'ruleId' => $push['ruleId'],
+			'originApp' => $push['originApp'],
+			'title' => $push['title'],
+			'body' => $push['body'],
+			'tag' => sprintf('openregister-%s-%s', $push['ruleId'], $tagSuffix),
+			'actions' => $push['actions'],
+		];
+	}//end pushPayload()
 
 	/**
 	 * Whether a recipient is a non-empty string naming a real user.
