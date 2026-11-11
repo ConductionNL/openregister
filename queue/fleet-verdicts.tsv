@@ -506,6 +506,9 @@ humaniq	891	39a1374ebb4a7dce4a713a930adf3ddc25129fda	GREEN	FV14:1	unit suites gr
 humaniq	892	53db6d6e48aaceaeccce4a2a752cf40eb7b2d6b8	GREEN	FV14:1	unit suites green on the tree
 humaniq	894	efe2c607aecf34bd594f8a7cb16719a9157b5ac3	GREEN	FV14:1	unit suites green on the tree
 humaniq	895	d7cea78abfb5629d64939b00b67c5496342e4faf	GREEN	FV14:1	unit suites green on the tree
+portaliq	2267	9b2363f4a4d64c972e62464e0764f2db35211774	GREEN	FV06:6	unit suites green on the tree
+portaliq	2269	c338400ccec5a4a08d40834cfa22226e217da4e2	GREEN	FV06:6	unit suites green on the tree
+portaliq	2271	f08f4695d6df9927b5b88fb8c25053202b13c532	GREEN	FV06:6	unit suites green on the tree
 humaniq	896	8c1e85b3bacecfa045acfbfd8c0b35d13811a401	GREEN	FV14:1	unit suites green on the tree
 pipelinq	3232	8d0b5f1e8a997b96fd355fccbe1164a2cf3149ae	GREEN	FV07:4	tree green: phpunit 0 new failures, vitest 0 new failures
 pipelinq	3234	4ab97b6a03492e9cab205e8785e05b1026098a5c	GREEN	FV07:4	tree green: phpunit 0 new failures, vitest 0 new failures
