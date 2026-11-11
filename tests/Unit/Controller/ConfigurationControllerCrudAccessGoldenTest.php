@@ -197,9 +197,24 @@ class ConfigurationControllerCrudAccessGoldenTest extends TestCase {
 		$this->assertSame(['x' => 1], $this->call(true, 'export')->getData());
 	}
 
-	public function testExportIncludeObjectsMustBeStrictTrue(): void {
+	public function testExportIncludeObjectsAcceptsTheQueryStringTrue(): void {
 		$this->mapper->method('find')->willReturn($this->configuration());
 		$this->request->method('getParams')->willReturn(['includeObjects' => 'true']);
+		$this->service->expects($this->once())->method('exportConfig')->with($this->anything(), true)->willReturn([]);
+		$this->call(true, 'export');
+	}
+
+	/**
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function notTrue(): array {
+		return ['string false' => ['false'], 'one' => ['1'], 'empty' => [''], 'boolean false' => [false]];
+	}
+
+	#[\PHPUnit\Framework\Attributes\DataProvider('notTrue')]
+	public function testExportLeavesObjectsOutForAnyOtherValue(mixed $value): void {
+		$this->mapper->method('find')->willReturn($this->configuration());
+		$this->request->method('getParams')->willReturn(['includeObjects' => $value]);
 		$this->service->expects($this->once())->method('exportConfig')->with($this->anything(), false)->willReturn([]);
 		$this->call(true, 'export');
 	}
