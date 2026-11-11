@@ -30,7 +30,7 @@ use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Tests for the delete() forwarding behaviour on ObjectServiceMapperAdapter.

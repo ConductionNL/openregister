@@ -79,8 +79,8 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use Throwable;
-use OCA\OpenRegister\Service\Object\ObjectDeletion;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Constrained, host-locked, secret-injecting outbound broker.

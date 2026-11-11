@@ -33,7 +33,7 @@ use ReflectionMethod;
 use RuntimeException;
 use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionSources;
 use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionPlatform;
-use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Golden test for ArchivalRetentionTask::run().

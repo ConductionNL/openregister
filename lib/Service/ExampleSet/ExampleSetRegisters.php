@@ -39,7 +39,7 @@ use OCA\OpenRegister\Service\RegisterDescriptorService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Container\ContainerInterface;
 use Throwable;
-use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Imports and removes the registers a set requires.

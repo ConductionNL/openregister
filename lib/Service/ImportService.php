@@ -68,7 +68,7 @@ use React\Async\PromiseInterface;
 use React\EventLoop\Loop;
 use React\Promise\Promise;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Service for importing data from various formats with ReactPHP optimization

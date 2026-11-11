@@ -37,7 +37,7 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
- * @uses   \OCA\OpenRegister\Service\Object\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  * @uses   \OCA\OpenRegister\Service\Object\PatchDataMerge
  */
 class ObjectServicePatchForwardingTest extends TestCase {

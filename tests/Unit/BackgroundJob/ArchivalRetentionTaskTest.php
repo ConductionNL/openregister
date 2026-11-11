@@ -40,7 +40,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionSources;
 use OCA\OpenRegister\BackgroundJob\Support\ArchivalRetentionPlatform;
-use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 class ArchivalRetentionTaskTest extends TestCase {
 	private ArchivalRetentionTask $task;

@@ -75,7 +75,7 @@ use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Background job that enforces `x-openregister-archival` retention rules.

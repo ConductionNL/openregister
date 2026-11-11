@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Contract;
 
-use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCP\IUser;
 
 /**

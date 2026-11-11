@@ -22,7 +22,7 @@ use OCA\OpenRegister\Service\Form\FormWriteCompensation;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Undo order, the permanent delete without RBAC, and a failed undo.
