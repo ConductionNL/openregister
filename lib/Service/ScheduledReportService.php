@@ -986,32 +986,16 @@ class ScheduledReportService implements ScheduledReportsInterface {
 			$schema = $this->schemaMapper->find($report->getSchemaId(), _rbac: false, _multitenancy: false);
 		}
 
-		$filters = $report->getFiltersArray();
+		$query = new ScheduledReportExportQuery(register: $register, schema: $schema, filters: $report->getFiltersArray(), owner: $owner);
 
 		switch ($report->getFormat()) {
 			case 'csv':
-				$bytes = $this->exportService->exportToCsv(
-					request: new ObjectExportRequest(
-						register: $register,
-						schema: $schema,
-						filters: $filters,
-						currentUser: $owner,
-					)
-				);
+				$bytes = $this->exportService->exportToCsv(request: $this->exportRequest(query: $query));
 				return ['bytes' => $bytes, 'rowCount' => $this->countCsvRows(csv: $bytes)];
 			case 'pdf':
-				return $this->exportPdf(
-					query: new ScheduledReportExportQuery(register: $register, schema: $schema, filters: $filters, owner: $owner)
-				);
+				return $this->exportPdf(query: $query);
 			default:
-				$spreadsheet = $this->exportService->exportToExcel(
-					request: new ObjectExportRequest(
-						register: $register,
-						schema: $schema,
-						filters: $filters,
-						currentUser: $owner,
-					)
-				);
+				$spreadsheet = $this->exportService->exportToExcel(request: $this->exportRequest(query: $query));
 				return [
 					'bytes' => $this->spreadsheetToXlsxBytes(spreadsheet: $spreadsheet),
 					'rowCount' => $this->countSpreadsheetRows(spreadsheet: $spreadsheet),
@@ -1086,6 +1070,22 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	}//end countSpreadsheetRows()
 
 	/**
+	 * The export-service request for a scheduled report's export.
+	 *
+	 * @param ScheduledReportExportQuery $query What to export, and as whom.
+	 *
+	 * @return ObjectExportRequest
+	 */
+	private function exportRequest(ScheduledReportExportQuery $query): ObjectExportRequest {
+		return new ObjectExportRequest(
+			register: $query->register,
+			schema: $query->schema,
+			filters: $query->filters,
+			currentUser: $query->owner,
+		);
+	}//end exportRequest()
+
+	/**
 	 * Render a pdf export, with a best-effort row count for the email body.
 	 *
 	 * @param ScheduledReportExportQuery $query What to export, and as whom.
@@ -1095,14 +1095,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * @throws ExportTooLargeException When the pdf row cap is exceeded.
 	 */
 	private function exportPdf(ScheduledReportExportQuery $query): array {
-		$bytes = $this->exportService->exportToPdf(
-			request: new ObjectExportRequest(
-				register: $query->register,
-				schema: $query->schema,
-				filters: $query->filters,
-				currentUser: $query->owner,
-			),
-		);
+		$bytes = $this->exportService->exportToPdf(request: $this->exportRequest(query: $query));
 
 		return ['bytes' => $bytes, 'rowCount' => $this->bestEffortRowCount(query: $query)];
 	}//end exportPdf()
@@ -1118,14 +1111,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 */
 	private function bestEffortRowCount(ScheduledReportExportQuery $query): int {
 		try {
-			$spreadsheet = $this->exportService->exportToExcel(
-				request: new ObjectExportRequest(
-					register: $query->register,
-					schema: $query->schema,
-					filters: $query->filters,
-					currentUser: $query->owner,
-				),
-			);
+			$spreadsheet = $this->exportService->exportToExcel(request: $this->exportRequest(query: $query));
 			return $this->countSpreadsheetRows(spreadsheet: $spreadsheet);
 		} catch (\Throwable $e) {
 			$this->logger->debug(

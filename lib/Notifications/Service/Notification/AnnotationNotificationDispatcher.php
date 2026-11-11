@@ -438,13 +438,13 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return void
 	 */
 	private function resolveFiringRecipients(RuleFiring $firing): void {
-		$resolved = $this->recipientResolver()->resolveWithDiagnostics(
-			recipientsSpec: ($firing->spec['recipients'] ?? []),
+		$source   = new RecipientSource(
 			data: $firing->data,
 			object: $firing->object,
 			context: $firing->context,
 			roleGroups: $this->roleGroupsFor(schema: $firing->schema)
 		);
+		$resolved = $this->recipientResolver()->resolveFromSource(recipientsSpec: ($firing->spec['recipients'] ?? []), source: $source);
 		$firing->recipients = $resolved['uids'];
 
 		// A group or role the server no longer has is a failed dispatch, not an empty one.
@@ -634,12 +634,12 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return true;
 		}
 
-		$pref = $this->gates->preferenceService->resolveEffective(
-			schemaDefault: $firing->spec,
-			userId: $delivery->uid,
-			schemaSlug: $firing->schemaSlug,
-			notificationKey: $firing->ruleId,
-			scopes: $firing->scopes
+		$pref = $this->gates->preferenceService->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: $firing->spec,
+				userId: $delivery->uid,
+				topic: new PreferenceTopic(schemaSlug: $firing->schemaSlug, notificationKey: $firing->ruleId, scopes: $firing->scopes)
+			)
 		);
 		if ($pref['enabled'] === false) {
 			return false;

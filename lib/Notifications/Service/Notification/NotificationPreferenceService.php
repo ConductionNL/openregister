@@ -479,8 +479,7 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	}//end storeOverride()
 
 	/**
-	 * Resolve the EFFECTIVE preference for a `(schemaSlug, notificationKey)`
-	 * pair as `schema-default ⊕ group-default ⊕ user-override`.
+	 * Resolve the effective preference as `schema-default ⊕ group-default ⊕ user-override`.
 	 *
 	 * Three layers, narrowest party last: the schema says what the rule does by
 	 * default, the groups the user belongs to may change it for the team, and
@@ -495,37 +494,6 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	 *
 	 * Unknown keys with no stored value at any layer resolve to the schema
 	 * default without error, exactly as before.
-	 *
-	 * @param array<string, mixed> $schemaDefault The notification spec block from the schema (provides `enabled`/`channels`).
-	 * @param string $userId The user UID.
-	 * @param string $schemaSlug The owning schema's slug.
-	 * @param string $notificationKey The notification annotation key.
-	 * @param array<int, string> $scopes Candidate scopes for this dispatch, narrowest first (e.g. `['schema:zaak', 'register:7']`).
-	 * @param array<int, string>|null $groupIds The user's groups; read from the group manager when null.
-	 *
-	 * @return array{enabled: bool, channels: array<int, string>|null, source: string, scope: string, layers: array<int, array<string, mixed>>}
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The merge's inputs: the default, the party, the scope.
-	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-the-effective-preference-merges-schema-group-and-user-and-names-the-layer-req-nrg-002
-	 */
-	public function resolveEffective(
-		array $schemaDefault,
-		string $userId,
-		string $schemaSlug,
-		string $notificationKey,
-		array $scopes = [],
-		?array $groupIds = null,
-	): array {
-		$topic = new PreferenceTopic(schemaSlug: $schemaSlug, notificationKey: $notificationKey, scopes: $scopes);
-
-		return $this->resolve(resolution: new PreferenceResolution(schemaDefault: $schemaDefault, userId: $userId, topic: $topic, groupIds: $groupIds));
-	}//end resolveEffective()
-
-	/**
-	 * Resolve the effective preference as `schema-default ⊕ group-default ⊕ user-override`.
-	 *
-	 * See {@see resolveEffective()} for the layers and the shape of the answer.
 	 *
 	 * @param PreferenceResolution $resolution The rule's default, the user, the topic and the user's groups.
 	 *
@@ -887,13 +855,13 @@ class NotificationPreferenceService implements NotificationPreferenceServiceInte
 	 * @return array<string, mixed> The entry, without the schema fields.
 	 */
 	private function entry(DeclaredNotification $declared, array $reader): array {
-		$effective = $this->resolveEffective(
-			schemaDefault: $declared->spec,
-			userId: $reader['userId'],
-			schemaSlug: $declared->schemaSlug,
-			notificationKey: $declared->key,
-			scopes: $reader['scopes'],
-			groupIds: $reader['groupIds']
+		$effective = $this->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: $declared->spec,
+				userId: $reader['userId'],
+				topic: new PreferenceTopic(schemaSlug: $declared->schemaSlug, notificationKey: $declared->key, scopes: $reader['scopes']),
+				groupIds: $reader['groupIds']
+			)
 		);
 
 		return ['notification' => $declared->key] + self::entryFields(effective: $effective, spec: $declared->spec);

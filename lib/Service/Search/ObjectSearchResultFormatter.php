@@ -80,46 +80,81 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	public function format(array|ObjectEntity $result, ?string $term): SearchResultEntry {
-		if ($result instanceof ObjectEntity) {
-			$result = $result->jsonSerialize();
-		}
-
-		$hit = new ObjectSearchHit(object: $result);
+		$hit = self::hitOf(result: $result);
 
 		$objectUrl = $this->resolveObjectUrl(hit: $hit);
 
-		// Resolve the per-app label for this (register, schema) pair.
-		$hit = $hit->withAppLabel(
-			$this->deepLinkRegistry->resolveDisplayName(
-				registerId: $hit->registerId(),
-				schemaId: $hit->schemaId()
-			)
-		);
+		$hit = $this->labelled(hit: $hit);
 
 		[$thumbnailUrl, $icon, $rounded] = $this->resolveIcon(hit: $hit);
 
-		// Create descriptive title and subline.
-		$name = $hit->selfData()['name'] ?? '';
-		$uuid = $hit->uuid();
-
-		$title = 'Unknown Object';
-		if (isset($result['title']) === true && is_string($result['title']) === true) {
-			$title = $result['title'];
-		} elseif (is_string($name) === true && $name !== '') {
-			$title = $name;
-		} elseif ($uuid !== '') {
-			$title = $uuid;
-		}
-
 		return new SearchResultEntry(
 			$thumbnailUrl,
-			$title,
+			self::titleOf(hit: $hit),
 			$this->buildSubline(hit: $hit, term: $term),
 			$objectUrl,
 			$icon,
 			$rounded
 		);
 	}//end format()
+
+	/**
+	 * The search hit for one result, normalising an entity to its rendered data.
+	 *
+	 * @param array|ObjectEntity $result The rendered object data, or the entity itself.
+	 *
+	 * @return ObjectSearchHit The hit.
+	 */
+	private static function hitOf(array|ObjectEntity $result): ObjectSearchHit {
+		if ($result instanceof ObjectEntity) {
+			$result = $result->jsonSerialize();
+		}
+
+		return new ObjectSearchHit(object: $result);
+	}//end hitOf()
+
+	/**
+	 * The hit with the per-app label of its (register, schema) pair.
+	 *
+	 * @param ObjectSearchHit $hit The search hit.
+	 *
+	 * @return ObjectSearchHit The labelled hit.
+	 */
+	private function labelled(ObjectSearchHit $hit): ObjectSearchHit {
+		return $hit->withAppLabel(
+			$this->deepLinkRegistry->resolveDisplayName(
+				registerId: $hit->registerId(),
+				schemaId: $hit->schemaId()
+			)
+		);
+	}//end labelled()
+
+	/**
+	 * The hit's title: its string `title`, else its non-empty `@self` name, else its uuid.
+	 *
+	 * @param ObjectSearchHit $hit The search hit.
+	 *
+	 * @return string The title, "Unknown Object" when the hit carries none of them.
+	 */
+	private static function titleOf(ObjectSearchHit $hit): string {
+		$result = $hit->object();
+		$name = $hit->selfData()['name'] ?? '';
+		$uuid = $hit->uuid();
+
+		if (isset($result['title']) === true && is_string($result['title']) === true) {
+			return $result['title'];
+		}
+
+		if (is_string($name) === true && $name !== '') {
+			return $name;
+		}
+
+		if ($uuid !== '') {
+			return $uuid;
+		}
+
+		return 'Unknown Object';
+	}//end titleOf()
 
 	/**
 	 * The hit's link: the owning app's deep link when one is registered and

@@ -59,13 +59,7 @@ class PreviewHandler {
 		'registers' => [],
 		'schemas' => [],
 		'objects' => [],
-		'endpoints' => [],
-		'sources' => [],
-		'mappings' => [],
-		'jobs' => [],
-		'synchronizations' => [],
-		'rules' => [],
-	];
+	] + ConfigurationComponentSections::CONNECTOR_SECTIONS;
 
 	/**
 	 * Constructor for PreviewHandler.

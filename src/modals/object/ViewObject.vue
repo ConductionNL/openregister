@@ -1032,6 +1032,7 @@ import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
+import { uploadSizeLabel } from '../../services/byteSize.js'
 import { stringToDate } from '../../services/dateUtils.js'
 import { updateFileLabels } from '../../services/fileMetadata.js'
 import { getTheme } from '../../services/getTheme.js'
@@ -2090,21 +2091,7 @@ export default {
 			window.open(filesAppUrl, '_blank')
 		},
 
-		/**
-		 * Format file size for display
-		 *
-		 * @param {number} bytes - The file size in bytes
-		 * @return {string} The formatted file size
-		 * @spec exclude display helper formatting file size
-		 */
-		formatFileSize(bytes) {
-			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-			if (bytes === 0) return 'n/a'
-			const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
-			if (i === 0 && sizes[i] === 'Bytes') return '< 1 KB'
-			if (i === 0) return bytes + ' ' + sizes[i]
-			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
-		},
+		formatFileSize: uploadSizeLabel,
 
 		/**
 		 * Truncate file name to prevent dialog alignment issues

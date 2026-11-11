@@ -45,6 +45,15 @@ use ReflectionNamedType;
  * @package  OCA\OpenRegister\Tool
  */
 abstract class AbstractTool implements ToolInterface {
+	/**
+	 * The logger method each log level is written with; anything else is info.
+	 *
+	 * @var array<string, string>
+	 */
+	private const LOG_METHODS = [
+		'error' => 'error',
+		'warning' => 'warning',
+	];
 
 	/**
 	 * User session
@@ -377,9 +386,30 @@ abstract class AbstractTool implements ToolInterface {
 	 * @psalm-suppress PossiblyNullArgument
 	 */
 	private function writeLog(ToolCall $call, ToolLogOptions $entry): void {
-		// Build context array with tool execution metadata.
-		// Includes tool name, function name, parameters, agent ID, and user ID.
-		$context = [
+		$context    = $this->logContext(call: $call);
+		$logMessage = $this->logMessage(call: $call, entry: $entry);
+
+		// Log based on severity level.
+		// Different log levels help filter and prioritize log entries:
+		// errors for critical issues that need attention, warnings for
+		// non-critical issues, info for normal operations (the default level).
+		// Add file and line to context for all log calls.
+		$contextWithLocation = array_merge(['file' => __FILE__, 'line' => __LINE__], $context);
+		$method = (self::LOG_METHODS[$entry->level] ?? 'info');
+		$this->logger->{$method}(message: $logMessage, context: $contextWithLocation);
+	}//end writeLog()
+
+	/**
+	 * The tool execution metadata a log entry carries.
+	 *
+	 * Includes tool name, function name, parameters, agent ID, and user ID.
+	 *
+	 * @param ToolCall $call The function call being logged.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function logContext(ToolCall $call): array {
+		return [
 			'file' => __FILE__,
 			'line' => __LINE__,
 			'tool' => $this->getName(),
@@ -388,43 +418,33 @@ abstract class AbstractTool implements ToolInterface {
 			'agent' => $this->agent?->getId(),
 			'user' => $this->getUserId(),
 		];
+	}//end logContext()
 
+	/**
+	 * The log line: class name, tool name, function name and message text.
+	 *
+	 * @param ToolCall        $call  The function call being logged.
+	 * @param ToolLogOptions  $entry The custom message (default: "Executing function").
+	 *
+	 * @return string
+	 */
+	private function logMessage(ToolCall $call, ToolLogOptions $entry): string {
 		// Use custom message if provided, otherwise use default message.
 		$messageText = 'Executing function';
 		if ($entry->message !== '') {
 			$messageText = $entry->message;
 		}
 
-		// Format log message with class name, tool name, function name, and message text.
 		$className = (new ReflectionClass($this))->getShortName();
-		$toolName = $this->getName();
-		$logMessage = sprintf(
+		$toolName  = $this->getName();
+		return sprintf(
 			'[%s] %s: %s: %s',
 			$className,
 			$toolName,
 			$call->functionName,
 			$messageText
 		);
-
-		// Log based on severity level.
-		// Different log levels help filter and prioritize log entries.
-		// Add file and line to context for all log calls.
-		$contextWithLocation = array_merge(['file' => __FILE__, 'line' => __LINE__], $context);
-		switch ($entry->level) {
-			case 'error':
-				// Log errors for critical issues that need attention.
-				$this->logger->error(message: $logMessage, context: $contextWithLocation);
-				break;
-			case 'warning':
-				// Log warnings for non-critical issues.
-				$this->logger->warning(message: $logMessage, context: $contextWithLocation);
-				break;
-			default:
-				// Log info for normal operations (default level).
-				$this->logger->info(message: $logMessage, context: $contextWithLocation);
-				break;
-		}
-	}//end writeLog()
+	}//end logMessage()
 
 	/**
 	 * Validate required parameters

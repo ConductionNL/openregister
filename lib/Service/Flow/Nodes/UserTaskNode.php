@@ -62,7 +62,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
-use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
@@ -644,21 +643,7 @@ class UserTaskNode implements IFlowNode, UserTaskNodeInterface, IFlowNodeConfigK
 	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
 	 */
 	private function placeOutcome(UserTaskStep $step, array $bag): array {
-		$key   = $this->config->outcomeKey(config: $step->config);
-		$items = $step->items;
-
-		foreach ($items as $index => $item) {
-			if (is_array($item) === false) {
-				continue;
-			}
-
-			$json = (array)($item[FlowItems::JSON] ?? []);
-			$json[$key] = $bag;
-			$item[FlowItems::JSON] = $json;
-			$items[$index] = $item;
-		}
-
-		return $items;
+		return (new EveryItemField(key: $this->config->outcomeKey(config: $step->config), value: $bag))->placedOn(items: $step->items);
 	}//end placeOutcome()
 
 	/**

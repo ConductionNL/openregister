@@ -134,20 +134,46 @@ class FlowLinkService implements FlowLinkServiceInterface {
 		$user  = $this->requireLinkingAdmin();
 		$onRow = $this->requireUnlinkedOperation(objectUuid: $target->objectUuid, operationId: $operationId);
 
-		$link = new FlowLink();
-		$link->setObjectUuid($target->objectUuid);
-		$link->setRegisterId($target->registerId);
-		$link->setSchemaId($target->schemaId());
-		$link->setOperationId($operationId);
-		$link->setOperationClass((string)($onRow['class'] ?? ''));
-		$link->setOperationName((string)($onRow['name'] ?? ''));
-		$link->setEntityType((string)($onRow['entity'] ?? ''));
+		$link = self::newOperationLink(target: $target, operationId: $operationId);
+		self::describeOperation(link: $link, onRow: $onRow);
 		$link->setEnabled(true);
 		$link->setLinkedBy($user->getUID());
 		$link->setLinkedAt(new DateTime());
 
 		return $this->platform->flowLinkMapper->insert($link);
 	}//end linkOperation()
+
+	/**
+	 * A link row tying an operation to an object.
+	 *
+	 * @param LinkTarget $target      The object to link to.
+	 * @param int        $operationId The Flow operation id.
+	 *
+	 * @return FlowLink The unsaved link.
+	 */
+	private static function newOperationLink(LinkTarget $target, int $operationId): FlowLink {
+		$link = new FlowLink();
+		$link->setObjectUuid($target->objectUuid);
+		$link->setRegisterId($target->registerId);
+		$link->setSchemaId($target->schemaId());
+		$link->setOperationId($operationId);
+
+		return $link;
+	}//end newOperationLink()
+
+	/**
+	 * Copy an operation's class, name and entity onto its link row.
+	 *
+	 * @param FlowLink             $link  The link row.
+	 * @param array<string, mixed> $onRow The flow_operations row.
+	 *
+	 * @return void
+	 */
+	private static function describeOperation(FlowLink $link, array $onRow): void {
+		$link->setOperationClass((string)($onRow['class'] ?? ''));
+		$link->setOperationName((string)($onRow['name'] ?? ''));
+		$link->setEntityType((string)($onRow['entity'] ?? ''));
+	}//end describeOperation()
 
 	/**
 	 * The logged-in administrator, when Flow is available to link against.
@@ -325,23 +351,34 @@ class FlowLinkService implements FlowLinkServiceInterface {
 	 */
 	private function operationRows(string $search): array {
 		try {
-			$qb = $this->platform->db->getQueryBuilder();
-			$qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
-				->from('flow_operations')
-				->orderBy('id', 'DESC');
-
-			if ($search !== '') {
-				$qb->andWhere(
-					$qb->expr()->iLike('name', $qb->createNamedParameter('%' . $search . '%'))
-				);
-			}
-
-			return $qb->executeQuery()->fetchAll();
+			return $this->operationsQuery(search: $search)->executeQuery()->fetchAll();
 		} catch (Throwable $e) {
 			$this->logger->warning('FlowLinkService::getAvailableOperations failed: ' . $e->getMessage());
 			return [];
 		}
 	}//end operationRows()
+
+	/**
+	 * The query for the Flow operations, newest first, optionally by name.
+	 *
+	 * @param string $search A name substring, or '' for all.
+	 *
+	 * @return IQueryBuilder
+	 */
+	private function operationsQuery(string $search): IQueryBuilder {
+		$qb = $this->platform->db->getQueryBuilder();
+		$qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
+			->from('flow_operations')
+			->orderBy('id', 'DESC');
+
+		if ($search !== '') {
+			$qb->andWhere(
+				$qb->expr()->iLike('name', $qb->createNamedParameter('%' . $search . '%'))
+			);
+		}
+
+		return $qb;
+	}//end operationsQuery()
 
 	/**
 	 * One picker entry of a `flow_operations` row.

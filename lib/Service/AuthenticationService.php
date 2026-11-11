@@ -225,18 +225,29 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 			&& $configuration['client_assertion_type'] === 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
 		) {
 			$callConfig['form_params']['client_assertion_type'] = $configuration['client_assertion_type'];
-			$callConfig['form_params']['client_assertion'] = $this->fetchJWTToken(
-				configuration: [
-					'algorithm' => 'PS256',
-					'secret' => $configuration['private_key'],
-					'x5t' => $configuration['x5t'],
-					'payload' => $configuration['payload'],
-				]
-			);
+			$callConfig['form_params']['client_assertion'] = $this->clientAssertionJwt(configuration: $configuration);
 		}
 
 		return $callConfig;
 	}//end withClientAssertion()
+
+	/**
+	 * The signed JWT a client presents as its assertion (PS256 over the configured private key).
+	 *
+	 * @param array $configuration The authentication configuration.
+	 *
+	 * @return string
+	 */
+	private function clientAssertionJwt(array $configuration): string {
+		return $this->fetchJWTToken(
+			configuration: [
+				'algorithm' => 'PS256',
+				'secret' => $configuration['private_key'],
+				'x5t' => $configuration['x5t'],
+				'payload' => $configuration['payload'],
+			]
+		);
+	}//end clientAssertionJwt()
 
 	/**
 	 * Create call options for OAuth with Password Credentials.
@@ -297,13 +308,7 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function fetchOAuthTokens(array $configuration): string {
-		if (isset($configuration['grant_type']) === false) {
-			throw new BadRequestException('Grant type not set, cannot request token');
-		}
-
-		if (isset($configuration['tokenUrl']) === false) {
-			throw new BadRequestException('Token URL not set, cannot request token');
-		}
+		self::assertTokenRequest(configuration: $configuration);
 
 		$callConfig = $this->grantCallConfig(configuration: $configuration);
 
@@ -317,6 +322,25 @@ class AuthenticationService implements AuthenticationTokenFetcherInterface {
 
 		return $result['access_token'];
 	}//end fetchOAuthTokens()
+
+	/**
+	 * Refuse a token request without a grant type or a token URL.
+	 *
+	 * @param array $configuration The authentication configuration.
+	 *
+	 * @return void
+	 *
+	 * @throws BadRequestException When either is not set.
+	 */
+	private static function assertTokenRequest(array $configuration): void {
+		if (isset($configuration['grant_type']) === false) {
+			throw new BadRequestException('Grant type not set, cannot request token');
+		}
+
+		if (isset($configuration['tokenUrl']) === false) {
+			throw new BadRequestException('Token URL not set, cannot request token');
+		}
+	}//end assertTokenRequest()
 
 	/**
 	 * The token call options for the configured grant type.

@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Deferral\DeferredListenerContext;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -121,28 +122,66 @@ abstract class ActorForwardedJob extends QueuedJob {
 			return;
 		}
 
+		$this->runAsCapturedActor(context: $context);
+	}//end run()
+
+	/**
+	 * Run the deferred work as the captured actor, skipping it when that actor is gone.
+	 *
+	 * @param DeferredListenerContext $context The captured dispatch-time context.
+	 *
+	 * @return void
+	 */
+	private function runAsCapturedActor(DeferredListenerContext $context): void {
 		$userId = $context->getUserId();
-		$user = null;
+		$user   = null;
 		if ($userId !== null) {
-			$user = $this->userManager->get($userId);
+			$user = $this->capturedActor(userId: $userId);
 			if ($user === null) {
-				// The captured actor no longer exists. Running anyway would
-				// misattribute the work to whatever identity the worker has,
-				// so the job skips — matching "owner gone" semantics used by
-				// scheduled reports.
-				$this->logger->warning(
-					message: '[ActorForwardedJob] Captured user no longer resolves — skipping deferred work',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'job' => static::class,
-						'userId' => $userId,
-					]
-				);
 				return;
 			}
 		}
 
+		$this->runUnderActor(user: $user, context: $context);
+	}//end runAsCapturedActor()
+
+	/**
+	 * The captured actor; null, logged, when they no longer exist.
+	 *
+	 * The captured actor no longer existing means running anyway would
+	 * misattribute the work to whatever identity the worker has, so the job
+	 * skips — matching "owner gone" semantics used by scheduled reports.
+	 *
+	 * @param string $userId The captured user id.
+	 *
+	 * @return IUser|null
+	 */
+	private function capturedActor(string $userId): ?IUser {
+		$user = $this->userManager->get($userId);
+		if ($user === null) {
+			$this->logger->warning(
+				message: '[ActorForwardedJob] Captured user no longer resolves — skipping deferred work',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'job' => static::class,
+					'userId' => $userId,
+				]
+			);
+		}
+
+		return $user;
+	}//end capturedActor()
+
+	/**
+	 * Run the deferred work with the session set to the actor, then restore it.
+	 *
+	 * @param IUser|null              $user    The actor; null for a session-less origin.
+	 * @param DeferredListenerContext $context The captured dispatch-time context.
+	 *
+	 * @return void
+	 */
+	private function runUnderActor(?IUser $user, DeferredListenerContext $context): void {
 		$previousUser = $this->userSession->getUser();
 		if ($user !== null) {
 			$this->userSession->setUser($user);
@@ -156,7 +195,7 @@ abstract class ActorForwardedJob extends QueuedJob {
 			// never carries this job's identity into the next job.
 			$this->userSession->setUser($previousUser);
 		}
-	}//end run()
+	}//end runUnderActor()
 
 	/**
 	 * The deferred listener work, executed under the re-established actor.
@@ -195,16 +234,28 @@ abstract class ActorForwardedJob extends QueuedJob {
 		}
 
 		if ($current !== $captured) {
-			$this->logger->info(
-				message: '[ActorForwardedJob] Active organisation drifted since capture — running under current authority',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'job' => static::class,
-					'captured' => $captured,
-					'current' => $current,
-				]
-			);
+			$this->logDrift(captured: $captured, current: $current);
 		}
 	}//end logOrganisationDrift()
+
+	/**
+	 * Log that the active organisation is not the one captured.
+	 *
+	 * @param string      $captured The organisation captured at dispatch.
+	 * @param string|null $current  The user's active organisation now.
+	 *
+	 * @return void
+	 */
+	private function logDrift(string $captured, ?string $current): void {
+		$this->logger->info(
+			message: '[ActorForwardedJob] Active organisation drifted since capture — running under current authority',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'job' => static::class,
+				'captured' => $captured,
+				'current' => $current,
+			]
+		);
+	}//end logDrift()
 }//end class

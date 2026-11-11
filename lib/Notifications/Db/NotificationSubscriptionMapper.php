@@ -89,6 +89,18 @@ class NotificationSubscriptionMapper extends QBMapper {
 			// Fall through to insert.
 		}
 
+		return $this->insertOrFindExisting(key: $key);
+
+	}//end subscribeTo()
+
+	/**
+	 * Insert the key's subscription; when a parallel insert won the race, return that row.
+	 *
+	 * @param SubscriptionKey $key The user and the register and/or schema.
+	 *
+	 * @return NotificationSubscription
+	 */
+	private function insertOrFindExisting(SubscriptionKey $key): NotificationSubscription {
 		$entity = new NotificationSubscription();
 		$entity->setUserId($key->userId);
 		$entity->setRegisterId($key->registerId);
@@ -103,8 +115,7 @@ class NotificationSubscriptionMapper extends QBMapper {
 			// Race: parallel insert won. Return the existing row.
 			return $this->findExisting(key: $key);
 		}
-
-	}//end subscribeTo()
+	}//end insertOrFindExisting()
 
 	/**
 	 * Unsubscribe one (user, register, schema) subscription.
@@ -188,6 +199,17 @@ class NotificationSubscriptionMapper extends QBMapper {
 				)
 			);
 
+		return $this->userIdsOf(qb: $qb);
+	}//end findSubscribedUids()
+
+	/**
+	 * Run a `user_id` query and read the uids.
+	 *
+	 * @param IQueryBuilder $qb The query selecting `user_id`.
+	 *
+	 * @return string[] List of user UIDs, in result order.
+	 */
+	private function userIdsOf(IQueryBuilder $qb): array {
 		$result = $qb->executeQuery();
 		$uids = [];
 		while (($row = $result->fetch()) !== false) {
@@ -196,7 +218,7 @@ class NotificationSubscriptionMapper extends QBMapper {
 
 		$result->closeCursor();
 		return $uids;
-	}//end findSubscribedUids()
+	}//end userIdsOf()
 
 	/**
 	 * Find an existing row for the (user, register, schema) tuple.

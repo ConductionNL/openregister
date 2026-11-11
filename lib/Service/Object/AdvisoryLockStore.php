@@ -107,6 +107,19 @@ class AdvisoryLockStore {
 		$lock = $this->payload(request: $request, now: $now);
 		$this->appConfig->setValueString('openregister', $this->key(identifier: $request->identifier), json_encode($lock));
 
+		$this->logAcquired(request: $request);
+
+		return ['uuid' => $request->identifier, 'locked' => $lock];
+	}//end acquire()
+
+	/**
+	 * Log an acquired advisory lock.
+	 *
+	 * @param LockRequest $request The lock request.
+	 *
+	 * @return void
+	 */
+	private function logAcquired(LockRequest $request): void {
 		$this->logger->info(
 			message: '[AdvisoryLockStore] Advisory (pre-creation) lock acquired',
 			context: [
@@ -116,9 +129,7 @@ class AdvisoryLockStore {
 				'process' => $request->process,
 			]
 		);
-
-		return ['uuid' => $request->identifier, 'locked' => $lock];
-	}//end acquire()
+	}//end logAcquired()
 
 	/**
 	 * The stored payload of an advisory lock taken now, for the default duration when none was asked.

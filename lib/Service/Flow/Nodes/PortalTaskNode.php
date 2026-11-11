@@ -73,7 +73,6 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use DateTime;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\Task;
-use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
@@ -607,20 +606,7 @@ class PortalTaskNode implements IFlowNode, PortalTaskNodeInterface, IFlowNodeCon
 		$bag['reason'] = ($metadata['reaskReason'] ?? null);
 		$bag['expired'] = ($bag['decided'] === false && str_starts_with((string)$bag['outcome'], 'expir') === true);
 
-		$key = $this->config->outcomeKey(config: $round->config);
-		$items = $round->items;
-		foreach ($items as $index => $item) {
-			if (is_array($item) === false) {
-				continue;
-			}
-
-			$json = (array)($item[FlowItems::JSON] ?? []);
-			$json[$key] = $bag;
-			$item[FlowItems::JSON] = $json;
-			$items[$index] = $item;
-		}
-
-		return $items;
+		return (new EveryItemField(key: $this->config->outcomeKey(config: $round->config), value: $bag))->placedOn(items: $round->items);
 	}//end placeOutcome()
 
 	/**

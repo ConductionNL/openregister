@@ -72,6 +72,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * A WRITE MUST NOT SCOPE THE NEXT READ.
@@ -261,7 +262,7 @@ class ObjectServiceContextRestorationTest extends TestCase {
 			static fn (array $object, mixed $schema, ?string $uuid, ?int $register): array => [$object, $uuid]
 		);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->createMock(DataManipulationHandler::class),
 			deleteHandler: $this->deleteHandler,
 			getHandler: $this->getHandler,
@@ -300,7 +301,7 @@ class ObjectServiceContextRestorationTest extends TestCase {
 			dateTimeNormalizer: $dateTimeNormalizer,
 			container: $this->createMock(IAppContainer::class),
 			objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end setUp()
 
 	/**

@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\AppInfo\Application;
 use Exception;
 use OCA\OpenRegister\Controller\Support\EmailLinksControllerServices;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Trait\ChecksObjectUpdateRight;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
@@ -396,12 +397,7 @@ class EmailLinksController extends Controller {
 	 *              is owned by retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-1.
 	 */
 	protected function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if (in_array($code, [401, 403, 404, 409, 503], true) === true) {
-			return new JSONResponse(['error' => $exception->getMessage()], $code);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [401, 403, 404, 409, 503]);
 	}//end mapException()
 
 	/**
