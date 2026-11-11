@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\SchemaRunEntryMapperInterface;
 use OCA\OpenRegister\Db\SchemaRunMapperInterface;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
 
 /**
@@ -535,8 +536,7 @@ class SchemaMigrationService implements SchemaMigrationServiceInterface, SchemaB
 	private function findCurrent(SchemaRunBatch $batch, ?string $uuid): ?ObjectEntity {
 		return WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $uuid,
-			register: $batch->run->getRegisterId(),
-			schema: $batch->schema,
+			options: new ObjectFindOptions(register: $batch->run->getRegisterId(), schema: $batch->schema),
 			_rbac: false,
 			_multitenancy: false
 		));

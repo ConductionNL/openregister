@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -88,14 +89,9 @@ class FlowDryRunService implements FlowDryRunServiceInterface {
 		// object does not land in anyone's recent list.
 		$object = $this->lookups->objects->find(
 			id: $ref->id,
-			_extend: [],
-			files: false,
-			register: $ref->register,
-			schema: $ref->schema,
+			options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema, audit: false),
 			_rbac: true,
-			_multitenancy: true,
-			_render: true,
-			_audit: false
+			_multitenancy: true
 		);
 		if ($object instanceof ObjectEntity === false) {
 			throw new DoesNotExistException('No such object');

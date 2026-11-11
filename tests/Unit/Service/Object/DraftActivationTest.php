@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Object\DraftPromotion;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -148,17 +149,8 @@ class DraftActivationTest extends TestCase {
 
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(
-			function (
-				int|string $id,
-				?array $_extend = [],
-				bool $files = false,
-				$register = null,
-				$schema = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-				bool $_render = true,
-				bool $_audit = true,
-			): ?ObjectEntity {
+			function (...$args): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy, $_render, $_audit] = FindCallShape::find(args: $args);
 				$this->finds[] = ['id' => $id, 'rbac' => $_rbac, 'register' => $register, 'schema' => $schema];
 				if ($id === 'gone') {
 					throw new RuntimeException('not found');
