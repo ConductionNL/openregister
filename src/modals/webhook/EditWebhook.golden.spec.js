@@ -249,3 +249,27 @@ describe('EditWebhook form plumbing (golden)', () => {
 		expect(traces).toMatchSnapshot()
 	})
 })
+
+describe('EditWebhook payload preview (golden)', () => {
+	const axios = jest.requireMock('@nextcloud/axios').default
+
+	it.each([
+		['previews with a mapping, configuration and event', { mapping: 3, configuration: { a: 1 } }, 'object.created', () => Promise.resolve({ data: { body: {} } })],
+		['previews without them', {}, null, () => Promise.resolve({ data: { body: null } })],
+		['keeps a null mapping', { mapping: null }, '', () => Promise.resolve({ data: 'p' })],
+		['reports a failed preview', { mapping: 1 }, 'e', () => Promise.reject(new Error('down'))],
+	])('%s', async (name, webhookItem, selectedEvent, answer) => {
+		axios.post = jest.fn(answer)
+		const ctx = context({ webhookItem, selectedEvent, preview: 'old', previewError: 'old' })
+		const pending = ctx.previewPayload()
+		const during = { previewing: ctx.previewing, previewError: ctx.previewError }
+		await pending
+		expect({
+			posted: axios.post.mock.calls,
+			during,
+			preview: ctx.preview,
+			previewError: ctx.previewError,
+			previewing: ctx.previewing,
+		}).toMatchSnapshot()
+	})
+})
