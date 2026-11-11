@@ -40,7 +40,7 @@ use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ObjectCheck;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore

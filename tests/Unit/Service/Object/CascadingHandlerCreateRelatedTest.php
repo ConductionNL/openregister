@@ -34,7 +34,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The save handler as the cascade sees it: the interface plus the URL generator it reads by reflection.

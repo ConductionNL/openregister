@@ -148,10 +148,10 @@ use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
-use OCA\OpenRegister\Service\Object\SavePolicy;
-use OCA\OpenRegister\Service\Object\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Writes one OpenRegister object per flow item, as the run's owner.

@@ -76,7 +76,7 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
  * @uses   \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  * @uses   \OCA\OpenRegister\Service\Object\ObjectFindRequest
  * @uses   \OCA\OpenRegister\Service\Object\ObjectFindScope
- * @uses   \OCA\OpenRegister\Service\Object\ObjectFindTarget
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)

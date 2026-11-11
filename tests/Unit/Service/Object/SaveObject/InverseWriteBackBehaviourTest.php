@@ -30,7 +30,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * A complete write-back appends the source to each target's inverse list; an incomplete declaration,

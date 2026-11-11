@@ -58,8 +58,8 @@ use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\WriteCause;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Execute declared semantic-object handoffs on top of SemanticTypeResolver.

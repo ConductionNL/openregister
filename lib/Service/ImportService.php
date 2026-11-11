@@ -68,9 +68,9 @@ use React\Async\PromiseInterface;
 use React\EventLoop\Loop;
 use React\Promise\Promise;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
-use OCA\OpenRegister\Service\Object\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Service for importing data from various formats with ReactPHP optimization

@@ -37,6 +37,8 @@ use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Corrects a value on a record and records that it was a correction.

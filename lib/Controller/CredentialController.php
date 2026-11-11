@@ -66,8 +66,8 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * HTTP controller for owner-scoped credentials and the constrained broker call.

@@ -44,7 +44,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionNamedType;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class RematerialiseCalculationsAsSystemTest extends TestCase {
 

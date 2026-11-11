@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\Credential\OAuth2RefreshSteps;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshTarget;
 use OCA\OpenRegister\Service\Credential\TokenSetAddress;
 use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Golden outcomes of the OAuth2 token refresh.

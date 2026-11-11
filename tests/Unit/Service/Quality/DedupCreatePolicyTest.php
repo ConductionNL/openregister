@@ -294,7 +294,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 */
 	public function testTheOverrideHasAParameterOnEverySaveHopNotOnlyTheBody(): void {
 		$this->assertTrue(
-			property_exists(\OCA\OpenRegister\Service\Object\SavePolicy::class, 'dedupOverride'),
+			property_exists(\OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy::class, 'dedupOverride'),
 			'ObjectService::saveObject() must carry the override in its save policy: the controller strips it from the body.'
 		);
 
@@ -305,7 +305,7 @@ class DedupCreatePolicyTest extends TestCase {
 		);
 
 		$this->assertContains(
-			\OCA\OpenRegister\Service\Object\ObjectSaveOptions::class,
+			\OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions::class,
 			$types,
 			'SaveObject::saveObject() must carry the override in its save options: the controller strips it from the body.'
 		);
