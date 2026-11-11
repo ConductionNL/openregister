@@ -1865,3 +1865,4 @@ dossiq	5660	b343d737ea97219f23b22db6680f4eaddf55a0e1	GREEN	FV02:9	tree of 24 gre
 dossiq	5661	6a62084f795958cd44b5b1e635a7d6f71f58c447	GREEN	FV02:9	tree of 24 green on php unit suite, no JS touched (50 inherited php failures)
 dossiq	5662	8f26409599ff105c2bfb210c9737f3d1386d3813	GREEN	FV02:9	tree of 24 green on php unit suite, no JS touched (50 inherited php failures)
 stackiq	1493	a28fe4d527d266476d0b4fb3233946288135a8e4	GREEN	FV14:s2	unit suites green on the tree (baseline failures excluded)
+stackiq	1494	fd72573ad0affbb9e8b3e5e66f47a1bc909e1ce6	GREEN	FV14:s3	unit suites green on the tree (baseline failures excluded)
