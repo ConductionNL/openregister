@@ -37,6 +37,15 @@ final class MagicColumnRetyper {
 
 	private const RELATION_RETYPED = '[MagicMapper] Retyped relation column from JSON to VARCHAR (it now holds a UUID reference)';
 
+	private const TEXT_RETYPED = '[MagicMapper] Widened a VARCHAR column to TEXT, as its property now requires';
+
+	/**
+	 * Live types of a length-bound string column, as information_schema names them on each platform.
+	 *
+	 * @var list<string>
+	 */
+	private const BOUNDED_STRING_TYPES = ['varchar', 'char', 'character varying', 'character'];
+
 	/**
 	 * Constructor.
 	 *
@@ -109,6 +118,60 @@ final class MagicColumnRetyper {
 
 		return $retyped;
 	}//end relations()
+
+	/**
+	 * Widen length-bound string columns whose property now needs TEXT.
+	 *
+	 * A property flagged `x-openregister-encrypted` stores an envelope longer than
+	 * its declared maxLength, so a VARCHAR column made before the flag cannot hold
+	 * it. Widening a string column to TEXT keeps every stored value as it is.
+	 *
+	 * @param TableStructureSync $sync The table sync.
+	 *
+	 * @return array<string> The column names retyped.
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	public function text(TableStructureSync $sync): array {
+		$retyped = [];
+		foreach ($sync->columns->storedAs(declaredType: 'text', liveTypes: self::BOUNDED_STRING_TYPES) as $columnName) {
+			if ($this->retypeToText(sync: $sync, columnName: $columnName) === true) {
+				$retyped[] = $columnName;
+				$this->logger->info(message: self::TEXT_RETYPED, context: ['tableName' => $sync->tableName, 'columnName' => $columnName]);
+			}
+		}
+
+		return $retyped;
+	}//end text()
+
+	/**
+	 * Retype one string column to TEXT, keeping its nullability on MySQL, where MODIFY restates the column.
+	 *
+	 * @param TableStructureSync $sync       The table sync.
+	 * @param string             $columnName The physical column.
+	 *
+	 * @return bool Whether the statement succeeded.
+	 */
+	private function retypeToText(TableStructureSync $sync, string $columnName): bool {
+		$column = (new MagicColumnSql(isPostgres: $sync->isPostgres))->quote(name: $columnName);
+		$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' ALTER COLUMN ' . $column . ' TYPE TEXT';
+		if ($sync->isPostgres === false) {
+			$nullability = ' NULL';
+			if (($sync->columns->current[$columnName]['nullable'] ?? true) === false) {
+				$nullability = ' NOT NULL';
+			}
+
+			$sql = 'ALTER TABLE ' . $sync->tableNameQuoted . ' MODIFY ' . $column . ' TEXT' . $nullability;
+		}
+
+		return $this->ddl->attempt(
+			sql: $sql,
+			failure: new MagicDdlFailure(
+				message: '[MagicMapper] Could not widen a VARCHAR column to TEXT; values longer than it are refused on save',
+				context: ['tableName' => $sync->tableName, 'columnName' => $columnName]
+			)
+		);
+	}//end retypeToText()
 
 	/**
 	 * Retype one column to JSON.
