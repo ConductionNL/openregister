@@ -115,6 +115,20 @@ interface ObjectOwnershipServiceInterface {
 	public function assign(OwnedRecord $record, OwnershipHandover $handover): array;
 
 	/**
+	 * Hand a stored record to the system identity; only inside a system operation, audited.
+	 *
+	 * @param OwnedRecord $record The record, its register and schema.
+	 *
+	 * @throws NotAuthorizedException When no system operation is running.
+	 * @throws InvalidArgumentException When the record carries no uuid.
+	 *
+	 * @return array{uuid: string, previousOwner: string|null, newOwner: string, changed: bool}
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	public function releaseToSystem(OwnedRecord $record): array;
+
+	/**
 	 * Reassign many records to one owner, in one action.
 	 *
 	 * ONE AUDIT ENTRY PER RECORD, never one for the batch. A single entry for
