@@ -1,0 +1,1714 @@
+{
+ "I01": {
+  "lease": "fleet8-01",
+  "property": "unit_complexity",
+  "languages": [
+   "vue",
+   "javascript"
+  ],
+  "apps": [
+   {
+    "app": "stackiq",
+    "base": "development",
+    "head": "adb463af",
+    "files": [
+     "src/components/ContactpersonenList.vue",
+     "src/components/cards/OrganisatieCard.vue",
+     "src/components/contracts/ContractApprovalPanel.vue",
+     "src/components/contracts/ContractSeatsPanel.vue",
+     "src/components/organisations/OrganisationMergePanel.vue",
+     "src/components/organisations/OrganisationSwitcher.vue",
+     "src/components/sbom/SbomComponentsPanel.vue",
+     "src/components/vulnerabilities/VulnerabilityExposurePanel.vue",
+     "src/composables/orClient.js",
+     "src/modals/object/MergeObject.vue",
+     "src/modals/object/ViewObject.vue",
+     "src/store/modules/facets.js",
+     "src/store/modules/settings.js",
+     "src/store/plugins/stackiqPlugin.js",
+     "src/utils/cmdbImport.js",
+     "src/utils/complianceMatrix.js",
+     "src/utils/licensePosture.js",
+     "src/utils/lifecyclePhase.js",
+     "src/utils/moderationItem.js",
+     "src/utils/sbomVulnerabilityMatch.js",
+     "src/utils/valueAssessment.js",
+     "src/utils/vulnerabilitySeverity.js",
+     "src/views/ComplianceMatrixView.vue",
+     "src/views/LicensePostureView.vue",
+     "src/views/LifecycleRoadmapView.vue",
+     "src/views/settings/Settings.vue",
+     "src/views/settings/StackiqSettings.vue",
+     "src/views/settings/sections/CronjobConfiguration.vue",
+     "src/views/settings/sections/VersionInformation.vue"
+    ]
+   }
+  ]
+ },
+ "I02": {
+  "lease": "fleet8-02",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "stackiq",
+    "base": "development",
+    "head": "adb463af",
+    "files": [
+     "lib/BackgroundJob/MaintenanceRecipientsJob.php",
+     "lib/BackgroundJob/ModuleVersionPublicationJob.php",
+     "lib/Command/GemmaStandardLinksCommand.php",
+     "lib/Command/ReferencesAuditCommand.php",
+     "lib/EventListener/StackiqEventListener.php",
+     "lib/EventListener/UserProfileUpdatedEventListener.php",
+     "lib/Service/ArchiMate/GemmaStandardLinker.php",
+     "lib/Service/Cmdb/CmdbImportPackStoreProbe.php",
+     "lib/Service/Cmdb/CmdbRowNormaliser.php",
+     "lib/Service/ContractApprovalService.php",
+     "lib/Service/Itsm/ItsmFlowGateway.php",
+     "lib/Service/MaintenanceAnnouncerCheck.php",
+     "lib/Service/MaintenanceRecipientService.php",
+     "lib/Service/MergeOrganisatieService.php",
+     "lib/Service/ModuleRegistrationService.php",
+     "lib/Service/OrganizationSyncService.php",
+     "lib/Service/PublicationService.php",
+     "lib/Service/RecordVCard.php",
+     "lib/Service/SbomImportService.php",
+     "lib/Service/Settings/SyncSettingsHandler.php",
+     "lib/Service/Stackiq/GroupHandler.php"
+    ]
+   }
+  ]
+ },
+ "I03": {
+  "lease": "fleet8-03",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "stackiq",
+    "base": "development",
+    "head": "adb463af",
+    "files": [
+     "lib/Controller/ContactNamesController.php",
+     "lib/Repair/MigrateAppConfigKeys.php",
+     "lib/Repair/MigrateUserPreferences.php",
+     "lib/Repair/RenameDutchCatalogColumns.php",
+     "lib/Service/Cmdb/CmdbImportPackRules.php",
+     "lib/Service/Cmdb/CmdbPartReferences.php",
+     "lib/Service/Cmdb/CmdbRegisterSchemaFields.php",
+     "lib/Service/Cmdb/CmdbWorkbookBounds.php",
+     "lib/Service/Cmdb/OpenRegisterInstance.php",
+     "lib/Service/CmdbExportImportService.php",
+     "lib/Service/ContractStatusService.php",
+     "lib/Service/DataQualityDerivation.php",
+     "lib/Service/DemoDataService.php",
+     "lib/Service/EolMatcherService.php",
+     "lib/Service/GebruikSyncService.php",
+     "lib/Service/ItsmExchangeService.php",
+     "lib/Service/ItsmFileImportService.php",
+     "lib/Service/ModuleComplianceService.php",
+     "lib/Service/ModuleVersionService.php",
+     "lib/Service/ProgressStore.php",
+     "lib/Service/Stackiq/OrganizationHandler.php",
+     "lib/Service/ViewQueryBuilder.php"
+    ]
+   }
+  ]
+ },
+ "I04": {
+  "lease": "fleet8-04",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "stackiq",
+    "base": "development",
+    "head": "adb463af",
+    "files": [
+     "lib/Command/ObjectPages.php",
+     "lib/Command/OrganisationLinkCommand.php",
+     "lib/Controller/CmdbImportController.php",
+     "lib/EventListener/AnonymousRegistrationListener.php",
+     "lib/EventListener/ContactPersonOrganisationListener.php",
+     "lib/Repair/BackfillContractApprovalState.php",
+     "lib/Repair/MigrateContactsToNc.php",
+     "lib/Service/AangebodenGebruik/GebruikBulkHandler.php",
+     "lib/Service/ArchiMate/GemmaObjectReader.php",
+     "lib/Service/Cmdb/CmdbImportPackStore.php",
+     "lib/Service/Cmdb/CmdbImportReport.php",
+     "lib/Service/Contactpersoon/ContactPersonOrganisationGuard.php",
+     "lib/Service/ContactpersoonService.php",
+     "lib/Service/ModuleEventProcessor.php",
+     "lib/Service/ModuleVersionPublicationService.php",
+     "lib/Service/PortfolioReportDerivation.php",
+     "lib/Service/PublicCatalogueRecords.php",
+     "lib/Service/SbomParserService.php",
+     "lib/Service/Settings/ModuleSettingsHandler.php",
+     "lib/Service/StackiqContactSyncService.php",
+     "lib/Service/ViewService.php"
+    ]
+   }
+  ]
+ },
+ "I05": {
+  "lease": "fleet8-05",
+  "property": "unit_size",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "stackiq",
+    "base": "development",
+    "head": "adb463af",
+    "files": [
+     "lib/BackgroundJob/EolSyncJob.php",
+     "lib/BackgroundJob/FederationSyncJob.php",
+     "lib/Controller/AangebodenGebruikController.php",
+     "lib/Controller/DashboardController.php",
+     "lib/Controller/GebruikController.php",
+     "lib/Controller/IntakeController.php",
+     "lib/Controller/MergeController.php",
+     "lib/Controller/OrganisationMembersController.php",
+     "lib/Controller/PreferencesController.php",
+     "lib/Controller/ReviewController.php",
+     "lib/Controller/Settings/ModuleRegistrationHandler.php",
+     "lib/Controller/SetupController.php",
+     "lib/EventListener/MaintenanceRecipientsListener.php",
+     "lib/EventListener/OpenRegisterEventsDebugListener.php",
+     "lib/Examples/ContactpersoonServiceExample.php",
+     "lib/Repair/BackfillModuleVersionPublication.php",
+     "lib/Repair/MigrateBackgroundJobClasses.php",
+     "lib/Repair/MigrateRegisterSlug.php",
+     "lib/Repair/MigrateRegisterSlugDecisions.php",
+     "lib/Repair/RenameDutchCatalogDecisions.php",
+     "lib/Repair/RenameDutchCatalogValues.php",
+     "lib/Repair/RenameDutchSchemaSlugDecisions.php",
+     "lib/Repair/RenameDutchSchemaSlugs.php",
+     "lib/Repair/SeedCmdbImportPacks.php",
+     "lib/Service/Cmdb/CmdbOwnerIdentity.php",
+     "lib/Service/ConnectionReportService.php",
+     "lib/Service/MailTransportFactory.php",
+     "lib/Service/OrganisatieService.php",
+     "lib/Service/ReferenceComponentCoverageDerivation.php",
+     "lib/Service/ReferenceComponentCoverageService.php",
+     "lib/Service/Settings/SettingsObjectCounts.php",
+     "lib/Service/Stackiq/HierarchyHandler.php"
+    ]
+   }
+  ]
+ },
+ "I06": {
+  "lease": "fleet8-06",
+  "property": "unit_interfacing",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "integriq",
+    "base": "development",
+    "head": "2d7f0aa7",
+    "files": [
+     "lib/Auth/Idp/SubjectEnvelopeService.php",
+     "lib/Controller/OwnershipController.php",
+     "lib/Flow/EventEmitNode.php",
+     "lib/Flow/SourceCallNode.php",
+     "lib/Flow/SourcePaginateNode.php",
+     "lib/Mcp/IntegriqAgentTools.php",
+     "lib/Outbound/ForwardService.php",
+     "lib/Outbound/OutboundRetryService.php",
+     "lib/Service/BrokeredCallService.php",
+     "lib/Service/CallService.php",
+     "lib/Service/ConnectionAlertService.php",
+     "lib/Service/DigitalPost/DigitalPostService.php",
+     "lib/Service/Dso/DsoAttachmentFetcher.php",
+     "lib/Service/Dso/DsoClient.php",
+     "lib/Service/Exchange/ExchangeReadModel.php",
+     "lib/Service/Exchange/ExchangeRejectionService.php",
+     "lib/Service/IBabsConnectorService.php",
+     "lib/Service/IwmoIjw/IStandardsClient.php",
+     "lib/Service/Objecten/ObjectWriteHandler.php",
+     "lib/Service/OpenFormulierenIntakeService.php",
+     "lib/Service/PeppolTransmissionService.php",
+     "lib/Service/StufZkn/StufZdsOutbound.php"
+    ]
+   }
+  ]
+ },
+ "I07": {
+  "lease": "fleet8-07",
+  "property": "unit_interfacing",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "integriq",
+    "base": "development",
+    "head": "2d7f0aa7",
+    "files": [
+     "lib/Adapters/Slo/JsonTagReader.php",
+     "lib/Adapters/Slo/SloCurriculumTreeWalker.php",
+     "lib/Command/DedupeContracts.php",
+     "lib/Controller/SynchronizationContractsController.php",
+     "lib/Controller/WebhookConnectionsSettingsController.php",
+     "lib/Directory/ScimProvisioningService.php",
+     "lib/Flow/ApprovalRequestNode.php",
+     "lib/Flow/FetchFileNode.php",
+     "lib/Outbound/Identity/OutboundSecurityService.php",
+     "lib/Outbound/MessageRecorder.php",
+     "lib/Outbound/OutboundSendGate.php",
+     "lib/Service/ApprovalDecisionService.php",
+     "lib/Service/DSOSignatureVerifierService.php",
+     "lib/Service/DocumentGeneration/DocumentGenerationService.php",
+     "lib/Service/EventService.php",
+     "lib/Service/Exchange/ExchangeJobService.php",
+     "lib/Service/Fsc/FscDirectoryClient.php",
+     "lib/Service/JobService.php",
+     "lib/Service/Lti/LtiIdentityLinkService.php",
+     "lib/Service/MappingService.php",
+     "lib/Service/MessageValidation/EndpointMessageGate.php",
+     "lib/Service/StUFXMLBuilder.php",
+     "lib/Service/StufZkn/StufZdsCaseClient.php",
+     "lib/Service/StufZkn/StufZdsMessageBuilder.php"
+    ]
+   }
+  ]
+ },
+ "I08": {
+  "lease": "fleet8-08",
+  "property": "unit_interfacing",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "integriq",
+    "base": "development",
+    "head": "2d7f0aa7",
+    "files": [
+     "lib/Outbound/Call/CallReplayService.php",
+     "lib/Outbound/Identity/MessageComposer.php",
+     "lib/Outbound/Identity/OptOutMatcher.php",
+     "lib/Outbound/Identity/OptOutRegistry.php",
+     "lib/PropertySource/RegistrySourceGateway.php",
+     "lib/Service/Adapter/DataInfra/S3Adapter.php",
+     "lib/Service/ApprovalService.php",
+     "lib/Service/CaseSystem/ZgwDocumentDelivery.php",
+     "lib/Service/ConfigurationService.php",
+     "lib/Service/ConnectionStatusResolver.php",
+     "lib/Service/DsoIngestService.php",
+     "lib/Service/Exchange/ExchangeJobRunner.php",
+     "lib/Service/ExecutionTraceService.php",
+     "lib/Service/Integration/SynchronizationContractProvider.php",
+     "lib/Service/Lti/LtiAgsService.php",
+     "lib/Service/Objecten/ObjectEndpointHandler.php",
+     "lib/Service/PromotionService.php",
+     "lib/Service/Security/InlineSecretMigrationExecutor.php",
+     "lib/Service/StorageService.php",
+     "lib/Service/StufZkn/OutboundNotificationTranslator.php",
+     "lib/Service/StufZkn/StufZknClient.php",
+     "lib/Service/Tables/TablesSyncAdapter.php",
+     "lib/Service/Zgw/ZgwSetInstaller.php",
+     "lib/Service/ZgwVersionTranslationService.php"
+    ]
+   }
+  ]
+ },
+ "I09": {
+  "lease": "fleet8-09",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "integriq",
+    "base": "development",
+    "head": "2d7f0aa7",
+    "files": [
+     "lib/Controller/EndpointsController.php",
+     "lib/Controller/FormsBridgeController.php",
+     "lib/Controller/JobsController.php",
+     "lib/Controller/MailIntakeController.php",
+     "lib/Controller/MappingsController.php",
+     "lib/Controller/OpenFormulierenController.php",
+     "lib/Controller/ProductSubscriptionsController.php",
+     "lib/Controller/SynchronizationsController.php",
+     "lib/Controller/TablesBridgeController.php",
+     "lib/Controller/UserController.php",
+     "lib/EventListener/SharedApprovalTaskListener.php",
+     "lib/EventListener/SubscriptionSigningDefaultListener.php",
+     "lib/Intake/IntakeRoutingService.php",
+     "lib/Repair/MaterializeCatalogItems.php",
+     "lib/Repair/MigrateEolSchemaSlugs.php",
+     "lib/Repair/MigrateStoredJobClasses.php",
+     "lib/Repair/RenameDutchColumns.php",
+     "lib/Service/ConfigurationHandlers/MappingHandler.php",
+     "lib/Service/ConfigurationHandlers/RuleHandler.php",
+     "lib/Service/ConfigurationHandlers/SynchronizationHandler.php",
+     "lib/Service/ConfigurationImportPreviewService.php",
+     "lib/Service/ConnectionDeclarationValidator.php",
+     "lib/Service/ConnectionMonitorService.php",
+     "lib/Service/Lti/LtiPlatformLoginService.php",
+     "lib/Service/Mail/CompoundFileReader.php",
+     "lib/Service/Mail/MsgParser.php",
+     "lib/Service/Security/InlineSecretMigrationPlanner.php",
+     "lib/Service/SoftwareCatalogueService.php",
+     "lib/Service/StufZkn/StufZdsMessageLog.php",
+     "lib/Service/SynchronizationLogService.php",
+     "lib/Service/UserService.php"
+    ]
+   }
+  ]
+ },
+ "I10": {
+  "lease": "fleet8-10",
+  "property": "module_coupling",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "hermiq",
+    "base": "development",
+    "head": "ae2e54fc",
+    "files": [
+     "lib/Service/AgentAccessService.php",
+     "lib/Service/ApprovalService.php",
+     "lib/Service/Engine/RunTraceCollector.php",
+     "lib/Service/RedactionService.php",
+     "lib/Service/ScheduleService.php"
+    ]
+   }
+  ]
+ },
+ "I11": {
+  "lease": "fleet8-11",
+  "property": "unit_interfacing",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "hermiq",
+    "base": "development",
+    "head": "ae2e54fc",
+    "files": [
+     "lib/Repair/MigrateAgentData.php",
+     "lib/Service/Assistant/AssistantService.php",
+     "lib/Service/DeliveryService.php",
+     "lib/Service/EvalRunService.php",
+     "lib/Service/GitHubTemplateCatalogService.php",
+     "lib/Service/Intake/IntakeService.php",
+     "lib/Service/LessonAuthoringEngine.php",
+     "lib/Service/MemoryService.php",
+     "lib/Service/ReportSimilarity/ReportSimilarityService.php",
+     "lib/Service/SkillConsolidationService.php",
+     "lib/Service/SkillLearningsCaptureService.php",
+     "lib/Service/SkillMarketplaceService.php"
+    ]
+   }
+  ]
+ },
+ "I12": {
+  "lease": "fleet8-12",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "hermiq",
+    "base": "development",
+    "head": "ae2e54fc",
+    "files": [
+     "lib/Controller/AgentTemplateController.php",
+     "lib/Controller/ChatController.php",
+     "lib/Controller/McpRunController.php",
+     "lib/Mcp/HermiqToolProvider.php",
+     "lib/Repair/MigrateConversationsToSessions.php",
+     "lib/Service/Approval/ApprovalVerdictService.php",
+     "lib/Service/BudgetService.php",
+     "lib/Service/ContextAgentInteractionService.php",
+     "lib/Service/Engine/ContextAssembler.php",
+     "lib/Service/Engine/Engine.php",
+     "lib/Service/Engine/FacadeToolInvoker.php",
+     "lib/Service/Engine/MessageHistoryHandler.php",
+     "lib/Service/FlowAgentRunService.php",
+     "lib/Service/GoalService.php",
+     "lib/Service/GuardrailPolicyService.php",
+     "lib/Service/Schedule/ScheduleFlowBridge.php",
+     "lib/Service/SkillLearningsPromotionService.php",
+     "lib/Service/SkillMaturityService.php",
+     "lib/Service/Talk/TalkRoomBinding.php",
+     "lib/Service/ToolAccessRequestService.php"
+    ]
+   }
+  ]
+ },
+ "I13": {
+  "lease": "fleet8-13",
+  "property": "duplication",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "hermiq",
+    "base": "development",
+    "head": "ae2e54fc",
+    "files": [
+     "lib/Command/RollbackApprovalTaskMirror.php",
+     "lib/Controller/AgentVersionController.php",
+     "lib/Controller/AgentWebhookController.php",
+     "lib/Controller/AgentsController.php",
+     "lib/Controller/ApprovalController.php",
+     "lib/Controller/BudgetController.php",
+     "lib/Controller/ChatAttachmentController.php",
+     "lib/Controller/ChatImageController.php",
+     "lib/Controller/CourseRecommendationController.php",
+     "lib/Controller/EvalRunController.php",
+     "lib/Controller/MemoryController.php",
+     "lib/Controller/OrganisationControlController.php",
+     "lib/Controller/RunHistoryController.php",
+     "lib/Controller/RunNowController.php",
+     "lib/Controller/ScheduleWebhookSecretController.php",
+     "lib/Controller/SessionController.php",
+     "lib/Controller/Settings/IntakeSettingsController.php",
+     "lib/Controller/Settings/ReportSimilaritySettingsController.php",
+     "lib/Controller/SkillController.php",
+     "lib/Controller/SkillDraftController.php",
+     "lib/Controller/SkillMaturityController.php",
+     "lib/Mcp/GraphToolDescriptors.php",
+     "lib/Mcp/WorkspaceToolDescriptors.php",
+     "lib/Repair/BackfillAgentApplicationSlug.php",
+     "lib/Repair/MirrorPendingApprovalsToTasks.php",
+     "lib/Repair/SeedAgentBuilder.php",
+     "lib/Repair/SeedAgentTemplates.php",
+     "lib/Repair/SeedAiFeatures.php",
+     "lib/Repair/SeedBudgets.php",
+     "lib/Repair/SeedCourseRecommendationFeature.php",
+     "lib/Repair/SeedIncidents.php",
+     "lib/Repair/SeedLessonAuthoringFeature.php",
+     "lib/Repair/SeedMaturityExampleSkills.php",
+     "lib/Repair/SeedMessageTranslationFeature.php",
+     "lib/Repair/SeedRecordSummary.php",
+     "lib/Repair/SeedSkillCreator.php",
+     "lib/Service/AgentVersionService.php",
+     "lib/Service/AsyncStageDispatchService.php",
+     "lib/Service/ScheduleWebhookSecretService.php",
+     "lib/Service/SkillBundleInstaller.php",
+     "lib/Service/SkillService.php",
+     "lib/Service/SkillVersionService.php",
+     "lib/Service/StageDispatchService.php",
+     "lib/Service/WebhookSecretService.php"
+    ]
+   }
+  ]
+ },
+ "I14": {
+  "lease": "fleet8-14",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "learniq",
+    "base": "development",
+    "head": "e0de7fe6",
+    "files": [
+     "lib/BackgroundJob/EngagementSignalJob.php",
+     "lib/Controller/ActionMatrixController.php",
+     "lib/Controller/CredentialEuropassController.php",
+     "lib/Lifecycle/AssessmentScoringHandler.php",
+     "lib/Lifecycle/LearningPlanSignatureGuard.php",
+     "lib/Lifecycle/OsoDossierReviewGuard.php",
+     "lib/Listener/BpvLeerbedrijfVerificationHandler.php",
+     "lib/Listener/BsaProgressFlagHandler.php",
+     "lib/Listener/CheckInWindowStamp.php",
+     "lib/Listener/CohortTalkMembershipHandler.php",
+     "lib/Listener/CourseEvaluationResponseSubmittedHandler.php",
+     "lib/Listener/ExemptionGrantHandler.php",
+     "lib/Listener/HourWeekTotalRollup.php",
+     "lib/Listener/LearningPlanEvaluationHandler.php",
+     "lib/Listener/SubjectChoiceValidator.php",
+     "lib/Portal/BpvPortalInvitation.php",
+     "lib/Portal/ExamplePortalAccountGrants.php",
+     "lib/Portal/PortalMessageContacts.php",
+     "lib/Repair/BackfillReportCardGradeLines.php",
+     "lib/Service/Attendance/AttendanceSummaryCalculator.php",
+     "lib/Service/Attendance/RollCallReader.php",
+     "lib/Service/AuditPeriodReader.php",
+     "lib/Service/Catalogue/CatalogueSignUpService.php",
+     "lib/Service/DemoDataService.php",
+     "lib/Service/ExchangeImportInput.php",
+     "lib/Service/ExchangeImportLanding.php",
+     "lib/Service/LearnerMergeService.php",
+     "lib/Service/LearningRecordImportService.php",
+     "lib/Service/LessonOnboarding/LessonDraftBuilder.php",
+     "lib/Service/LessonReleaseEvaluator.php",
+     "lib/Service/Portal/PortalItemPresenter.php",
+     "lib/Service/RolloverExecutionService.php",
+     "lib/Service/SeedProfileService.php",
+     "lib/Service/SettingsService.php",
+     "lib/Service/TimetableVisibilityService.php",
+     "lib/Service/XapiStatementIngest.php",
+     "lib/Timetabling/Source/PlanninqTimetableSource.php"
+    ]
+   }
+  ]
+ },
+ "I15": {
+  "lease": "fleet8-15",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "learniq",
+    "base": "development",
+    "head": "e0de7fe6",
+    "files": [
+     "lib/Controller/CredentialVerifyController.php",
+     "lib/Controller/EngagementController.php",
+     "lib/Controller/KeyAdminController.php",
+     "lib/Controller/LearningRecordImportController.php",
+     "lib/Controller/LessonReleaseController.php",
+     "lib/Controller/LtiToolPlacementController.php",
+     "lib/Controller/RolloverController.php",
+     "lib/Controller/SetupController.php",
+     "lib/Lifecycle/ReportCardVisibilityGuard.php",
+     "lib/Lifecycle/RubricScoresCompletionGuard.php",
+     "lib/Listener/AssessmentResultIntegrityListener.php",
+     "lib/Listener/ConferenceInvitationSync.php",
+     "lib/Listener/ConferenceSlotBookingStamp.php",
+     "lib/Listener/ConferenceSlotBookingSync.php",
+     "lib/Listener/CredentialRenewalListener.php",
+     "lib/Listener/LvsResultFreezeListener.php",
+     "lib/Listener/PointAwardTriggerHandler.php",
+     "lib/Listener/SubjectChoiceEnrolmentBridge.php",
+     "lib/Portal/ExamplePortalProvisioner.php",
+     "lib/Repair/ArchiveRetiredPaymentObjects.php",
+     "lib/Repair/MigrateDataSubjectRequestsToOpenRegister.php",
+     "lib/Repair/RenameDutchColumns.php",
+     "lib/Service/Attendance/RollCallLessons.php",
+     "lib/Service/AuditEntryAttribution.php",
+     "lib/Service/ConferenceSlotSlicer.php",
+     "lib/Service/ContributionRaiser.php",
+     "lib/Service/CourseStore/CourseStoreInstaller.php",
+     "lib/Service/EngagementScoreEvaluator.php",
+     "lib/Service/ExampleSetDates.php",
+     "lib/Service/ExternalTrainingRowCheck.php",
+     "lib/Service/Grading/CorrectionApprovals.php",
+     "lib/Service/LessonProgress.php",
+     "lib/Service/NextStepResolver.php",
+     "lib/Service/RodPersonalNumberResolver.php",
+     "lib/Service/Signing/SigningService.php",
+     "lib/Service/SubmissionMarkAllocationService.php",
+     "lib/Service/XapiEnrolmentCompletion.php"
+    ]
+   }
+  ]
+ },
+ "I16": {
+  "lease": "fleet8-16",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "learniq",
+    "base": "development",
+    "head": "e0de7fe6",
+    "files": [
+     "lib/BackgroundJob/LearnerEngagementRollupJob.php",
+     "lib/Controller/ExchangeRequestController.php",
+     "lib/Controller/LeaderboardController.php",
+     "lib/Controller/LearningRecordShareVerifyController.php",
+     "lib/Controller/PrivacyGovernanceController.php",
+     "lib/Controller/RoomUtilisationController.php",
+     "lib/Controller/StoreController.php",
+     "lib/Lifecycle/AdmissionsDecisionGuard.php",
+     "lib/Lifecycle/ExcuseApprovalHandler.php",
+     "lib/Lifecycle/FraudCaseDecisionGuard.php",
+     "lib/Lifecycle/SessionChangeGuard.php",
+     "lib/Listener/CohortGroupProvisioningHandler.php",
+     "lib/Listener/ConferenceFreeSlotGenerator.php",
+     "lib/Listener/ElectiveSignUpRules.php",
+     "lib/Listener/ExcuseRequestOwnerStamp.php",
+     "lib/Listener/GradeRollupHandler.php",
+     "lib/Listener/SessionChangeNoticeHandler.php",
+     "lib/Portal/EmployerPortalInvitation.php",
+     "lib/Portal/ExamplePortalContent.php",
+     "lib/Portal/PortalAssertionVerifier.php",
+     "lib/Portal/PortalLabelTranslator.php",
+     "lib/Portal/PublicCourseIndex.php",
+     "lib/Portal/StudentPortalPages.php",
+     "lib/Repair/MigrateDataExchangeToIntegriq.php",
+     "lib/Repair/MoveTeacherNotesOutOfLessons.php",
+     "lib/Service/CheckIn/CheckInService.php",
+     "lib/Service/ConferenceInvitations.php",
+     "lib/Service/ConnectionReportService.php",
+     "lib/Service/DataExchangePayloadBuilder.php",
+     "lib/Service/ExchangeGateService.php",
+     "lib/Service/HourPlanActivityService.php",
+     "lib/Service/KeyManagementService.php",
+     "lib/Service/LearniqAgentTools.php",
+     "lib/Service/LessonOnboarding/DocumentLessonReader.php",
+     "lib/Service/ListenerSchemaResolver.php",
+     "lib/Service/Portal/PortalSubmissionHandIn.php",
+     "lib/Service/SubmissionMarkReader.php"
+    ]
+   }
+  ]
+ },
+ "I17": {
+  "lease": "fleet8-17",
+  "property": "unit_interfacing",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "learniq",
+    "base": "development",
+    "head": "e0de7fe6",
+    "files": [
+     "lib/Controller/AuditPackExportController.php",
+     "lib/Controller/ElectiveController.php",
+     "lib/Controller/TimetableController.php",
+     "lib/Lifecycle/AttendanceFlagCreationHandler.php",
+     "lib/Lifecycle/AttestationSigningGuard.php",
+     "lib/Lifecycle/BsaDecisionGuard.php",
+     "lib/Lifecycle/HourPlanActivationGuard.php",
+     "lib/Lifecycle/PokActivationGuard.php",
+     "lib/Lifecycle/PortfolioShareGrantHandler.php",
+     "lib/Listener/ApplicationConversionHandler.php",
+     "lib/Listener/EnrolmentPrerequisiteListener.php",
+     "lib/Listener/EvaluationInvitationProvisioningHandler.php",
+     "lib/Portal/EmployerSitePages.php",
+     "lib/Portal/GuardianPortalInvitation.php",
+     "lib/Proctoring/FlagReview.php",
+     "lib/Repair/MoveInstanceIdTenantToDefaultTenant.php",
+     "lib/Service/Attendance/RollCallService.php",
+     "lib/Service/CompetencyAttainmentRollup.php",
+     "lib/Service/CompetencyAttainmentWriter.php",
+     "lib/Service/ConferenceSlotClaim.php",
+     "lib/Service/ContactHoursService.php",
+     "lib/Service/Course/CourseTemplateService.php",
+     "lib/Service/CoursePackage/CommonCartridgeCourseImporter.php",
+     "lib/Service/CoursePackage/MoodleActivityRouter.php",
+     "lib/Service/CoursePackageImportService.php",
+     "lib/Service/CourseShareExportService.php",
+     "lib/Service/CredentialReissueService.php",
+     "lib/Service/CurriculumCoverageCalculator.php",
+     "lib/Service/EdciPayloadBuilder.php",
+     "lib/Service/EnrolmentForecastService.php",
+     "lib/Service/EnrolmentProgressEvaluator.php",
+     "lib/Service/LearningRecordImportIntakeService.php",
+     "lib/Service/LessonOnboarding/LessonOnboardingImporter.php",
+     "lib/Service/Portal/EmployerBookingFacts.php",
+     "lib/Service/Portal/PortalAttemptPayload.php",
+     "lib/Service/Portal/PortalAttemptService.php",
+     "lib/Service/QtiImportService.php",
+     "lib/Service/ReportSubjectGradeRows.php",
+     "lib/Service/StandbyCalendar.php",
+     "lib/Service/TimetableFeedEventBuilder.php"
+    ]
+   }
+  ]
+ },
+ "I18": {
+  "lease": "fleet8-18",
+  "property": "unit_complexity",
+  "languages": [
+   "javascript",
+   "vue"
+  ],
+  "apps": [
+   {
+    "app": "learniq",
+    "base": "development",
+    "head": "e0de7fe6",
+    "files": [
+     "src/components/lesson/LessonOnboardingPanel.vue",
+     "src/dialogs/ConferenceReportDialog.vue",
+     "src/dialogs/ExemptionDecisionDialog.vue",
+     "src/dialogs/SubstitutionModal.vue",
+     "src/dialogs/TeacherAvailabilityDialog.vue",
+     "src/modals/OpenMaterialSearchModal.vue",
+     "src/services/openMaterial.js",
+     "src/store/modules/object.js",
+     "src/utils/assignmentGradePlan.js",
+     "src/utils/boardDetail.js",
+     "src/utils/cmi5Launch.js",
+     "src/utils/conformance.js",
+     "src/utils/customPages.js",
+     "src/utils/doubleMarking.js",
+     "src/utils/electiveSlots.js",
+     "src/utils/evaluationAnswers.js",
+     "src/utils/exampleSetRemoval.js",
+     "src/utils/externalTrainingBulk.js",
+     "src/utils/globalSearch.js",
+     "src/utils/gradebookPublish.js",
+     "src/utils/lessonBlocks.js",
+     "src/utils/lessonNotes.js",
+     "src/utils/ltiLaunchForm.js",
+     "src/utils/peerReviewAllocation.js",
+     "src/utils/rollCall.js",
+     "src/utils/standby.js",
+     "src/utils/storeAccess.js",
+     "src/views/AssessmentScoringView.vue",
+     "src/views/ContactHoursReport.vue",
+     "src/views/CourseCatalogue.vue",
+     "src/views/CoursePreviewView.vue",
+     "src/views/LeaderboardView.vue",
+     "src/views/LearniqDashboards.vue",
+     "src/views/LessonPlayer.vue",
+     "src/views/MyLearningRecordView.vue",
+     "src/views/ReissueCertificatesView.vue",
+     "src/views/RolloverWizard.vue",
+     "src/views/widgets/GlobalSearchWidget.vue",
+     "src/views/widgets/ManageListWidget.vue",
+     "src/views/widgets/MyMandatoryTrainingWidget.vue"
+    ]
+   }
+  ]
+ },
+ "I19": {
+  "lease": "fleet8-19",
+  "property": "unit_interfacing",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "dossiq",
+    "base": "development",
+    "head": "e60bd875",
+    "files": [
+     "lib/Controller/DrcController.php",
+     "lib/Repair/CaseFlowSeedDataRepairStep.php",
+     "lib/Service/BerichtenboxService.php",
+     "lib/Service/BeschikkingService.php",
+     "lib/Service/Bezwaar/BezwaarAuditTrail.php",
+     "lib/Service/CaseEmailService.php",
+     "lib/Service/CaseReassignmentService.php",
+     "lib/Service/Cases/CaseRebindImpact.php",
+     "lib/Service/Money/PayoutService.php",
+     "lib/Service/Redaction/DocumentRedactionService.php",
+     "lib/Service/Support/SearchesObjects.php",
+     "lib/Service/ZgwService.php",
+     "lib/Woo/WooGatherAdd.php"
+    ]
+   }
+  ]
+ },
+ "I20": {
+  "lease": "fleet8-20",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "dossiq",
+    "base": "development",
+    "head": "e60bd875",
+    "files": [
+     "lib/Controller/WOOAssessmentController.php",
+     "lib/Controller/ZrcController.php",
+     "lib/Listener/BezwaarLegalHoldListener.php",
+     "lib/Repair/MigrateArchivalToOpenRegister.php",
+     "lib/Repair/MigrateSubsidieRegelingToCaseType.php",
+     "lib/Review/TriageRules.php",
+     "lib/Service/Bezwaar/DecisionValidator.php",
+     "lib/Service/CasePlanProjectionService.php",
+     "lib/Service/HearingCalendarService.php",
+     "lib/Service/Intake/CaseCompleteness.php",
+     "lib/Service/Sharing/CaseAccessLinkService.php",
+     "lib/Service/Timeline/CaseTimeline.php",
+     "lib/Service/WooPublicationService.php",
+     "lib/Service/Zaakdossier/DocumentCorrespondents.php",
+     "lib/Service/Zgw/BrcCrossRegisterSync.php",
+     "lib/Service/Zgw/BrcDocumentLinkHandler.php",
+     "lib/Service/Zgw/ZgwRuleLookups.php",
+     "lib/Service/ZgwDrcRulesService.php",
+     "lib/Service/ZgwRulesBase.php"
+    ]
+   }
+  ]
+ },
+ "I21": {
+  "lease": "fleet8-21",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "dossiq",
+    "base": "development",
+    "head": "e60bd875",
+    "files": [
+     "lib/Controller/Support/ApplicatieRules.php",
+     "lib/Repair/BackfillReferencedCaseValue.php",
+     "lib/Repair/LinkInFlightContractDecisionsRepair.php",
+     "lib/Repair/LoadDefaultZgwMappings.php",
+     "lib/Repair/RewriteRetiredFlowNodes.php",
+     "lib/Review/RecallSamples.php",
+     "lib/Service/CaseDefinition/WorkflowDeployer.php",
+     "lib/Service/CaseRelationService.php",
+     "lib/Service/Custody/CaseTakeoverRequest.php",
+     "lib/Service/Doorlooptijd/DeadlineComplianceCalculator.php",
+     "lib/Service/Email/NextcloudMailGateway.php",
+     "lib/Service/Lifecycle/CaseEndingActs.php",
+     "lib/Service/Recycle/CaseRecycleService.php",
+     "lib/Service/Sharing/FederatedCaseShareService.php",
+     "lib/Service/Task/EngineTaskGateway.php",
+     "lib/Service/TenantAuthenticationService.php",
+     "lib/Service/TenantQuotaService.php",
+     "lib/Service/Transitions/CaseStatusStore.php",
+     "lib/Service/Transitions/TransitionPreconditions.php",
+     "lib/Service/Vth/LhsMatrixDecisionTableMigrator.php",
+     "lib/Service/WOODocumentAssessmentService.php",
+     "lib/Service/Zgw/ZtcCrossReferenceEnricher.php"
+    ]
+   }
+  ]
+ },
+ "I22": {
+  "lease": "fleet8-22",
+  "property": "unit_complexity",
+  "languages": [
+   "javascript",
+   "vue"
+  ],
+  "apps": [
+   {
+    "app": "dossiq",
+    "base": "development",
+    "head": "e60bd875",
+    "files": [
+     "src/components/case/CaseAiFeaturesPanel.vue",
+     "src/components/case/DocumentReviewPanel.vue",
+     "src/dialogs/AssessmentDecisionDialog.vue",
+     "src/dialogs/BulkTransitionDialog.vue",
+     "src/dialogs/CaseRebindDialog.vue",
+     "src/dialogs/CaseSplitDialog.vue",
+     "src/dialogs/DocumentAccessExceptionDialog.vue",
+     "src/dialogs/DocumentAssessDialog.vue",
+     "src/dialogs/GatherDocumentsDialog.vue",
+     "src/dialogs/ReviewBatchDialog.vue",
+     "src/dialogs/SearchPlanDialog.vue",
+     "src/modals/BulkDocumentActionDialog.vue",
+     "src/modals/SubstitutionFormModal.vue",
+     "src/modals/VersionHistoryPanel.vue",
+     "src/services/caseAccessApi.js",
+     "src/services/caseAiFeaturesApi.js",
+     "src/services/caseTypeRules.js",
+     "src/services/documentCorrespondents.js",
+     "src/services/formatters.js",
+     "src/services/initiatorSearch.js",
+     "src/services/notificationPreferenceProps.js",
+     "src/services/taskApi.js",
+     "src/store/modules/advice.js",
+     "src/store/modules/enforcement.js",
+     "src/store/modules/engineTask.js",
+     "src/store/modules/workflow.js",
+     "src/utils/capabilityComparison.js",
+     "src/utils/caseHelpers.js",
+     "src/utils/caseLifecycleHelpers.js",
+     "src/utils/caseTerms.js",
+     "src/utils/conversationRecordLine.js",
+     "src/utils/dashboardHelpers.js",
+     "src/utils/pageTitle.js",
+     "src/utils/starterStates.js",
+     "src/utils/taskHelpers.js",
+     "src/utils/taskMetaLine.js",
+     "src/views/casetypes/components/EmailTemplateAdmin.vue",
+     "src/views/public/PublicFederatedTransferPage.vue",
+     "src/views/settings/WorkflowEditor.vue",
+     "src/views/settings/tabs/TenantOnboardingTab.vue"
+    ]
+   }
+  ]
+ },
+ "I23": {
+  "lease": "fleet8-23",
+  "property": "unit_complexity",
+  "languages": [
+   "vue"
+  ],
+  "apps": [
+   {
+    "app": "buildiq",
+    "base": "development",
+    "head": "c3314109",
+    "files": [
+     "src/components/AppDeleteDialogSlot.vue",
+     "src/components/ApplicationDetailActions.vue",
+     "src/components/ManifestDiff.vue",
+     "src/components/applicationDetail/ApplicationDetailHeader.vue",
+     "src/components/applicationDetail/widgets/GroupsWidget.vue",
+     "src/components/page-editor/ConnectorSourcePicker.vue",
+     "src/components/page-editor/DataSourceOriginToggle.vue",
+     "src/components/page-editor/DebugLogPanel.vue",
+     "src/components/page-editor/SettingsPageEditor.vue",
+     "src/components/page-editor/fields/FieldDefaultBuilder.vue",
+     "src/components/page-editor/fields/FieldValidationBuilder.vue",
+     "src/components/page-editor/fields/PageLayoutBodyEditor.vue",
+     "src/components/page-editor/fields/VisibleWhenBuilder.vue",
+     "src/components/runtime/ProcestCaseStatusPanel.vue",
+     "src/components/schema-editor/AccessEditor.vue",
+     "src/components/schema-editor/ExpressionNodeEditor.vue",
+     "src/components/schema-editor/LifecycleEditor.vue",
+     "src/components/store/FormLibraryView.vue",
+     "src/components/tabs/ApplicationDiffTab.vue",
+     "src/dialogs/AgentEditDialog.vue",
+     "src/dialogs/CreateApplicationWizard.vue",
+     "src/dialogs/IconUploadSection.vue",
+     "src/dialogs/ImportDataWizard.vue",
+     "src/dialogs/SaveFormToLibraryDialog.vue",
+     "src/modals/CopyAppDialog.vue",
+     "src/modals/GitHubSyncModal.vue",
+     "src/modals/UserDeltaEditModal.vue"
+    ]
+   }
+  ]
+ },
+ "I24": {
+  "lease": "fleet8-24",
+  "property": "unit_complexity",
+  "languages": [
+   "vue"
+  ],
+  "apps": [
+   {
+    "app": "buildiq",
+    "base": "development",
+    "head": "c3314109",
+    "files": [
+     "src/App.vue",
+     "src/components/ApplicationCard.vue",
+     "src/components/AutomationActionListEditor.vue",
+     "src/components/VirtualAppsActions.vue",
+     "src/components/applicationDetail/ApplicationHealthSection.vue",
+     "src/components/applicationDetail/widgets/RegisterWidget.vue",
+     "src/components/applicationDetail/widgets/SchemasWidget.vue",
+     "src/components/copilot/CopilotProposal.vue",
+     "src/components/page-editor/PageListEditor.vue",
+     "src/components/page-editor/PreviewSandbox.vue",
+     "src/components/page-editor/WidgetPlacementPanel.vue",
+     "src/components/page-editor/fields/ColumnBuilder.vue",
+     "src/components/page-editor/fields/FormFieldBuilder.vue",
+     "src/components/page-editor/fields/FormLayoutBuilder.vue",
+     "src/components/page-editor/fields/SettingsSectionBuilder.vue",
+     "src/components/runtime/BackToVirtualApps.vue",
+     "src/components/runtime/DocumentActions.vue",
+     "src/components/runtime/MyApprovalsWidget.vue",
+     "src/components/schema-editor/CalculationEditor.vue",
+     "src/components/schema-editor/SchemaListPanel.vue",
+     "src/components/tabs/ApplicationManifestTab.vue",
+     "src/dialogs/ExportDialog.vue",
+     "src/dialogs/UseLibraryFormDialog.vue",
+     "src/modals/CloneTemplateDialog.vue",
+     "src/modals/LinkRepoDialog.vue",
+     "src/modals/PermissionHistoryModal.vue",
+     "src/views/VersionHistory.vue"
+    ]
+   }
+  ]
+ },
+ "I25": {
+  "lease": "fleet8-25",
+  "property": "unit_complexity",
+  "languages": [
+   "javascript"
+  ],
+  "apps": [
+   {
+    "app": "buildiq",
+    "base": "development",
+    "head": "c3314109",
+    "files": [
+     "scripts/check-integration-parity.js",
+     "src/builder.js",
+     "src/components/walkthrough-editor/recorderTargetResolver.js",
+     "src/composables/useApplicationInsights.js",
+     "src/composables/useApplicationVersion.js",
+     "src/composables/useDebugLog.js",
+     "src/composables/useDocudeskDocument.js",
+     "src/composables/useDocudeskTemplates.js",
+     "src/composables/useOrAccessCapabilities.js",
+     "src/composables/useProcestCase.js",
+     "src/composables/usePromoteDialog.js",
+     "src/composables/useRegisterPicker.js",
+     "src/composables/useRole.js",
+     "src/composables/useTrackLinkAction.js",
+     "src/mixins/applicationVersions.js",
+     "src/mixins/builtAppHost.js",
+     "src/ncDashboard.js",
+     "src/services/appRegister.js",
+     "src/services/blockInsert.js",
+     "src/services/copilot.js",
+     "src/services/externalFormProvisioningService.js",
+     "src/services/formCapture.js",
+     "src/services/formDestinationCheck.js",
+     "src/services/formExport.js",
+     "src/services/formLibrary.js",
+     "src/services/formLiveValues.js",
+     "src/services/healthReporter.js",
+     "src/services/manifestDependencies.js",
+     "src/services/manifestRouting.js",
+     "src/services/pageCopy.js",
+     "src/services/pageLayouts.js",
+     "src/services/pagePlacementChecks.js",
+     "src/services/registrationForms.js",
+     "src/services/selectors.js",
+     "src/services/versionQuery.js",
+     "src/store/modules/object.js",
+     "src/store/productionVersions.js",
+     "src/utils/feelCell.js",
+     "src/utils/iconCatalogues.js",
+     "src/utils/objectSchemaKeys.js"
+    ]
+   }
+  ]
+ },
+ "I26": {
+  "lease": "fleet8-26",
+  "property": "unit_interfacing",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "buildiq",
+    "base": "development",
+    "head": "c3314109",
+    "files": [
+     "lib/Controller/AutomationsController.php",
+     "lib/Lifecycle/ApplicationVersionOwnerGuard.php",
+     "lib/Mcp/Handler/UpsertSchemaHandler.php",
+     "lib/Service/AppChannelApplier.php",
+     "lib/Service/AppHealthService.php",
+     "lib/Service/AppOverrideService.php",
+     "lib/Service/AppRepoSerializer.php",
+     "lib/Service/ApplicationCreationService.php",
+     "lib/Service/ApplicationDeletionService.php",
+     "lib/Service/ApplicationInsightsService.php",
+     "lib/Service/AutomationWriteService.php",
+     "lib/Service/ConditionActionExecutor.php",
+     "lib/Service/Copilot/CopilotPlanValidator.php",
+     "lib/Service/DashboardWidgetRegistrar.php",
+     "lib/Service/DecisionTableShape.php",
+     "lib/Service/DocumentGenerationService.php",
+     "lib/Service/ExportAppContentBundler.php",
+     "lib/Service/ExportService.php",
+     "lib/Service/FlowChannelProvisioner.php",
+     "lib/Service/PermissionResolver.php",
+     "lib/Service/RuleEngineService.php",
+     "lib/Service/VersionPromotionService.php",
+     "lib/Support/ManifestDataBinding.php"
+    ]
+   }
+  ]
+ },
+ "I27": {
+  "lease": "fleet8-27",
+  "property": "unit_interfacing",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "pipelinq",
+    "base": "development",
+    "head": "105b15c2",
+    "files": [
+     "lib/Repair/MigrateAvgVerzoekenToOrDsar.php",
+     "lib/Repair/UnifyClientContactIdentity.php",
+     "lib/Service/BerichtenboxService.php",
+     "lib/Service/BlastService.php",
+     "lib/Service/ComplianceService.php",
+     "lib/Service/CtiService.php",
+     "lib/Service/EntityActivityService.php",
+     "lib/Service/PosPaymentService.php",
+     "lib/Service/SmsAdapter.php",
+     "lib/Service/WhatsAppAdapter.php"
+    ]
+   }
+  ]
+ },
+ "I28": {
+  "lease": "fleet8-28",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "pipelinq",
+    "base": "development",
+    "head": "105b15c2",
+    "files": [
+     "lib/Controller/BrpController.php",
+     "lib/Controller/PortalController.php",
+     "lib/Repair/IngestProductVendorMaster.php",
+     "lib/Service/AvailabilityService.php",
+     "lib/Service/BookingService.php",
+     "lib/Service/GiftCardService.php",
+     "lib/Service/SegmentService.php",
+     "lib/Service/SlaEngineService.php"
+    ]
+   }
+  ]
+ },
+ "I29": {
+  "lease": "fleet8-29",
+  "property": "unit_interfacing",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "humaniq",
+    "base": "development",
+    "head": "330f3a40",
+    "files": [
+     "lib/Controller/AgendaController.php",
+     "lib/Controller/AvgDsrController.php",
+     "lib/Listener/LearniqCredentialListener.php",
+     "lib/Listener/TimeEntryStampListener.php",
+     "lib/Payroll/AwfHoursReview.php",
+     "lib/Payroll/PackValidator.php",
+     "lib/Service/AbsenceRateService.php",
+     "lib/Service/AnalyticsService.php",
+     "lib/Service/AnnouncementService.php",
+     "lib/Service/ApprovalsInboxService.php",
+     "lib/Service/AvgDsrRequestStore.php",
+     "lib/Service/CompAdjustmentService.php",
+     "lib/Service/CostAllocationService.php",
+     "lib/Service/DossierCompletenessService.php",
+     "lib/Service/HandoffPeriodItems.php",
+     "lib/Service/HoursPayService.php",
+     "lib/Service/HoursRegisterGateway.php",
+     "lib/Service/HrDocumentSigningService.php",
+     "lib/Service/InterviewSyncEngine.php",
+     "lib/Service/LeaveAllocationCalculator.php",
+     "lib/Service/LeaveCoverageService.php",
+     "lib/Service/LeaveHoursCalculator.php",
+     "lib/Service/OfferEsignService.php",
+     "lib/Service/PayAnomalyDetector.php",
+     "lib/Service/PayTransparencyService.php",
+     "lib/Service/PayrollExpenseFoldService.php",
+     "lib/Service/PayrollNetPayService.php",
+     "lib/Service/PersonnelBudgetService.php",
+     "lib/Service/ReceiptExtractionService.php",
+     "lib/Service/RosterCheckService.php",
+     "lib/Service/SalaryBureauExchangeService.php",
+     "lib/Service/SurveyResults.php",
+     "lib/Service/TimeEstimateService.php",
+     "lib/Service/TransitionPaymentCalculator.php",
+     "lib/Service/UnitMembership.php",
+     "lib/Service/VacancyMatchService.php",
+     "lib/Service/WpmReportService.php"
+    ]
+   }
+  ]
+ },
+ "I30": {
+  "lease": "fleet8-30",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "humaniq",
+    "base": "development",
+    "head": "330f3a40",
+    "files": [
+     "lib/BackgroundJob/LeaveAccrualJob.php",
+     "lib/Command/AvgDsrRectifyCommand.php",
+     "lib/Command/ReferencesAuditCommand.php",
+     "lib/Controller/DocumentController.php",
+     "lib/Controller/DossierController.php",
+     "lib/Controller/LoonaangifteMessageController.php",
+     "lib/Controller/LoonbeslagController.php",
+     "lib/Controller/PayrollController.php",
+     "lib/Controller/SetupController.php",
+     "lib/Controller/TimeEntryController.php",
+     "lib/Listener/CostAllocationGuardListener.php",
+     "lib/Listener/TimeEstimateListener.php",
+     "lib/Payroll/AwfTariffResolver.php",
+     "lib/Payroll/Dsl/ExprEvaluator.php",
+     "lib/Payroll/Dsl/PackInterpreter.php",
+     "lib/Repair/MigrateHoursProcess.php",
+     "lib/Service/AbsenceProgression.php",
+     "lib/Service/AgendaComposer.php",
+     "lib/Service/AgendaOrgView.php",
+     "lib/Service/AgendaReadAccess.php",
+     "lib/Service/AvailabilityService.php",
+     "lib/Service/CostRateAccess.php",
+     "lib/Service/DepartmentFigures.php",
+     "lib/Service/EmploymentTermsResolver.php",
+     "lib/Service/ExitInterviewService.php",
+     "lib/Service/LeaveBuySellSettlementService.php",
+     "lib/Service/ManagerDeputies.php",
+     "lib/Service/PayrollMutationService.php",
+     "lib/Service/RetentionExpiryService.php",
+     "lib/Service/RightToWorkRecorder.php",
+     "lib/Service/RuleTestDataRun.php",
+     "lib/Service/SurveyService.php",
+     "lib/Service/TeamDigestComposer.php",
+     "lib/Service/TrainingCompetenceWriter.php",
+     "lib/Service/WkrService.php",
+     "lib/Service/WorkingHoursService.php",
+     "lib/Standards/Checks/NlAbsenceChecks.php",
+     "lib/Standards/Checks/NlCaoChecks.php",
+     "lib/Standards/Checks/NlFlexContractChecks.php",
+     "lib/Support/RegisterSlugLookup.php"
+    ]
+   }
+  ]
+ },
+ "I31": {
+  "lease": "fleet8-31",
+  "property": "module_coupling",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "portaliq",
+    "base": "development",
+    "head": "ec315b8a",
+    "files": [
+     "lib/Contribution/PortalProviderLocator.php",
+     "lib/Service/ActionAuthService.php",
+     "lib/Service/AuditTrailService.php",
+     "lib/Service/Identity/PortalAccountLookup.php",
+     "lib/Service/Identity/PortalIdentityMailer.php",
+     "lib/Service/Intake/PortalFormBindingResolver.php",
+     "lib/Service/PortalAccountService.php",
+     "lib/Service/PortalObjectReader.php",
+     "lib/Service/PortalObjectWriter.php",
+     "lib/Service/PortalOrganisationConfigService.php",
+     "lib/Service/PortalRegisterContext.php",
+     "lib/Service/PortalResolver.php",
+     "lib/Service/PublishedPortals.php",
+     "lib/Service/TrafficConfigResolver.php"
+    ]
+   }
+  ]
+ },
+ "I32": {
+  "lease": "fleet8-32",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "decidiq",
+    "base": "development",
+    "head": "190c32ad",
+    "files": [
+     "lib/BackgroundJob/TranscriptRetentionJob.php",
+     "lib/Controller/ApiController.php",
+     "lib/Controller/IntegrationController.php",
+     "lib/Controller/MotionController.php",
+     "lib/Controller/PublicationController.php",
+     "lib/Listener/ApprovalTaskDecisionListener.php",
+     "lib/Listener/DocumentTypeFieldsGuardListener.php",
+     "lib/Repair/RenameDutchVocabularyColumns.php",
+     "lib/Service/ActionItemExtractionService.php",
+     "lib/Service/AgendaPapers.php",
+     "lib/Service/BoardEvaluationReportService.php",
+     "lib/Service/ConflictOfInterestService.php",
+     "lib/Service/DecisionIntegrationService.php",
+     "lib/Service/DecisionLifecycleService.php",
+     "lib/Service/DelegatedAuthorityCheck.php",
+     "lib/Service/FullExportService.php",
+     "lib/Service/GovernanceRoleScopeProjector.php",
+     "lib/Service/LiveDecisionService.php",
+     "lib/Service/MinutesAccessGuard.php",
+     "lib/Service/MotionAmendmentService.php",
+     "lib/Service/NotificationPreferenceRequestValidator.php",
+     "lib/Service/NotificationPreferenceService.php",
+     "lib/Service/PublicMeetingRecords.php",
+     "lib/Service/PublicationPayloadService.php",
+     "lib/Service/SigningRoundService.php",
+     "lib/Service/VoteBreakdownService.php",
+     "lib/Service/VotingRoundCloser.php",
+     "lib/Service/VotingRoundGuard.php"
+    ]
+   }
+  ]
+ },
+ "I33": {
+  "lease": "fleet8-33",
+  "property": "unit_complexity",
+  "languages": [
+   "vue",
+   "javascript"
+  ],
+  "apps": [
+   {
+    "app": "decidiq",
+    "base": "development",
+    "head": "190c32ad",
+    "files": [
+     "scripts/check-integration-parity.js",
+     "scripts/check-nav-ceiling.js",
+     "src/components/tabs/ActionItemDeckBoard.vue",
+     "src/components/tabs/AgendaPaperSummariesTab.vue",
+     "src/components/tabs/CommitmentProgressTab.vue",
+     "src/components/tabs/DecisionLifecycleTab.vue",
+     "src/components/tabs/DecisionRouteTab.vue",
+     "src/components/tabs/GovernanceBodyEvaluationsTab.vue",
+     "src/components/tabs/GovernanceBodyRetentionTab.vue",
+     "src/components/tabs/MeetingAgendaTab.vue",
+     "src/components/tabs/MeetingBroadcastTab.vue",
+     "src/components/tabs/MeetingParticipantsTab.vue",
+     "src/components/tabs/MeetingSeriesTab.vue",
+     "src/components/tabs/MeetingStageTab.vue",
+     "src/components/tabs/MeetingTranscriptionTab.vue",
+     "src/components/tabs/MeetingVideoCallTab.vue",
+     "src/components/tabs/MeetingVotesTab.vue",
+     "src/components/tabs/MinutesItemNotesTab.vue",
+     "src/components/tabs/MotionCitizenAdviceTab.vue",
+     "src/components/tabs/MotionStageTab.vue",
+     "src/components/tabs/PublicationActionsTab.vue",
+     "src/components/tabs/RelatedDecisionsTab.vue",
+     "src/components/tabs/useRelationStore.js",
+     "src/components/userSettings/CommunicationSection.vue",
+     "src/components/userSettings/userPreferences.js",
+     "src/dialogs/BodyParticipationDialog.vue",
+     "src/integrations/CnApprovalChainTab.vue",
+     "src/integrations/CnApprovalChainWidget.vue",
+     "src/integrations/approvalChainLink.js",
+     "src/integrations/decisionCard.js",
+     "src/integrations/decisionLink.js",
+     "src/modals/ActionItemCaptureModal.vue",
+     "src/modals/MemberAddDialog.vue",
+     "src/modals/MemberCsvImportDialog.vue",
+     "src/store/modules/processTemplates.js",
+     "src/utils/boardComposition.js",
+     "src/utils/bodyMembership.js",
+     "src/utils/meetingSeats.js",
+     "src/utils/structureProfile.js",
+     "src/views/participation/ParticipationPage.vue"
+    ]
+   }
+  ]
+ },
+ "I34": {
+  "lease": "fleet8-34",
+  "property": "unit_interfacing",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "shillinq",
+    "base": "development",
+    "head": "247a16ba",
+    "files": [
+     "lib/Integration/PaymentRequestLeafProvider.php",
+     "lib/Service/BookingNotificationService.php",
+     "lib/Service/CBSExportService.php",
+     "lib/Service/DunningRunService.php",
+     "lib/Service/GRIRClearingService.php",
+     "lib/Service/GoodsReceiptNoteService.php",
+     "lib/Service/InventoryScanService.php",
+     "lib/Service/LeaseReassessmentService.php",
+     "lib/Service/Payment/PortalPaymentSessionService.php",
+     "lib/Service/SoftCloseExecutor.php",
+     "lib/Service/Treasury/FxRevaluationService.php",
+     "lib/Service/VATReturnService.php"
+    ]
+   }
+  ]
+ },
+ "I35": {
+  "lease": "fleet8-35",
+  "property": "duplication",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "shillinq",
+    "base": "development",
+    "head": "247a16ba",
+    "files": [
+     "lib/Controller/AansluitingController.php",
+     "lib/Controller/BillingIntakeController.php",
+     "lib/Controller/CBSSubmissionController.php",
+     "lib/Controller/DBAController.php",
+     "lib/Controller/GoodsReceiptNoteController.php",
+     "lib/Controller/IcpController.php",
+     "lib/Controller/ServiceReceiptController.php",
+     "lib/Controller/SupplierInvoiceImportController.php",
+     "lib/Controller/VATDeclarationController.php",
+     "lib/Controller/VATLineController.php",
+     "lib/Controller/WbsoAccountApiController.php",
+     "lib/Controller/WbsoDocumentApiController.php",
+     "lib/Integration/ContractLeafProvider.php",
+     "lib/Integration/FinancialDocumentLeafProvider.php",
+     "lib/Lifecycle/BookingCancellationGuard.php",
+     "lib/Lifecycle/InvoiceFromBookingGuard.php",
+     "lib/Lifecycle/ProvisionGuard.php",
+     "lib/Lifecycle/RetainerGuard.php",
+     "lib/Lifecycle/StockReservationGuard.php",
+     "lib/PaymentRun/PaymentRunExportService.php",
+     "lib/Portal/PortalContributionProvider.php",
+     "lib/Repair/InitializeSettings.php",
+     "lib/Repair/LoadCbsSeedsStep.php",
+     "lib/Repair/LoadSbrXbrlSeedsStep.php",
+     "lib/Reporting/ReportGenerationService.php",
+     "lib/Service/AuditExportService.php",
+     "lib/Service/BudgetScenarioEvaluator.php",
+     "lib/Service/BudgetVsActualsCalculator.php",
+     "lib/Service/CogsPosterService.php",
+     "lib/Service/InboundPayableService.php",
+     "lib/Service/InventoryGlAdjustmentPoster.php",
+     "lib/Service/LeaseDecideskWebhookService.php",
+     "lib/Service/MultiPoConsolidationService.php",
+     "lib/Service/ObjectRequestRefundService.php",
+     "lib/Service/Pipelinq/PipelinqConfig.php",
+     "lib/Service/PurchaseOrderService.php",
+     "lib/Service/RequisitionService.php",
+     "lib/Service/WbsoDocumentService.php",
+     "lib/Service/WbsoTransactionService.php",
+     "lib/Standards/Checks/AmlBankingChecks.php",
+     "lib/Standards/Checks/ComplianceTailChecks.php",
+     "lib/Standards/Checks/FinancialStatementsChecks.php",
+     "lib/Standards/Checks/IfrsUsGaapChecks.php",
+     "lib/Standards/Checks/InvoicingExtraChecks.php",
+     "lib/Standards/Checks/LedgerIntegrityChecks.php"
+    ]
+   }
+  ]
+ },
+ "I36": {
+  "lease": "fleet8-36",
+  "property": "unit_complexity",
+  "languages": [
+   "javascript",
+   "vue"
+  ],
+  "apps": [
+   {
+    "app": "portaliq",
+    "base": "development",
+    "head": "ec315b8a",
+    "files": [
+     "src/shared/portalApi.js",
+     "src/shared/portalNav.js",
+     "src/shared/recordPage.js",
+     "src/shared/rowAction.js",
+     "src/shared/timedTask.js",
+     "src/site/App.vue",
+     "src/site/components/IntakeFormBlock.vue",
+     "src/site/components/WidgetGrid.vue",
+     "src/site/components/c/forms.js",
+     "src/site/components/collections/cells.js",
+     "src/site/components/forms/fields.js",
+     "src/site/components/mijn/cases.js",
+     "src/site/lib/authApi.js",
+     "src/site/lib/federatedSearch.js",
+     "src/site/lib/intakeApi.js",
+     "src/site/lib/residentMenu.js",
+     "src/site/lib/subjects.js",
+     "src/site/lib/waysIn.js",
+     "src/site/pages/inbox/inbox.js",
+     "src/traffic/client.js"
+    ]
+   }
+  ]
+ },
+ "I37": {
+  "lease": "fleet8-37",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "portaliq",
+    "base": "development",
+    "head": "ec315b8a",
+    "files": [
+     "lib/Contribution/FormStepsNormaliser.php",
+     "lib/Contribution/InboxMessageFields.php",
+     "lib/Controller/ContributionController.php",
+     "lib/Controller/PortalIntakeController.php",
+     "lib/Service/Actions/PortalActionService.php",
+     "lib/Service/EventRsvpService.php",
+     "lib/Service/EventSignupService.php",
+     "lib/Service/Identity/EmailLink/EmailLinkTokens.php",
+     "lib/Service/Identity/PortalInvitationService.php",
+     "lib/Service/Identity/PortalMandateAdminService.php",
+     "lib/Service/Intake/DestinationMapping.php",
+     "lib/Service/Intake/PortalEmailVerification.php",
+     "lib/Service/Intake/PortalSubmissionChecks.php",
+     "lib/Service/Messaging/InAppMessagingLeaf.php",
+     "lib/Service/NewsAudienceOptions.php",
+     "lib/Service/Notifications/MessageBoxSender.php",
+     "lib/Service/Notifications/QuietHoursPolicy.php",
+     "lib/Service/Plans/PortalPlanService.php",
+     "lib/Service/Theme/PortalCustomThemeSets.php"
+    ]
+   }
+  ]
+ },
+ "I38": {
+  "lease": "fleet8-38",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "filinq",
+    "base": "development",
+    "head": "b1ec6d79",
+    "files": [
+     "lib/Controller/PortalSigningReceiverController.php",
+     "lib/EventListener/SignerSequenceTasks.php",
+     "lib/EventListener/SigningTaskListener.php",
+     "lib/Service/AnonymizationPersistenceService.php",
+     "lib/Service/Charts/SvgRasterizer.php",
+     "lib/Service/Comparison/RedactionAnnotator.php",
+     "lib/Service/ConsentRecordWriter.php",
+     "lib/Service/ConsentUpdateHandler.php",
+     "lib/Service/DocumentRenderPipeline.php",
+     "lib/Service/DocumentVersionService.php",
+     "lib/Service/DossierContextService.php",
+     "lib/Service/DossierFileService.php",
+     "lib/Service/EntitySearch/EntityOccurrences.php",
+     "lib/Service/FinalDocumentService.php",
+     "lib/Service/IntakeRoutingService.php",
+     "lib/Service/LegalBasisProposalService.php",
+     "lib/Service/ObjectionTermCalculator.php",
+     "lib/Service/PdfConversionService.php",
+     "lib/Service/Pdfa3MetadataAssembler.php",
+     "lib/Service/PlainLanguageRenditionService.php",
+     "lib/Service/ProhibitionGateService.php",
+     "lib/Service/ProhibitionPolicyService.php",
+     "lib/Service/Publication/PublicationReadiness.php",
+     "lib/Service/Redaction/AnonymizationLinkReader.php",
+     "lib/Service/Redaction/DownloadAgreementRepository.php",
+     "lib/Service/Redaction/RedactionIrreversibilityVerifier.php",
+     "lib/Service/RedactionAccessibilityService.php",
+     "lib/Service/Signing/GuardianConsentGuard.php",
+     "lib/Service/Signing/NativeSigningProvider.php",
+     "lib/Service/SigningEnvelope/SigningEnvelopeService.php",
+     "lib/Service/SubjectErasure/SubjectErasureDocumentStep.php",
+     "lib/Service/UnredactedEntitiesValidator.php",
+     "lib/Service/Wizard/WizardQuestionCheck.php"
+    ]
+   }
+  ]
+ },
+ "I39": {
+  "lease": "fleet8-39",
+  "property": "unit_complexity",
+  "languages": [
+   "typescript"
+  ],
+  "apps": [
+   {
+    "app": "keepiq",
+    "base": "development",
+    "head": "c90bdde7",
+    "files": [
+     "browser-extension/entrypoints/inline-list/list.ts",
+     "browser-extension/entrypoints/notification/bar.ts",
+     "browser-extension/entrypoints/popup/components/AuthenticatorKeyField.tsx",
+     "browser-extension/entrypoints/popup/components/ConfirmDialog.tsx",
+     "browser-extension/entrypoints/popup/components/FolderNameDialog.tsx",
+     "browser-extension/entrypoints/popup/components/ItemCard.tsx",
+     "browser-extension/entrypoints/popup/components/TextArea.tsx",
+     "browser-extension/entrypoints/popup/components/WebsiteAccess.tsx",
+     "browser-extension/entrypoints/popup/views/ItemDetail.tsx",
+     "browser-extension/entrypoints/popup/views/PasskeyWindow.tsx",
+     "browser-extension/entrypoints/popup/views/VaultList.tsx",
+     "browser-extension/entrypoints/popup/views/send/NewSend.tsx",
+     "browser-extension/entrypoints/popup/views/send/SendList.tsx",
+     "browser-extension/entrypoints/popup/views/settings/AccountSecurity.tsx",
+     "browser-extension/entrypoints/popup/views/settings/Notifications.tsx",
+     "browser-extension/entrypoints/popup/views/settings/Vault.tsx",
+     "browser-extension/src/api/client.ts",
+     "browser-extension/src/autofill/capture-collector.ts",
+     "browser-extension/src/autofill/execute.ts",
+     "browser-extension/src/autofill/fields.ts",
+     "browser-extension/src/autofill/fill.ts",
+     "browser-extension/src/autofill/format.ts",
+     "browser-extension/src/autofill/inline-host.ts",
+     "browser-extension/src/autofill/inline-session.ts",
+     "browser-extension/src/autofill/notice-host.ts",
+     "browser-extension/src/background/requests.ts",
+     "browser-extension/src/background/router.ts",
+     "browser-extension/src/crypto/federated-certificate.ts",
+     "browser-extension/src/crypto/rsa.ts",
+     "browser-extension/src/generator/password.ts",
+     "browser-extension/src/menus.ts",
+     "browser-extension/src/passkey/ceremony.ts",
+     "browser-extension/src/passkey/create.ts",
+     "browser-extension/src/passkey/credential.ts",
+     "browser-extension/src/passkey/page.ts",
+     "browser-extension/src/passkey/relay.ts",
+     "browser-extension/src/passkey/request.ts",
+     "browser-extension/src/vault/fields.ts",
+     "browser-extension/src/vault/unlock.ts",
+     "browser-extension/src/vault/write.ts"
+    ]
+   }
+  ]
+ },
+ "I40": {
+  "lease": "fleet8-40",
+  "property": "unit_complexity",
+  "languages": [
+   "php"
+  ],
+  "apps": [
+   {
+    "app": "launchpad",
+    "base": "development",
+    "head": "21dbb7af",
+    "files": [
+     "lib/Controller/DashboardApiController.php",
+     "lib/Controller/WidgetApiController.php",
+     "lib/Service/DashboardService.php",
+     "lib/Service/DemoShowcasesService.php",
+     "lib/Service/FileService.php",
+     "lib/Service/FilesWidgetService.php",
+     "lib/Service/LiveTileService.php",
+     "lib/Service/MetadataService.php",
+     "lib/Service/PeopleWidgetService.php",
+     "lib/Service/ProfileFieldService.php",
+     "lib/Service/PublicShareService.php",
+     "lib/Service/WeatherService.php"
+    ]
+   }
+  ]
+ }
+}
