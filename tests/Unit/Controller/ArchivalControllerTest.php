@@ -244,8 +244,15 @@ class ArchivalControllerTest extends TestCase {
 		$response = $this->controller->listDestructionLists();
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
-		$this->assertFalse($response->getData()['configured']);
-		$this->assertArrayHasKey('error', $response->getData());
+		$this->assertSame(
+			[
+				'results' => [],
+				'total' => 0,
+				'configured' => false,
+				'error' => 'No destruction list register and schema are configured',
+			],
+			$response->getData()
+		);
 	}
 
 	/**
