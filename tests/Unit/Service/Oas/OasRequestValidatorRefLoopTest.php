@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Oas;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use PHPUnit\Framework\Attributes\DataProvider;
+use OCA\OpenRegister\Tests\Unit\Support\EndsWithinSeconds;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -34,6 +35,11 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\Object\RefLoopGuardParser
  */
 final class OasRequestValidatorRefLoopTest extends TestCase {
+	use EndsWithinSeconds;
+
+	/** A loop that ends answers in milliseconds; one that does not is failed after this. */
+	private const TIME_BOUND_SECONDS = 30;
+
 	/**
 	 * Every way a reference comes back to itself at one place in the data.
 	 *
