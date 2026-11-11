@@ -106,6 +106,22 @@ class OAuth2RelayGuard implements OAuth2RelayGuardInterface {
 			return false;
 		}
 
+		if ($this->isCallbackShape(parts: $parts) === false) {
+			return false;
+		}
+
+		return in_array($this->callbackOrigin(parts: $parts), $this->allowedOrigins(), true);
+	}//end permits()
+
+	/**
+	 * Whether a parsed callback URL has the shape of this app's OAuth2 callback:
+	 * https, no credentials, and the app's callback path.
+	 *
+	 * @param array<string, int|string> $parts The parsed callback URL.
+	 *
+	 * @return bool True when the shape fits; the origin is checked separately.
+	 */
+	private function isCallbackShape(array $parts): bool {
 		if (strtolower((string)($parts['scheme'] ?? '')) !== 'https') {
 			return false;
 		}
@@ -115,17 +131,24 @@ class OAuth2RelayGuard implements OAuth2RelayGuardInterface {
 		}
 
 		$path = rtrim((string)($parts['path'] ?? ''), '/');
-		if (str_ends_with($path, self::CALLBACK_PATH_SUFFIX) === false || str_contains($path, self::APP_PATH_SEGMENT) === false) {
-			return false;
-		}
+		return str_ends_with($path, self::CALLBACK_PATH_SUFFIX) === true && str_contains($path, self::APP_PATH_SEGMENT) === true;
+	}//end isCallbackShape()
 
+	/**
+	 * The origin of a parsed callback URL, lower-cased, with its port when one is given.
+	 *
+	 * @param array<string, int|string> $parts The parsed callback URL.
+	 *
+	 * @return string The `https://host[:port]` origin.
+	 */
+	private function callbackOrigin(array $parts): string {
 		$origin = 'https://' . strtolower((string)($parts['host'] ?? ''));
 		if (isset($parts['port']) === true) {
 			$origin .= ':' . (int)$parts['port'];
 		}
 
-		return in_array($origin, $this->allowedOrigins(), true);
-	}//end permits()
+		return $origin;
+	}//end callbackOrigin()
 
 	/**
 	 * The origins an administrator has allow-listed.
