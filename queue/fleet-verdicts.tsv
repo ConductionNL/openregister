@@ -2556,6 +2556,7 @@ hermiq	1492	985a071e13a0dfd1a5635beff72fdf33c51ff293	CONFLICT	vm1:21314	conflict
 hermiq	1495	c1d26235bbbda61415d5305961c936171a65d762	CONFLICT	vm1:21314	conflicts with the tree on 2244877ae6
 hermiq	1489	4bbef0b22676a8a57666f9e15cd10e6ca154b5ab	RED	vm1:21314	unit tests fail beyond development: npm:registers the skill type and loads the route skill, npm:tests/vitest/route-skill-widgets.spec.js > SkillLearnings > registers the skill type and loads the route skill
 portaliq	2312	8d44449e9bb49bf62eeb88a9f9f7c06f817f46ac	CONFLICT	FV9-07:1	conflicts with the tree in src/shared/portalApi.js (merges cleanly on development alone)
+pipelinq	3466	b660241f23d7c9cd42e99335b82b6c6989b0bbe5	CONFLICT	FV9-08:1	conflicts with #3453 in lib/Service/CtiService.php
 dossiq	5911	6950b4258ef8e01dbccc0b3f13dd5e401440445f	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
 dossiq	5912	1e6646fc05cc482595bf6070081d0e87dda136d0	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
 dossiq	5913	475094f3712e7038a161a8fa305d788be82720e5	GREEN	FV9-05:1	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
