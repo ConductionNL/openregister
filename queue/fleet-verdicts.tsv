@@ -2496,3 +2496,4 @@ stackiq	1566	5ab13f5f94e07f7055777c2fc0e65bc1bb71e1eb	GREEN	vm1:18168	tree of 18
 opencatalogi	2540	fbca0cc3b945a9f54174e5c21732bff1ad34871a	GREEN	vm2:4	unit 5133: only the 5 baseline errors; floor holds; validation order kept
 planninq	1102	281987bdc8bb3326ae2f2aad61e3b9a70b190d50	GREEN	vm2:5	tree of 6: unit 869 OK (baseline 0), vitest green, floor holds
 planninq	1103	b5b4c332065017fbd52ec185379e04bde415764e	GREEN	vm2:5	tree of 6: unit 869 OK (baseline 0), vitest green, floor holds
+planninq	1104	19c7cb5d77fcaddde1bfc0eef64134b3c8d6b2b5	GREEN	vm2:5	tree of 6: unit 869 OK (baseline 0), vitest green, floor holds
