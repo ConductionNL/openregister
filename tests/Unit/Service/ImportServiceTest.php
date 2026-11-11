@@ -1845,7 +1845,7 @@ class ImportServiceTest extends TestCase {
 	}
 
 	// =========================================================================
-	// validateObjectProperties, through transformCsvRowToObject
+	// validateObjectProperties, through transformCsvRow
 	// =========================================================================
 
 	/**
@@ -1863,7 +1863,7 @@ class ImportServiceTest extends TestCase {
 				$warnings[] = [$message, $context];
 			}
 		);
-		$this->service->transformCsvRowToObject($row, $this->createRegister(1), $schema);
+		$this->service->transformCsvRow($row, new RowImportTarget(new RegisterSchema($this->createRegister(1), $schema)));
 
 		return $warnings;
 	}
