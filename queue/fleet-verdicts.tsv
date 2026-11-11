@@ -2606,3 +2606,28 @@ buildiq	1349	d9ca8ae3d2d2204638e69ec3638467e2b876fcee	GREEN	FV9-06:1	unit + vite
 buildiq	1350	90f9dd3d2795284c253ab0f6eaa450fdad69fc69	GREEN	FV9-06:1	unit + vitest green against baseline; floor holds
 buildiq	1351	fc2de91978e97dd519051f2d87fa89af718818a0	GREEN	FV9-06:1	unit + vitest green against baseline; floor holds
 buildiq	1352	eace0376eb8a80fcecd08dd35eb09a5c8d137da9	GREEN	FV9-06:1	unit + vitest green against baseline; floor holds
+integriq	3290	5e5785f2d49c0d77329a2b3a07e8169b8359827d	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3292	fc791ec6d3b6f7edc30ab411b48968737646d0ea	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3293	45263574b4f7c15fa624eba851c37caebdaed607	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3294	6bfe338384276ab3dcfdd8979d78c054d194a9f1	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3295	a33e1865be289e0a9e6ab5de3b48ef28cb67831d	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3296	ce56847c8e0dcd069c8ba5e5c87d9034bdb496b8	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3297	cade284fe69271414cad01932df3afcbfb409d17	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3298	7c79e0e832243609a12c7bc096b373e67863a745	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3299	52274d6369d21166dac6890c938b996c8b7abdb4	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3300	b8139a1af6d618592e9ea0faaed17b75fe0b3460	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3301	0bfae526e3a136206fc46631b4b2acd70d6eed41	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3302	a083678ff8ecab736127a542ee2fad4589e4972d	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3303	e1a51cdfe7e5641675fde844aeff5a37b4f2dd81	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3304	8f71ccd07aa9c035e5a0175acf8e44a8a71c3e9e	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3305	433160225fa750a57b231db6099421d1c1ede464	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3306	eba85d2d5228010aa967f61cb68fe8cef9b2a5db	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3307	7f423f43abdda471c20ea1c47aeba11c2b59a1d7	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3308	a12021ff1c67c3e4fdc771841e86375c3743fd40	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3309	b3b1cf5e0b0ee27daf86f93782ec61ec0794ef59	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3310	2bf3ae5cb06060933252b204beb3756183f7a89e	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3311	29848d2428225deb1cb594b8b05d0f41818263cf	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3312	f23a1ff2fbc5531f44e59a1818b0e8be27bdf8ec	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3313	d71e60f482596787dcc608841261c4fd5fe264ff	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3314	8688f24e5e2d8362be729fd08d5b46fd26b9c754	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
+integriq	3315	e4f9415514d63122d4bd3828da3abb7ef77bf111	GREEN	FV9-03:1	phpunit green beyond 3 baseline failures; floor not measured
