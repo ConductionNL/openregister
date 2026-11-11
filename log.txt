@@ -3028,3 +3028,4 @@
 2026-11-11T01:22:29Z integrator-20261110T221231-b175a32d BUILD-LINT #8495 1b6d1c73 does not compile on this tree: lib/Db/MagicMapper.php
 2026-11-11T01:22:32Z integrator-20261110T221231-b175a32d BUILD-LINT #8837 201f81e9 does not compile on this tree: lib/Controller/OrganisationController.php
 2026-11-11T01:27:03Z integrator-20261110T221231-b175a32d BUILD-LINT #8257 e749f6e3 does not compile on this tree: tests/Unit/BackgroundJob/RelatedRetentionRecalculationJobTest.php
+2026-11-11T01:27:07Z integrator-20261110T221231-b175a32d BUILD-LINT #8495 1b6d1c73 does not compile on this tree: lib/Db/MagicMapper.php
