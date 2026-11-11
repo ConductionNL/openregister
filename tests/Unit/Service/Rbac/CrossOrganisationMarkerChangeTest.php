@@ -68,6 +68,21 @@ class CrossOrganisationMarkerChangeTest extends TestCase {
 				['read' => [['group' => 'team', 'match' => ['b' => ['c' => 3]], 'crossOrganisation' => true]]],
 				true,
 			],
+			'a marked matrix row gets another field'      => [
+				['matrix' => ['field' => 'department', 'rows' => [['group' => 'team', 'value' => 'a', 'crossOrganisation' => true]]]],
+				['matrix' => ['field' => 'provider', 'rows' => [['group' => 'team', 'value' => 'a', 'crossOrganisation' => true]]]],
+				true,
+			],
+			'a marked matrix row stays, its field stays'  => [
+				['matrix' => ['field' => 'department', 'rows' => [['group' => 'team', 'value' => 'a', 'crossOrganisation' => true]]]],
+				['matrix' => ['rows' => [['crossOrganisation' => true, 'value' => 'a', 'group' => 'team']], 'field' => 'department']],
+				false,
+			],
+			'a top-level setting changes beside a marked rule' => [
+				['inheritFromPublic' => true, 'read' => [$marked]],
+				['inheritFromPublic' => false, 'read' => [$marked]],
+				false,
+			],
 			'a marker sent as JSON text'                  => [['read' => [$plain]], json_encode(['read' => [$marked]]), true],
 			'a stored block read back as JSON text'       => [json_encode(['read' => [$marked]]), ['read' => [$marked]], false],
 			'a text that is not JSON'                     => [['read' => [$plain]], 'not json', false],
