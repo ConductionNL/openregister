@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\AdminGroupMembership;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AuditSinkControllerServices;
 use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
@@ -163,16 +164,7 @@ class AuditSinkController extends Controller {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function isAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return in_array(
-			needle: 'admin',
-			haystack: $this->groupManager->getUserGroupIds($user),
-			strict: true
-		);
+		return AdminGroupMembership::ofCaller(userSession: $this->userSession, groupManager: $this->groupManager);
 	}//end isAdmin()
 
 	/**
