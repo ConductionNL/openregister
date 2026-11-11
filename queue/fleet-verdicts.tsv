@@ -363,3 +363,27 @@ portaliq	2053	ba706d37f3e378ccd45b234fe5e07ab858db5986	GREEN	FV06:1	unit suites 
 opencatalogi\t2441\t511fcd2e4fdc67996b6ba24e610c0d70390d3001\tCONFLICT\tFV08:1\tconflicts with tree of earlier PRs on development
 opencatalogi	2427	952fe17e17388205ed50ac47ec95d032e30b0fe1	CONFLICT	FV08:1	conflicts with tree of earlier PRs on development
 opencatalogi	2441	511fcd2e4fdc67996b6ba24e610c0d70390d3001	CONFLICT	FV08:1	conflicts with tree of earlier PRs on development
+portaliq	2055	305874b213252db102eaf11471ee53794a8624ed	GREEN	FV06:2	unit suites green on the tree
+portaliq	2057	6ac96ee569b2dbb1fd3ddb1cea027611065c433d	GREEN	FV06:2	unit suites green on the tree
+portaliq	2059	25b37997ea96bfb1d0cf9c23cde7f39e04d016af	GREEN	FV06:2	unit suites green on the tree
+portaliq	2061	bca15e97f636afc119ecd15791d0a90574794a3f	GREEN	FV06:2	unit suites green on the tree
+portaliq	2063	cfeec1b347b9e1f9f0eb7c209913ad430575c488	GREEN	FV06:2	unit suites green on the tree
+portaliq	2065	45097305623df1dacbed1553525b9c4c149911ec	GREEN	FV06:2	unit suites green on the tree
+portaliq	2067	741ed209506d583a888ef6cc510a315f2ec397ff	GREEN	FV06:2	unit suites green on the tree
+portaliq	2069	7364f96e31d9ef5140b155e3f99cfe8efa1df5cb	GREEN	FV06:2	unit suites green on the tree
+portaliq	2071	e7e49dce4be8d4049d6c98b542875254e1e6edf5	GREEN	FV06:2	unit suites green on the tree
+portaliq	2073	034c6e187b6e4ac5834303aecb7c92c56a45c246	GREEN	FV06:2	unit suites green on the tree
+portaliq	2075	260db188761e698491cafe49bcfe559a4d5ac5b8	GREEN	FV06:2	unit suites green on the tree
+portaliq	2083	6a7fbe4fa6f9f48cb4aeb9b3a0cef009b599507d	GREEN	FV06:2	unit suites green on the tree
+portaliq	2091	d749c0e59f6a22d2a3380fe6bed397ca3652808f	GREEN	FV06:2	unit suites green on the tree
+portaliq	2093	2449f41701846c03e591a0f9405cb5a3db638f56	GREEN	FV06:2	unit suites green on the tree
+portaliq	2095	ed34b7f85d711df9a6daca608ae44d692e08da4f	GREEN	FV06:2	unit suites green on the tree
+portaliq	2097	f24e447ec907fe87c0aca9434afbe1d98c627a53	GREEN	FV06:2	unit suites green on the tree
+portaliq	2099	90def093a0ccf8522f0eb8d5f7763e5d86502b3f	GREEN	FV06:2	unit suites green on the tree
+portaliq	2103	c007fb74c2a42091d57200321bf0d502570e0f6f	GREEN	FV06:2	unit suites green on the tree
+portaliq	2105	f49660f53d5b4dd163f08d72c8ceb1fa8a4f49ef	GREEN	FV06:2	unit suites green on the tree
+portaliq	2107	9d86b29b702e46c613bbd5476f68bd7f1858d5dc	GREEN	FV06:2	unit suites green on the tree
+portaliq	2109	ad492bc38fc272a8d0a4ebe606118e42173506bb	GREEN	FV06:2	unit suites green on the tree
+portaliq	2111	6c4e9e5debef9ca1f4f2e2b17ae0f0db906ecb9d	GREEN	FV06:2	unit suites green on the tree
+portaliq	2113	2e1a98ca96deebf57c6f09ca19e9ba16ef186106	GREEN	FV06:2	unit suites green on the tree
+portaliq	2115	e8f7c0489fc4ea70c5f2383c81932668eadfefc7	GREEN	FV06:2	unit suites green on the tree
