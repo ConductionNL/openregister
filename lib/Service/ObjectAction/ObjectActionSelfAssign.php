@@ -35,7 +35,7 @@ use OCA\OpenRegister\Exception\PropertyAlreadySetException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IUserSession;
 use RuntimeException;
-use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**

@@ -32,7 +32,7 @@ use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use Throwable;
 use OCA\OpenRegister\Service\Rules\ApplyRuleServices;
-use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**

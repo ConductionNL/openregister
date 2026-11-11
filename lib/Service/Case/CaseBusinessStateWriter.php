@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Case;
 use DateTime;
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Object\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 
 /**
