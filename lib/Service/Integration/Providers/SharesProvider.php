@@ -46,6 +46,7 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata;
 // Getters mirror the contract in the interface.
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Integration\CoreIntegrationProvider;
 use OCA\OpenRegister\Service\CaseTokenTarget;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\Files\Folder;
@@ -73,7 +74,7 @@ use Throwable;
  * array_map([$this, 'mapServiceRow'], ...) — PHPMD does not trace callable-array references
  * and incorrectly flags it as unused.
  */
-class SharesProvider extends AbstractIntegrationProvider {
+class SharesProvider extends CoreIntegrationProvider {
 
 	/**
 	 * Share types the provider surfaces. Order matters: it drives
@@ -131,33 +132,9 @@ class SharesProvider extends AbstractIntegrationProvider {
 		return 'Share';
 	}//end getIcon()
 
-	public function getGroup(): ?string {
-		return 'core';
-	}//end getGroup()
-
-	public function getRequiredApp(): ?string {
-		return null;
-	}//end getRequiredApp()
-
 	public function getStorageStrategy(): string {
 		return 'query-time';
 	}//end getStorageStrategy()
-
-	/**
-	 * Whether the integration is available — NC core sharing is always on.
-	 *
-	 * @return bool
-	 *
-	 * @spec exclude Trivial always-on predicate (`return true`) — the registry stage-1 enabled-filter contract
-	 *              is owned by pluggable-integration-registry task-3.
-	 */
-	public function isEnabled(): bool {
-		// NC core sharing is always available; the only "disabled"
-		// case is the share subsystem being unreachable at runtime,
-		// which the per-call Throwable catches surface as a degraded
-		// empty list (see `list()` + `health()`).
-		return true;
-	}//end isEnabled()
 
 	/**
 	 * List shares linked to an OR object.
