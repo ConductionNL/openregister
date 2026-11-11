@@ -184,12 +184,7 @@
             [
                 "readable",
                 [
-                    [],
-                    false,
                     null,
-                    null,
-                    true,
-                    true,
                     true,
                     true
                 ]
@@ -210,12 +205,7 @@
             [
                 "readable",
                 [
-                    [],
-                    false,
                     null,
-                    null,
-                    true,
-                    true,
                     true,
                     true
                 ]
@@ -236,12 +226,7 @@
             [
                 "readable",
                 [
-                    [],
-                    false,
                     null,
-                    null,
-                    true,
-                    true,
                     true,
                     true
                 ]
@@ -262,12 +247,7 @@
             [
                 "readable",
                 [
-                    [],
-                    false,
                     null,
-                    null,
-                    true,
-                    true,
                     true,
                     true
                 ]
@@ -306,12 +286,7 @@
             [
                 "denied",
                 [
-                    [],
-                    false,
                     null,
-                    null,
-                    true,
-                    true,
                     true,
                     true
                 ]
@@ -327,12 +302,7 @@
             [
                 "gone",
                 [
-                    [],
-                    false,
                     null,
-                    null,
-                    true,
-                    true,
                     true,
                     true
                 ]
