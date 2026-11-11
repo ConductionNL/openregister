@@ -655,10 +655,7 @@ class DeletedController extends Controller {
 	 */
 	public function destroy(string $id): JSONResponse {
 		if ($this->services->access->userSession->getUser() === null) {
-			return new JSONResponse(
-				data: ['error' => 'Not authenticated'],
-				statusCode: 401
-			);
+			return $this->notAuthenticated();
 		}
 
 		try {
@@ -779,18 +776,12 @@ class DeletedController extends Controller {
 		$object = $purge->object;
 		$refusal = $this->services->store->deletion->destroyRight->refusalFor(object: $object, schema: $purge->schema);
 		if ($refusal !== null) {
-			return new JSONResponse(
-				data: $refusal->toResponseBody(),
-				statusCode: $refusal->getStatusCode()
-			);
+			return $this->destructionRefused(refusal: $refusal);
 		}
 
 		$clockRefusal = $this->services->store->deletion->clock->refusalFor(object: $object);
 		if ($clockRefusal !== null) {
-			return new JSONResponse(
-				data: $clockRefusal->toResponseBody(),
-				statusCode: $clockRefusal->getStatusCode()
-			);
+			return $this->destructionRefused(refusal: $clockRefusal);
 		}
 
 		if ($purge->windowRefuses() === true) {
@@ -839,10 +830,7 @@ class DeletedController extends Controller {
 				)
 			);
 		} catch (DestructionRefusedException $e) {
-			return new JSONResponse(
-				data: $e->toResponseBody(),
-				statusCode: $e->getStatusCode()
-			);
+			return $this->destructionRefused(refusal: $e);
 		}
 
 		// Permanently delete the object. The record above is already
@@ -879,10 +867,7 @@ class DeletedController extends Controller {
 	 */
 	public function destructionPreview(string $id): JSONResponse {
 		if ($this->services->access->userSession->getUser() === null) {
-			return new JSONResponse(
-				data: ['error' => 'Not authenticated'],
-				statusCode: 401
-			);
+			return $this->notAuthenticated();
 		}
 
 		try {
@@ -891,10 +876,7 @@ class DeletedController extends Controller {
 
 			$refusal = $this->services->store->deletion->destroyRight->refusalFor(object: $object, schema: $schema);
 			if ($refusal !== null) {
-				return new JSONResponse(
-					data: $refusal->toResponseBody(),
-					statusCode: $refusal->getStatusCode()
-				);
+				return $this->destructionRefused(refusal: $refusal);
 			}
 
 			$window = $this->services->store->deletion->window->windowOf(query: new DeletionWindowQuery(object: $object, schema: $schema));
@@ -1120,6 +1102,20 @@ class DeletedController extends Controller {
 			statusCode: 500
 		);
 	}//end batchFailure()
+
+	/**
+	 * The answer to a destruction the rules refuse: the refusal's body under its status.
+	 *
+	 * @param DestructionRefusedException $refusal The refusal.
+	 *
+	 * @return JSONResponse
+	 */
+	private function destructionRefused(DestructionRefusedException $refusal): JSONResponse {
+		return new JSONResponse(
+			data: $refusal->toResponseBody(),
+			statusCode: $refusal->getStatusCode()
+		);
+	}//end destructionRefused()
 
 	/**
 	 * The 401 of a bulk request without a signed-in user.
