@@ -166,3 +166,4 @@ openregister#9835 b55ce5edf25dcc6e66970ee1514617cd06255729 precheck-red alone on
 openregister#9837 9a3c7ffeed6b143553715769d1ed006fa90f8936 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\TalkLink\TalkGatewaySetDescriptionTest::testWithoutTalkNothingIsResolved
 openregister#9845 76d021cdba50f92e0f5032ae928e6db12706668b precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\TalkLink\TalkGatewaySetDescriptionTest::testWithoutTalkNothingIsResolved
 openregister#9844 946afd9ec1c6313c62cc5a8c018d989e30d47521 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\TalkLink\TalkGatewaySetDescriptionTest::testWithoutTalkNothingIsResolved
+openregister#9846 50c6cbe277c9aedfffa9cc81bf9a6b3270400041 precheck-red alone on main: FAIL src/modals/selectOptions.dom.golden.spec.js
