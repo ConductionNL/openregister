@@ -2438,3 +2438,4 @@ dossiq	5434	670127c0db220268616bb5752a71dd9333c83257	GREEN	FXL	overdue filter sp
 shillinq	2477	40733a5bb231b64dff8cd52b8899de2a5139b79a	GREEN	FXL	hand-computed tests restored beside the golden, pass on the new code; merged
 shillinq	2445	54ba149694f2a30d6103d4ab14948daca9d2be44	GREEN	FXL	fragments collected incrementally so a stream error keeps them, as on development; merged
 shillinq	2357	044f0b1673fcf9cb746d946f55b4112ed1247cd0	GREEN	FXL	spec reads DraftRunCriteria for the parameters; merged
+dossiq	5417	d20f3104d6024429a05d0ea0e1546ccc7c4d4e8d	GREEN	FXL	snapshot serializer records icons by name, re-recorded on development code; merged
