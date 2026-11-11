@@ -10,7 +10,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Listener\LeafScriptListener;
+use OCA\OpenRegister\Service\Integration\LeafAvailability;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
+use OCA\OpenRegister\Service\Integration\LeafIdentity;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
@@ -132,10 +134,10 @@ class LeafScriptListenerGateTest extends TestCase {
 		$registry = $this->createMock(LeafRegistry::class);
 		$registry->method('getDescriptors')->willReturn(
 			[
-				new LeafDescriptor(id: 'a', label: 'a', icon: 'X', kinds: ['data-provider'], requiredApp: 'pipelinq'),
-				new LeafDescriptor(id: 'b', label: 'b', icon: 'X', kinds: [LeafDescriptor::KIND_RENDER_SURFACE], requiredApp: null),
-				new LeafDescriptor(id: 'c', label: 'c', icon: 'X', kinds: [LeafDescriptor::KIND_RENDER_SURFACE], requiredApp: 'procest'),
-				new LeafDescriptor(id: 'd', label: 'd', icon: 'X', kinds: [LeafDescriptor::KIND_RENDER_SURFACE], requiredApp: 'zaakafhandel'),
+				new LeafDescriptor(identity: new LeafIdentity(id: 'a', label: 'a', icon: 'X'), kinds: ['data-provider'], availability: new LeafAvailability(requiredApp: 'pipelinq')),
+				new LeafDescriptor(identity: new LeafIdentity(id: 'b', label: 'b', icon: 'X'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE], availability: new LeafAvailability(requiredApp: null)),
+				new LeafDescriptor(identity: new LeafIdentity(id: 'c', label: 'c', icon: 'X'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE], availability: new LeafAvailability(requiredApp: 'procest')),
+				new LeafDescriptor(identity: new LeafIdentity(id: 'd', label: 'd', icon: 'X'), kinds: [LeafDescriptor::KIND_RENDER_SURFACE], availability: new LeafAvailability(requiredApp: 'zaakafhandel')),
 			]
 		);
 		$asked = [];

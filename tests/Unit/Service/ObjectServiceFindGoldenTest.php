@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
@@ -58,6 +59,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Golden record of find() over every branch: the scope each retrieval runs in, the cross-schema
@@ -351,7 +353,10 @@ class ObjectServiceFindGoldenTest extends TestCase {
 
 		$permissionHandler = $this->createMock(PermissionHandler::class);
 		$permissionHandler->method('checkPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): void {
+			function (Schema $schema, string $action, PermissionCheckOptions $options = new PermissionCheckOptions(), bool $_rbac = true): void {
+				$userId = $options->userId;
+				$objectOwner = $options->objectOwner;
+				$object = $options->object;
 				$this->calls[] = ['checkPermission' => $action, 'schema' => $schema->getId(), 'userId' => $userId, 'owner' => $objectOwner, 'rbac' => $_rbac, 'object' => $object?->getUuid()];
 				if ($this->denyRead === true) {
 					throw new Exception('read denied');
@@ -396,7 +401,7 @@ class ObjectServiceFindGoldenTest extends TestCase {
 			);
 		}
 
-		return new ObjectService(
+		return new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler: $this->createMock(DataManipulationHandler::class),
 			deleteHandler: $this->createMock(DeleteObject::class),
 			getHandler: $getHandler,
@@ -435,6 +440,6 @@ class ObjectServiceFindGoldenTest extends TestCase {
 			dateTimeNormalizer: $this->createMock(DateTimeNormalizer::class),
 			container: $container,
 			objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 	}//end service()
 }//end class

@@ -32,13 +32,14 @@ use OCA\OpenRegister\Db\Schema;
 interface ObjectActionDefinitionsInterface {
 
 	/**
-	 * The definition of one action of a schema, including inherited ones.
+	 * The well-formed actions of a schema, inherited ones included.
 	 *
 	 * @param Schema                   $schema   The schema.
-	 * @param string                   $key      The action key.
-	 * @param Register|int|string|null $register The register, or its id.
+	 * @param Register|int|string|null $register The register, or its id, or null when unknown.
 	 *
-	 * @return ObjectActionDefinition|null The definition.
+	 * @return array<string, ObjectActionDefinition> Action key => definition.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-register-may-declare-actions-its-schemas-inherit
 	 */
-	public function find(Schema $schema, string $key, Register|int|string|null $register = null): ?ObjectActionDefinition;
+	public function forSchema(Schema $schema, Register|int|string|null $register = null): array;
 }//end interface

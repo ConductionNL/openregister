@@ -275,7 +275,7 @@ class ReportRenderJobTest extends TestCase {
 			$names[] = $p->getName();
 		}
 
-		foreach (['register', 'schema', 'limit', 'offset', 'filters'] as $required) {
+		foreach (['table', 'listing'] as $required) {
 			$this->assertContains(
 				$required,
 				$names,

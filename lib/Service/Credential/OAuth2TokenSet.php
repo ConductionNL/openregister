@@ -74,24 +74,47 @@ final class OAuth2TokenSet {
 	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
 	 */
 	public static function fromStoredJson(string $stored): self {
-		$decoded = self::decodeStored(stored: $stored);
+		$decoded    = self::decodeStored(stored: $stored);
 		$obtainedAt = self::parseAtom(value: ($decoded['obtainedAt'] ?? null));
 
 		return new self(
-			tokens: new OAuth2Tokens(
-				accessToken: (string)$decoded['accessToken'],
-				refreshToken: self::nullableString(value: ($decoded['refreshToken'] ?? null)),
-				tokenType: (self::nullableString(value: ($decoded['tokenType'] ?? null)) ?? 'Bearer'),
-				expiresAt: self::parseAtom(value: ($decoded['expiresAt'] ?? null))
-			),
-			issuance: new OAuth2Issuance(
-				scopes: self::stringList(value: ($decoded['scopes'] ?? [])),
-				account: self::accountOf(value: ($decoded['account'] ?? [])),
-				raw: self::arrayOf(value: ($decoded['raw'] ?? null)),
-				obtainedAt: ($obtainedAt ?? new DateTimeImmutable())
-			)
+			tokens: self::storedTokens(decoded: $decoded),
+			issuance: self::storedIssuance(decoded: $decoded, obtainedAt: $obtainedAt)
 		);
 	}//end fromStoredJson()
+
+	/**
+	 * The tokens of a stored token set.
+	 *
+	 * @param array<string, mixed> $decoded The decoded stored document.
+	 *
+	 * @return OAuth2Tokens The tokens.
+	 */
+	private static function storedTokens(array $decoded): OAuth2Tokens {
+		return new OAuth2Tokens(
+			accessToken: (string)$decoded['accessToken'],
+			refreshToken: self::nullableString(value: ($decoded['refreshToken'] ?? null)),
+			tokenType: (self::nullableString(value: ($decoded['tokenType'] ?? null)) ?? 'Bearer'),
+			expiresAt: self::parseAtom(value: ($decoded['expiresAt'] ?? null))
+		);
+	}//end storedTokens()
+
+	/**
+	 * The issuance of a stored token set: its scopes, account, raw response and when it was obtained.
+	 *
+	 * @param array<string, mixed>   $decoded    The decoded stored document.
+	 * @param DateTimeImmutable|null $obtainedAt When it was obtained, if stored.
+	 *
+	 * @return OAuth2Issuance The issuance.
+	 */
+	private static function storedIssuance(array $decoded, ?DateTimeImmutable $obtainedAt): OAuth2Issuance {
+		return new OAuth2Issuance(
+			scopes: self::stringList(value: ($decoded['scopes'] ?? [])),
+			account: self::accountOf(value: ($decoded['account'] ?? [])),
+			raw: self::arrayOf(value: ($decoded['raw'] ?? null)),
+			obtainedAt: ($obtainedAt ?? new DateTimeImmutable())
+		);
+	}//end storedIssuance()
 
 	/**
 	 * Build a token set from a provider's token or refresh response.

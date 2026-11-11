@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 
 /**
@@ -39,29 +40,27 @@ interface MagicSlugStoreInterface {
 	 * the caller keeps the rows that really are a suffixed variant. No RBAC or multitenancy
 	 * filter, as for every slug uniqueness query.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param string   $prefix   The slug prefix, taken literally.
-	 * @param int      $limit    Most rows to return.
+	 * @param RegisterSchema $table  The register and schema whose table to use.
+	 * @param string         $prefix The slug prefix, taken literally.
+	 * @param int            $limit  Most rows to return.
 	 *
 	 * @return list<array{slug: string, uuid: string}> The matches.
 	 */
-	public function findSlugsByPrefix(Register $register, Schema $schema, string $prefix, int $limit=50): array;
+	public function findSlugsByPrefix(RegisterSchema $table, string $prefix, int $limit=50): array;
 
 	/**
 	 * The slug an object keeps when a move or migration takes it to another register or schema (#4037).
 	 *
 	 * Resolved lazily, as on restore: the slug handler needs this mapper.
 	 *
-	 * @param ObjectEntity $entity   The object being moved (still carrying its uuid).
-	 * @param Register     $register The target register.
-	 * @param Schema       $schema   The target schema.
+	 * @param ObjectEntity   $entity The object being moved (still carrying its uuid).
+	 * @param RegisterSchema $table  The target register and schema.
 	 *
 	 * @return string|null The slug to store at the target.
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function slugForMove(ObjectEntity $entity, Register $register, Schema $schema): ?string;
+	public function slugForMove(ObjectEntity $entity, RegisterSchema $table): ?string;
 
 	/**
 	 * Return the uuids of live objects that hold a slug in one register+schema table.
@@ -70,16 +69,15 @@ interface MagicSlugStoreInterface {
 	 * caller who cannot see the holder must still not take its slug. Soft-deleted
 	 * rows hold no slug, as on the read path.
 	 *
-	 * @param Register    $register    The register.
-	 * @param Schema      $schema      The schema.
-	 * @param string      $slug        The slug to look for.
+	 * @param RegisterSchema $table       The register and schema whose table to use.
+	 * @param string         $slug        The slug to look for.
 	 * @param string|null $excludeUuid The object being saved, which never collides with itself.
 	 *
 	 * @return list<string> The holders' uuids (at most one: enough to know the slug is taken).
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
-	public function findSlugHolders(Register $register, Schema $schema, string $slug, ?string $excludeUuid=null): array;
+	public function findSlugHolders(RegisterSchema $table, string $slug, ?string $excludeUuid=null): array;
 
 	/**
 	 * Load the slug state a bulk save or a backfill decides against, in two queries.
@@ -89,16 +87,15 @@ interface MagicSlugStoreInterface {
 	 * row has none, absent when the row does not exist yet). The IN lists are
 	 * split into chunks of 1,000 values. No access filter, as findSlugHolders().
 	 *
-	 * @param Register      $register The register.
-	 * @param Schema        $schema   The schema.
-	 * @param list<string>  $slugs    Candidate slugs.
-	 * @param list<string>  $uuids    Uuids of the rows being decided.
+	 * @param RegisterSchema $table The register and schema whose table to use.
+	 * @param list<string>   $slugs Candidate slugs.
+	 * @param list<string>   $uuids Uuids of the rows being decided.
 	 *
 	 * @return array{holders: array<string, list<string>>, stored: array<string, string|null>}
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
-	public function findSlugState(Register $register, Schema $schema, array $slugs, array $uuids): array;
+	public function findSlugState(RegisterSchema $table, array $slugs, array $uuids): array;
 
 	/**
 	 * List every slug held by more than one live object in a register+schema table.
@@ -164,14 +161,13 @@ interface MagicSlugStoreInterface {
 	 * Only when the row still has no slug (null or empty), so a save that set
 	 * the slug while the backfill was planning is not undone.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param string   $uuid     The object.
-	 * @param string   $slug     The new slug.
+	 * @param RegisterSchema $table The register and schema whose table to use.
+	 * @param string         $uuid  The object.
+	 * @param string         $slug  The new slug.
 	 *
 	 * @return int Rows updated: 0 when the row changed in the meantime.
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function updateSlugColumn(Register $register, Schema $schema, string $uuid, string $slug): int;
+	public function updateSlugColumn(RegisterSchema $table, string $uuid, string $slug): int;
 }//end interface

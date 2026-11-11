@@ -45,7 +45,7 @@ final class OperationsConsoleServiceGoldenTest extends TestCase {
 	private function service(array $bulkJobs = [], array $jobRows = [], array $runs = [], array $summaries = []): OperationsConsoleService {
 		$bulk = $this->createMock(BulkJobMapper::class);
 		$bulk->method('countByState')->willReturn([]);
-		$bulk->method('findAllJobs')->willReturn($bulkJobs);
+		$bulk->method('findJobs')->willReturn($bulkJobs);
 		$jobList = $this->createMock(IJobList::class);
 		$jobList->method('getJobsIterator')->willReturn($jobRows);
 		$dispatches = $this->createMock(NotificationHistoryMapper::class);

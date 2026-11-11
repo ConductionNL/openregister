@@ -151,18 +151,12 @@ final class FilterParams {
 	 */
 	public static function liftBracketFilter(array $params): array {
 		$bracket = ($params[self::FILTER_KEY] ?? null);
-		if (is_array($bracket) === false || $bracket === [] || array_is_list($bracket) === true) {
+		if (self::isLiftableBracket(bracket: $bracket) === false) {
 			return $params;
 		}
 
-		$reserved = array_merge(self::OBJECT_CONTEXT_PARAMS, self::OBJECT_SYSTEM_PARAMS);
-		$leftover = [];
-		foreach ($bracket as $key => $value) {
-			if (self::isFilterName(key: $key, reserved: $reserved) === false) {
-				$leftover[$key] = $value;
-				continue;
-			}
-
+		[$filters, $leftover] = self::partitionBracket(bracket: $bracket);
+		foreach ($filters as $key => $value) {
 			$params[$key] = $value;
 		}
 
@@ -173,6 +167,44 @@ final class FilterParams {
 
 		return $params;
 	}//end liftBracketFilter()
+
+	/**
+	 * Whether a `filter` value is a non-empty map whose keys can be lifted.
+	 *
+	 * @param mixed $bracket The `filter` parameter.
+	 *
+	 * @return bool True for a non-empty, non-list array.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	private static function isLiftableBracket(mixed $bracket): bool {
+		return is_array($bracket) === true && $bracket !== [] && array_is_list($bracket) === false;
+	}//end isLiftableBracket()
+
+	/**
+	 * Split the bracket into the entries that are filters under the bare spelling and the leftover, each in order.
+	 *
+	 * @param array<array-key, mixed> $bracket The `filter` map.
+	 *
+	 * @return array{0: array<array-key, mixed>, 1: array<array-key, mixed>} [filters, leftover].
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	private static function partitionBracket(array $bracket): array {
+		$reserved = array_merge(self::OBJECT_CONTEXT_PARAMS, self::OBJECT_SYSTEM_PARAMS);
+		$filters  = [];
+		$leftover = [];
+		foreach ($bracket as $key => $value) {
+			if (self::isFilterName(key: $key, reserved: $reserved) === false) {
+				$leftover[$key] = $value;
+				continue;
+			}
+
+			$filters[$key] = $value;
+		}
+
+		return [$filters, $leftover];
+	}//end partitionBracket()
 
 	/**
 	 * Build an aggregation's filter map from both spellings.
@@ -306,11 +338,7 @@ final class FilterParams {
 		$unknown = [];
 		foreach (array_keys($query) as $key) {
 			$key = (string)$key;
-			if ($key === '@self'
-				|| str_starts_with($key, '_') === true
-				|| in_array($key, self::OBJECT_CONTEXT_PARAMS, true) === true
-				|| array_key_exists($key, $properties) === true
-			) {
+			if (self::isKnownObjectFilterKey(key: $key, properties: $properties) === true) {
 				continue;
 			}
 
@@ -319,6 +347,23 @@ final class FilterParams {
 
 		return $unknown;
 	}//end unknownObjectFilterKeys()
+
+	/**
+	 * Whether a query key is metadata, a control or context parameter, or a declared property.
+	 *
+	 * @param string                  $key        The query key.
+	 * @param array<array-key, mixed> $properties The schema's declared properties.
+	 *
+	 * @return bool True when the key names something the search knows.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
+	 */
+	private static function isKnownObjectFilterKey(string $key, array $properties): bool {
+		return $key === '@self'
+			|| str_starts_with($key, '_') === true
+			|| in_array($key, self::OBJECT_CONTEXT_PARAMS, true) === true
+			|| array_key_exists($key, $properties) === true;
+	}//end isKnownObjectFilterKey()
 
 	/**
 	 * Log ONE warning naming every filter key that named no property.

@@ -28,6 +28,8 @@ namespace Unit\Service\Import;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Import\ImportCommit;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\ImportPreview;
@@ -188,7 +190,8 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 			}
 		);
 		$rowMapper->method('findByPreview')->willReturnCallback(
-			function (int $previewId, ?string $decision = null): array {
+			function (int $previewId, ListQuery $query): array {
+				$decision = ($query->filters['decision'] ?? null);
 				return array_values(
 					array_filter(
 						$this->rows,
@@ -532,7 +535,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 			}
 		);
 
-		$committed = $this->service->commit($preview, hash_file('sha256', $path), $user);
+		$committed = $this->service->commit($preview, new ImportCommit(hash_file('sha256', $path), $user));
 
 		$this->assertSame(ImportPreview::STATE_COMMITTED, $committed->getState());
 		$this->assertCount(2, $seen);
@@ -558,7 +561,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 
 		$this->objectService->method('saveObjects')->willReturn(['invalid' => [['@self' => ['id' => $id]]]]);
 
-		$this->service->commit($preview, hash_file('sha256', $path));
+		$this->service->commit($preview, new ImportCommit(hash_file('sha256', $path)));
 
 		$this->assertSame('The write failed: Validation failed', $this->rows[0]->getReason());
 		$this->assertSame(0, $preview->getApplied());
@@ -574,7 +577,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 			'This import is in state "pending". Only a completed preview can be committed.'
 		);
 
-		$this->service->commit($preview, 'abc');
+		$this->service->commit($preview, new ImportCommit('abc'));
 	}
 
 	public function testAnEmptyHashIsRefused(): void {
@@ -586,7 +589,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 			'A commit must name the source file it is committing. Send the file again, or pass its sha256 as sourceHash.'
 		);
 
-		$this->service->commit($preview, '');
+		$this->service->commit($preview, new ImportCommit(''));
 	}
 
 	public function testAThrowingCommitLeavesThePreviewFailed(): void {
@@ -616,7 +619,7 @@ final class ImportPreviewServiceBranchesTest extends TestCase {
 		);
 
 		try {
-			$service->commit($preview, hash_file('sha256', $path));
+			$service->commit($preview, new ImportCommit(hash_file('sha256', $path)));
 			$this->fail('The commit must rethrow.');
 		} catch (RuntimeException $exception) {
 			$this->assertSame('db gone', $exception->getMessage());

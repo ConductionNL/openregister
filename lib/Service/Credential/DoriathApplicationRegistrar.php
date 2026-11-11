@@ -209,6 +209,18 @@ class DoriathApplicationRegistrar implements DoriathApplicationRegistrarInterfac
 			return false;
 		}
 
+		return $this->applicationExists(applicationId: $applicationId, appId: $appId);
+	}//end isRegistrationLive()
+
+	/**
+	 * Whether Doriath still holds the persisted application row; a stale UUID is logged.
+	 *
+	 * @param string $applicationId The persisted application UUID.
+	 * @param string $appId         The app it was registered for, for log attribution.
+	 *
+	 * @return bool True when the row still exists.
+	 */
+	private function applicationExists(string $applicationId, string $appId): bool {
 		$applicationService = $this->resolveApplicationService();
 		if ($applicationService === null) {
 			return false;
@@ -226,7 +238,7 @@ class DoriathApplicationRegistrar implements DoriathApplicationRegistrarInterfac
 		}
 
 		return true;
-	}//end isRegistrationLive()
+	}//end applicationExists()
 
 	/**
 	 * Register the per-app application (identity-only, no CSR, pending) and persist its UUID.

@@ -30,7 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\ContextChat;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\ContextChat\Listener\ContextChatSubmissionListenerInterface;
@@ -195,10 +197,8 @@ class ContentProvider implements IContentProvider, ContentProviderInterface {
 			$offset = 0;
 			do {
 				$batch = $this->catalog->tables()->findAllInRegisterSchemaTable(
-					register: $register,
-					schema: $schema,
-					limit: self::BATCH_SIZE,
-					offset: $offset
+					table: new RegisterSchema(register: $register, schema: $schema),
+					listing: new ListQuery(limit: self::BATCH_SIZE, offset: $offset)
 				);
 
 				// Counted once per page, not re-counted by the loop condition.
@@ -233,8 +233,25 @@ class ContentProvider implements IContentProvider, ContentProviderInterface {
 	private function resolveOptedInPairs(?int $registerId, ?int $schemaId): array {
 		$pairs = [];
 
+		foreach ($this->schemasForReindex() as $schema) {
+			if (self::isSchemaInScope(schema: $schema, schemaId: $schemaId) === false) {
+				continue;
+			}
+
+			$pairs = array_merge($pairs, $this->pairsForSchema(schema: $schema, registerId: $registerId));
+		}
+
+		return $pairs;
+	}//end resolveOptedInPairs()
+
+	/**
+	 * Every schema, unfiltered by RBAC or tenancy, or none when they cannot be listed.
+	 *
+	 * @return Schema[] The schemas.
+	 */
+	private function schemasForReindex(): array {
 		try {
-			$schemas = $this->catalog->schemas()->findAll(_rbac: false, _multitenancy: false);
+			return $this->catalog->schemas()->findAll(_rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[ContentProvider] Failed to enumerate schemas for reindex',
@@ -242,36 +259,78 @@ class ContentProvider implements IContentProvider, ContentProviderInterface {
 			);
 			return [];
 		}
+	}//end schemasForReindex()
 
-		foreach ($schemas as $schema) {
-			if ($schema->isContextChatIndexingEnabled() === false) {
+	/**
+	 * Whether a schema takes part in the reindex: opted in and, when a schema
+	 * id is given, that schema.
+	 *
+	 * @param Schema   $schema   The schema.
+	 * @param int|null $schemaId Optional schema id filter.
+	 *
+	 * @return bool True when the schema is walked.
+	 */
+	private static function isSchemaInScope(Schema $schema, ?int $schemaId): bool {
+		if ($schema->isContextChatIndexingEnabled() === false) {
+			return false;
+		}
+
+		return $schemaId === null || $schema->getId() === $schemaId;
+	}//end isSchemaInScope()
+
+	/**
+	 * The (register, schema) pairs of one schema, optionally narrowed to one register id.
+	 *
+	 * @param Schema   $schema     The opted-in schema.
+	 * @param int|null $registerId Optional register id filter.
+	 *
+	 * @return array<int, array{0: Register, 1: Schema}> List of (register, schema) pairs.
+	 */
+	private function pairsForSchema(Schema $schema, ?int $registerId): array {
+		$pairs = [];
+		$registerIds = $this->catalog->registers()->getAllRegisterIdsWithSchema((int)$schema->getId());
+		foreach ($registerIds as $candidateRegisterId) {
+			if (self::isRegisterInScope(candidateRegisterId: $candidateRegisterId, registerId: $registerId) === false) {
 				continue;
 			}
 
-			if ($schemaId !== null && $schema->getId() !== $schemaId) {
-				continue;
-			}
-
-			$registerIds = $this->catalog->registers()->getAllRegisterIdsWithSchema((int)$schema->getId());
-			foreach ($registerIds as $candidateRegisterId) {
-				if ($registerId !== null && (int)$candidateRegisterId !== $registerId) {
-					continue;
-				}
-
-				try {
-					$register = $this->catalog->registers()->find(
-						id: $candidateRegisterId,
-						_rbac: false,
-						_multitenancy: false
-					);
-				} catch (Throwable $e) {
-					continue;
-				}
-
+			$register = $this->findRegisterForReindex(registerId: $candidateRegisterId);
+			if ($register !== null) {
 				$pairs[] = [$register, $schema];
 			}
-		}//end foreach
+		}
 
 		return $pairs;
-	}//end resolveOptedInPairs()
+	}//end pairsForSchema()
+
+	/**
+	 * Whether a candidate register id passes the optional register id filter.
+	 *
+	 * @param int|string $candidateRegisterId A register id that holds the schema.
+	 * @param int|null   $registerId          Optional register id filter.
+	 *
+	 * @return bool True when no filter is given or the ids match as integers.
+	 */
+	private static function isRegisterInScope(int|string $candidateRegisterId, ?int $registerId): bool {
+		return $registerId === null || (int)$candidateRegisterId === $registerId;
+	}//end isRegisterInScope()
+
+	/**
+	 * Load a register unfiltered by RBAC or tenancy, or null when it cannot be loaded.
+	 *
+	 * @param int|string $registerId The register id.
+	 *
+	 * @return Register|null The register, or null.
+	 */
+	private function findRegisterForReindex(int|string $registerId): ?Register {
+		try {
+			return $this->catalog->registers()->find(
+				id: $registerId,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end findRegisterForReindex()
 }//end class

@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Query\PropertyReadGuard;
@@ -78,8 +80,8 @@ class PropertyReadGuardTest extends TestCase {
 		$schema = $this->schema(governed: true);
 		$rbac   = $this->createMock(PropertyRbacHandler::class);
 		$rbac->expects($this->exactly(2))->method('canReadProperty')
-			->with($schema, $this->anything(), [])
-			->willReturnCallback(static fn (Schema $s, string $property): bool => $property !== 'salary');
+			->with($this->callback(static fn (SchemaProperty $read): bool => $read->schema === $schema), new PropertyAccessRequest([]))
+			->willReturnCallback(static fn (SchemaProperty $read, PropertyAccessRequest $request): bool => $read->name !== 'salary');
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->with(PropertyRbacHandler::class)->willReturn($rbac);
 

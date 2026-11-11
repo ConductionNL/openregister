@@ -38,7 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterSchema;

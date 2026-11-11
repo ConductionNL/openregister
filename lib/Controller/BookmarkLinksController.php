@@ -31,6 +31,7 @@ use Exception;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Trait\ObjectLinkActionsTrait;
 use OCA\OpenRegister\Controller\Support\BookmarkLinksControllerServices;
+use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\BookmarkDraft;
@@ -201,38 +202,58 @@ class BookmarkLinksController extends Controller {
 
 		return $this->onLinkedObject(
 			route: $this->routeOf(ref: $ref),
-			action: function (ObjectEntity $object): JSONResponse {
-				$title = (string)$this->request->getParam('title', '');
-				$url = (string)$this->request->getParam('url', '');
-				$description = (string)$this->request->getParam('description', '');
-				$rawTags = $this->request->getParam('tags', []);
-
-				if (trim($title) === '') {
-					return new JSONResponse(['error' => 'title is required'], 400);
-				}
-
-				if (trim($url) === '') {
-					return new JSONResponse(['error' => 'url is required'], 400);
-				}
-
-				$tags = [];
-				if (is_array($rawTags) === true) {
-					foreach ($rawTags as $tag) {
-						if (is_string($tag) === true) {
-							$tags[] = $tag;
-						}
-					}
-				}
-
-				$link = $this->bookmarkLinkService->createAndLinkBookmark(
-					$this->linkTargetOf(object: $object),
-					(new BookmarkDraft(title: $title, url: $url))->withDetails(description: $description, tags: $tags)
-				);
-
-				return new JSONResponse($link->jsonSerialize(), 201);
-			}
+			action: fn (ObjectEntity $object): JSONResponse => $this->createBookmarkFor(object: $object)
 		);
 	}//end createNewFor()
+
+	/**
+	 * Create the requested bookmark and link it to the object.
+	 *
+	 * @param ObjectEntity $object The object the bookmark is linked to.
+	 *
+	 * @return JSONResponse 201 with the link, or 400 when the title or url is missing.
+	 */
+	private function createBookmarkFor(ObjectEntity $object): JSONResponse {
+		$title = (string)$this->request->getParam('title', '');
+		$url = (string)$this->request->getParam('url', '');
+		$description = (string)$this->request->getParam('description', '');
+		$tags = $this->textTags(rawTags: $this->request->getParam('tags', []));
+
+		if (trim($title) === '') {
+			return LinkedSourceResponses::required(param: 'title');
+		}
+
+		if (trim($url) === '') {
+			return LinkedSourceResponses::required(param: 'url');
+		}
+
+		$link = $this->bookmarkLinkService->createAndLinkBookmark(
+			$this->linkTargetOf(object: $object),
+			(new BookmarkDraft(title: $title, url: $url))->withDetails(description: $description, tags: $tags)
+		);
+
+		return LinkedSourceResponses::created(link: $link);
+	}//end createBookmarkFor()
+
+	/**
+	 * The text entries of the requested tags; anything that is not a list is no tags.
+	 *
+	 * @param mixed $rawTags The `tags` of the request.
+	 *
+	 * @return array<int, string> The tags.
+	 */
+	private function textTags(mixed $rawTags): array {
+		$tags = [];
+		if (is_array($rawTags) === true) {
+			foreach ($rawTags as $tag) {
+				if (is_string($tag) === true) {
+					$tags[] = $tag;
+				}
+			}
+		}
+
+		return $tags;
+	}//end textTags()
 
 	/**
 	 * Unlink a bookmark.
@@ -300,10 +321,20 @@ class BookmarkLinksController extends Controller {
 			$search = (string)$search;
 		}
 
-		$tags = null;
+		$bookmarks = $this->bookmarkLinkService->getAvailableBookmarks($search, $this->requestedTags());
+
+		return LinkedSourceResponses::listed(items: $bookmarks);
+	}//end available()
+
+	/**
+	 * The tags the picker narrows to: a comma list or a list of text, or null for no narrowing.
+	 *
+	 * @return array<int, string>|null The tags
+	 */
+	private function requestedTags(): ?array {
 		$rawTags = $this->request->getParam('tags');
 		if (is_string($rawTags) === true && $rawTags !== '') {
-			$tags = array_values(
+			return array_values(
 				array_filter(
 					array_map('trim', explode(',', $rawTags)),
 					static function (string $tag): bool {
@@ -311,13 +342,14 @@ class BookmarkLinksController extends Controller {
 					}
 				)
 			);
-		} elseif (is_array($rawTags) === true) {
-			$tags = array_values(array_filter($rawTags, 'is_string'));
 		}
 
-		$bookmarks = $this->bookmarkLinkService->getAvailableBookmarks($search, $tags);
-		return new JSONResponse(['results' => $bookmarks, 'total' => count($bookmarks)]);
-	}//end available()
+		if (is_array($rawTags) === true) {
+			return array_values(array_filter($rawTags, 'is_string'));
+		}
+
+		return null;
+	}//end requestedTags()
 
 	/**
 	 * Map a service-layer Exception to a JSONResponse.
@@ -334,24 +366,7 @@ class BookmarkLinksController extends Controller {
 	 * @return JSONResponse
 	 */
 	protected function mapException(Exception $exception): JSONResponse {
-		$code = $exception->getCode();
-		if ($code === 409) {
-			return new JSONResponse(['error' => $exception->getMessage()], 409);
-		}
-
-		if ($code === 404) {
-			return new JSONResponse(['error' => $exception->getMessage()], 404);
-		}
-
-		if ($code === 503) {
-			return new JSONResponse(['error' => $exception->getMessage()], 503);
-		}
-
-		if ($code === 400) {
-			return new JSONResponse(['error' => $exception->getMessage()], 400);
-		}
-
-		return new JSONResponse(['error' => $exception->getMessage()], 400);
+		return LinkedSourceResponses::failure(exception: $exception, passThrough: [400, 404, 409, 503]);
 	}//end mapException()
 
 	/**

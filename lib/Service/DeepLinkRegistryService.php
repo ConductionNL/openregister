@@ -153,19 +153,43 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 		$key = $registration->registerSlug . '::' . $registration->schemaSlug;
 
 		if (isset(self::$registrations[$key]) === true) {
-			$this->logger->debug(
-				'[DeepLinkRegistry] Ignoring duplicate registration for {key} from {appId} (already claimed by {existing})',
-				[
-					'key' => $key,
-					'appId' => $registration->appId,
-					'existing' => self::$registrations[$key]->appId,
-				]
-			);
+			$this->logDuplicate(registration: $registration, key: $key);
 			return;
 		}
 
 		self::$registrations[$key] = $registration;
 
+		$this->logRegistered(registration: $registration, key: $key);
+	}//end store()
+
+	/**
+	 * Log a registration ignored because another app already claimed its register and schema.
+	 *
+	 * @param DeepLinkRegistration $registration The ignored registration.
+	 * @param string               $key          Its register::schema key.
+	 *
+	 * @return void
+	 */
+	private function logDuplicate(DeepLinkRegistration $registration, string $key): void {
+		$this->logger->debug(
+			'[DeepLinkRegistry] Ignoring duplicate registration for {key} from {appId} (already claimed by {existing})',
+			[
+				'key' => $key,
+				'appId' => $registration->appId,
+				'existing' => self::$registrations[$key]->appId,
+			]
+		);
+	}//end logDuplicate()
+
+	/**
+	 * Log a stored registration.
+	 *
+	 * @param DeepLinkRegistration $registration The registration.
+	 * @param string               $key          Its register::schema key.
+	 *
+	 * @return void
+	 */
+	private function logRegistered(DeepLinkRegistration $registration, string $key): void {
 		$this->logger->debug(
 			'[DeepLinkRegistry] Registered deep link for {key} → {appId} ({template})',
 			[
@@ -174,7 +198,7 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 				'template' => $registration->urlTemplate,
 			]
 		);
-	}//end store()
+	}//end logRegistered()
 
 	/**
 	 * The icon of a registration: the given one, or "icon-{appId}" when none is given.
@@ -326,6 +350,17 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 
 		self::$appsAsked = true;
 
+		$this->dispatchRegistrationEvent(dispatcher: $dispatcher);
+	}//end requestRegistrations()
+
+	/**
+	 * Ask the apps for their deep links; a failure is logged, not thrown.
+	 *
+	 * @param IEventDispatcher|null $dispatcher The dispatcher, or null to take the container's.
+	 *
+	 * @return void
+	 */
+	private function dispatchRegistrationEvent(?IEventDispatcher $dispatcher): void {
 		try {
 			$dispatcher ??= $this->containerDispatcher();
 			if ($dispatcher === null) {
@@ -339,7 +374,7 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
 				['error' => $e->getMessage()]
 			);
 		}
-	}//end requestRegistrations()
+	}//end dispatchRegistrationEvent()
 
 	/**
 	 * The event dispatcher from the app container, or null when it serves something else.

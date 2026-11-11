@@ -86,12 +86,7 @@ class AggregationThresholdJob extends ActorForwardedJob {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	protected function runDeferred(DeferredListenerContext $context): void {
-		foreach ($context->getEntries() as $entry) {
-			$object = $this->evaluation->resolver->resolve(entry: $entry);
-			if ($object === null) {
-				continue;
-			}
-
+		foreach ($this->liveEntries(context: $context, resolver: $this->evaluation->resolver) as $entry => $object) {
 			try {
 				$schema = $this->evaluation->schemaMapper->find((string)($entry['schema'] ?? ''));
 				$this->evaluation->evaluator->evaluateSchema(schema: $schema, object: $object);

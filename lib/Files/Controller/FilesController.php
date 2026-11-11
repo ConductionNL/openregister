@@ -53,11 +53,14 @@ use OCA\OpenRegister\Files\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Files\Service\File\PreviewSize;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCA\OpenRegister\Files\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Files\Service\Integration\AttachTargetFilter;
 use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -75,6 +78,11 @@ use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\File\FileMetadataChange;
+use OCA\OpenRegister\Service\File\FileOverwrite;
+use OCA\OpenRegister\Service\File\FileRename;
+use OCA\OpenRegister\Service\File\FileTransfer as AttachedFileTransfer;
+use OCA\OpenRegister\Support\ContentDisposition;
 
 /**
  * FilesController handles file operations for objects in registers
@@ -412,13 +420,11 @@ class FilesController extends Controller {
 	private function objectUnderRule(FileAccessCheck $check): ObjectEntity {
 		$route = $check->route;
 		if ($check->change === false) {
-			return $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
+			return $this->objectFileAccess->readable(ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id));
 		}
 
 		$object = $this->objectFileAccess->changeable(
-			register: $route->register,
-			schema: $route->schema,
-			id: $route->id,
+			ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id),
 			verb: $check->verb
 		);
 		// REQ-OAS-007: a frozen or archived object's files do not change
@@ -570,7 +576,10 @@ class FilesController extends Controller {
 			savedAt: new DateTimeImmutable()
 		));
 
-		$file = $this->fileService->addFile(objectEntity: $object, fileName: $transcript['filename'], content: $transcript['content']);
+		$file = $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $transcript['filename'], content: $transcript['content'], share: false)
+		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end savePostedChat()
@@ -1040,7 +1049,7 @@ class FilesController extends Controller {
 	private function streamInline(File $file, ?ObjectEntity $object): StreamResponse {
 		$response = new StreamResponse($file->fopen('r'));
 		$response->addHeader('Content-Type', $file->getMimeType());
-		$response->addHeader('Content-Disposition', $this->buildContentDisposition(disposition: 'inline', filename: $file->getName()));
+		$response->addHeader('Content-Disposition', (new ContentDisposition(disposition: 'inline', filename: $file->getName()))->headerValue());
 		$response->addHeader('Content-Length', (string)$file->getSize());
 
 		// Record download (counter + audit). Best-effort.
@@ -1180,11 +1189,13 @@ class FilesController extends Controller {
 	private function addPostedFile(ObjectEntity $object): JSONResponse {
 		$data = $this->request->getParams();
 		$file = $this->fileService->addFile(
-			objectEntity: $object,
-			fileName: $this->postedFileName(data: $data),
-			content: (string)$data['content'],
-			share: $this->parseBool(value: $data['share'] ?? false),
-			tags: $this->normalizeTags(tags: $data['tags'] ?? [])
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(
+				fileName: $this->postedFileName(data: $data),
+				content: (string)$data['content'],
+				share: $this->parseBool(value: $data['share'] ?? false),
+				tags: $this->normalizeTags(tags: $data['tags'] ?? [])
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
@@ -1266,10 +1277,12 @@ class FilesController extends Controller {
 		$this->requireNameAndContent(data: $data);
 		$file = $this->fileService->saveFile(
 			objectEntity: $object,
-			fileName: $data['name'],
-			content: (string)$data['content'],
-			share: (($data['share'] ?? false) === true),
-			tags: $this->savedTags(tags: $data['tags'] ?? [])
+			upload: new FileUpload(
+				fileName: $data['name'],
+				content: (string)$data['content'],
+				share: (($data['share'] ?? false) === true),
+				tags: $this->savedTags(tags: $data['tags'] ?? [])
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
@@ -1623,7 +1636,10 @@ class FilesController extends Controller {
 			throw new Exception('Failed to read uploaded file content for: ' . $fileName);
 		}
 
-		return $this->fileService->addFile(objectEntity: $object, fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags']);
+		return $this->fileService->addFile(
+			target: new FileTarget(object: $object),
+			upload: new FileUpload(fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags'])
+		);
 	}//end storeUpload()
 
 	/**
@@ -1699,11 +1715,13 @@ class FilesController extends Controller {
 		$data = $this->request->getParams();
 
 		// Content is optional for metadata-only updates.
-		$result = $this->fileService->updateFile(
-			filePath: $fileId,
-			content: $data['content'] ?? null,
-			tags: $data['tags'] ?? [],
-			object: $this->objectService->getObject()
+		$result = $this->fileService->overwriteFile(
+			overwrite: new FileOverwrite(
+				filePath: $fileId,
+				content: $data['content'] ?? null,
+				tags: $data['tags'] ?? [],
+				object: $this->objectService->getObject()
+			)
 		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($result));
@@ -1895,39 +1913,6 @@ class FilesController extends Controller {
 	}//end mayReadObject()
 
 	/**
-	 * Build an RFC 6266 compliant Content-Disposition header value.
-	 *
-	 * SEC-CTRL-9: a raw filename can contain quotes, control chars, or non-ASCII
-	 * bytes that break the header or allow header/response splitting. This emits a
-	 * sanitised ASCII `filename="..."` fallback plus a UTF-8 `filename*` parameter.
-	 *
-	 * @param string $disposition Either 'inline' or 'attachment'.
-	 * @param string $filename The raw file name.
-	 *
-	 * @return string The encoded Content-Disposition header value.
-	 */
-	private function buildContentDisposition(string $disposition, string $filename): string {
-		// Strip control characters (incl. CR/LF) that could split headers.
-		$clean = preg_replace('/[\x00-\x1F\x7F]/', '', $filename);
-		if ($clean === null) {
-			$clean = '';
-		}
-
-		// ASCII fallback: replace non-ASCII and quote/backslash with underscore.
-		$ascii = preg_replace('/[^\x20-\x7E]/', '_', $clean);
-		if ($ascii === null) {
-			$ascii = '';
-		}
-
-		$ascii = str_replace(['\\', '"'], '_', $ascii);
-
-		// RFC 5987 / 6266 UTF-8 encoded form for capable clients.
-		$encoded = rawurlencode($clean);
-
-		return $disposition . '; filename="' . $ascii . '"; filename*=UTF-8\'\'' . $encoded;
-	}//end buildContentDisposition()
-
-	/**
 	 * Get a human-readable error message for PHP file upload errors
 	 *
 	 * This helper method translates PHP's file upload error codes into
@@ -2055,7 +2040,7 @@ class FilesController extends Controller {
 		$data = $this->request->getParams();
 		$newName = $data['name'] ?? '';
 		$names = ['oldName' => $data['oldName'] ?? '', 'newName' => $newName];
-		$file = $this->fileService->renameFile(object: $target->object, fileId: $target->fileId, newName: $newName);
+		$file = $this->fileService->renameAttachedFile(rename: new FileRename(object: $target->object, fileId: $target->fileId, newName: $newName));
 
 		// Audit trail entry (best-effort -- handler swallows failures).
 		$this->fileService->getAuditHandler()->logFileAction(object: $target->object, fileId: $target->fileId, action: 'file.renamed', data: $names);
@@ -2277,10 +2262,14 @@ class FilesController extends Controller {
 	 */
 	private function transferredFile(FileTransfer $transfer): File {
 		if ($transfer->isMove() === true) {
-			return $this->fileService->moveFile(sourceObject: $transfer->source, fileId: $transfer->fileId, targetObject: $transfer->target);
+			return $this->fileService->moveAttachedFile(
+				transfer: new AttachedFileTransfer(source: $transfer->source, fileId: $transfer->fileId, target: $transfer->target)
+			);
 		}
 
-		return $this->fileService->copyFile(sourceObject: $transfer->source, fileId: $transfer->fileId, targetObject: $transfer->target);
+		return $this->fileService->copyAttachedFile(
+			transfer: new AttachedFileTransfer(source: $transfer->source, fileId: $transfer->fileId, target: $transfer->target)
+		);
 	}//end transferredFile()
 
 	/**
@@ -2748,11 +2737,13 @@ class FilesController extends Controller {
 			$labels = (array)$data['labels'];
 		}
 
-		$entity = $this->fileService->updateFileMetadata(
-			fileId: $fileId,
-			description: $this->postedText(data: $data, key: 'description'),
-			category: $this->postedText(data: $data, key: 'category'),
-			labels: $labels
+		$entity = $this->fileService->changeFileMetadata(
+			change: new FileMetadataChange(
+				fileId: $fileId,
+				description: $this->postedText(data: $data, key: 'description'),
+				category: $this->postedText(data: $data, key: 'category'),
+				labels: $labels
+			)
 		);
 
 		return new JSONResponse(data: $entity->jsonSerialize());
@@ -2881,7 +2872,9 @@ class FilesController extends Controller {
 			$labels = [];
 		}
 
-		$file = $this->fileService->updateFile(filePath: $target->fileId, content: null, tags: $labels, object: $target->object);
+		$file = $this->fileService->overwriteFile(
+			overwrite: new FileOverwrite(filePath: $target->fileId, content: null, tags: $labels, object: $target->object)
+		);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end labelTarget()
@@ -2984,7 +2977,7 @@ class FilesController extends Controller {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
 		}
 
-		$object = $this->objectFileAccess->readable(register: $route->register, schema: $route->schema, id: $route->id);
+		$object = $this->objectFileAccess->readable(ref: new ObjectRef(register: $route->register, schema: $route->schema, id: $route->id));
 		$file = $this->officeFile(object: $object, fileId: $fileId);
 
 		return $this->officeSessions()->openSession(request: new OfficeOpenRequest(

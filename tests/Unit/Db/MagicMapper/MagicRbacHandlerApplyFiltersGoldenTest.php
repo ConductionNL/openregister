@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacFilterCall;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -38,6 +39,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler
@@ -200,14 +204,19 @@ class MagicRbacHandlerApplyFiltersGoldenTest extends TestCase {
 			);
 		}
 
-		$args = [$userSession, $groupManager, $this->createMock(IUserManager::class), $this->appConfig(), $this->createMock(ConditionMatcher::class), $container, $logger];
+		$healer = null;
 		if ($this->statusMissing === true) {
 			$healer = $this->createMock(MagicMetadataColumnHealer::class);
 			$healer->method('missingFor')->willReturnCallback(
 				static fn (string $table): array => ($table === 'openregister_table_1_2' ? ['_status'] : [])
 			);
-			$args['metadataColumns'] = $healer;
 		}
+
+		$args = [
+			new MagicMapperIdentity($userSession, $groupManager, $this->createMock(IUserManager::class)),
+			new MagicRbacSettings(appConfig: $this->appConfig(), metadataColumns: $healer),
+			new MagicRbacSupport($this->createMock(ConditionMatcher::class), $container, $logger),
+		];
 
 		$handler = new MagicRbacHandler(...$args);
 		if ($this->webRequest === true) {
@@ -225,7 +234,7 @@ class MagicRbacHandlerApplyFiltersGoldenTest extends TestCase {
 
 		$outcome = [];
 		try {
-			$apply = fn () => $handler->applyRbacFilters($this->recordingBuilder(), $schema, $call[0], $call[1]);
+			$apply = fn () => $handler->applyRbacFilters((new RbacFilterCall(qb: $this->recordingBuilder(), schema: $schema))->forAction($call[0])->onTable($call[1]));
 			if ($uid === '@anonymous') {
 				\OCA\OpenRegister\Service\AnonymousEvaluationContext::run($apply);
 			} else {

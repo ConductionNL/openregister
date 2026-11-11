@@ -45,6 +45,9 @@ use OCA\OpenRegister\Notifications\Service\Notification\NoticeContent;
 use OCA\OpenRegister\Notifications\Service\Notification\NoticeRule;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationChannelPolicyInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic;
 use OCA\OpenRegister\Notifications\Service\Notification\PushRideAlong;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkMessage;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
@@ -195,25 +198,7 @@ class FlowMessagingService {
 	 * Per item: the recipients the step resolves, and the subject and body its
 	 * templates give. For `talk` the recipient is the conversation and there is
 	 * no subject. Reads only: no rate budget is spent, nothing is delivered and
-	 * no report is written.
-	 *
-	 * @param string $channel `email`, `notification` or `talk`.
-	 * @param array $config The step configuration.
-	 * @param array $items The flow items.
-	 * @param array $context The run context.
-	 *
-	 * @return array<int, array{channel: string, to: array<int, string>, subject: string, body: string}>
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
-	 */
-	public function previewMessages(string $channel, array $config, array $items, array $context): array {
-		return $this->preview(channel: $channel, step: new MessageSend(config: $config, items: $items, context: $context));
-	}//end previewMessages()
-
-	/**
-	 * The messages a step would send, composed and not sent; see {@see self::previewMessages()}.
-	 *
-	 * Only the scalar entries of the run context reach the templates.
+	 * no report is written. Only the scalar entries of the run context reach the templates.
 	 *
 	 * @param string      $channel `email`, `notification` or `talk`.
 	 * @param MessageSend $step    The step configuration, items and run context (no step name).
@@ -297,10 +282,9 @@ class FlowMessagingService {
 	 */
 	private function postTalkItem(FlowSend $send, array $json): void {
 		$token = $this->conversationToken(send: $send, json: $json);
-		$message = $this->platform->templating->interpolate(
+		$message = $this->platform->templating->render(
 			template: (string)($send->config['message'] ?? ''),
-			data: $json,
-			context: $this->scalarContext(context: $send->context)
+			values: new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context))
 		);
 		if ($token === '') {
 			$send->failures[] = 'No Talk conversation resolved for an item; nothing was posted for it.';
@@ -398,10 +382,9 @@ class FlowMessagingService {
 		$mode = $this->addresses->externalRecipientMode(config: $send->config);
 		foreach ($send->items as $index => $item) {
 			$json = (array)($item[FlowItems::JSON] ?? []);
-			$resolved = $this->addresses->resolveRecipients(
+			$resolved = $this->addresses->resolveAll(
 				recipients: ($send->config['recipients'] ?? []),
-				json: $json,
-				acceptAddresses: $send->acceptsAddresses()
+				lookup: new RecipientLookup(json: $json, acceptAddresses: $send->acceptsAddresses())
 			);
 			$screened = $this->addresses->screenAddresses(addresses: $resolved['addresses'], json: $json, mode: $mode);
 			$send->perItem[$index] = new FlowSendItem(json: $json, uids: $resolved['uids'], addresses: $screened['allowed']);
@@ -531,10 +514,10 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function sendItem(FlowSend $send, FlowSendItem $item): void {
-		$scalars = $this->scalarContext(context: $send->context);
+		$values = new PlaceholderValues(data: $item->json, context: $this->scalarContext(context: $send->context));
 		$templating = $this->platform->templating;
-		$item->title = $templating->interpolate(template: (string)($send->config[$send->titleKey] ?? ''), data: $item->json, context: $scalars);
-		$item->body = $templating->interpolate(template: (string)($send->config[$send->bodyKey] ?? ''), data: $item->json, context: $scalars);
+		$item->title = $templating->render(template: (string)($send->config[$send->titleKey] ?? ''), values: $values);
+		$item->body = $templating->render(template: (string)($send->config[$send->bodyKey] ?? ''), values: $values);
 		$item->kind = FlowEmailSentEvent::KIND_USER;
 		foreach ($item->uids as $uid) {
 			$item->recipient = $uid;
@@ -756,14 +739,15 @@ class FlowMessagingService {
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function preferenceAllows(string $uid, string $channel): bool {
-		$effective = $this->recipients->preferences->resolveEffective(
-			schemaDefault: [
-				'enabled' => true,
-				'channels' => [$channel],
-			],
-			userId: $uid,
-			schemaSlug: self::PREFERENCE_SLUG,
-			notificationKey: self::PREFERENCE_KEY
+		$effective = $this->recipients->preferences->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: [
+					'enabled' => true,
+					'channels' => [$channel],
+				],
+				userId: $uid,
+				topic: new PreferenceTopic(schemaSlug: self::PREFERENCE_SLUG, notificationKey: self::PREFERENCE_KEY)
+			)
 		);
 
 		if ($effective['enabled'] === false) {
@@ -844,6 +828,7 @@ class FlowMessagingService {
 			return $value;
 		}
 
-		return trim($this->platform->templating->interpolate(template: $value, data: $json, context: $this->scalarContext(context: $send->context)));
+		$values = new PlaceholderValues(data: $json, context: $this->scalarContext(context: $send->context));
+		return trim($this->platform->templating->render(template: $value, values: $values));
 	}//end conversationToken()
 }//end class
