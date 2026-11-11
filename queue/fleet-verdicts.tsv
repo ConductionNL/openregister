@@ -1621,3 +1621,9 @@ shillinq	2549	5863c6af2eeeee42b5193df6b271a692e295b38e	GREEN	FV04:5	tree green (
 shillinq	2551	e823b5818686ebbbd31a52f751e5d2df3a0e0f9b	GREEN	FV04:5	tree green (phpunit 7294 ok, vitest 1075 ok), diff review clean
 shillinq	2553	4d5a0d00b82dcbba5d3eb60dfbbdaa199aefa0ae	GREEN	FV04:5	tree green (phpunit 7294 ok, vitest 1075 ok), diff review clean
 dossiq	5645	507a3deb165802fe1bd9f7303446556e426853f5	RED	FV02:8	phpunit ComplaintAnalyticsGoldenTest::testAnalyticsAcrossWorlds (new golden snapshot hard-codes the run date 2026-11-10 in the default period, fails on any other day)
+buildiq	1267	53e84f4ea85bb7152ea2cca6e5fb020854b64817	GREEN	FV15:1	tree green (phpunit 14 baseline failures only, vitest 1 baseline failure only)
+buildiq	1268	53379b006c2a072999d066dea49b933f4ef8c67e	GREEN	FV15:1	tree green (phpunit 14 baseline failures only, vitest 1 baseline failure only)
+buildiq	1269	ea8a5537dd6e7aff738bf2cea617f5a105783af8	GREEN	FV15:1	tree green (phpunit 14 baseline failures only, vitest 1 baseline failure only)
+buildiq	1270	da3af4168317d2ffacce8506876168773686541e	GREEN	FV15:1	tree green (phpunit 14 baseline failures only, vitest 1 baseline failure only)
+buildiq	1271	cfdbc1d63f4ca25f1caf33c34ff53d3a6bddff21	GREEN	FV15:1	tree green (phpunit 14 baseline failures only, vitest 1 baseline failure only)
+buildiq	1272	81d8ffdffba4263cecef5999d4be23a9640915f2	GREEN	FV15:1	tree green (phpunit 14 baseline failures only, vitest 1 baseline failure only)
