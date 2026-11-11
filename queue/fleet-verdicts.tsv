@@ -440,3 +440,28 @@ integriq	3084	10f823ed6584fd84492ddafca692a2a476c30d9d	GREEN	FV09:1	unit suite g
 integriq	3085	61517258a373d5ee8518d05cb99a6edb0991ee63	GREEN	FV09:1	unit suite green on the verify tree
 integriq	3086	e7ff97c01970d93554cc5e2e5e1a2242983cfdb9	GREEN	FV09:1	unit suite green on the verify tree
 integriq	3087	afb7a187c176c00b7cf9953b560c58b99b453a89	GREEN	FV09:1	unit suite green on the verify tree
+portaliq	2117	db1adbaaf8e7bb29562e6d2e3574dc92ee7bd96f	GREEN	FV06:3	unit suites green on the tree
+portaliq	2119	ed8d1f1c1e1429bacccbdbead3aeb6b17e4498c7	GREEN	FV06:3	unit suites green on the tree
+portaliq	2121	4828e9c212f032a24f3a832ed3accc35ab7d1ab7	GREEN	FV06:3	unit suites green on the tree
+portaliq	2123	605b599c9e200b422fd7f7087a2d9ebc58f509dc	GREEN	FV06:3	unit suites green on the tree
+portaliq	2125	f1fc129cf11e6627eb27d7746bd41ac0c2e1c59a	GREEN	FV06:3	unit suites green on the tree
+portaliq	2127	3de5396382582e9e4d9ffa0a20c5d3c53a360f87	GREEN	FV06:3	unit suites green on the tree
+portaliq	2129	9d858973f17bdfabec1972c50b413e1d5885319c	GREEN	FV06:3	unit suites green on the tree
+portaliq	2131	03f8540ff54e5b71347cb3d48d9b4a90441db811	GREEN	FV06:3	unit suites green on the tree
+portaliq	2133	ba781c4e9ac858db2e240cce8057036e1f4224a6	GREEN	FV06:3	unit suites green on the tree
+portaliq	2135	c4791cee44da0b5abf3a17508c3493d9bafe742d	GREEN	FV06:3	unit suites green on the tree
+portaliq	2137	171131e441e35560d4d2060bf5018593b048d5df	GREEN	FV06:3	unit suites green on the tree
+portaliq	2139	da440ad9d59a7b7de99eb3f0591095a3141e5dcb	GREEN	FV06:3	unit suites green on the tree
+portaliq	2141	f74ea1c6a97c05a78f3c218f150ae3371a2aaed9	GREEN	FV06:3	unit suites green on the tree
+portaliq	2143	8ad5a9f87e907f0cecd91ffc9f07bde9592ebb55	GREEN	FV06:3	unit suites green on the tree
+portaliq	2145	1dc528cf0622d2f71703c4083202b486a569e6ec	BLOCK	FV06:3	DemoDataService::presentObjects now calls countIn(string $slug) outside the try under strict_types, so a numeric schema slug (int key from array_keys) throws an uncaught TypeError instead of being logged and counted as 0
+portaliq	2147	ac8f9483538eccde2fb459f4b6dab40cb1b27dde	GREEN	FV06:3	unit suites green on the tree
+portaliq	2149	b866171bb81ac4edbce5a69ac673f0c860471d01	GREEN	FV06:3	unit suites green on the tree
+portaliq	2151	2a3d0bae2b105c512ad92851e1face70d5fc9ae7	GREEN	FV06:3	unit suites green on the tree
+portaliq	2153	4ea789350301e50f135eff984d4009308d4decea	GREEN	FV06:3	unit suites green on the tree
+portaliq	2155	f1ac5a42d4b9bfa23adf74803e41d2db5b3abb39	GREEN	FV06:3	unit suites green on the tree
+portaliq	2157	0c3c2f7f73e1de1967f07a063dced3cb5be5a4d1	GREEN	FV06:3	unit suites green on the tree
+portaliq	2159	44f66dfb328b48ea50c82b3ad6db349a478d20e8	GREEN	FV06:3	unit suites green on the tree
+portaliq	2161	14c3566eeb119ba0e1dd858662a188767c2f4eaf	GREEN	FV06:3	unit suites green on the tree
+portaliq	2163	78b43e7c2fc0066f5cb7072b41b4daf6fcd0d0c9	GREEN	FV06:3	unit suites green on the tree
+portaliq	2165	7153ac0ec338429859414756f87bbe847efeb838	GREEN	FV06:3	unit suites green on the tree
