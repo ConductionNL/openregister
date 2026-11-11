@@ -70,6 +70,7 @@ use React\Promise\Promise;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Service for importing data from various formats with ReactPHP optimization
@@ -210,7 +211,7 @@ class ImportService implements ObjectImporterInterface {
 			}
 
 			try {
-				$this->stores->objectService->deleteObject(uuid: $objectUuid);
+				$this->stores->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $objectUuid));
 				$report['softDeleted'][] = $objectUuid;
 			} catch (\Throwable $e) {
 				$report['errors'][] = [

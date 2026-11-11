@@ -148,6 +148,7 @@ use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
@@ -812,11 +813,12 @@ class ObjectWriteNode extends ObjectNodeBase implements IFlowNode, ObjectWriteNo
 	 */
 	private function deleteMatched(ObjectWritePlan $plan, string $uuid): bool {
 		return $this->objects->deleteObject(
-			uuid: $uuid,
-			register: $plan->register,
-			schema: $plan->schema,
-			currentUser: $plan->owner,
-			permanent: $this->permanenceOf(config: $plan->config)
+			deletion: new ObjectDeletion(
+				uuid: $uuid,
+				target: new ObjectFindTarget(register: $plan->register, schema: $plan->schema),
+				currentUser: $plan->owner,
+				permanent: $this->permanenceOf(config: $plan->config)
+			)
 		);
 	}//end deleteMatched()
 

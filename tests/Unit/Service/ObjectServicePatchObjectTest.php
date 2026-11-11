@@ -67,6 +67,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
@@ -562,7 +563,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 		// appending any further optional parameter broke it while the property
 		// it means to protect was untouched.
 		$found = null;
-		foreach ($this->reflection->getMethod('deleteObject')->getParameters() as $parameter) {
+		foreach ((new \ReflectionMethod(ObjectDeletion::class, '__construct'))->getParameters() as $parameter) {
 			if ($parameter->getName() === 'currentUser') {
 				$found = $parameter;
 				break;
@@ -587,7 +588,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 	 */
 	public function testDeleteObjectOffersPermanenceAndDefaultsToASoftDelete(): void {
 		$found = null;
-		foreach ($this->reflection->getMethod('deleteObject')->getParameters() as $parameter) {
+		foreach ((new \ReflectionMethod(ObjectDeletion::class, '__construct'))->getParameters() as $parameter) {
 			if ($parameter->getName() === 'permanent') {
 				$found = $parameter;
 				break;
@@ -624,10 +625,11 @@ class ObjectServicePatchObjectTest extends TestCase {
 
 		try {
 			$this->service->deleteObject(
-				uuid: 'u-1',
-				register: $this->register,
-				schema: $this->schema,
-				currentUser: $alice
+				deletion: new ObjectDeletion(
+					uuid: 'u-1',
+					target: new ObjectFindTarget(register: $this->register, schema: $this->schema),
+					currentUser: $alice
+				)
 			);
 		} catch (Throwable $e) {
 			// Expected — the delete handler is mocked out.
@@ -657,7 +659,7 @@ class ObjectServicePatchObjectTest extends TestCase {
 		);
 
 		try {
-			$this->service->deleteObject(uuid: 'u-1', register: $this->register, schema: $this->schema);
+			$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'u-1', target: new ObjectFindTarget(register: $this->register, schema: $this->schema)));
 		} catch (Throwable $e) {
 			// Expected — the delete handler is mocked out.
 		}

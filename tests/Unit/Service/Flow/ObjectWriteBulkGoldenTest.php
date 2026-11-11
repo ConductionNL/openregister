@@ -50,6 +50,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 
 /**
@@ -303,7 +304,8 @@ final class ObjectWriteBulkGoldenTest extends TestCase {
 			}
 		);
 		$store->method('deleteObject')->willReturnCallback(
-			function (string $uuid): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
 				$this->calls[] = ['deleteObject' => $uuid];
 				return true;
 			}

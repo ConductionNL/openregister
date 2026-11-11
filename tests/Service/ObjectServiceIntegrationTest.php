@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Integration tests for ObjectService
@@ -812,7 +813,7 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$this->service->setRegister($this->testRegister);
 		$this->service->setSchema($this->testSchema);
 
-		$result = $this->service->deleteObject($uuid, _rbac: false, _multitenancy: false);
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 
 		$this->assertTrue($result);
 
@@ -833,7 +834,7 @@ class ObjectServiceIntegrationTest extends TestCase {
 		$uuid = $saved->getUuid();
 
 		// Don't set schema context - let delete derive it
-		$result = $this->service->deleteObject($uuid, _rbac: false, _multitenancy: false);
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 
 		$this->assertTrue($result);
 
