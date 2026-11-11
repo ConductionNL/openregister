@@ -245,10 +245,7 @@ class DsarCaseController extends Controller {
 
 		$action = (string)($this->request->getParam(key: 'action') ?? '');
 		if ($action === '') {
-			return new JSONResponse(
-				data: ['error' => 'A transition "action" is required.'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->badRequest(message: 'A transition "action" is required.');
 		}
 
 		try {
@@ -284,10 +281,7 @@ class DsarCaseController extends Controller {
 		try {
 			$result = $this->harvestService->harvest(caseUuid: $id);
 		} catch (Throwable $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->badRequest(message: $e->getMessage());
 		}
 
 		return new JSONResponse(data: $result);
@@ -318,10 +312,7 @@ class DsarCaseController extends Controller {
 		try {
 			$result = $this->redactionService->applyRedaction(caseUuid: $id, redaction: $redaction);
 		} catch (Throwable $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->badRequest(message: $e->getMessage());
 		}
 
 		return new JSONResponse(data: $result);
@@ -337,10 +328,7 @@ class DsarCaseController extends Controller {
 		$after = (string)($this->request->getParam(key: 'after') ?? '');
 		$ground = (string)($this->request->getParam(key: 'ground') ?? '');
 		if ($field === '' || $ground === '') {
-			return new JSONResponse(
-				data: ['error' => 'Both "field" and "ground" are required.'],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->badRequest(message: 'Both "field" and "ground" are required.');
 		}
 
 		return new FieldRedaction(field: $field, after: $after, ground: $ground);
@@ -368,10 +356,7 @@ class DsarCaseController extends Controller {
 		try {
 			$result = $this->bundleService->generate(caseUuid: $id);
 		} catch (Throwable $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->badRequest(message: $e->getMessage());
 		}
 
 		return new JSONResponse(data: $result, statusCode: Http::STATUS_CREATED);
@@ -443,10 +428,7 @@ class DsarCaseController extends Controller {
 		try {
 			$result = $this->bundleService->assembleRegulatorDossier(caseUuid: $id);
 		} catch (Throwable $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_BAD_REQUEST
-			);
+			return $this->badRequest(message: $e->getMessage());
 		}
 
 		return new JSONResponse(data: $result);
@@ -599,6 +581,20 @@ class DsarCaseController extends Controller {
 
 		return null;
 	}//end saveFailure()
+
+	/**
+	 * A 400 carrying the reason.
+	 *
+	 * @param string $message Why the request was refused
+	 *
+	 * @return JSONResponse
+	 */
+	private function badRequest(string $message): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => $message],
+			statusCode: Http::STATUS_BAD_REQUEST
+		);
+	}//end badRequest()
 
 	/**
 	 * The answer to an outcome that was decided but could not be saved.

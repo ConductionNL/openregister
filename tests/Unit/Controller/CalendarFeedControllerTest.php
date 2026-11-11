@@ -180,7 +180,7 @@ class CalendarFeedControllerTest extends TestCase {
 
 	public function testAnAnswerCannotBeRecordedOnAnObjectTheCallerMayNotRead(): void {
 		$this->attendees->method('mayRead')->willReturn(false);
-		$this->attendees->expects($this->never())->method('recordResponse');
+		$this->attendees->expects($this->never())->method('recordAttendeeResponse');
 
 		$this->assertSame(
 			Http::STATUS_NOT_FOUND,
@@ -208,7 +208,7 @@ class CalendarFeedControllerTest extends TestCase {
 
 	public function testARefusedAnswerIsABadRequest(): void {
 		$this->attendees->method('mayRead')->willReturn(true);
-		$this->attendees->method('recordResponse')
+		$this->attendees->method('recordAttendeeResponse')
 			->willThrowException(new \InvalidArgumentException('MAYBE is not an attendee answer'));
 
 		$this->assertSame(

@@ -61,8 +61,8 @@ class ExampleSetStoreTest extends TestCase {
 
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->expects($this->once())
-			->method('validateObjectWithPlannedUsers')
-			->with(['assignee' => 'daan.verbeek'], 42, $this->anything(), ['daan.verbeek'])
+			->method('validateWithPlannedAccounts')
+			->with(['assignee' => 'daan.verbeek'], new \OCA\OpenRegister\Service\Object\PlannedAccountsCheck(schema: 42, plannedUsers: ['daan.verbeek']))
 			->willReturn(new ValidationResult(null));
 		$validator->expects($this->never())->method('validateObject');
 

@@ -137,6 +137,25 @@ class MigrationPacksController extends Controller {
 	}//end resolveUserId()
 
 	/**
+	 * The pack a signed-in caller asked for, or the 401 or 404 that answers instead.
+	 *
+	 * @param int $id The migration pack id.
+	 *
+	 * @return MigrationPack|JSONResponse
+	 */
+	private function readablePack(int $id): MigrationPack|JSONResponse {
+		if ($this->resolveUserId() === null) {
+			return $this->errors->notAuthenticated();
+		}
+
+		try {
+			return $this->service->find(id: $id);
+		} catch (DoesNotExistException $e) {
+			return $this->errors->notFound();
+		}
+	}//end readablePack()
+
+	/**
 	 * The refusal for a caller who may not change packs, or null for an administrator.
 	 *
 	 * @return JSONResponse|null 401 when nobody is signed in, 403 for a non-admin.
@@ -214,14 +233,9 @@ class MigrationPacksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(int $id): JSONResponse {
-		if ($this->resolveUserId() === null) {
-			return $this->errors->notAuthenticated();
-		}
-
-		try {
-			$pack = $this->service->find(id: $id);
-		} catch (DoesNotExistException $e) {
-			return $this->errors->notFound();
+		$pack = $this->readablePack(id: $id);
+		if ($pack instanceof JSONResponse) {
+			return $pack;
 		}
 
 		return new JSONResponse(data: $pack->jsonSerialize());
@@ -250,14 +264,9 @@ class MigrationPacksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function export(int $id): JSONResponse|DataDownloadResponse {
-		if ($this->resolveUserId() === null) {
-			return $this->errors->notAuthenticated();
-		}
-
-		try {
-			$pack = $this->service->find(id: $id);
-		} catch (DoesNotExistException $e) {
-			return $this->errors->notFound();
+		$pack = $this->readablePack(id: $id);
+		if ($pack instanceof JSONResponse) {
+			return $pack;
 		}
 
 		$json = json_encode($pack->getDefinitionArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
