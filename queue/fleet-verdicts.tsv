@@ -2453,3 +2453,4 @@ opencatalogi	2427	b3b72c3653e21db28c34c79424208133134605b0	GREEN	FXL	development
 opencatalogi	2441	9744074afd7595e8d2e88472c8b16dde5d72496f	GREEN	FXL	development merged in, both helper sets kept, vitest 805/805; merged
 opencatalogi	2472	7bf38d58dba7981c137cf9f12be81cc243b6356f	GREEN	FXL	development merged in, imports and helpers of both sides kept, jest 890 + vitest 805 green; merged
 integriq	3127	26af4b9cb45e0bfa44dbecc5bf48a5e61180d9a7	GREEN	FXL	binding sweep skips hand-built classes (new-only, never injected); control: removed alias still caught; merged
+integriq	3117	7aaf1f8bef054f5c27750fd5eaaaebbadd5aeabd	GREEN	FXL	development merged in (binding sweep now skips hand-built SignedEnvelopeDelivery); merged
