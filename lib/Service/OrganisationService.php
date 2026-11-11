@@ -634,8 +634,9 @@ class OrganisationService implements OrganisationServiceInterface {
 	/**
 	 * The organisation an organisation context acts for.
 	 *
-	 * Memoised per request by uuid. An organisation that does not exist answers
-	 * null, so the organisation filter admits nothing.
+	 * Memoised per request by uuid. A merged-away organisation answers with the
+	 * organisation it was merged into. One that does not exist or is not active
+	 * answers null, so the organisation filter admits nothing.
 	 *
 	 * @param string $uuid The organisation uuid the context names.
 	 *
@@ -649,8 +650,12 @@ class OrganisationService implements OrganisationServiceInterface {
 		}
 
 		try {
-			$organisation = $this->organisationMapper->findByUuid($uuid);
+			$organisation = $this->followMerge(organisation: $this->organisationMapper->findByUuid($uuid));
 		} catch (DoesNotExistException $e) {
+			$organisation = null;
+		}
+
+		if ($organisation !== null && $organisation->isActive() === false) {
 			$organisation = null;
 		}
 
