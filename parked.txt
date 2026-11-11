@@ -174,4 +174,3 @@ openregister#9864 c1f2e25950466d3f763d8d1725f18b0b488256ef precheck-red alone on
 openregister#9869 fa7a414bbd95e40f347e814a0b7b3a2bfa1715bc precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\TalkLink\TalkGatewaySetDescriptionTest::testWithoutTalkNothingIsResolved
 openregister#9760 c08d30bc039019e917028348d673f7431958e06c precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\ObjectServiceTest::testUpdateObjectSetsIdAndDelegatesToSaveObject;OCA\OpenRegister\Tests\Unit\Service\ObjectServiceUpdateAccessFlagsGoldenTest::testAnUpdateWithoutFlagsIsChecke;
 openregister#9066 f373d88f60caf27bdc0bee83c68d93987808139c park: ClassAliasMapTest::testTheShippedMapNamesExistingClassesAndNoShims, alias map entry still names Mcp\Service\ChatMessageRequest after the move (tree 84539c57b6, main 071cd168ad green)
-openregister#9764 ad484a0d325c7ab74ab2de5cfdf9b914bfbfa65b merge-conflict with main
