@@ -2997,3 +2997,4 @@
 2026-11-11T00:59:46Z integrator-20261110T221231-b175a32d BUILD-LINT #8495 1b6d1c73 does not compile on this tree: lib/Db/MagicMapper.php
 2026-11-11T00:59:51Z integrator-20261110T221231-b175a32d BUILD-LINT #8837 201f81e9 does not compile on this tree: lib/Controller/OrganisationController.php
 2026-11-11T00:59:59Z integrator-20261110T221231-b175a32d CONFLICT-DEV #9077 10a1711f
+2026-11-11T01:00:50Z precheck-20261110T222343-e7320f00 GREEN tree e02fd87669 on dev 1e1603de82 prs 1 front=skip: Tests: 56437, Assertions: 186775, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 24.
