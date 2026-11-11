@@ -2879,3 +2879,28 @@ filinq	1944	17687afed1365183befb273276581fbe48587038	GREEN	FV9-09:2	phpunit 5214
 filinq	1945	b4a275f9438df4a23898f08da92b0525a76ee499	GREEN	FV9-09:2	phpunit 5214 ok, baseline 0 failures, no frontend change; floor not measured (floor_check run not permitted in this session)
 filinq	1946	5b6aebfd181371dcdabd39dd87d06a4884483bd3	GREEN	FV9-09:2	phpunit 5214 ok, baseline 0 failures, no frontend change; floor not measured (floor_check run not permitted in this session)
 filinq	1947	bd9ba8e848b3f76bcaed5dbe00f931c04cd3b205	GREEN	FV9-09:2	phpunit 5214 ok, baseline 0 failures, no frontend change; floor not measured (floor_check run not permitted in this session)
+stackiq	1615	9166ba0c8d73907e4f39d53b25dabfd402261c10	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1626	312896cf24d64382257e646efeba949923cefa12	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1627	ef4840a639994581c5caa4ec73bcbb0cd6f49cc1	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1628	75e3d8aded504dd0c9a43391fa775028d01e00e4	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1629	ab5a8c605324d4e525de6e7aedef034cb650ad14	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1630	cca479271d51b77337cb396882d11678023b9139	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1631	cfde54dc09322333e50a8f4bbf16a9d5ffa44c41	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1632	e68769f129d4d6db8923d9063c94591e6733d4b7	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1633	6f34712ae6592c12c76991a2be03563e3b628dfa	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1634	552f208aca0dbd994bdbeab8445ee1056690a07e	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1635	af85e6885ed91f16d8c5658e4420f3d90a397fd4	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1636	3e04e3e64ed257f6694d4b9b8288bad4a157965e	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1637	9ee08e23fef515f3140750d8ec63d757f74e2cc5	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1638	c68223345779eef252df0856a960d7682dfac223	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1639	a2b760d14df67a5bbbea39f2692f707cdac97447	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1640	a84b9862c5ff7168b8ee0764072416e3435cd75d	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1641	b0a5d5b06f5c2f0542acf3390f81e801b319b4ea	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1642	ef3deeba83bff6bd7bda75d61470bd6918e00a24	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1643	9afc588480b3954ecd50b577c9bed4d5115391f5	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1644	7283b6f6515a08adbda51ad7ecb61c8f926e11bf	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1645	54c961961c610bb19f5fac0632651e60eeef073a	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1646	15a64a9039909bc591f8111c73ad16c9c91b1be8	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1647	3589be06185b6a51fe779fceb94539b188ac8b4f	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1648	74d45672dc7f54601d3a0c19d9057f520f4a918f	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
+stackiq	1649	3eaecf8938d58482ee8ca40e15f592f121d09ac9	GREEN	FV9-01:3	tree of 25 green on 5350265060; unit failures only inherited (142); floor held
