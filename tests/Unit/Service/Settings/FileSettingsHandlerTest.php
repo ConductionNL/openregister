@@ -41,7 +41,7 @@ class FileSettingsHandlerTest extends TestCase {
 		parent::setUp();
 
 		$this->appConfig = $this->createMock(IAppConfig::class);
-		$this->handler = new FileSettingsHandler($this->appConfig, 'openregister');
+		$this->handler = new FileSettingsHandler($this->appConfig);
 	}
 
 	/**
@@ -345,5 +345,46 @@ class FileSettingsHandlerTest extends TestCase {
 		$this->assertTrue($decoded['vectorizationEnabled']);
 		$this->assertSame(777, $decoded['chunkSize']);
 		$this->assertArrayHasKey('enabledFileTypes', $decoded);
+	}
+
+	/**
+	 * The instance review default is kept, normalised, and an unsound one is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 */
+	public function testTheReviewDefaultIsKeptAndChecked(): void {
+		$stored = '';
+		$this->appConfig->method('setValueString')->willReturnCallback(
+			function (string $app, string $key, string $value) use (&$stored): bool {
+				if ($key === 'fileManagement') {
+					$stored = $value;
+				}
+
+				return true;
+			}
+		);
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			static function (string $app, string $key, string $default = '') use (&$stored): string {
+				return ($key === 'fileManagement' ? $stored : $default);
+			}
+		);
+
+		$kept = ['ownership' => 'decider', 'supervisors' => ['woo-coordinator'], 'hideOthers' => false];
+		$result = $this->handler->updateFileSettingsOnly(['anonymisationReview' => ['ownership' => 'decider', 'supervisors' => ['woo-coordinator']]]);
+		$this->assertSame($kept, $result['anonymisationReview']);
+
+		// The admin form never sends the key: a save without it keeps the stored default.
+		$this->assertSame($kept, $this->handler->updateFileSettingsOnly(['chunkSize' => 500])['anonymisationReview']);
+		$this->assertSame($kept, $this->handler->getFileSettingsOnly()['anonymisationReview']);
+
+		// An explicit null clears it.
+		$this->assertNull($this->handler->updateFileSettingsOnly(['anonymisationReview' => null])['anonymisationReview']);
+		$this->assertNull($this->handler->getFileSettingsOnly()['anonymisationReview']);
+
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('decidr');
+		$this->handler->updateFileSettingsOnly(['anonymisationReview' => ['ownership' => 'decidr']]);
 	}
 }

@@ -21,8 +21,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Controller\FileSidebarController;
-use OCA\OpenRegister\Service\FileSidebarService;
+use OCA\OpenRegister\Files\Controller\FileSidebarController;
+use OCA\OpenRegister\Files\Controller\Support\FileSidebarControllerServices;
+use OCA\OpenRegister\Files\Service\FileSidebarService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -69,12 +70,8 @@ class FileSidebarControllerTest extends TestCase {
 		$this->rootFolder->method('getUserFolder')->willReturn($userFolder);
 
 		$this->controller = new FileSidebarController(
-			'openregister',
 			$this->request,
-			$this->fileSidebarService,
-			$this->logger,
-			$this->rootFolder,
-			$this->userSession
+			new FileSidebarControllerServices($this->fileSidebarService, $this->rootFolder, $this->userSession, $this->logger)
 		);
 	}//end setUp()
 
@@ -95,12 +92,8 @@ class FileSidebarControllerTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$controller = new FileSidebarController(
-			'openregister',
 			$this->request,
-			$this->fileSidebarService,
-			$this->logger,
-			$rootFolder,
-			$session
+			new FileSidebarControllerServices($this->fileSidebarService, $rootFolder, $session, $this->logger)
 		);
 
 		$this->fileSidebarService->expects($this->never())->method('getObjectsForFile');

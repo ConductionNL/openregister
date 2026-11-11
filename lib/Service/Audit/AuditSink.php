@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -49,9 +49,9 @@ use Throwable;
  * `sealed` field says plainly that the hash was not yet assigned rather than
  * implying the row has none.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class AuditSink {
+class AuditSink implements AuditSinkInterface, AuditSinkShipperInterface {
 	/**
 	 * The app the configuration belongs to.
 	 *
@@ -114,13 +114,6 @@ class AuditSink {
 	public const LINE_VERSION = 1;
 
 	/**
-	 * The audit action a failure to ship is recorded under.
-	 *
-	 * @var string
-	 */
-	public const ACTION_SINK_FAILED = 'audit.sink-failed';
-
-	/**
 	 * Default attempts per line.
 	 *
 	 * @var int
@@ -173,7 +166,7 @@ class AuditSink {
 	 *
 	 * @return string|null The configured path.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function path(): ?string {
 		try {
@@ -198,7 +191,7 @@ class AuditSink {
 	 *
 	 * @return string One of {@see AuditSink::FORMATS}.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function format(): string {
 		try {
@@ -219,7 +212,7 @@ class AuditSink {
 	 *
 	 * @return bool True when the instance ships its trail.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function isConfigured(): bool {
 		return $this->path() !== null;
@@ -232,7 +225,7 @@ class AuditSink {
 	 *
 	 * @return string The JSON Lines record, newline terminated.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function renderLine(AuditTrail $entry): string {
 		$line = $entry->jsonSerialize();
@@ -257,7 +250,7 @@ class AuditSink {
 	 *              configured and it did not. True when no sink is configured,
 	 *              because there was nothing to fail.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function ship(AuditTrail $entry): bool {
 		$path = $this->path();
@@ -265,14 +258,14 @@ class AuditSink {
 			return true;
 		}
 
-		$error = null;
-		if ($this->append(path: $path, line: $this->renderLine(entry: $entry), error: $error) === true) {
+		$run = new SinkAppendRun(path: $path, line: $this->renderLine(entry: $entry));
+		if ($this->append(run: $run) === true) {
 			$this->status->recordSuccess();
 
 			return true;
 		}
 
-		$this->onFailure(entry: $entry, error: (string)$error);
+		$this->onFailure(entry: $entry, error: (string)$run->error);
 
 		return false;
 	}//end ship()
@@ -284,7 +277,7 @@ class AuditSink {
 	 *
 	 * @return int How many entries did not reach the file.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function shipMany(array $entries): int {
 		$failed = 0;
@@ -308,9 +301,7 @@ class AuditSink {
 	 * side under concurrency: two workers writing an audited act at the same
 	 * instant interleave whole lines rather than halves of two.
 	 *
-	 * @param string      $path  The file to append to.
-	 * @param string      $line  The line to write.
-	 * @param string|null $error Set to the last failure when every attempt failed.
+	 * @param SinkAppendRun $run The file and line; its error is set to the last failure when every attempt failed.
 	 *
 	 * @return bool True when the line was written.
 	 *
@@ -319,19 +310,19 @@ class AuditSink {
 	 *   warning in the middle of somebody's save. The error is not swallowed: it is read
 	 *   back from error_get_last() and put on the status verbatim.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function append(string $path, string $line, ?string &$error): bool {
+	private function append(SinkAppendRun $run): bool {
 		$attempts = $this->attempts();
 		$delay = $this->retryDelay();
 
 		for ($attempt = 1; $attempt <= $attempts; $attempt++) {
-			$written = @file_put_contents($path, $line, (FILE_APPEND | LOCK_EX));
-			if ($written !== false && $written === strlen($line)) {
+			$written = @file_put_contents($run->path, $run->line, (FILE_APPEND | LOCK_EX));
+			if ($written !== false && $written === strlen($run->line)) {
 				return true;
 			}
 
-			$error = $this->describeFailure(path: $path, line: $line, written: $written);
+			$run->error = $this->describeFailure(run: $run, written: $written);
 
 			if ($attempt < $attempts && $delay > 0) {
 				usleep($delay);
@@ -349,22 +340,21 @@ class AuditSink {
 	 * told apart here because the remedy differs. A failed write needs the
 	 * destination fixed; a short one needs the file truncated first.
 	 *
-	 * @param string    $path    The file that was being written.
-	 * @param string    $line    The line that was being written.
-	 * @param int|false $written What file_put_contents returned.
+	 * @param SinkAppendRun $run     The file and line that were being written.
+	 * @param int|false     $written What file_put_contents returned.
 	 *
 	 * @return string The failure, for the status and the gap entry.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function describeFailure(string $path, string $line, int|false $written): string {
+	private function describeFailure(SinkAppendRun $run, int|false $written): string {
 		if ($written !== false) {
-			return sprintf('short write to %s: %d of %d bytes', $path, $written, strlen($line));
+			return sprintf('short write to %s: %d of %d bytes', $run->path, $written, strlen($run->line));
 		}
 
 		$last = error_get_last();
 
-		return sprintf('write to %s failed: %s', $path, ($last['message'] ?? 'unknown error'));
+		return sprintf('write to %s failed: %s', $run->path, ($last['message'] ?? 'unknown error'));
 	}//end describeFailure()
 
 	/**
@@ -381,7 +371,7 @@ class AuditSink {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function onFailure(AuditTrail $entry, string $error): void {
 		$this->logger->error(
@@ -396,6 +386,18 @@ class AuditSink {
 			return;
 		}
 
+		$this->recordFailureOnTrail(entry: $entry, error: $error);
+	}//end onFailure()
+
+	/**
+	 * Count the failure and, on the first of a gap, hand it to the trail recorder; never re-entered, never thrown.
+	 *
+	 * @param AuditTrail $entry The entry that did not ship.
+	 * @param string     $error Why.
+	 *
+	 * @return void
+	 */
+	private function recordFailureOnTrail(AuditTrail $entry, string $error): void {
 		$this->recordingFailure = true;
 
 		try {
@@ -404,14 +406,25 @@ class AuditSink {
 				($this->failureRecorder)($entry, $error);
 			}
 		} catch (Throwable $e) {
-			$this->logger->error(
-				message: '[AuditSink] The sink failure could not be recorded on the trail.',
-				context: ['error' => $e->getMessage()]
-			);
+			$this->logUnrecordedFailure(error: $e);
 		} finally {
 			$this->recordingFailure = false;
 		}
-	}//end onFailure()
+	}//end recordFailureOnTrail()
+
+	/**
+	 * Log that a sink failure could not be recorded on the trail.
+	 *
+	 * @param Throwable $error Why the recording failed.
+	 *
+	 * @return void
+	 */
+	private function logUnrecordedFailure(Throwable $error): void {
+		$this->logger->error(
+			message: '[AuditSink] The sink failure could not be recorded on the trail.',
+			context: ['error' => $error->getMessage()]
+		);
+	}//end logUnrecordedFailure()
 
 	/**
 	 * Tell the sink how to record a gap on the trail.
@@ -420,7 +433,7 @@ class AuditSink {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function setFailureRecorder(callable $recorder): void {
 		$this->failureRecorder = $recorder;
@@ -431,7 +444,7 @@ class AuditSink {
 	 *
 	 * @return int At least one.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function attempts(): int {
 		try {
@@ -448,7 +461,7 @@ class AuditSink {
 	 *
 	 * @return int Microseconds, never negative.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function retryDelay(): int {
 		try {

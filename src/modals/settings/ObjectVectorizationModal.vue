@@ -14,245 +14,144 @@
 				}}
 			</p>
 
-			<!-- Execution Mode -->
-			<h3>{{ t('openregister', 'Execution Mode') }}</h3>
-			<div class="execution-modes">
-				<NcCheckboxRadioSwitch
-					v-model="executionMode"
-					value="serial"
-					name="execution_mode"
-					type="radio">
-					{{ t('openregister', 'Serial Mode (Safer, slower)') }}
-				</NcCheckboxRadioSwitch>
-				<NcCheckboxRadioSwitch
-					v-model="executionMode"
-					value="parallel"
-					name="execution_mode"
-					type="radio">
-					{{
-						t(
-							'openregister',
-							'Parallel Mode (Faster, more resource intensive)',
-						)
-					}}
-				</NcCheckboxRadioSwitch>
-			</div>
+			<VectorizationModeChoice
+				v-model="executionMode"
+				:serialText="
+					t('openregister', 'Processes objects sequentially (safest).')
+				"
+				:parallelText="
+					t(
+						'openregister',
+						'Processes objects in chunks with simulated parallelism.',
+					)
+				" />
 
-			<div class="mode-descriptions">
-				<p>
-					<strong>{{ t('openregister', 'Serial:') }}</strong>
-					{{
-						t('openregister', 'Processes objects sequentially (safest).')
-					}}
-				</p>
-				<p>
-					<strong>{{ t('openregister', 'Parallel:') }}</strong>
-					{{
-						t(
-							'openregister',
-							'Processes objects in chunks with simulated parallelism.',
-						)
-					}}
-				</p>
-			</div>
-
-			<!-- Object Count Prediction -->
-			<div class="prediction-box">
-				<h4>📊 {{ t('openregister', 'Object Count Prediction') }}</h4>
-				<div class="prediction-stats">
-					<div class="stat">
-						<span class="label">{{
-							t('openregister', 'Total Objects in Database:')
-						}}</span>
-						<span class="value">{{
-							stats.totalObjects.toLocaleString()
-						}}</span>
-					</div>
-					<div class="stat">
-						<span class="label">{{
-							t('openregister', 'Objects to Process:')
-						}}</span>
-						<span class="value">{{
-							stats.objectsToProcess.toLocaleString()
-						}}</span>
-					</div>
-					<div class="stat">
-						<span class="label">{{
-							t('openregister', 'Estimated Batches:')
-						}}</span>
-						<span class="value">{{ estimatedBatches }}</span>
-					</div>
-					<div class="stat">
-						<span class="label">{{
-							t('openregister', 'Estimated Duration:')
-						}}</span>
-						<span class="value">{{ estimatedDuration }}</span>
-					</div>
-					<div class="stat">
-						<span class="label">{{
-							t('openregister', 'Estimated Cost:')
-						}}</span>
-						<span class="value">{{ estimatedCost }}</span>
-					</div>
+			<VectorizationPrediction
+				:title="t('openregister', 'Object Count Prediction')"
+				:batches="estimatedBatches"
+				:duration="estimatedDuration"
+				:cost="estimatedCost">
+				<div class="stat">
+					<span class="label">{{
+						t('openregister', 'Total Objects in Database:')
+					}}</span>
+					<span class="value">{{
+						stats.totalObjects.toLocaleString()
+					}}</span>
 				</div>
-			</div>
+				<div class="stat">
+					<span class="label">{{
+						t('openregister', 'Objects to Process:')
+					}}</span>
+					<span class="value">{{
+						stats.objectsToProcess.toLocaleString()
+					}}</span>
+				</div>
+			</VectorizationPrediction>
 
-			<!-- Processing Limits -->
 			<h3>{{ t('openregister', 'Processing Limits') }}</h3>
-
-			<div class="form-group">
-				<label for="max-objects">{{
-					t('openregister', 'Max Objects (0 = all)')
-				}}</label>
-				<input
-					id="max-objects"
-					v-model.number="maxObjects"
-					type="number"
-					min="0"
-					:placeholder="
-						t(
-							'openregister',
-							'Maximum number of objects to process. Set to 0 to process all objects.',
-						)
-					" />
-				<small>{{
+			<VectorizationNumberField
+				id="max-objects"
+				v-model="maxObjects"
+				min="0"
+				:label="t('openregister', 'Max Objects (0 = all)')"
+				:hint="
 					t(
 						'openregister',
 						'Maximum number of objects to process. Set to 0 to process all objects.',
 					)
-				}}</small>
-			</div>
-
-			<div class="form-group">
-				<label for="batch-size">{{ t('openregister', 'Batch Size') }}</label>
-				<input
-					id="batch-size"
-					v-model.number="batchSize"
-					type="number"
-					min="1"
-					max="5000"
-					:placeholder="
-						t(
-							'openregister',
-							'Number of objects to process in each batch (1-5000).',
-						)
-					" />
-				<small>{{
+				" />
+			<VectorizationNumberField
+				id="batch-size"
+				v-model="batchSize"
+				max="5000"
+				min="1"
+				:label="t('openregister', 'Batch Size')"
+				:hint="
 					t(
 						'openregister',
 						'Number of objects to process in each batch (1-5000).',
 					)
-				}}</small>
-			</div>
+				" />
 
-			<!-- View Selection -->
-			<h3>{{ t('openregister', 'View Selection') }}</h3>
-			<div class="info-box">
-				<InformationOutline :size="20" />
-				<p>
-					{{
-						t(
-							'openregister',
-							'Choose which views to include in the vectorization process. Leave empty to process all views based on your configuration.',
-						)
-					}}
-				</p>
-			</div>
-
-			<div class="form-group">
-				<NcCheckboxRadioSwitch v-model="vectorizeAllViews" type="switch">
-					{{ t('openregister', 'Vectorize all views') }}
-				</NcCheckboxRadioSwitch>
-			</div>
-
-			<div
-				v-if="!vectorizeAllViews && views.length > 0"
-				class="view-selection">
-				<label>{{ t('openregister', 'Select Views to Vectorize:') }}</label>
-				<div class="view-list">
-					<NcCheckboxRadioSwitch
-						v-for="view in views"
-						:key="view.id"
-						v-model="selectedViews"
-						:value="view.id"
-						type="checkbox">
-						{{ view.name }}
-					</NcCheckboxRadioSwitch>
+			<VectorizationScope
+				v-model="vectorizeAllViews"
+				:title="t('openregister', 'View Selection')"
+				:info="
+					t(
+						'openregister',
+						'Choose which views to include in the vectorization process. Leave empty to process all views based on your configuration.',
+					)
+				"
+				:allLabel="t('openregister', 'Vectorize all views')">
+				<div
+					v-if="!vectorizeAllViews && views.length > 0"
+					class="view-selection">
+					<label>{{
+						t('openregister', 'Select Views to Vectorize:')
+					}}</label>
+					<div class="view-list">
+						<NcCheckboxRadioSwitch
+							v-for="view in views"
+							:key="view.id"
+							v-model="selectedViews"
+							:value="view.id"
+							type="checkbox">
+							{{ view.name }}
+						</NcCheckboxRadioSwitch>
+					</div>
 				</div>
-			</div>
+			</VectorizationScope>
 
-			<!-- Progress (shown during processing) -->
-			<div v-if="processing" class="progress-section">
-				<NcProgressBar :value="progress" :error="failed > 0">
-					{{ processed }} / {{ stats.objectsToProcess }}
-					{{ t('openregister', 'objects processed') }}
-				</NcProgressBar>
-				<div class="progress-stats">
-					<span class="success"
-						>✓ {{ vectorized }}
-						{{ t('openregister', 'vectorized') }}</span
-					>
-					<span v-if="failed > 0" class="error"
-						>✗ {{ failed }} {{ t('openregister', 'failed') }}</span
-					>
-				</div>
-			</div>
+			<VectorizationProgress
+				:total="stats.objectsToProcess"
+				:run="$data"
+				:unitLabel="t('openregister', 'objects processed')" />
 		</div>
 
 		<template #actions>
-			<NcButton @click="$emit('closing')">
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
-			<NcButton
-				variant="primary"
-				:disabled="processing || stats.objectsToProcess === 0"
-				@click="startVectorization">
-				<template #icon>
-					<PlayCircle v-if="!processing" :size="20" />
-					<NcLoadingIcon v-else :size="20" />
-				</template>
-				{{
-					processing
-						? t('openregister', 'Processing...')
-						: t('openregister', 'Start Vectorization')
-				}}
-			</NcButton>
+			<VectorizationActions
+				:processing="processing"
+				:empty="stats.objectsToProcess === 0"
+				@start="startVectorization"
+				@cancel="$emit('closing')" />
 		</template>
 	</NcDialog>
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
-import { generateUrl } from '@nextcloud/router'
 import {
-	NcButton,
-	NcCheckboxRadioSwitch,
-	NcDialog,
-	NcLoadingIcon,
-	NcProgressBar,
-} from '@nextcloud/vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import PlayCircle from 'vue-material-design-icons/PlayCircle.vue'
+	countObjects,
+	readVectorizeSettings,
+	readViews,
+	vectorizeObjects,
+} from './vectorization/objectVectorizationApi.js'
+import { vectorizationModalComponents } from './vectorization/vectorizationModalComponents.js'
+import { beginRun, idleRun } from './vectorization/vectorizationRun.js'
+
+/**
+ * The counts of one batch response, 0 where one is missing.
+ *
+ * @param {object} response The batch response
+ * @return {{processed: number, vectorized: number, failed: number}} The counts
+ */
+function batchCounts(response) {
+	const result = response.data?.data || {}
+	return {
+		processed: result.processed || 0,
+		vectorized: result.vectorized || 0,
+		failed: result.failed || 0,
+	}
+}
 
 export default {
 	name: 'ObjectVectorizationModal',
 
-	components: {
-		NcDialog,
-		NcButton,
-		NcCheckboxRadioSwitch,
-		NcProgressBar,
-		NcLoadingIcon,
-		InformationOutline,
-		PlayCircle,
-	},
+	components: vectorizationModalComponents,
 
 	props: {
-		show: {
-			type: Boolean,
-			required: true,
-		},
+		show: { type: Boolean, required: true },
 	},
 
 	data() {
@@ -268,10 +167,7 @@ export default {
 				objectsToProcess: 0,
 			},
 
-			processing: false,
-			processed: 0,
-			vectorized: 0,
-			failed: 0,
+			...idleRun(),
 		}
 	},
 
@@ -313,14 +209,6 @@ export default {
 			const cost = (tokens / 1000000) * 0.008
 			return `$${cost.toFixed(4)}`
 		},
-
-		/**
-		 * @spec exclude Computed progress percentage for the progress bar; UI presentation helper.
-		 */
-		progress() {
-			if (this.stats.objectsToProcess === 0) return 0
-			return Math.round((this.processed / this.stats.objectsToProcess) * 100)
-		},
 	},
 
 	watch: {
@@ -358,31 +246,31 @@ export default {
 		 */
 		async loadConfiguration() {
 			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/settings/objects/vectorize'),
-				)
-				const config = response.data?.data || {}
-
-				this.vectorizeAllViews = config.vectorizeAllViews ?? true
-				this.selectedViews = config.enabledViews || []
-				this.batchSize = config.batchSize || 25
+				const settings = await readVectorizeSettings()
+				this.applyConfiguration(settings?.data || {})
 			} catch (error) {
 				console.error('Failed to load configuration:', error)
 			}
 		},
 
 		/**
+		 * Take the view choice and batch size from the stored settings.
+		 *
+		 * @param {object} config The stored settings
+		 * @spec exclude UI plumbing — fills the form from the stored settings
+		 * @return {void}
+		 */
+		applyConfiguration(config) {
+			this.vectorizeAllViews = config.vectorizeAllViews ?? true
+			this.selectedViews = config.enabledViews || []
+			this.batchSize = config.batchSize || 25
+		},
+
+		/**
 		 * @spec exclude Loads views to populate the view selector; UI form-loading plumbing.
 		 */
 		async loadViews() {
-			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/views'),
-				)
-				this.views = response.data.results || []
-			} catch (error) {
-				console.error('Failed to load views:', error)
-			}
+			this.views = await readViews()
 		},
 
 		/**
@@ -390,103 +278,120 @@ export default {
 		 */
 		async loadStats() {
 			try {
-				// Determine which views to use for stats
-				const viewsToCount = this.vectorizeAllViews
-					? null
-					: this.selectedViews
-
-				// Build query params
-				const params = {}
-				if (viewsToCount !== null && viewsToCount.length > 0) {
-					params.views = JSON.stringify(viewsToCount)
-				}
-
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/objects/vectorize/stats'),
-					{ params },
-				)
-
-				this.stats = {
-					totalObjects: response.data.total_objects || 0,
-					objectsToProcess: response.data.total_objects || 0,
-				}
+				const total = await countObjects(this.statsParams())
+				this.stats = { totalObjects: total, objectsToProcess: total }
 			} catch (error) {
 				console.error('Failed to load stats:', error)
-				this.stats = {
-					totalObjects: 0,
-					objectsToProcess: 0,
-				}
+				this.stats = { totalObjects: 0, objectsToProcess: 0 }
 			}
+		},
+
+		/**
+		 * The views a run covers, null for all of them.
+		 *
+		 * @spec exclude UI plumbing — reads the view choice of the form
+		 * @return {Array|null} The chosen views
+		 */
+		chosenViews() {
+			return this.vectorizeAllViews ? null : this.selectedViews
+		},
+
+		/**
+		 * The stats query for the chosen views, empty for all of them.
+		 *
+		 * @spec exclude UI plumbing — builds the stats query from the form
+		 * @return {object} The query parameters
+		 */
+		statsParams() {
+			const views = this.chosenViews()
+			if (views !== null && views.length > 0) {
+				return { views: JSON.stringify(views) }
+			}
+			return {}
 		},
 
 		/**
 		 * @spec exclude Start-button handler driving the vectorization job over the chosen views; platform-admin orchestration plumbing.
 		 */
 		async startVectorization() {
-			this.processing = true
-			this.processed = 0
-			this.vectorized = 0
-			this.failed = 0
-
+			beginRun(this)
 			try {
-				const viewsToProcess = this.vectorizeAllViews
-					? null
-					: this.selectedViews
-				const objectCount =
-					this.maxObjects > 0
-						? this.maxObjects
-						: this.stats.objectsToProcess
-
-				// Process in batches until complete
-				let remaining = objectCount
-				while (remaining > 0 && this.processing) {
-					const currentBatchSize = Math.min(this.batchSize, remaining)
-
-					const response = await axios.post(
-						generateUrl(
-							'/apps/openregister/api/objects/vectorize/batch',
-						),
-						{
-							views: viewsToProcess,
-							batchSize: currentBatchSize,
-						},
-					)
-
-					const result = response.data?.data || {}
-					this.processed += result.processed || 0
-					this.vectorized += result.vectorized || 0
-					this.failed += result.failed || 0
-					remaining -= result.processed || 0
-
-					// Stop if no more objects were processed
-					if ((result.processed || 0) === 0) {
-						break
-					}
-				}
-
-				showSuccess(
-					this.t(
-						'openregister',
-						'Vectorization completed: {vectorized} objects vectorized, {failed} failed',
-						{
-							vectorized: this.vectorized,
-							failed: this.failed,
-						},
-					),
-				)
-
+				await this.runBatches(this.chosenViews())
+				showSuccess(this.completedText())
 				this.$emit('completed')
 				this.$emit('closing')
 			} catch (error) {
 				console.error('Failed to vectorize objects:', error)
-				showError(
-					this.t('openregister', 'Vectorization failed: {error}', {
-						error: error.response?.data?.error || error.message,
-					}),
-				)
+				showError(this.failureText(error))
 			} finally {
 				this.processing = false
 			}
+		},
+
+		/**
+		 * What a finished run did, in words.
+		 *
+		 * @spec exclude UI plumbing — words a finished run
+		 * @return {string} The translated message
+		 */
+		completedText() {
+			return this.t(
+				'openregister',
+				'Vectorization completed: {vectorized} objects vectorized, {failed} failed',
+				{ vectorized: this.vectorized, failed: this.failed },
+			)
+		},
+
+		/**
+		 * Why a run failed, in words.
+		 *
+		 * @param {object} error The request error
+		 * @spec exclude UI plumbing — words a failed run
+		 * @return {string} The translated message
+		 */
+		failureText(error) {
+			return this.t('openregister', 'Vectorization failed: {error}', {
+				error: error.response?.data?.error || error.message,
+			})
+		},
+
+		/**
+		 * Send batches until the objects are done, one comes back empty, or processing stops.
+		 *
+		 * @param {Array|null} views The views to vectorize, null for all
+		 * @spec exclude UI plumbing — drives the batch loop of the modal
+		 * @return {Promise<void>}
+		 */
+		async runBatches(views) {
+			let remaining =
+				this.maxObjects > 0 ? this.maxObjects : this.stats.objectsToProcess
+			while (remaining > 0 && this.processing) {
+				const processed = await this.vectorizeBatch(
+					views,
+					Math.min(this.batchSize, remaining),
+				)
+				remaining -= processed
+				if (processed === 0) {
+					break
+				}
+			}
+		},
+
+		/**
+		 * Vectorize one batch and add its counts to the totals.
+		 *
+		 * @param {Array|null} views The views to vectorize, null for all
+		 * @param {number} batchSize The number of objects in this batch
+		 * @spec exclude UI plumbing — one batch request of the modal
+		 * @return {Promise<number>} The number of objects the batch processed
+		 */
+		async vectorizeBatch(views, batchSize) {
+			const response = await vectorizeObjects({ views, batchSize })
+			const counts = batchCounts(response)
+			this.processed += counts.processed
+			this.vectorized += counts.vectorized
+			this.failed += counts.failed
+			return counts.processed
 		},
 	},
 }
@@ -501,25 +406,25 @@ export default {
 		color: var(--color-text-maxcontrast);
 	}
 
-	h3 {
+	:deep(h3) {
 		margin-top: 24px;
 		margin-bottom: 12px;
 		font-weight: 600;
 	}
 
-	h4 {
+	:deep(h4) {
 		margin: 0 0 12px 0;
 		font-weight: 600;
 	}
 
-	.execution-modes {
+	:deep(.execution-modes) {
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
 		margin-bottom: 12px;
 	}
 
-	.mode-descriptions {
+	:deep(.mode-descriptions) {
 		background: var(--color-background-dark);
 		padding: 12px;
 		border-radius: 8px;
@@ -532,7 +437,7 @@ export default {
 		}
 	}
 
-	.prediction-box {
+	:deep(.prediction-box) {
 		background: var(--color-primary-element-light);
 		padding: 16px;
 		border-radius: 8px;
@@ -563,50 +468,19 @@ export default {
 		}
 	}
 
-	.form-group {
-		margin-bottom: 20px;
-
-		label {
-			display: block;
-			margin-bottom: 8px;
-			font-weight: 500;
-		}
-
-		input {
-			width: 100%;
-			padding: 8px 12px;
-			border: 1px solid var(--color-border);
-			border-radius: 4px;
-			font-size: 14px;
-
-			&:focus {
-				outline: none;
-				border-color: var(--color-primary-element);
-			}
-		}
-
-		small {
-			display: block;
-			margin-top: 4px;
-			font-size: 12px;
-			color: var(--color-text-maxcontrast);
-		}
+	:deep(.form-group > small) {
+		margin-top: 4px;
 	}
 
-	.info-box {
-		display: flex;
+	:deep(.form-group > input) {
+		border: 1px solid var(--color-border);
+		border-radius: 4px;
+	}
+
+	:deep(.info-box) {
 		align-items: center;
-		gap: 12px;
 		padding: 12px;
 		background: var(--color-background-dark);
-		border-radius: 8px;
-		margin-bottom: 16px;
-
-		p {
-			margin: 0;
-			font-size: 13px;
-			color: var(--color-text-maxcontrast);
-		}
 	}
 
 	.view-selection {
@@ -628,25 +502,11 @@ export default {
 		}
 	}
 
-	.progress-section {
-		margin-top: 24px;
-		padding: 16px;
+	:deep(.progress-section) {
 		background: var(--color-background-dark);
-		border-radius: 8px;
 
 		.progress-stats {
-			display: flex;
 			gap: 16px;
-			margin-top: 12px;
-			font-size: 14px;
-
-			.success {
-				color: var(--color-success);
-			}
-
-			.error {
-				color: var(--color-error);
-			}
 		}
 	}
 }

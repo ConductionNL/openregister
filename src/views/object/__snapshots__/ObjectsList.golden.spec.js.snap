@@ -1,0 +1,7681 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, known, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, known, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, known, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, known, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, known, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, known, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, known, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, known, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, registerThrows, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, registerThrows, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, registerThrows, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, registerThrows, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, registerThrows, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, registerThrows, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, registerThrows, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, registerThrows, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoRegister, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoRegister, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoRegister, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoRegister, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoRegister, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoRegister, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoRegister, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoRegister, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoSchema, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoSchema, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoSchema, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoSchema, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoSchema, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoSchema, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoSchema, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownNoSchema, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownScoped, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownScoped, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownScoped, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownScoped, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownScoped, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownScoped, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownScoped, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", idle, unknownScoped, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, known, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, known, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, known, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, known, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, known, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, known, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, known, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, known, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, registerThrows, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, registerThrows, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, registerThrows, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, registerThrows, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, registerThrows, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, registerThrows, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, registerThrows, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, registerThrows, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoRegister, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoRegister, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoRegister, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoRegister, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoRegister, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoRegister, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoRegister, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoRegister, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoSchema, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoSchema, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoSchema, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoSchema, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoSchema, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoSchema, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoSchema, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownNoSchema, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownScoped, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownScoped, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownScoped, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownScoped, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownScoped, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownScoped, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownScoped, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherLive, unknownScoped, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, known, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r2-s2",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, known, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, known, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, known, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, known, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, known, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, known, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, known, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, registerThrows, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r2-s2",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, registerThrows, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, registerThrows, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, registerThrows, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, registerThrows, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, registerThrows, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, registerThrows, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, registerThrows, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoRegister, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r2-s2",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoRegister, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoRegister, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoRegister, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoRegister, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoRegister, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoRegister, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoRegister, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoSchema, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r2-s2",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoSchema, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoSchema, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoSchema, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoSchema, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoSchema, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoSchema, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownNoSchema, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownScoped, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r2-s2",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownScoped, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownScoped, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownScoped, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownScoped, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownScoped, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownScoped, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", otherPending, unknownScoped, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, known, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, known, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, known, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, known, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, known, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, known, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, known, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, known, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, registerThrows, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, registerThrows, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, registerThrows, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, registerThrows, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, registerThrows, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, registerThrows, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, registerThrows, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, registerThrows, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoRegister, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoRegister, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoRegister, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoRegister, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoRegister, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoRegister, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoRegister, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoRegister, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoSchema, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoSchema, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoSchema, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoSchema, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoSchema, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoSchema, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoSchema, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownNoSchema, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownScoped, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownScoped, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownScoped, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownScoped, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownScoped, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownScoped, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownScoped, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", sameLive, unknownScoped, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, known, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, known, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, known, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, known, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, known, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, known, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, known, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, known, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, registerThrows, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, registerThrows, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, registerThrows, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, registerThrows, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, registerThrows, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, registerThrows, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, registerThrows, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, registerThrows, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoRegister, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoRegister, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoRegister, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoRegister, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoRegister, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoRegister, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoRegister, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoRegister, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoSchema, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoSchema, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoSchema, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoSchema, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoSchema, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoSchema, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoSchema, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownNoSchema, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownScoped, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownScoped, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownScoped, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownScoped, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownScoped, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownScoped, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownScoped, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", samePending, unknownScoped, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, known, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, known, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, known, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, known, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, known, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, known, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, known, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, known, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, registerThrows, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, registerThrows, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, registerThrows, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, registerThrows, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, registerThrows, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, registerThrows, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, registerThrows, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, registerThrows, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoRegister, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoRegister, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoRegister, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoRegister, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoRegister, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoRegister, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoRegister, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoRegister, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoSchema, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoSchema, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoSchema, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoSchema, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoSchema, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoSchema, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoSchema, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownNoSchema, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownScoped, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownScoped, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownScoped, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownScoped, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownScoped, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownScoped, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownScoped, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "", staleType, unknownScoped, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, known, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, known, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "r9-s9",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, known, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "down",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, known, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, known, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "plain",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, known, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 2,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+    [
+      "unsubscribe",
+      "h-stale",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, known, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, known, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-r1-s1-r1-s1",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, registerThrows, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, registerThrows, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, registerThrows, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, registerThrows, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, registerThrows, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, registerThrows, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, registerThrows, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, registerThrows, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoRegister, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoRegister, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoRegister, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoRegister, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoRegister, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoRegister, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoRegister, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoRegister, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoSchema, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoSchema, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoSchema, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoSchema, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoSchema, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoSchema, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoSchema, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownNoSchema, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownScoped, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownScoped, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "r9-s9",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownScoped, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "down",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownScoped, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownScoped, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "plain",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownScoped, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 2,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+    [
+      "unsubscribe",
+      "h-stale",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownScoped, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", idle, unknownScoped, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-r1-s1-r1-s1",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, known, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, known, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "r9-s9",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, known, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "down",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, known, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, known, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "plain",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, known, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 2,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+    [
+      "unsubscribe",
+      "h-stale",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, known, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, known, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-r1-s1-r1-s1",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, registerThrows, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, registerThrows, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, registerThrows, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, registerThrows, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, registerThrows, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, registerThrows, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, registerThrows, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, registerThrows, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoRegister, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoRegister, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoRegister, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoRegister, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoRegister, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoRegister, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoRegister, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoRegister, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoSchema, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoSchema, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoSchema, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoSchema, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoSchema, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoSchema, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoSchema, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownNoSchema, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownScoped, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownScoped, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "r9-s9",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownScoped, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "down",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownScoped, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownScoped, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "plain",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownScoped, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 2,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+    [
+      "unsubscribe",
+      "h-stale",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownScoped, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherLive, unknownScoped, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-r1-s1-r1-s1",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "unsubscribe",
+      "h-old",
+    ],
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, known, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r2-s2",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, known, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "r9-s9",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, known, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "down",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, known, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, known, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "plain",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, known, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 2,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+    [
+      "unsubscribe",
+      "h-stale",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, known, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, known, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-r1-s1-r1-s1",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, registerThrows, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r2-s2",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, registerThrows, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, registerThrows, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, registerThrows, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, registerThrows, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, registerThrows, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, registerThrows, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, registerThrows, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoRegister, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r2-s2",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoRegister, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoRegister, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoRegister, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoRegister, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoRegister, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoRegister, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoRegister, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoSchema, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r2-s2",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoSchema, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoSchema, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoSchema, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoSchema, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoSchema, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoSchema, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownNoSchema, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownScoped, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r2-s2",
+    "liveType": "r2-s2",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownScoped, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "r9-s9",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownScoped, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "down",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownScoped, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownScoped, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "plain",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownScoped, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 2,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+    [
+      "unsubscribe",
+      "h-stale",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownScoped, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", otherPending, unknownScoped, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-r1-s1-r1-s1",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, known, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, known, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, known, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, known, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, known, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, known, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, known, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, known, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, registerThrows, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, registerThrows, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, registerThrows, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, registerThrows, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, registerThrows, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, registerThrows, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, registerThrows, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, registerThrows, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoRegister, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoRegister, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoRegister, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoRegister, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoRegister, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoRegister, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoRegister, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoRegister, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoSchema, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoSchema, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoSchema, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoSchema, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoSchema, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoSchema, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoSchema, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownNoSchema, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownScoped, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownScoped, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownScoped, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownScoped, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownScoped, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownScoped, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownScoped, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", sameLive, unknownScoped, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": "h-old",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, known, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, known, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, known, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, known, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, known, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, known, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, known, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, known, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, registerThrows, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, registerThrows, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, registerThrows, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, registerThrows, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, registerThrows, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, registerThrows, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, registerThrows, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, registerThrows, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoRegister, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoRegister, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoRegister, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoRegister, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoRegister, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoRegister, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoRegister, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoRegister, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoSchema, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoSchema, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoSchema, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoSchema, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoSchema, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoSchema, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoSchema, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownNoSchema, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownScoped, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownScoped, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownScoped, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownScoped, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownScoped, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownScoped, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownScoped, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", samePending, unknownScoped, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "r1-s1",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, known, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, known, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "r9-s9",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, known, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "down",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, known, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, known, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "plain",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, known, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 2,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+    [
+      "unsubscribe",
+      "h-stale",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, known, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, known, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-r1-s1-r1-s1",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, registerThrows, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, registerThrows, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, registerThrows, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, registerThrows, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, registerThrows, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, registerThrows, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, registerThrows, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, registerThrows, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "bad type",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoRegister, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoRegister, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoRegister, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoRegister, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoRegister, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoRegister, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoRegister, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoRegister, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoSchema, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoSchema, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoSchema, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoSchema, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoSchema, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoSchema, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoSchema, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownNoSchema, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownScoped, subscribe missing 1`] = `
+{
+  "live": {
+    "liveEpoch": 0,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownScoped, subscribe pendingCleared 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "r9-s9",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownScoped, subscribe rejectsError 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "down",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownScoped, subscribe rejectsNull 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownScoped, subscribe rejectsPlain 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [
+    [
+      "[ObjectsList] live subscription failed:",
+      "plain",
+    ],
+  ],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownScoped, subscribe releasedWhileWaiting 1`] = `
+{
+  "live": {
+    "liveEpoch": 2,
+    "liveHandle": null,
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+    [
+      "unsubscribe",
+      "h-stale",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownScoped, subscribe resolves 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-new",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;
+
+exports[`ObjectsList.syncLiveSubscription type "r1-s1", staleType, unknownScoped, subscribe seesState 1`] = `
+{
+  "live": {
+    "liveEpoch": 1,
+    "liveHandle": "h-r1-s1-r1-s1",
+    "livePendingType": "",
+    "liveType": "r1-s1",
+  },
+  "log": [
+    [
+      "registerObjectType",
+      "r1-s1",
+      2,
+      1,
+    ],
+    [
+      "subscribe",
+      "r1-s1",
+    ],
+  ],
+  "warn": [],
+}
+`;

@@ -1,0 +1,776 @@
+{
+    "minimal new conversation": [
+        [
+            "log.info",
+            "[ChatService] Processing message",
+            {
+                "conversationId": 7,
+                "userId": "u1",
+                "messageLength": 8
+            }
+        ],
+        [
+            "conversation.find",
+            7
+        ],
+        [
+            "history.store",
+            7,
+            "user",
+            "Hi there",
+            null,
+            []
+        ],
+        [
+            "summarize",
+            "u1"
+        ],
+        [
+            "context",
+            "Hi there",
+            null,
+            [],
+            []
+        ],
+        [
+            "history.build",
+            7
+        ],
+        [
+            "llm",
+            "Hi there",
+            {
+                "text": "ctx",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ]
+            },
+            [
+                {
+                    "role": "user",
+                    "content": "earlier"
+                }
+            ],
+            null,
+            [],
+            false,
+            []
+        ],
+        [
+            "history.store",
+            7,
+            "assistant",
+            "answer to Hi there",
+            [
+                {
+                    "id": "s1"
+                }
+            ],
+            null
+        ],
+        [
+            "message.count",
+            7
+        ],
+        [
+            "title.generate",
+            "Hi there"
+        ],
+        [
+            "conversation.update",
+            "Title for Hi there",
+            true
+        ],
+        [
+            "result",
+            {
+                "message": "answer to Hi there",
+                "messageId": "41",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ],
+                "usage": {
+                    "tokens": 99
+                }
+            }
+        ]
+    ],
+    "agent and unique title": [
+        [
+            "log.info",
+            "[ChatService] Processing message",
+            {
+                "conversationId": 7,
+                "userId": "u1",
+                "messageLength": 8
+            }
+        ],
+        [
+            "conversation.find",
+            7
+        ],
+        [
+            "agent.find",
+            5
+        ],
+        [
+            "history.store",
+            7,
+            "user",
+            "Hi there",
+            null,
+            []
+        ],
+        [
+            "summarize",
+            "u1"
+        ],
+        [
+            "context",
+            "Hi there",
+            "agent-5",
+            [],
+            []
+        ],
+        [
+            "history.build",
+            7
+        ],
+        [
+            "llm",
+            "Hi there",
+            {
+                "text": "ctx",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ]
+            },
+            [
+                {
+                    "role": "user",
+                    "content": "earlier"
+                }
+            ],
+            "agent-5",
+            [],
+            false,
+            []
+        ],
+        [
+            "history.store",
+            7,
+            "assistant",
+            "answer to Hi there",
+            [
+                {
+                    "id": "s1"
+                }
+            ],
+            null
+        ],
+        [
+            "message.count",
+            7
+        ],
+        [
+            "title.generate",
+            "Hi there"
+        ],
+        [
+            "title.unique",
+            "Title for Hi there",
+            "u1",
+            5
+        ],
+        [
+            "conversation.update",
+            "Title for Hi there (2)",
+            true
+        ],
+        [
+            "result",
+            {
+                "message": "answer to Hi there",
+                "messageId": "41",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ],
+                "usage": {
+                    "tokens": 99
+                }
+            }
+        ]
+    ],
+    "title starting New Conversation": [
+        [
+            "log.info",
+            "[ChatService] Processing message",
+            {
+                "conversationId": 7,
+                "userId": "u1",
+                "messageLength": 8
+            }
+        ],
+        [
+            "conversation.find",
+            7
+        ],
+        [
+            "history.store",
+            7,
+            "user",
+            "Hi there",
+            null,
+            []
+        ],
+        [
+            "summarize",
+            "u1"
+        ],
+        [
+            "context",
+            "Hi there",
+            null,
+            [],
+            []
+        ],
+        [
+            "history.build",
+            7
+        ],
+        [
+            "llm",
+            "Hi there",
+            {
+                "text": "ctx",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ]
+            },
+            [
+                {
+                    "role": "user",
+                    "content": "earlier"
+                }
+            ],
+            null,
+            [],
+            false,
+            []
+        ],
+        [
+            "history.store",
+            7,
+            "assistant",
+            "answer to Hi there",
+            [
+                {
+                    "id": "s1"
+                }
+            ],
+            null
+        ],
+        [
+            "message.count",
+            7
+        ],
+        [
+            "title.generate",
+            "Hi there"
+        ],
+        [
+            "conversation.update",
+            "Title for Hi there",
+            true
+        ],
+        [
+            "result",
+            {
+                "message": "answer to Hi there",
+                "messageId": "41",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ],
+                "usage": {
+                    "tokens": 99
+                }
+            }
+        ]
+    ],
+    "existing title": [
+        [
+            "log.info",
+            "[ChatService] Processing message",
+            {
+                "conversationId": 7,
+                "userId": "u1",
+                "messageLength": 8
+            }
+        ],
+        [
+            "conversation.find",
+            7
+        ],
+        [
+            "agent.find",
+            5
+        ],
+        [
+            "history.store",
+            7,
+            "user",
+            "Hi there",
+            null,
+            []
+        ],
+        [
+            "summarize",
+            "u1"
+        ],
+        [
+            "context",
+            "Hi there",
+            "agent-5",
+            [],
+            []
+        ],
+        [
+            "history.build",
+            7
+        ],
+        [
+            "llm",
+            "Hi there",
+            {
+                "text": "ctx",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ]
+            },
+            [
+                {
+                    "role": "user",
+                    "content": "earlier"
+                }
+            ],
+            "agent-5",
+            [],
+            false,
+            []
+        ],
+        [
+            "history.store",
+            7,
+            "assistant",
+            "answer to Hi there",
+            [
+                {
+                    "id": "s1"
+                }
+            ],
+            null
+        ],
+        [
+            "message.count",
+            7
+        ],
+        [
+            "result",
+            {
+                "message": "answer to Hi there",
+                "messageId": "41",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ],
+                "usage": {
+                    "tokens": 7
+                }
+            }
+        ]
+    ],
+    "third message": [
+        [
+            "log.info",
+            "[ChatService] Processing message",
+            {
+                "conversationId": 7,
+                "userId": "u1",
+                "messageLength": 8
+            }
+        ],
+        [
+            "conversation.find",
+            7
+        ],
+        [
+            "history.store",
+            7,
+            "user",
+            "Hi there",
+            null,
+            []
+        ],
+        [
+            "summarize",
+            "u1"
+        ],
+        [
+            "context",
+            "Hi there",
+            null,
+            [],
+            []
+        ],
+        [
+            "history.build",
+            7
+        ],
+        [
+            "llm",
+            "Hi there",
+            {
+                "text": "ctx",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ]
+            },
+            [
+                {
+                    "role": "user",
+                    "content": "earlier"
+                }
+            ],
+            null,
+            [],
+            false,
+            []
+        ],
+        [
+            "history.store",
+            7,
+            "assistant",
+            "answer to Hi there",
+            [
+                {
+                    "id": "s1"
+                }
+            ],
+            null
+        ],
+        [
+            "message.count",
+            7
+        ],
+        [
+            "result",
+            {
+                "message": "answer to Hi there",
+                "messageId": "41",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ],
+                "usage": {
+                    "tokens": 7
+                }
+            }
+        ]
+    ],
+    "no stored id": [
+        [
+            "log.info",
+            "[ChatService] Processing message",
+            {
+                "conversationId": 7,
+                "userId": "u1",
+                "messageLength": 8
+            }
+        ],
+        [
+            "conversation.find",
+            7
+        ],
+        [
+            "history.store",
+            7,
+            "user",
+            "Hi there",
+            null,
+            []
+        ],
+        [
+            "summarize",
+            "u1"
+        ],
+        [
+            "context",
+            "Hi there",
+            null,
+            [],
+            []
+        ],
+        [
+            "history.build",
+            7
+        ],
+        [
+            "llm",
+            "Hi there",
+            {
+                "text": "ctx",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ]
+            },
+            [
+                {
+                    "role": "user",
+                    "content": "earlier"
+                }
+            ],
+            null,
+            [],
+            false,
+            []
+        ],
+        [
+            "history.store",
+            7,
+            "assistant",
+            "answer to Hi there",
+            [
+                {
+                    "id": "s1"
+                }
+            ],
+            null
+        ],
+        [
+            "message.count",
+            7
+        ],
+        [
+            "title.generate",
+            "Hi there"
+        ],
+        [
+            "conversation.update",
+            "Title for Hi there",
+            true
+        ],
+        [
+            "result",
+            {
+                "message": "answer to Hi there",
+                "messageId": "",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ],
+                "usage": {
+                    "tokens": 99
+                }
+            }
+        ]
+    ],
+    "all options": [
+        [
+            "log.info",
+            "[ChatService] Processing message",
+            {
+                "conversationId": 7,
+                "userId": "u1",
+                "messageLength": 8
+            }
+        ],
+        [
+            "conversation.find",
+            7
+        ],
+        [
+            "agent.find",
+            8
+        ],
+        [
+            "history.store",
+            7,
+            "user",
+            "Hi there",
+            null,
+            {
+                "app": "dossiq"
+            }
+        ],
+        [
+            "summarize",
+            "u1"
+        ],
+        [
+            "context",
+            "Hi there",
+            "agent-8",
+            [
+                "v1"
+            ],
+            {
+                "k": 1
+            }
+        ],
+        [
+            "history.build",
+            7
+        ],
+        [
+            "llm",
+            "Hi there",
+            {
+                "text": "ctx",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ]
+            },
+            [
+                {
+                    "role": "user",
+                    "content": "earlier"
+                }
+            ],
+            "agent-8",
+            [
+                "t1"
+            ],
+            true,
+            {
+                "app": "dossiq"
+            }
+        ],
+        [
+            "history.store",
+            7,
+            "assistant",
+            "answer to Hi there",
+            [
+                {
+                    "id": "s1"
+                }
+            ],
+            null
+        ],
+        [
+            "message.count",
+            7
+        ],
+        [
+            "result",
+            {
+                "message": "answer to Hi there",
+                "messageId": "41",
+                "sources": [
+                    {
+                        "id": "s1"
+                    }
+                ],
+                "usage": {
+                    "tokens": 7
+                }
+            }
+        ]
+    ],
+    "other owner": [
+        [
+            "log.info",
+            "[ChatService] Processing message",
+            {
+                "conversationId": 7,
+                "userId": "u1",
+                "messageLength": 8
+            }
+        ],
+        [
+            "conversation.find",
+            7
+        ],
+        [
+            "log.error",
+            "[ChatService] Message processing failed",
+            {
+                "error": "Access denied to conversation"
+            }
+        ],
+        [
+            "thrown",
+            "Exception",
+            "Access denied to conversation"
+        ]
+    ],
+    "context failure": [
+        [
+            "log.info",
+            "[ChatService] Processing message",
+            {
+                "conversationId": 7,
+                "userId": "u1",
+                "messageLength": 8
+            }
+        ],
+        [
+            "conversation.find",
+            7
+        ],
+        [
+            "history.store",
+            7,
+            "user",
+            "Hi there",
+            null,
+            []
+        ],
+        [
+            "summarize",
+            "u1"
+        ],
+        [
+            "context",
+            "Hi there",
+            null,
+            [],
+            []
+        ],
+        [
+            "log.error",
+            "[ChatService] Message processing failed",
+            {
+                "error": "context down"
+            }
+        ],
+        [
+            "thrown",
+            "Exception",
+            "context down"
+        ]
+    ]
+}

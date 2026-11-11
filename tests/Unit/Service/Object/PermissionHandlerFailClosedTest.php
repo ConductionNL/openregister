@@ -27,6 +27,7 @@ namespace Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -43,6 +44,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheck
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
@@ -51,6 +53,9 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleEntries
+ * @uses   \OCA\OpenRegister\Service\Object\GroupRuleRequest
  */
 class PermissionHandlerFailClosedTest extends TestCase {
 
@@ -90,7 +95,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueBool')->willReturn(true);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,
@@ -142,7 +147,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 		$this->registerMapper->method('find')
 			->willThrowException(new \RuntimeException('database is on fire'));
 		$this->container->method('get')
-			->with(RegisterMapper::class)
+			->with(RegisterMapperInterface::class)
 			->willReturn($this->registerMapper);
 	}//end breakRegisterLookup()
 
@@ -240,7 +245,7 @@ class PermissionHandlerFailClosedTest extends TestCase {
 				}
 			);
 		$this->container->method('get')
-			->with(RegisterMapper::class)
+			->with(RegisterMapperInterface::class)
 			->willReturn($this->registerMapper);
 
 		// First call: unresolvable -> denied.

@@ -18,18 +18,27 @@ profile and the export verb.
       > the caller in `tests/Unit/Architecture/ExportRunsHaveAProducerTest.php`,
       > mutation-checked by removing the call site. The whole-dataset extract
       > and the remaining export paths do not yet.
+      > 2026-10-09: the API path writes one too. `ObjectsController::recordExportRun()`,
+      > called from `recordExportCompleted()` on every format branch, records source `api`,
+      > no file and no expiry, download count one (`testAnApiExportIsRecordedAsARun`).
+      > Still open: the whole-dataset extract (`ExportWholeSetAction` appends per object, so
+      > it needs one run per file with a growing row count, keyed on the file id).
       - Unit tests, mutation-checked: removing the write from the scheduled
         runner reddens an assertion about the row, not a setup line
 
 ## 2. The expiry
 
-- [ ] 2.1 A profile declares a file retention; a run carries the expiry it
+- [x] 2.1 A profile declares a file retention; a run carries the expiry it
       was produced under, so changing the profile later does not silently
       move an existing file's deadline.
       > HALF DONE 2026-09-22. The run carries the expiry it was produced
       > under, which is the half that protects an existing deadline. The
       > profile does not declare a retention yet, so the recorder's default
       > of seven days applies, capped at ninety.
+      > 2026-10-09 (B2): DONE. `retentionDays` on the profile (1-90, null keeps the
+      > files; migration Version1Date20261009150000), `ExportProfile::getRetentionSeconds()`,
+      > and a scheduled report that runs a profile records its run under that retention
+      > (`ScheduledReportServiceProfileRunTest::testTheRunCopiesTheProfilesRetention`).
 - [x] 2.2 A background job deletes the files of expired runs and keeps the
       rows (2026-09-22, `SweepExpiredExportRunsJob`).
       - Unit tests: a run with no expiry is never swept; a run whose file
@@ -55,6 +64,10 @@ profile and the export verb.
       > schema, profile, source and status, scoped to the caller's own runs
       > with administrators seeing all. Period is not a filter yet, and the
       > scope is not resolved through `ExportRightService`.
+      > 2026-10-09 (B2): period (`from`/`until`, inclusive, a bad date is 400) and
+      > `actor` are filters now, and the scope comes from
+      > `ExportRightService::seesEveryExportRun()` (`ExportRunsControllerTest`).
+      > Open: the live two-account probe below (not run: needs a live instance).
       - 🔴 Probe with the least privileged principal that should be
         refused, across a tenant boundary. A scope that is accidentally a
         no-op returns exactly what an administrator sees, which is

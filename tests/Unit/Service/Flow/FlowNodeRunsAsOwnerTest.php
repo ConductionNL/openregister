@@ -41,8 +41,13 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectNodeSources;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWritePlatform;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteStores;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -198,22 +203,19 @@ class FlowNodeRunsAsOwnerTest extends TestCase {
 		[$registers, $schemas] = $this->mappers();
 
 		$node = new ObjectReadNode(
-			$this->objects,
-			$registers,
-			$schemas,
+			new ObjectNodeSources($this->objects, $registers, $schemas),
 			$this->userManager(),
-			$this->l10n(),
-			$this->createMock(IURLGenerator::class)
+			new FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class))
 		);
 
-		$node->execute(
-			[FlowItems::item(json: [])],
-			[
+		$node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: [])],
+			config: [
 				'register' => 'example-hydra-cache',
 				'schema' => 'example-cache-entry',
 			],
-			['runAs' => 'alice']
-		);
+			context: ['runAs' => 'alice']
+		));
 
 		$this->assertTrue($this->readWasScoped, 'the read must run inside an owner scope');
 		$this->assertSame('alice', $this->subjectAtRead, 'the read must run as the run owner');
@@ -244,26 +246,22 @@ class FlowNodeRunsAsOwnerTest extends TestCase {
 		);
 
 		$node = new ObjectWriteNode(
-			$this->objects,
-			$registers,
-			$schemas,
-			$this->userManager(),
-			$appConfig,
-			$this->l10n(),
-			$this->createMock(IURLGenerator::class)
+			new ObjectWriteStores($this->objects, $registers, $schemas),
+			new ObjectWritePlatform($this->userManager(), $appConfig),
+			new FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class))
 		);
 
-		$node->execute(
-			[['json' => ['sourceId' => 's-1']]],
-			[
+		$node->execute(new FlowNodeCall(
+			items: [['json' => ['sourceId' => 's-1']]],
+			config: [
 				'register' => 'example-hydra-cache',
 				'schema' => 'example-cache-entry',
 				'operation' => ObjectWriteNode::OP_UPDATE,
 				'fields' => ['status' => 'seen'],
 				'match' => [['property' => 'sourceId', 'value' => 's-1']],
 			],
-			['runAs' => 'alice']
-		);
+			context: ['runAs' => 'alice']
+		));
 
 		$this->assertTrue($this->readWasScoped, 'the match lookup must run inside an owner scope');
 		$this->assertSame('alice', $this->subjectAtRead, 'the match lookup must run as the run owner');
@@ -280,34 +278,31 @@ class FlowNodeRunsAsOwnerTest extends TestCase {
 		[$registers, $schemas] = $this->mappers();
 
 		$node = new ObjectReadNode(
-			$this->objects,
-			$registers,
-			$schemas,
+			new ObjectNodeSources($this->objects, $registers, $schemas),
 			$this->userManager(),
-			$this->l10n(),
-			$this->createMock(IURLGenerator::class)
+			new FlowNodePresentation($this->l10n(), $this->createMock(IURLGenerator::class))
 		);
 
-		$node->execute(
-			[FlowItems::item(json: [])],
-			[
+		$node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: [])],
+			config: [
 				'register' => 'example-hydra-cache',
 				'schema' => 'example-cache-entry',
 			],
-			['runAs' => 'alice']
-		);
+			context: ['runAs' => 'alice']
+		));
 
 		// A second read with no owner must fail closed rather than inheriting
 		// alice from the run before it.
 		$this->expectException(RuntimeException::class);
 
-		$node->execute(
-			[FlowItems::item(json: [])],
-			[
+		$node->execute(new FlowNodeCall(
+			items: [FlowItems::item(json: [])],
+			config: [
 				'register' => 'example-hydra-cache',
 				'schema' => 'example-cache-entry',
 			],
-			[]
-		);
+			context: []
+		));
 	}//end testTheOwnerScopeIsReleasedAfterTheRead()
 }//end class

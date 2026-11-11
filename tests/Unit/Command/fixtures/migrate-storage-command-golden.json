@@ -1,0 +1,493 @@
+{
+    "errors listed but none failed": {
+        "code": 0,
+        "output": [
+            "",
+            "OpenRegister Storage Migration",
+            "================================",
+            "  Register: Zaken (ID: 1)",
+            "  Schema:   Five (ID: 5)",
+            "",
+            "Storage Status:",
+            "  Blob storage:  12 objects",
+            "  Magic table:   3 objects",
+            "",
+            "Migrating: blob -> magic table",
+            "  Batch size: 100",
+            "",
+            "Migration Report:",
+            "  Total source objects: 4",
+            "  Migrated:            1",
+            "  Skipped (duplicate): 1",
+            "  Failed:              0",
+            "",
+            "Errors:",
+            "  - UUID u-1: bad row",
+            "  - UUID u-2: worse row",
+            "",
+            "Migration completed successfully.",
+            ""
+        ],
+        "calls": [
+            [
+                "resolveRegisterAndSchema",
+                "1",
+                "five"
+            ],
+            [
+                "getStorageStatus",
+                1,
+                5
+            ],
+            [
+                "migrateToBlobStorage",
+                1,
+                5,
+                100,
+                false
+            ],
+            [
+                "migrateToMagicTable",
+                1,
+                5,
+                100,
+                false
+            ]
+        ]
+    },
+    "invalid direction": {
+        "code": 1,
+        "output": [
+            "Invalid direction: sideways. Use \"to-magic\" or \"to-blob\".",
+            ""
+        ],
+        "calls": []
+    },
+    "migration throws": {
+        "code": 1,
+        "output": [
+            "",
+            "OpenRegister Storage Migration",
+            "================================",
+            "  Register: Zaken (ID: 1)",
+            "  Schema:   Five (ID: 5)",
+            "",
+            "Storage Status:",
+            "  Blob storage:  12 objects",
+            "  Magic table:   3 objects",
+            "",
+            "Migrating: blob -> magic table",
+            "  Batch size: 100",
+            "",
+            "Migration failed: table locked",
+            ""
+        ],
+        "calls": [
+            [
+                "resolveRegisterAndSchema",
+                "1",
+                "five"
+            ],
+            [
+                "getStorageStatus",
+                1,
+                5
+            ],
+            [
+                "migrateToBlobStorage",
+                1,
+                5,
+                100,
+                false
+            ]
+        ]
+    },
+    "one error, one failed": {
+        "code": 1,
+        "output": [
+            "",
+            "OpenRegister Storage Migration",
+            "================================",
+            "  Register: Zaken (ID: 1)",
+            "  Schema:   Five (ID: 5)",
+            "",
+            "Storage Status:",
+            "  Blob storage:  12 objects",
+            "  Magic table:   3 objects",
+            "",
+            "Migrating: blob -> magic table",
+            "  Batch size: 100",
+            "",
+            "Migration Report:",
+            "  Total source objects: 4",
+            "  Migrated:            1",
+            "  Skipped (duplicate): 1",
+            "  Failed:              1",
+            "",
+            "Errors:",
+            "  - UUID u-9: only row",
+            "",
+            "Migration completed with errors.",
+            ""
+        ],
+        "calls": [
+            [
+                "resolveRegisterAndSchema",
+                "1",
+                "five"
+            ],
+            [
+                "getStorageStatus",
+                1,
+                5
+            ],
+            [
+                "migrateToBlobStorage",
+                1,
+                5,
+                100,
+                false
+            ],
+            [
+                "migrateToMagicTable",
+                1,
+                5,
+                100,
+                false
+            ]
+        ]
+    },
+    "resolve fails": {
+        "code": 1,
+        "output": [
+            "Failed to resolve register/schema: no such register",
+            ""
+        ],
+        "calls": [
+            [
+                "resolveRegisterAndSchema",
+                "1",
+                "five"
+            ]
+        ]
+    },
+    "status fails": {
+        "code": 1,
+        "output": [
+            "",
+            "OpenRegister Storage Migration",
+            "================================",
+            "  Register: Zaken (ID: 1)",
+            "  Schema:   Five (ID: 5)",
+            "",
+            "Failed to get storage status: status unavailable",
+            ""
+        ],
+        "calls": [
+            [
+                "resolveRegisterAndSchema",
+                "1",
+                "five"
+            ],
+            [
+                "getStorageStatus",
+                1,
+                5
+            ]
+        ]
+    },
+    "status only, magic exists": {
+        "code": 0,
+        "output": [
+            "",
+            "OpenRegister Storage Migration",
+            "================================",
+            "  Register: Zaken (ID: 1)",
+            "  Schema:   Five (ID: 5)",
+            "",
+            "Storage Status:",
+            "  Blob storage:  12 objects",
+            "  Magic table:   3 objects",
+            "",
+            ""
+        ],
+        "calls": [
+            [
+                "resolveRegisterAndSchema",
+                "1",
+                "five"
+            ],
+            [
+                "getStorageStatus",
+                1,
+                5
+            ]
+        ]
+    },
+    "status only, no magic table": {
+        "code": 0,
+        "output": [
+            "",
+            "OpenRegister Storage Migration",
+            "================================",
+            "  Register: Zaken (ID: 1)",
+            "  Schema:   Five (ID: 5)",
+            "",
+            "Storage Status:",
+            "  Blob storage:  12 objects",
+            "  Magic table:   does not exist",
+            "",
+            ""
+        ],
+        "calls": [
+            [
+                "resolveRegisterAndSchema",
+                "1",
+                "five"
+            ],
+            [
+                "getStorageStatus",
+                1,
+                5
+            ]
+        ]
+    },
+    "to-blob": {
+        "code": 0,
+        "output": [
+            "",
+            "OpenRegister Storage Migration",
+            "================================",
+            "  Register: Zaken (ID: 1)",
+            "  Schema:   Five (ID: 5)",
+            "",
+            "Storage Status:",
+            "  Blob storage:  12 objects",
+            "  Magic table:   3 objects",
+            "",
+            "Migrating: magic table -> blob",
+            "  Batch size: 100",
+            "",
+            "Migration Report:",
+            "  Total source objects: 4",
+            "  Migrated:            3",
+            "  Skipped (duplicate): 1",
+            "  Failed:              0",
+            "",
+            "Migration completed successfully.",
+            ""
+        ],
+        "calls": [
+            [
+                "resolveRegisterAndSchema",
+                "1",
+                "five"
+            ],
+            [
+                "getStorageStatus",
+                1,
+                5
+            ],
+            [
+                "migrateToBlobStorage",
+                1,
+                5,
+                100,
+                false
+            ]
+        ]
+    },
+    "to-blob dry run batch": {
+        "code": 0,
+        "output": [
+            "",
+            "OpenRegister Storage Migration",
+            "================================",
+            "  Register: Zaken (ID: 1)",
+            "  Schema:   Five (ID: 5)",
+            "",
+            "Storage Status:",
+            "  Blob storage:  12 objects",
+            "  Magic table:   3 objects",
+            "",
+            "Migrating: magic table -> blob",
+            "DRY RUN - no changes will be made",
+            "  Batch size: 7",
+            "",
+            "Migration Report:",
+            "  Total source objects: 4",
+            "  Migrated:            3",
+            "  Skipped (duplicate): 1",
+            "  Failed:              0",
+            "",
+            "Migration completed successfully.",
+            ""
+        ],
+        "calls": [
+            [
+                "resolveRegisterAndSchema",
+                "1",
+                "five"
+            ],
+            [
+                "getStorageStatus",
+                1,
+                5
+            ],
+            [
+                "migrateToBlobStorage",
+                1,
+                5,
+                7,
+                true
+            ]
+        ]
+    },
+    "to-blob throws": {
+        "code": 1,
+        "output": [
+            "",
+            "OpenRegister Storage Migration",
+            "================================",
+            "  Register: Zaken (ID: 1)",
+            "  Schema:   Five (ID: 5)",
+            "",
+            "Storage Status:",
+            "  Blob storage:  12 objects",
+            "  Magic table:   3 objects",
+            "",
+            "Migrating: magic table -> blob",
+            "  Batch size: 100",
+            "",
+            "Migration failed: table locked",
+            ""
+        ],
+        "calls": [
+            [
+                "resolveRegisterAndSchema",
+                "1",
+                "five"
+            ],
+            [
+                "getStorageStatus",
+                1,
+                5
+            ],
+            [
+                "migrateToBlobStorage",
+                1,
+                5,
+                100,
+                false
+            ]
+        ]
+    },
+    "to-magic": {
+        "code": 0,
+        "output": [
+            "",
+            "OpenRegister Storage Migration",
+            "================================",
+            "  Register: Zaken (ID: 1)",
+            "  Schema:   Five (ID: 5)",
+            "",
+            "Storage Status:",
+            "  Blob storage:  12 objects",
+            "  Magic table:   3 objects",
+            "",
+            "Migrating: blob -> magic table",
+            "  Batch size: 100",
+            "",
+            "Migration Report:",
+            "  Total source objects: 4",
+            "  Migrated:            3",
+            "  Skipped (duplicate): 1",
+            "  Failed:              0",
+            "",
+            "Migration completed successfully.",
+            ""
+        ],
+        "calls": [
+            [
+                "resolveRegisterAndSchema",
+                "1",
+                "five"
+            ],
+            [
+                "getStorageStatus",
+                1,
+                5
+            ],
+            [
+                "migrateToBlobStorage",
+                1,
+                5,
+                100,
+                false
+            ],
+            [
+                "migrateToMagicTable",
+                1,
+                5,
+                100,
+                false
+            ]
+        ]
+    },
+    "to-magic with errors": {
+        "code": 1,
+        "output": [
+            "",
+            "OpenRegister Storage Migration",
+            "================================",
+            "  Register: Zaken (ID: 1)",
+            "  Schema:   Five (ID: 5)",
+            "",
+            "Storage Status:",
+            "  Blob storage:  12 objects",
+            "  Magic table:   3 objects",
+            "",
+            "Migrating: blob -> magic table",
+            "  Batch size: 50",
+            "",
+            "Migration Report:",
+            "  Total source objects: 4",
+            "  Migrated:            1",
+            "  Skipped (duplicate): 1",
+            "  Failed:              2",
+            "",
+            "Errors:",
+            "  - UUID u-1: bad row",
+            "  - UUID u-2: worse row",
+            "",
+            "Migration completed with errors.",
+            ""
+        ],
+        "calls": [
+            [
+                "resolveRegisterAndSchema",
+                "1",
+                "five"
+            ],
+            [
+                "getStorageStatus",
+                1,
+                5
+            ],
+            [
+                "migrateToBlobStorage",
+                1,
+                5,
+                50,
+                false
+            ],
+            [
+                "migrateToMagicTable",
+                1,
+                5,
+                50,
+                false
+            ]
+        ]
+    }
+}

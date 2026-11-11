@@ -1,0 +1,176 @@
+[
+    [
+        "allowed",
+        "allowed",
+        null
+    ],
+    [
+        "no period is fine",
+        "allowed",
+        null
+    ],
+    [
+        "error",
+        "[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: bewaartermijn (an ISO-8601 / xsd:duration such as P20Y)",
+        {
+            "objectUuid": "u-1"
+        }
+    ],
+    [
+        "period \"P2W\"",
+        "refused",
+        "Cannot generate MDTO XML for object u-1. These generator inputs are missing: bewaartermijn (an ISO-8601 / xsd:duration such as P20Y). This check covers the generator inputs only and is not an MDTO validity check."
+    ],
+    [
+        "error",
+        "[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: bewaartermijn (an ISO-8601 / xsd:duration such as P20Y)",
+        {
+            "objectUuid": "u-1"
+        }
+    ],
+    [
+        "period \"P\"",
+        "refused",
+        "Cannot generate MDTO XML for object u-1. These generator inputs are missing: bewaartermijn (an ISO-8601 / xsd:duration such as P20Y). This check covers the generator inputs only and is not an MDTO validity check."
+    ],
+    [
+        "error",
+        "[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: bewaartermijn (an ISO-8601 / xsd:duration such as P20Y)",
+        {
+            "objectUuid": "u-1"
+        }
+    ],
+    [
+        "period \"PT\"",
+        "refused",
+        "Cannot generate MDTO XML for object u-1. These generator inputs are missing: bewaartermijn (an ISO-8601 / xsd:duration such as P20Y). This check covers the generator inputs only and is not an MDTO validity check."
+    ],
+    [
+        "error",
+        "[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: bewaartermijn (an ISO-8601 / xsd:duration such as P20Y)",
+        {
+            "objectUuid": "u-1"
+        }
+    ],
+    [
+        "period \"20Y\"",
+        "refused",
+        "Cannot generate MDTO XML for object u-1. These generator inputs are missing: bewaartermijn (an ISO-8601 / xsd:duration such as P20Y). This check covers the generator inputs only and is not an MDTO validity check."
+    ],
+    [
+        "period \"P1Y2M3DT4H5M6.5S\"",
+        "allowed",
+        null
+    ],
+    [
+        "period \"-P1D\"",
+        "allowed",
+        null
+    ],
+    [
+        "error",
+        "[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: bewaartermijn (an ISO-8601 / xsd:duration such as P20Y)",
+        {
+            "objectUuid": "u-1"
+        }
+    ],
+    [
+        "period 7",
+        "refused",
+        "Cannot generate MDTO XML for object u-1. These generator inputs are missing: bewaartermijn (an ISO-8601 / xsd:duration such as P20Y). This check covers the generator inputs only and is not an MDTO validity check."
+    ],
+    [
+        "error",
+        "[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: archiefnominatie (one of: bewaren, blijvend_bewaren, vernietigen, nog_niet_bepaald)",
+        {
+            "objectUuid": "u-1"
+        }
+    ],
+    [
+        "appraisal null",
+        "refused",
+        "Cannot generate MDTO XML for object u-1. These generator inputs are missing: archiefnominatie (one of: bewaren, blijvend_bewaren, vernietigen, nog_niet_bepaald). This check covers the generator inputs only and is not an MDTO validity check."
+    ],
+    [
+        "error",
+        "[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: archiefnominatie (one of: bewaren, blijvend_bewaren, vernietigen, nog_niet_bepaald)",
+        {
+            "objectUuid": "u-1"
+        }
+    ],
+    [
+        "appraisal \"bogus\"",
+        "refused",
+        "Cannot generate MDTO XML for object u-1. These generator inputs are missing: archiefnominatie (one of: bewaren, blijvend_bewaren, vernietigen, nog_niet_bepaald). This check covers the generator inputs only and is not an MDTO validity check."
+    ],
+    [
+        "appraisal \"vernietigen\"",
+        "allowed",
+        null
+    ],
+    [
+        "appraisal \"blijvend_bewaren\"",
+        "allowed",
+        null
+    ],
+    [
+        "error",
+        "[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: uuid",
+        {
+            "objectUuid": ""
+        }
+    ],
+    [
+        "no uuid",
+        "refused",
+        "Cannot generate MDTO XML for object . These generator inputs are missing: uuid. This check covers the generator inputs only and is not an MDTO validity check."
+    ],
+    [
+        "error",
+        "[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: naam",
+        {
+            "objectUuid": "u-1"
+        }
+    ],
+    [
+        "no name",
+        "refused",
+        "Cannot generate MDTO XML for object u-1. These generator inputs are missing: naam. This check covers the generator inputs only and is not an MDTO validity check."
+    ],
+    [
+        "error",
+        "[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: app_setting:organisation_identifier",
+        {
+            "objectUuid": "u-1"
+        }
+    ],
+    [
+        "no org",
+        "refused",
+        "Cannot generate MDTO XML for object u-1. These generator inputs are missing: app_setting:organisation_identifier. This check covers the generator inputs only and is not an MDTO validity check."
+    ],
+    [
+        "error",
+        "[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: bestand[0].naam",
+        {
+            "objectUuid": "u-1"
+        }
+    ],
+    [
+        "file inputs",
+        "refused",
+        "Cannot generate MDTO XML for object u-1. These generator inputs are missing: bestand[0].naam. This check covers the generator inputs only and is not an MDTO validity check."
+    ],
+    [
+        "error",
+        "[MdtoXmlGenerator] Cannot generate MDTO XML, inputs missing: uuid, naam, archiefnominatie (one of: bewaren, blijvend_bewaren, vernietigen, nog_niet_bepaald), bewaartermijn (an ISO-8601 / xsd:duration such as P20Y), app_setting:organisation_identifier, f",
+        {
+            "objectUuid": null
+        }
+    ],
+    [
+        "everything",
+        "refused",
+        "Cannot generate MDTO XML for object . These generator inputs are missing: uuid, naam, archiefnominatie (one of: bewaren, blijvend_bewaren, vernietigen, nog_niet_bepaald), bewaartermijn (an ISO-8601 / xsd:duration such as P20Y), app_setting:organisation_identifier, f. This check covers the generator inputs only and is not an MDTO validity check."
+    ]
+]

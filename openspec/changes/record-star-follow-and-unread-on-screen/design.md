@@ -8,18 +8,17 @@ The archived `favourites-and-recent` design (D-3) put `@self.favourite` on the r
 
 | Component (nextcloud-vue) | Reads | Writes |
 |---|---|---|
-| `CnFavouriteToggle` | `@self.favourite` | `PUT`/`DELETE .../favourite` |
-| `CnFollowToggle` | `@self.watching`, `@self.watcherCount` | `PUT`/`DELETE .../watch` |
+| `CnFollowToggle` (one control since `merge-follow-and-favourites`) | `@self.watching`, `@self.watchNotify`, `@self.watcherCount` | `PUT .../watch` with `{"notify": bool}`, `DELETE .../watch` |
 | `CnUnreadMarker` (row dot, bold) | `@self.unread` | none |
 | tab badge on `CnDetailPage` tabs | `@self.unreadCounts` | none |
-| `CnIndexPage` quick filters `favourite`, `recent`, `watching`, `unread` | none | adds the lens to the list query |
-| `CnIndexPage` star column | `@self.favourite` | through `CnFavouriteToggle` |
+| `CnIndexPage` quick filters `watching`, `recent`, `unread` | none | adds the lens to the list query |
+| `CnIndexPage` follow column | `@self.watching` | through `CnFollowToggle` |
 
-OpenRegister's record page is a custom page (`ObjectDetails.vue`), not `CnDetailPage`, so it places `CnFavouriteToggle` and `CnFollowToggle` in its own header next to the `NcActions` menu, and passes each tab its count. Its Tables page already renders `CnIndexPage`, so the star column, marker and quick filters arrive by turning on the component's options.
+OpenRegister's record page is a custom page (`ObjectDetails.vue`), not `CnDetailPage`, so it places `CnFollowToggle` in its own header next to the `NcActions` menu, and passes each tab its count. Its Tables page already renders `CnIndexPage`, so the star column, marker and quick filters arrive by turning on the component's options.
 
 ## D-2: optimistic toggles, reverted on failure
 
-A click flips the star or the Follow state at once and sends the request. A failure flips it back and shows the server's message. A 404 (the record went away or access was withdrawn) reloads the page.
+A click flips the Follow state (or its notifications switch) at once and sends the request. A failure flips it back and shows the server's message. A 404 (the record went away or access was withdrawn) reloads the page.
 
 ## D-3: when a record counts as read
 

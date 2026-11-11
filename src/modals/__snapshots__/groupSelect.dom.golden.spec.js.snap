@@ -1,0 +1,137 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`group picker of EditApplication renders, shows loading and passes its events on 1`] = `
+{
+  "loading": "<div class="groups-select-container">
+<label class="groups-label">Nextcloud Groups</label>
+<x-ncselect inputlabel="Selected Groups" disabled="true" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups...">
+<slot-no-options>
+<span>Loading groups...</span>
+</slot-no-options>
+<slot-option>
+<div class="group-option">
+<span class="group-name">Group</span>
+</div>
+</slot-option>
+</x-ncselect>
+<p class="field-hint">Only members of selected groups can access this application</p>
+</div>",
+  "options": true,
+  "searches": [
+    "needle",
+  ],
+  "selected": [
+    {
+      "id": "g",
+      "name": "Group",
+    },
+  ],
+  "shown": "<div class="groups-select-container">
+<label class="groups-label">Nextcloud Groups</label>
+<x-ncselect inputlabel="Selected Groups" disabled="false" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups...">
+<slot-no-options>
+<span>No groups found. Try a different search.</span>
+</slot-no-options>
+<slot-option>
+<div class="group-option">
+<span class="group-name">Group</span>
+</div>
+</slot-option>
+</x-ncselect>
+<p class="field-hint">Only members of selected groups can access this application</p>
+</div>",
+  "stored": [
+    "g",
+  ],
+}
+`;
+
+exports[`group picker of EditOrganisation renders, shows loading and passes its events on 1`] = `
+{
+  "loading": "<div class="groups-select-container">
+<label class="groups-label">Nextcloud Groups</label>
+<x-ncselect inputlabel="Selected Groups" disabled="true" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups...">
+<slot-no-options>
+<span>Loading groups...</span>
+</slot-no-options>
+<slot-option>
+<div class="group-option">
+<span class="group-name">Group</span>
+</div>
+</slot-option>
+</x-ncselect>
+<p class="field-hint">Only members of selected groups can access this organisation</p>
+</div>",
+  "options": true,
+  "searches": [
+    "needle",
+  ],
+  "selected": [
+    {
+      "id": "g",
+      "name": "Group",
+    },
+  ],
+  "shown": "<div class="groups-select-container">
+<label class="groups-label">Nextcloud Groups</label>
+<x-ncselect inputlabel="Selected Groups" disabled="false" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" placeholder="Search groups...">
+<slot-no-options>
+<span>No groups found. Try a different search.</span>
+</slot-no-options>
+<slot-option>
+<div class="group-option">
+<span class="group-name">Group</span>
+</div>
+</slot-option>
+</x-ncselect>
+<p class="field-hint">Only members of selected groups can access this organisation</p>
+</div>",
+  "stored": [
+    "g",
+  ],
+}
+`;
+
+exports[`group picker of EditView renders, shows loading and passes its events on 1`] = `
+{
+  "loading": "<div class="groups-select-container">
+<label class="groups-label">Share with Groups</label>
+<x-ncselect inputlabel="Selected Groups" disabled="true" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" closeonselect="false" placeholder="Type to search groups...">
+<slot-no-options>
+<span>Loading groups...</span>
+</slot-no-options>
+<slot-option>
+<div class="group-option">
+<span class="group-name">Group</span>
+</div>
+</slot-option>
+</x-ncselect>
+<p class="field-hint">Members of selected groups can access this view</p>
+</div>",
+  "options": true,
+  "searches": [
+    "needle",
+  ],
+  "selected": [
+    {
+      "id": "g",
+      "name": "Group",
+    },
+  ],
+  "shown": "<div class="groups-select-container">
+<label class="groups-label">Share with Groups</label>
+<x-ncselect inputlabel="Selected Groups" disabled="false" label="name" trackby="id" multiple="true" labeloutside="true" filterable="false" closeonselect="false" placeholder="Type to search groups...">
+<slot-no-options>
+<span>Type to search for groups</span>
+</slot-no-options>
+<slot-option>
+<div class="group-option">
+<span class="group-name">Group</span>
+</div>
+</slot-option>
+</x-ncselect>
+<p class="field-hint">Members of selected groups can access this view</p>
+</div>",
+  "stored": undefined,
+}
+`;

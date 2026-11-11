@@ -86,10 +86,10 @@ class ContextChatVersionGuardTest extends TestCase {
 	public static function containerResolvedClassProvider(): array {
 		return [
 			'reindex command (info.xml -> loadCommandsFromInfoXml)' => [
-				\OCA\OpenRegister\Command\ContextChatReindexCommand::class,
+				\OCA\OpenRegister\Mcp\Command\ContextChatReindexCommand::class,
 			],
 			'submission listener (object create/update/delete)' => [
-				\OCA\OpenRegister\Listener\ContextChatSubmissionListener::class,
+				\OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener::class,
 			],
 		];
 	}//end containerResolvedClassProvider()
@@ -179,7 +179,7 @@ class ContextChatVersionGuardTest extends TestCase {
 	 */
 	public function testTheReindexCommandGuardsItsExecutePath(): void {
 		$source = (string)file_get_contents(
-			__DIR__ . '/../../../lib/Command/ContextChatReindexCommand.php'
+			__DIR__ . '/../../../lib/Mcp/Command/ContextChatReindexCommand.php'
 		);
 
 		self::assertStringContainsString(
@@ -200,7 +200,7 @@ class ContextChatVersionGuardTest extends TestCase {
 	 */
 	public function testTheSubmissionListenerGuardsBothCallPaths(): void {
 		$source = (string)file_get_contents(
-			__DIR__ . '/../../../lib/Listener/ContextChatSubmissionListener.php'
+			__DIR__ . '/../../../lib/Mcp/Listener/ContextChatSubmissionListener.php'
 		);
 
 		self::assertSame(

@@ -13,6 +13,7 @@ import type { APIRequestContext } from '@playwright/test'
  *
  * @e2e object-interactions::starring-leaves-the-object-untouched
  * @e2e object-interactions::a-favourites-chip-on-an-index-page
+ * @e2e object-interactions::a-dashboard-tile-shows-when-each-object-was-opened
  *
  * WHAT THIS FILE CAN PROVE, AND WHY IT HAS TO BE THIS FILE.
  *
@@ -212,6 +213,11 @@ test.describe('favourites and recently opened over HTTP', () => {
 			`${API}/objects/${registerId}/${schemaId}/${target}/favourite`,
 		)
 		expect(star.ok(), `starring failed: ${await star.text()}`).toBeTruthy()
+		// merge-follow-and-favourites: the star is a deprecated alias of a quiet follow.
+		expect(
+			star.headers().deprecation,
+			'the favourite route should say it is deprecated',
+		).toBe('true')
 
 		// The whole reason the star lives in its own table. Counted BEFORE the
 		// read below: a read is itself an audited act (it writes a `read` row),
@@ -231,6 +237,8 @@ test.describe('favourites and recently opened over HTTP', () => {
 			body['@self']?.favourite,
 			'the star should ride @self so a detail page renders it without a second call',
 		).toBe(true)
+		expect(body['@self']?.watching, 'a star is a follow now').toBe(true)
+		expect(body['@self']?.watchNotify, 'a star follows quietly').toBe(false)
 	})
 
 	test("a star is one person's, and starring twice is starring once", async () => {
@@ -344,12 +352,25 @@ test.describe('favourites and recently opened over HTTP', () => {
 			`${API}/objects/${registerId}/${schemaId}?_recent=true`,
 		)
 		expect(list.ok(), `recent list failed: ${await list.text()}`).toBeTruthy()
-		const returned = uuidsOf(await list.json())
+		const body = await list.json()
+		const returned = uuidsOf(body)
 
 		expect(
 			returned.slice().sort(),
 			'the recent lens should answer exactly what this user opened',
 		).toEqual(opened.slice().sort())
+
+		// read-history-on-audit-trail: the history is the audit trail's read
+		// rows, and each object says when this reader last opened it.
+		expect(body['@self']?.lenses?.recent?.available).toBe(true)
+		for (const item of body.results as Array<Record<string, any>>) {
+			const viewedAt = item['@self']?.viewedAt
+			expect(
+				typeof viewedAt,
+				'@self.viewedAt should be an ISO 8601 string',
+			).toBe('string')
+			expect(Number.isNaN(Date.parse(viewedAt))).toBe(false)
+		}
 
 		// Ordering is the half a set comparison cannot see. The three opens land
 		// within the same second, so the order is asserted as "the last one

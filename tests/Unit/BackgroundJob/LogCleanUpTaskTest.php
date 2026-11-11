@@ -27,10 +27,12 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Search\Service\MetricsService;
 use OCP\BackgroundJob\IJob;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\BackgroundJob\Support\LogCleanUpTrails;
 
 class LogCleanUpTaskTest extends TestCase {
 	private const THIRTY_DAYS_MS = 2592000000;
@@ -69,10 +71,9 @@ class LogCleanUpTaskTest extends TestCase {
 
 		$this->task = new LogCleanUpTask(
 			$timeFactory,
-			$this->auditTrailMapper,
-			$this->searchTrailMapper,
+			new LogCleanUpTrails($this->auditTrailMapper, $this->searchTrailMapper),
 			$this->retentionHandler,
-			$this->logger,
+			$this->logger
 		);
 	}
 
@@ -202,10 +203,9 @@ class LogCleanUpTaskTest extends TestCase {
 		$handler->method('getRetentionSettingsOnly')->willReturn(['searchTrailRetention' => '86400000']);
 		$task = new LogCleanUpTask(
 			$this->createMock(ITimeFactory::class),
-			$this->auditTrailMapper,
-			$this->searchTrailMapper,
+			new LogCleanUpTrails($this->auditTrailMapper, $this->searchTrailMapper),
 			$handler,
-			$this->logger,
+			$this->logger
 		);
 
 		$this->searchTrailMapper->expects($this->once())->method('setExpiryDate')->with(86400000)->willReturn(1);
@@ -221,10 +221,9 @@ class LogCleanUpTaskTest extends TestCase {
 		$handler->method('getRetentionSettingsOnly')->willReturn(['searchTrailRetention' => 0]);
 		$task = new LogCleanUpTask(
 			$this->createMock(ITimeFactory::class),
-			$this->auditTrailMapper,
-			$this->searchTrailMapper,
+			new LogCleanUpTrails($this->auditTrailMapper, $this->searchTrailMapper),
 			$handler,
-			$this->logger,
+			$this->logger
 		);
 
 		$this->searchTrailMapper->expects($this->never())->method('setExpiryDate');
@@ -243,10 +242,9 @@ class LogCleanUpTaskTest extends TestCase {
 		$handler->method('getRetentionSettingsOnly')->willThrowException(new \RuntimeException('Failed to retrieve Retention settings'));
 		$task = new LogCleanUpTask(
 			$this->createMock(ITimeFactory::class),
-			$this->auditTrailMapper,
-			$this->searchTrailMapper,
+			new LogCleanUpTrails($this->auditTrailMapper, $this->searchTrailMapper),
 			$handler,
-			$this->logger,
+			$this->logger
 		);
 
 		$this->auditTrailMapper->expects($this->once())->method('clearLogs')->willReturn(true);
@@ -258,6 +256,60 @@ class LogCleanUpTaskTest extends TestCase {
 
 		$this->assertCount(1, $this->messagesAt('error'));
 		$this->assertStringContainsString('Failed to retrieve Retention settings', $this->messagesAt('error')[0]);
+	}
+
+	/**
+	 * A task with metrics to cut.
+	 *
+	 * @param MetricsService $metrics The metrics service.
+	 *
+	 * @return void
+	 */
+	private function withMetrics(MetricsService $metrics): void {
+		$this->task = new LogCleanUpTask(
+			$this->createMock(ITimeFactory::class),
+			new LogCleanUpTrails(auditTrailMapper: $this->auditTrailMapper, searchTrailMapper: $this->searchTrailMapper, metrics: $metrics),
+			$this->retentionHandler,
+			$this->logger
+		);
+	}
+
+	public function testOldMetricsAreDeletedAtTheDefaultRetentionAndTheCountLoggedAtInfo(): void {
+		$metrics = $this->createMock(MetricsService::class);
+		$arguments = null;
+		$metrics->expects($this->once())->method('cleanOldMetrics')->willReturnCallback(
+			static function (...$given) use (&$arguments): int {
+				$arguments = $given;
+				return 7;
+			}
+		);
+		$this->withMetrics($metrics);
+
+		$this->runTask();
+
+		$this->assertSame([90], $arguments);
+
+		$lines = array_filter(
+			$this->logged,
+			static fn (array $line): bool => $line['level'] === 'info' && str_contains($line['message'], 'Deleted 7 metric rows')
+		);
+		$this->assertCount(1, $lines);
+	}
+
+	public function testAFailingMetricsCleanupIsLoggedAndLeavesTheOtherSweepsDone(): void {
+		$metrics = $this->createMock(MetricsService::class);
+		$metrics->method('cleanOldMetrics')->willThrowException(new \RuntimeException('table gone'));
+		$this->withMetrics($metrics);
+		$this->auditTrailMapper->expects($this->once())->method('clearLogs')->willReturn(false);
+		$this->searchTrailMapper->expects($this->once())->method('setExpiryDate')->willReturn(0);
+
+		$this->runTask();
+
+		$warnings = array_filter(
+			$this->logged,
+			static fn (array $line): bool => $line['level'] === 'warning' && str_contains($line['message'], 'table gone')
+		);
+		$this->assertCount(1, $warnings);
 	}
 
 	public function testRunWithArrayArgument(): void {

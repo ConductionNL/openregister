@@ -1,0 +1,933 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed false, answering brokenJson 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed false, answering refused 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed false, answering refusedMessage 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed false, answering refusedSilent 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed false, answering success 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed false, answering successCount 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed false, answering successUnnamed 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed false, answering successZero 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed true, answering brokenJson 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed true, answering refused 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed true, answering refusedMessage 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed true, answering refusedSilent 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed true, answering success 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed true, answering successCount 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed true, answering successUnnamed 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 0 selected, confirmed true, answering successZero 1`] = `
+{
+  "log": [],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed false, answering brokenJson 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+  ],
+  "selected": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed false, answering refused 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+  ],
+  "selected": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed false, answering refusedMessage 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+  ],
+  "selected": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed false, answering refusedSilent 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+  ],
+  "selected": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed false, answering success 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+  ],
+  "selected": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed false, answering successCount 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+  ],
+  "selected": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed false, answering successUnnamed 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+  ],
+  "selected": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed false, answering successZero 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+  ],
+  "selected": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed true, answering brokenJson 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/search-trails/bulk-delete",
+      {
+        "body": "{"ids":["a","b"]}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+    ],
+    [
+      "console.error",
+      "Error deleting search trails:",
+      "Error: Unexpected token",
+    ],
+    [
+      "notify",
+      "Error deleting search trails: {error} {"error":"Unexpected token"}",
+      {
+        "type": "error",
+      },
+    ],
+  ],
+  "selected": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed true, answering refused 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/search-trails/bulk-delete",
+      {
+        "body": "{"ids":["a","b"]}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+    ],
+    [
+      "console.error",
+      "Error deleting search trails:",
+      "Error: Not allowed",
+    ],
+    [
+      "notify",
+      "Error deleting search trails: {error} {"error":"Not allowed"}",
+      {
+        "type": "error",
+      },
+    ],
+  ],
+  "selected": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed true, answering refusedMessage 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/search-trails/bulk-delete",
+      {
+        "body": "{"ids":["a","b"]}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+    ],
+    [
+      "console.error",
+      "Error deleting search trails:",
+      "Error: Deletion failed",
+    ],
+    [
+      "notify",
+      "Error deleting search trails: {error} {"error":"Deletion failed"}",
+      {
+        "type": "error",
+      },
+    ],
+  ],
+  "selected": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed true, answering refusedSilent 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/search-trails/bulk-delete",
+      {
+        "body": "{"ids":["a","b"]}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+    ],
+    [
+      "console.error",
+      "Error deleting search trails:",
+      "Error: Deletion failed",
+    ],
+    [
+      "notify",
+      "Error deleting search trails: {error} {"error":"Deletion failed"}",
+      {
+        "type": "error",
+      },
+    ],
+  ],
+  "selected": [
+    "a",
+    "b",
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed true, answering success 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/search-trails/bulk-delete",
+      {
+        "body": "{"ids":["a","b"]}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+    ],
+    [
+      "notify",
+      "Deleted 2",
+      {
+        "type": "success",
+      },
+    ],
+    [
+      "loadSearchTrails",
+      [],
+    ],
+  ],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed true, answering successCount 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/search-trails/bulk-delete",
+      {
+        "body": "{"ids":["a","b"]}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+    ],
+    [
+      "notify",
+      "Selected search trails deleted successfully",
+      {
+        "type": "success",
+      },
+    ],
+    [
+      "loadSearchTrails",
+      [],
+    ],
+  ],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed true, answering successUnnamed 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/search-trails/bulk-delete",
+      {
+        "body": "{"ids":["a","b"]}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+    ],
+    [
+      "notify",
+      "Selected search trails deleted successfully",
+      {
+        "type": "success",
+      },
+    ],
+    [
+      "loadSearchTrails",
+      [],
+    ],
+  ],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confirmed true, answering successZero 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to delete the selected search trails? This action cannot be undone.",
+    ],
+    [
+      "fetch",
+      "/index.php/apps/openregister/api/search-trails/bulk-delete",
+      {
+        "body": "{"ids":["a","b"]}",
+        "headers": {
+          "Content-Type": "application/json",
+        },
+        "method": "DELETE",
+      },
+    ],
+    [
+      "notify",
+      "Selected search trails deleted successfully",
+      {
+        "type": "success",
+      },
+    ],
+    [
+      "loadSearchTrails",
+      [],
+    ],
+  ],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup bulkDeleteSearchTrails reports a reload that fails 1`] = `
+{
+  "log": [
+    [
+      "notify",
+      "Selected search trails deleted successfully",
+      {
+        "type": "success",
+      },
+    ],
+    [
+      "loadSearchTrails",
+      [],
+    ],
+    [
+      "console.error",
+      "Error deleting search trails:",
+      "Error: reload down",
+    ],
+    [
+      "notify",
+      "Error deleting search trails: {error} {"error":"reload down"}",
+      {
+        "type": "error",
+      },
+    ],
+  ],
+  "selected": [],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed false, answering brokenJson 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed false, answering refused 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed false, answering refusedMessage 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed false, answering refusedSilent 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed false, answering storeThrows 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed false, answering success 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed false, answering successCount 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed false, answering successUnnamed 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed false, answering successZero 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed true, answering brokenJson 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+    [
+      "cleanupSearchTrails",
+      30,
+    ],
+    [
+      "console.error",
+      "Error during cleanup:",
+      "Error: Unexpected token",
+    ],
+    [
+      "notify",
+      "Cleanup failed: {error} {"error":"Unexpected token"}",
+      {
+        "type": "error",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed true, answering refused 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+    [
+      "cleanupSearchTrails",
+      30,
+    ],
+    [
+      "console.error",
+      "Error during cleanup:",
+      "Error: Cleanup failed",
+    ],
+    [
+      "notify",
+      "Cleanup failed: {error} {"error":"Cleanup failed"}",
+      {
+        "type": "error",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed true, answering refusedMessage 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+    [
+      "cleanupSearchTrails",
+      30,
+    ],
+    [
+      "console.error",
+      "Error during cleanup:",
+      "Error: Busy",
+    ],
+    [
+      "notify",
+      "Cleanup failed: {error} {"error":"Busy"}",
+      {
+        "type": "error",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed true, answering refusedSilent 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+    [
+      "cleanupSearchTrails",
+      30,
+    ],
+    [
+      "console.error",
+      "Error during cleanup:",
+      "Error: Cleanup failed",
+    ],
+    [
+      "notify",
+      "Cleanup failed: {error} {"error":"Cleanup failed"}",
+      {
+        "type": "error",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed true, answering storeThrows 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+    [
+      "cleanupSearchTrails",
+      30,
+    ],
+    [
+      "console.error",
+      "Error during cleanup:",
+      "Error: store down",
+    ],
+    [
+      "notify",
+      "Cleanup failed: {error} {"error":"store down"}",
+      {
+        "type": "error",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed true, answering success 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+    [
+      "cleanupSearchTrails",
+      30,
+    ],
+    [
+      "notify",
+      "Cleanup completed successfully. Deleted {count} entries. {"count":0}",
+      {
+        "type": "success",
+      },
+    ],
+    [
+      "loadSearchTrails",
+      [
+        "x",
+      ],
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed true, answering successCount 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+    [
+      "cleanupSearchTrails",
+      30,
+    ],
+    [
+      "notify",
+      "Cleanup completed successfully. Deleted {count} entries. {"count":7}",
+      {
+        "type": "success",
+      },
+    ],
+    [
+      "loadSearchTrails",
+      [
+        "x",
+      ],
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed true, answering successUnnamed 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+    [
+      "cleanupSearchTrails",
+      30,
+    ],
+    [
+      "notify",
+      "Cleanup completed successfully. Deleted {count} entries. {"count":0}",
+      {
+        "type": "success",
+      },
+    ],
+    [
+      "loadSearchTrails",
+      [
+        "x",
+      ],
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleans up, confirmed true, answering successZero 1`] = `
+{
+  "log": [
+    [
+      "confirm",
+      "Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.",
+    ],
+    [
+      "cleanupSearchTrails",
+      30,
+    ],
+    [
+      "notify",
+      "Cleanup completed successfully. Deleted {count} entries. {"count":0}",
+      {
+        "type": "success",
+      },
+    ],
+    [
+      "loadSearchTrails",
+      [
+        "x",
+      ],
+    ],
+  ],
+}
+`;
+
+exports[`SearchTrailIndex bulk delete and cleanup cleanupSearchTrails reports a reload that fails 1`] = `
+{
+  "log": [
+    [
+      "notify",
+      "Cleanup completed successfully. Deleted {count} entries. {"count":7}",
+      {
+        "type": "success",
+      },
+    ],
+    [
+      "loadSearchTrails",
+      [
+        "a",
+      ],
+    ],
+    [
+      "console.error",
+      "Error during cleanup:",
+      "Error: reload down",
+    ],
+    [
+      "notify",
+      "Cleanup failed: {error} {"error":"reload down"}",
+      {
+        "type": "error",
+      },
+    ],
+  ],
+  "selected": [
+    "a",
+  ],
+}
+`;

@@ -38,11 +38,10 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Db\MagicMapper\MagicListRequest;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Db\RegisterSchema;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -63,17 +62,11 @@ class SelectielijstResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper            $objectMapper    Reads the stored rows.
-	 * @param SchemaMapper           $schemaMapper    Resolves the schema.
-	 * @param RegisterMapper         $registerMapper  Resolves the register.
-	 * @param ObjectRetentionHandler $settingsHandler Names the register, the schema and the version in use.
-	 * @param LoggerInterface        $logger          Reports a lookup that found nothing applicable.
+	 * @param SelectielijstStorage $storage Names the register, the schema and the version in use, and reads the stored rows.
+	 * @param LoggerInterface      $logger  Reports a lookup that failed.
 	 */
 	public function __construct(
-		private readonly MagicMapper $objectMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly ObjectRetentionHandler $settingsHandler,
+		private readonly SelectielijstStorage $storage,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -141,48 +134,66 @@ class SelectielijstResolver {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	private function findSelectielijstEntry(string $category): ?ObjectEntity {
-		$settings = $this->settingsHandler->getArchivalSettingsOnly();
+		$settings = $this->storage->settings->getArchivalSettingsOnly();
 
 		$registerId = $settings['selectielijstRegister'] ?? null;
-		$schemaId = $settings['selectielijstSchema'] ?? null;
+		$schemaId   = $settings['selectielijstSchema'] ?? null;
 
 		if ($registerId === null || $schemaId === null) {
 			return null;
 		}
 
 		try {
-			$register = $this->registerMapper->find((int)$registerId);
-			$schema = $this->schemaMapper->find((int)$schemaId);
+			$table = $this->selectielijstTable(registerId: (int)$registerId, schemaId: (int)$schemaId);
 
-			// 🔴 NOT `limit: 1`. Since a selectielijst is imported with a
-			// VERSION, one category can have a row per revision, and taking the
-			// first row the store returns means a nomination silently resolves
-			// against whichever revision happened to sort first. The version in
-			// use is selected in the READING below, because a filter key the
-			// search handler does not recognise becomes `1 = 0` rather than an
-			// error: a mis-spelled version filter would report "no such
-			// category" on an instance that holds it, and every nomination
-			// would fall back to the schema default without saying so.
-			$results = $this->objectMapper->findAll(
-				limit: self::SELECTION_LIST_ROW_CAP,
-				filters: ['object->categorie' => $category],
-				register: $register,
-				schema: $schema
-			);
-
-			if (empty($results) === true) {
-				return null;
-			}
-
-			return $this->pickApplicableRow(results: $results);
+			return $this->pickApplicableRow(results: $this->rowsFor(category: $category, table: $table));
 		} catch (Exception $e) {
-			$this->logger->warning(
-				'[RetentionService] Failed to lookup selectielijst entry for ' . $category,
-				['exception' => $e]
-			);
+			$this->logger->warning('[RetentionService] Failed to lookup selectielijst entry for ' . $category, ['exception' => $e]);
 			return null;
-		}//end try
+		}
 	}//end findSelectielijstEntry()
+
+	/**
+	 * The configured selectielijst register and schema.
+	 *
+	 * @param int $registerId The configured register id.
+	 * @param int $schemaId   The configured schema id.
+	 *
+	 * @return RegisterSchema The table the selectielijst rows live in.
+	 */
+	private function selectielijstTable(int $registerId, int $schemaId): RegisterSchema {
+		$catalog = $this->storage->catalog;
+
+		return new RegisterSchema(register: $catalog->registers()->find($registerId), schema: $catalog->schemas()->find($schemaId));
+	}//end selectielijstTable()
+
+	/**
+	 * Every stored row of a category, up to the cap.
+	 *
+	 * 🔴 NOT `limit: 1`. Since a selectielijst is imported with a VERSION, one
+	 * category can have a row per revision, and taking the first row the store
+	 * returns means a nomination silently resolves against whichever revision
+	 * happened to sort first. The version in use is selected in the READING
+	 * (pickApplicableRow), because a filter key the search handler does not
+	 * recognise becomes `1 = 0` rather than an error: a mis-spelled version
+	 * filter would report "no such category" on an instance that holds it, and
+	 * every nomination would fall back to the schema default without saying so.
+	 *
+	 * @param string         $category The selectielijst category code.
+	 * @param RegisterSchema $table    The selectielijst register and schema.
+	 *
+	 * @return array<int, ObjectEntity> The rows.
+	 *
+	 * @throws Exception When the register, the schema or the rows cannot be read.
+	 */
+	private function rowsFor(string $category, RegisterSchema $table): array {
+		return $this->storage->catalog->tables()->findAllListed(
+			request: new MagicListRequest(
+				table: $table,
+				query: new ListQuery(limit: self::SELECTION_LIST_ROW_CAP, filters: ['object->categorie' => $category])
+			)
+		);
+	}//end rowsFor()
 
 	/**
 	 * Choose which revision of a category's row applies.
@@ -203,25 +214,31 @@ class SelectielijstResolver {
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	private function pickApplicableRow(array $results): ?ObjectEntity {
-		$settings = $this->settingsHandler->getArchivalSettingsOnly();
-		$applied = ($settings['selectielijstVersion'] ?? null);
+		if (empty($results) === true) {
+			return null;
+		}
 
-		if (is_string($applied) === false || trim($applied) === '') {
+		$settings = $this->storage->settings->getArchivalSettingsOnly();
+		$applied = ArchivalText::fromString(value: ($settings['selectielijstVersion'] ?? null));
+		if ($applied === null) {
 			return $results[0];
 		}
 
-		$applied = trim($applied);
+		return $this->rowOfVersion(results: $results, applied: $applied);
+	}//end pickApplicableRow()
+
+	/**
+	 * The first row of the applied version.
+	 *
+	 * @param array<int, ObjectEntity> $results The rows for one category.
+	 * @param string                   $applied The version in use, trimmed.
+	 *
+	 * @return ObjectEntity|null The row, or null (and a warning) when no row has that version.
+	 */
+	private function rowOfVersion(array $results, string $applied): ?ObjectEntity {
 		foreach ($results as $row) {
 			$data = ($row->getObject() ?? []);
-			if (is_array($data) === false) {
-				continue;
-			}
-
-			$version = trim(
-				(string)($data[SelectielijstImportService::VERSION_KEY] ?? ($data['versie'] ?? ($data['version'] ?? '')))
-			);
-
-			if ($version === $applied) {
+			if (is_array($data) === true && $this->declaredVersion(data: $data) === $applied) {
 				return $row;
 			}
 		}
@@ -232,7 +249,18 @@ class SelectielijstResolver {
 		);
 
 		return null;
-	}//end pickApplicableRow()
+	}//end rowOfVersion()
+
+	/**
+	 * The version a row declares, trimmed; '' when it declares none.
+	 *
+	 * @param array<string, mixed> $data The row's data.
+	 *
+	 * @return string The version.
+	 */
+	private function declaredVersion(array $data): string {
+		return trim((string)($data[SelectielijstImportService::VERSION_KEY] ?? ($data['versie'] ?? ($data['version'] ?? ''))));
+	}//end declaredVersion()
 
 	/**
 	 * Read the provenance of a selectielijst entry: which version, read when.
@@ -261,15 +289,9 @@ class SelectielijstResolver {
 	private function selectielijstProvenance(ObjectEntity $entry): array {
 		$provenance = ['selectionListConsultedAt' => (new DateTime())->format('c')];
 
-		$data = $entry->getObject();
-		$declared = null;
-		if (is_array($data) === true) {
-			$declared = ($data['versie'] ?? ($data['version'] ?? null));
-		}
-
-		$version = $this->stringOrNull(value: $declared);
+		$version = $this->publishedVersionOf(entry: $entry);
 		if ($version === null) {
-			$version = $this->stringOrNull(value: $entry->getVersion());
+			$version = ArchivalText::fromStringOrInt(value: $entry->getVersion());
 		}
 
 		if ($version !== null) {
@@ -280,22 +302,18 @@ class SelectielijstResolver {
 	}//end selectielijstProvenance()
 
 	/**
-	 * A non-empty trimmed string, or null.
+	 * The `versie` or `version` the row itself declares: the list publisher's own numbering.
 	 *
-	 * @param mixed $value The candidate value.
+	 * @param ObjectEntity $entry The selectielijst entry.
 	 *
-	 * @return string|null The string, or null when it says nothing.
+	 * @return string|null The version, or null when the row declares none.
 	 */
-	private function stringOrNull(mixed $value): ?string {
-		if (is_string($value) === false && is_int($value) === false) {
+	private function publishedVersionOf(ObjectEntity $entry): ?string {
+		$data = $entry->getObject();
+		if (is_array($data) === false) {
 			return null;
 		}
 
-		$text = trim((string)$value);
-		if ($text === '') {
-			return null;
-		}
-
-		return $text;
-	}//end stringOrNull()
+		return ArchivalText::fromStringOrInt(value: ($data['versie'] ?? ($data['version'] ?? null)));
+	}//end publishedVersionOf()
 }//end class

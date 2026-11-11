@@ -1,0 +1,222 @@
+{
+    "enriched": {
+        "_todos": [
+            {
+                "id": "7/event",
+                "title": "Board meeting",
+                "status": "NEEDS-ACTION",
+                "due": null
+            },
+            {
+                "id": "7/todo",
+                "title": "Write minutes",
+                "status": "COMPLETED",
+                "due": "20260302"
+            },
+            {
+                "id": "7/bare",
+                "title": "",
+                "status": "NEEDS-ACTION",
+                "due": null
+            },
+            {
+                "id": "7/nodata",
+                "title": "",
+                "status": "NEEDS-ACTION",
+                "due": null
+            },
+            {
+                "id": "7/missing",
+                "label": "Not found"
+            },
+            {
+                "id": "7/throw",
+                "label": "Not found"
+            },
+            {
+                "id": "no-slash",
+                "label": "Not found"
+            },
+            {
+                "id": "x/event",
+                "title": "Board meeting",
+                "status": "NEEDS-ACTION",
+                "due": null
+            },
+            {
+                "id": "12/a/b",
+                "label": "Not found"
+            }
+        ],
+        "_calendar": [
+            {
+                "id": "7/event",
+                "title": "Board meeting",
+                "start": "20260301T100000",
+                "end": "20260301T110000",
+                "location": "Room 4"
+            },
+            {
+                "id": "7/todo",
+                "title": "Write minutes",
+                "start": null,
+                "end": null,
+                "location": null
+            },
+            {
+                "id": "7/bare",
+                "title": "",
+                "start": null,
+                "end": null,
+                "location": null
+            },
+            {
+                "id": "7/nodata",
+                "title": "",
+                "start": null,
+                "end": null,
+                "location": null
+            },
+            {
+                "id": "7/missing",
+                "label": "Not found"
+            },
+            {
+                "id": "7/throw",
+                "label": "Not found"
+            },
+            {
+                "id": "no-slash",
+                "label": "Not found"
+            },
+            {
+                "id": "x/event",
+                "title": "Board meeting",
+                "start": "20260301T100000",
+                "end": "20260301T110000",
+                "location": "Room 4"
+            },
+            {
+                "id": "12/a/b",
+                "label": "Not found"
+            }
+        ],
+        "_talk": [
+            "t"
+        ]
+    },
+    "queries": [
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                7,
+                "event"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                7,
+                "todo"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                7,
+                "bare"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                7,
+                "nodata"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                7,
+                "missing"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                7,
+                "throw"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                0,
+                "event"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                12,
+                "a/b"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                7,
+                "event"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                7,
+                "todo"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                7,
+                "bare"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                7,
+                "nodata"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                7,
+                "missing"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                7,
+                "throw"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                0,
+                "event"
+            ]
+        ],
+        [
+            "SELECT calendardata FROM *PREFIX*calendarobjects WHERE calendarid = ? AND uid = ? LIMIT 1",
+            [
+                12,
+                "a/b"
+            ]
+        ]
+    ]
+}

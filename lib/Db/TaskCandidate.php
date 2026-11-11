@@ -46,6 +46,7 @@ use OCP\AppFramework\Db\Entity;
  * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
 class TaskCandidate extends Entity implements JsonSerializable {
+	use TypedFieldsJsonTrait;
 
 	/**
 	 * A candidate uid.
@@ -92,20 +93,4 @@ class TaskCandidate extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'ref', type: 'string');
 
 	}//end __construct()
-
-	/**
-	 * Serialise for the API.
-	 *
-	 * @return array<string, mixed> The candidate row as plain data.
-	 *
-	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
-	 */
-	public function jsonSerialize(): array {
-		return [
-			'id' => $this->id,
-			'taskId' => $this->taskId,
-			'kind' => $this->kind,
-			'ref' => $this->ref,
-		];
-	}//end jsonSerialize()
 }//end class

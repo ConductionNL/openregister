@@ -25,7 +25,7 @@ use OCA\OpenRegister\Controller\RegistersController;
 use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Controller\SearchTrailController;
 use OCA\OpenRegister\Controller\SettingsController;
-use OCA\OpenRegister\Controller\ViewsController;
+use OCA\OpenRegister\Search\Controller\ViewsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointMapper;
@@ -42,21 +42,22 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\UploadService;
-use OCA\OpenRegister\Service\VectorizationService;
-use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Files\Service\UploadService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
+use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Search\Service\ViewService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUser;
 use OCP\IUserSession;
 use OCA\OpenRegister\Tests\Support\ResolvesControllersFromContainer;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -91,11 +92,11 @@ class ControllersIntegrationTest extends TestCase {
 	private IRequest&MockObject $request;
 
 	/**
-	 * Mock user session for admin/user simulation
+	 * The real user session; each test signs in the account it needs
 	 *
-	 * @var IUserSession&MockObject
+	 * @var IUserSession
 	 */
-	private IUserSession&MockObject $userSession;
+	private IUserSession $userSession;
 
 	/**
 	 * Real register mapper from DI
@@ -215,15 +216,17 @@ class ControllersIntegrationTest extends TestCase {
 		$this->schemaMapper = \OC::$server->get(SchemaMapper::class);
 		$this->objectMapper = \OC::$server->get(MagicMapper::class);
 
-		// THE DOUBLES THIS FILE ACTUALLY CONTROLS, AND NOTHING ELSE.
-		// The request carries each test's payload; the session decides who is
-		// asking. Every other collaborator comes from the container, so a
-		// controller that gains a dependency needs no change here.
+		// THE ONLY DOUBLE THIS FILE CONTROLS: the request carries each test's
+		// payload. The session is the real one, because the controllers read it
+		// through shared support objects (ControllerSession, the *Services
+		// bundles) that the container builds once; a per-test session double
+		// never reaches them. Every other collaborator comes from the container,
+		// so a controller that gains a dependency needs no change here.
 		$this->request = $this->createMock(IRequest::class);
-		$this->userSession = $this->createMock(IUserSession::class);
+		$this->userSession = \OC::$server->get(IUserSession::class);
+		$this->userSession->setUser(null);
 
 		$this->overrideContainerService(id: IRequest::class, instance: $this->request);
-		$this->overrideContainerService(id: IUserSession::class, instance: $this->userSession);
 
 		$this->registersController = $this->resolveController(class: RegistersController::class);
 		$this->schemasController = $this->resolveController(class: SchemasController::class);
@@ -303,6 +306,7 @@ class ControllersIntegrationTest extends TestCase {
 
 		// Put the container back: an override left behind would hand this
 		// test's doubles to every later test file.
+		$this->userSession->setUser(null);
 		$this->restoreContainerOverrides();
 
 		parent::tearDown();
@@ -346,9 +350,29 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	private function setupAdminUser(): void {
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn('admin');
-		$this->userSession->method('getUser')->willReturn($user);
+		$admins = \OC::$server->get(IGroupManager::class)->get('admin')?->getUsers() ?? [];
+		if ($admins === []) {
+			$this->markTestSkipped('The instance has no administrator account.');
+		}
+
+		$this->userSession->setUser(reset($admins));
+	}
+
+	/**
+	 * Insert a view owned by the signed-in user and register it for cleanup
+	 *
+	 * @return string The view's uuid
+	 */
+	private function insertOwnedView(): string {
+		$view = new View();
+		$view->setUuid((string)Uuid::v4());
+		$view->setName('ctrlint-owned-' . uniqid());
+		$view->setOwner($this->userSession->getUser()->getUID());
+		$view->setQuery(['registers' => []]);
+		$view = \OC::$server->get(ViewMapper::class)->insert($view);
+		$this->createdViewIds[] = $view->getUuid();
+
+		return $view->getUuid();
 	}
 
 	// =====================================================================
@@ -630,20 +654,6 @@ class ControllersIntegrationTest extends TestCase {
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertEquals(404, $response->getStatus());
-	}
-
-	/**
-	 * Test RegistersController::objects returns objects for register+schema
-	 *
-	 * @return void
-	 */
-	public function testRegistersObjects(): void {
-		$response = $this->registersController->objects(
-			$this->testRegister->getId(),
-			$this->testSchema->getId()
-		);
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
 	}
 
 	/**
@@ -985,7 +995,7 @@ class ControllersIntegrationTest extends TestCase {
 	 * @return void
 	 */
 	public function testViewsIndexUnauthenticated(): void {
-		// No user set on userSession mock -> getUser returns null.
+		// No user signed in: setUp clears the session.
 		$this->request->method('getParams')->willReturn([]);
 
 		$response = $this->viewsController->index();
@@ -1161,15 +1171,18 @@ class ControllersIntegrationTest extends TestCase {
 	/**
 	 * Test ViewsController::update returns 400 when name missing
 	 *
+	 * The view is looked up before the body is checked, so it must exist.
+	 *
 	 * @return void
 	 */
 	public function testViewsUpdateMissingName(): void {
 		$this->setupAdminUser();
+		$viewId = $this->insertOwnedView();
 		$this->request->method('getParams')->willReturn([
 			'query' => ['registers' => []],
 		]);
 
-		$response = $this->viewsController->update('some-id');
+		$response = $this->viewsController->update($viewId);
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertEquals(400, $response->getStatus());
@@ -1178,15 +1191,18 @@ class ControllersIntegrationTest extends TestCase {
 	/**
 	 * Test ViewsController::update returns 400 when query missing
 	 *
+	 * The view is looked up before the body is checked, so it must exist.
+	 *
 	 * @return void
 	 */
 	public function testViewsUpdateMissingQuery(): void {
 		$this->setupAdminUser();
+		$viewId = $this->insertOwnedView();
 		$this->request->method('getParams')->willReturn([
 			'name' => 'test-view',
 		]);
 
-		$response = $this->viewsController->update('some-id');
+		$response = $this->viewsController->update($viewId);
 
 		$this->assertInstanceOf(JSONResponse::class, $response);
 		$this->assertEquals(400, $response->getStatus());
@@ -1388,27 +1404,6 @@ class ControllersIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test SettingsController::getObjectService
-	 *
-	 * @return void
-	 */
-	public function testSettingsGetObjectService(): void {
-		// openregister is installed, so it should return null.
-		$result = $this->settingsController->getObjectService();
-		$this->assertNull($result);
-	}
-
-	/**
-	 * Test SettingsController::getConfigurationService
-	 *
-	 * @return void
-	 */
-	public function testSettingsGetConfigurationService(): void {
-		$result = $this->settingsController->getConfigurationService();
-		$this->assertNotNull($result);
-	}
-
-	/**
 	 * Test SettingsController::getDatabaseInfo returns database info
 	 *
 	 * @return void
@@ -1498,43 +1493,6 @@ class ControllersIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test SettingsController::updateSearchBackend with empty backend
-	 *
-	 * @return void
-	 */
-	public function testSettingsUpdateSearchBackendEmpty(): void {
-		$this->request->method('getParams')->willReturn([]);
-
-		$response = $this->settingsController->updateSearchBackend();
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertEquals(400, $response->getStatus());
-	}
-
-	/**
-	 * Test SettingsController::updateSearchBackend with valid backend
-	 *
-	 * Note: The controller passes $backend string to service which may expect array.
-	 * This tests the error handling path if types don't match.
-	 *
-	 * @return void
-	 */
-	public function testSettingsUpdateSearchBackendValid(): void {
-		$this->request->method('getParams')->willReturn([
-			'backend' => 'database',
-		]);
-
-		try {
-			$response = $this->settingsController->updateSearchBackend();
-			$this->assertInstanceOf(JSONResponse::class, $response);
-			$this->assertTrue(in_array($response->getStatus(), [200, 500]));
-		} catch (\TypeError $e) {
-			// Service type mismatch - this is a known issue in the controller code.
-			$this->assertStringContainsString('must be of type array', $e->getMessage());
-		}
-	}
-
-	/**
 	 * Test SettingsController::rebase
 	 *
 	 * Note: May fail with TypeError in CacheSettingsHandler due to config type issues.
@@ -1551,30 +1509,6 @@ class ControllersIntegrationTest extends TestCase {
 			// Known type issue in CacheSettingsHandler - still provides coverage.
 			$this->assertStringContainsString('Unsupported operand', $e->getMessage());
 		}
-	}
-
-	/**
-	 * Test SettingsController::semanticSearch with empty query
-	 *
-	 * @return void
-	 */
-	public function testSettingsSemanticSearchEmptyQuery(): void {
-		$response = $this->settingsController->semanticSearch('   ');
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertEquals(400, $response->getStatus());
-	}
-
-	/**
-	 * Test SettingsController::hybridSearch with empty query
-	 *
-	 * @return void
-	 */
-	public function testSettingsHybridSearchEmptyQuery(): void {
-		$response = $this->settingsController->hybridSearch('   ');
-
-		$this->assertInstanceOf(JSONResponse::class, $response);
-		$this->assertEquals(400, $response->getStatus());
 	}
 
 	// THREE TESTS WERE REMOVED HERE, NOT SKIPPED.

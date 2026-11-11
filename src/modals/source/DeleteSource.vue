@@ -4,112 +4,53 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'deleteSource'"
 		name="Delete Source"
-		size="normal"
-		:canClose="false">
+		:success="success"
+		:error="error"
+		:loading="loading"
+		:showConfirm="!success"
+		successText="Source successfully deleted"
+		:closeLabel="success ? 'Close' : 'Cancel'"
+		confirmLabel="Delete"
+		@cancel="closeDialog"
+		@confirm="deleteSource()">
 		<p v-if="!success">
 			Do you want to permanently delete
 			<b>{{ sourceStore.sourceItem?.title }}</b
 			>? This action cannot be undone.
 		</p>
-
-		<NcNoteCard v-if="success" type="success">
-			<p>Source successfully deleted</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton
-				v-if="!success"
-				:disabled="loading"
-				variant="error"
-				@click="deleteSource()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				Delete
-			</NcButton>
-		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import {
+	confirmDialogState,
+	settleConfirmRequest,
+} from '../shared/confirmDialogState.js'
 
 export default {
 	name: 'DeleteSource',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		// Icons
-		TrashCanOutline,
-		Cancel,
+		ConfirmDialogFrame,
 	},
 
-	data() {
-		return {
-			success: false,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
-		}
-	},
+	mixins: [confirmDialogState(false)],
 
 	methods: {
-		/**
-		 * @spec openspec/specs/entity-management-modals/spec.md
-		 */
-		closeDialog() {
-			navigationStore.setDialog(false)
-			clearTimeout(this.closeModalTimeout)
-			this.success = false
-			this.loading = false
-			this.error = false
-		},
-
 		/**
 		 * @spec exclude Delete-confirm handler delegating to sourceStore.deleteSource; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
 		async deleteSource() {
 			this.loading = true
 
-			sourceStore
-				.deleteSource({
-					...sourceStore.sourceItem,
-				})
-				.then(({ response }) => {
-					this.success = response.ok
-					this.error = false
-					response.ok
-						&& (this.closeModalTimeout = setTimeout(
-							this.closeDialog,
-							2000,
-						))
-				})
-				.catch((error) => {
-					this.success = false
-					this.error =
-						error.message
-						|| 'An error occurred while deleting the source'
-				})
-				.finally(() => {
-					this.loading = false
-				})
+			settleConfirmRequest(
+				this,
+				sourceStore.deleteSource({ ...sourceStore.sourceItem }),
+				'An error occurred while deleting the source',
+			)
 		},
 	},
 }

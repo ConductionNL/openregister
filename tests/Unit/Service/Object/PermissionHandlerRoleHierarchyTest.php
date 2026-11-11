@@ -28,6 +28,7 @@ namespace Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -73,7 +74,7 @@ class PermissionHandlerRoleHierarchyTest extends TestCase {
 		$container->method('get')
 			->willReturnCallback(
 				function (string $service) {
-					if ($service === RegisterMapper::class) {
+					if ($service === RegisterMapperInterface::class) {
 						return $this->registerMapper;
 					}
 
@@ -84,7 +85,7 @@ class PermissionHandlerRoleHierarchyTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueBool')->willReturn(true);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$userManager,
 			$groupManager,
@@ -347,15 +348,17 @@ class PermissionHandlerRoleHierarchyTest extends TestCase {
 			schema: $schema
 		);
 
-		// viewer wasn't assigned and ghost is unknown; nothing got
-		// added to the authorization map.
-		$this->assertArrayNotHasKey('read', $expanded);
+		// viewer wasn't assigned and ghost is unknown, so the block granted
+		// nobody anything. It comes back closed rather than empty: an empty
+		// block is "no authorization", which is open to every signed in account.
+		$this->assertSame(['read' => [], 'create' => [], 'update' => [], 'delete' => []], $expanded);
 		$this->assertArrayNotHasKey('roles', $expanded);
 	}//end testUnknownRoleAssignmentLoggedAndSkipped()
 
 	/**
 	 * Register without role definitions but a schema that references
-	 * roles logs a warning and returns the (rolesless) authorization.
+	 * roles logs a warning and returns a block that grants nobody, never the
+	 * empty block that reads as default-open.
 	 *
 	 * @return void
 	 */
@@ -375,5 +378,25 @@ class PermissionHandlerRoleHierarchyTest extends TestCase {
 		);
 
 		$this->assertArrayNotHasKey('roles', $expanded);
+		$this->assertSame(['read' => [], 'create' => [], 'update' => [], 'delete' => []], $expanded);
 	}//end testRegisterWithoutRoleDefinitionsLoggedAndSkipped()
+
+	/**
+	 * Direct rules beside an unresolvable roles block are kept as written.
+	 *
+	 * The block is already non-empty, so it already refuses an unlisted verb;
+	 * nothing is added to it.
+	 *
+	 * @return void
+	 */
+	public function testDirectRulesBesideUnresolvableRolesAreKept(): void {
+		$schema = $this->makeSchemaWithRegisterRoles([]);
+
+		$expanded = $this->handler->expandRoles(
+			authorization: ['roles' => ['viewer' => ['public']], 'read' => ['behandelaars']],
+			schema: $schema
+		);
+
+		$this->assertSame(['read' => ['behandelaars']], $expanded);
+	}//end testDirectRulesBesideUnresolvableRolesAreKept()
 }//end class

@@ -60,9 +60,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
-use OCA\OpenRegister\Support\FleetAppId;
+use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCP\App\IAppManager;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -77,7 +78,9 @@ use Throwable;
  *   cause vocabulary; each is required for the degrade-don't-throw lookup
  *   surface (AD-23).
  */
-class BrpPersonProvider extends AbstractIntegrationProvider {
+class BrpPersonProvider extends AbstractIntegrationProvider implements BrpPersonProviderInterface {
+
+	use ConnectorRoutedProviderTrait;
 
 	/**
 	 * OpenConnector source id this provider routes through.
@@ -97,6 +100,21 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	// rather than one spelling of it. Never compare it to an id directly —
 	// go through FleetAppId, or the comparison is false on half the fleet.
 	private const REQUIRED_APP = 'integriq';
+
+	/**
+	 * The source configuration flag that allows the residents count.
+	 */
+	public const RESIDENT_COUNT_SETTING = 'residentCount';
+
+	/**
+	 * Cause when the source does not allow the residents count.
+	 */
+	public const CAUSE_RESIDENT_COUNT_NOT_ENABLED = 'resident-count-not-enabled';
+
+	/**
+	 * Cause when an address object id is not 16 digits.
+	 */
+	public const CAUSE_INVALID_IDENTIFIER = 'invalid-identifier';
 
 	/**
 	 * Default field set requested from HaalCentraal. The BRP API requires an
@@ -124,7 +142,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExternalIntegrationRouter $router External-call router.
+	 * @param ExternalIntegrationRouterInterface $router External-call router.
 	 * @param IAppManager $appManager NC app manager (isEnabled check).
 	 * @param IL10N $l10n Localisation.
 	 * @param LoggerInterface $logger Logger for degraded paths (never receives a BSN).
@@ -132,7 +150,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	 * @return void
 	 */
 	public function __construct(
-		private ExternalIntegrationRouter $router,
+		private ExternalIntegrationRouterInterface $router,
 		private IAppManager $appManager,
 		private IL10N $l10n,
 		private LoggerInterface $logger,
@@ -167,63 +185,6 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	}//end getIcon()
 
 	/**
-	 * Named group this integration belongs to (AD-16).
-	 *
-	 * @return string|null
-	 */
-	public function getGroup(): ?string {
-		return 'external';
-	}//end getGroup()
-
-	/**
-	 * Nextcloud app that must be installed for this integration to
-	 * function — OpenConnector carries the `brp-haalcentraal` source +
-	 * OAuth credentials + PKIoverheid client certificate.
-	 *
-	 * Returns the id the instance ACTUALLY registered, not the canonical name.
-	 * The value is published verbatim in the `integrations` capability and
-	 * read back client-side as `isAppInstalled(requiredApp)`, so a spelling the
-	 * instance does not answer to renders "not installed" over a connector that
-	 * is installed and working.
-	 *
-	 * @return string|null
-	 */
-	public function getRequiredApp(): ?string {
-		return (FleetAppId::resolve($this->appManager, self::REQUIRED_APP) ?? self::REQUIRED_APP);
-	}//end getRequiredApp()
-
-	/**
-	 * Storage strategy (AD-22) — `external`: no local link table; this is
-	 * a stateless person-lookup leaf routed through OpenConnector.
-	 *
-	 * @return string
-	 */
-	public function getStorageStrategy(): string {
-		return 'external';
-	}//end getStorageStrategy()
-
-	/**
-	 * OpenConnector source id this provider routes all calls through (AD-4).
-	 *
-	 * @return string|null
-	 */
-	public function getOpenConnectorSource(): ?string {
-		return self::SOURCE_ID;
-	}//end getOpenConnectorSource()
-
-	/**
-	 * Whether the integration is available — true iff OpenConnector is
-	 * installed (it owns the `brp-haalcentraal` source + credentials + cert).
-	 * The router still degrades gracefully if the source itself is missing or
-	 * HaalCentraal is down.
-	 *
-	 * @return bool
-	 */
-	public function isEnabled(): bool {
-		return FleetAppId::isInstalled($this->appManager, self::REQUIRED_APP);
-	}//end isEnabled()
-
-	/**
 	 * Auth requirements descriptor. `type: 'external'` — the OAuth2
 	 * client_credentials secret AND the PKIoverheid mutual-TLS client
 	 * certificate are configured on the OpenConnector `brp-haalcentraal`
@@ -252,9 +213,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	 * the consumer maps + validates them (pipelinq `HaalCentraalClient` +
 	 * `BsnValidationService`).
 	 *
-	 * @param string $register Ignored (object-independent leaf).
-	 * @param string $schema Ignored (object-independent leaf).
-	 * @param string $objectId Ignored (object-independent leaf).
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters `_search` carries the BSN.
 	 *
 	 * @return array<int,array<string,mixed>>
@@ -268,24 +227,29 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	 *   are mandated by the IntegrationProvider contract; this leaf is
 	 *   object-independent so they are intentionally unused.
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		$bsn = trim((string)($filters['_search'] ?? ''));
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->personenFor(bsn: trim((string)($filters['_search'] ?? '')));
+	}//end list()
+
+	/**
+	 * The persons the BRP returns for one BSN; none for an empty BSN.
+	 *
+	 * @param string $bsn The BSN searched for, trimmed.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function personenFor(string $bsn): array {
 		if ($bsn === '') {
 			return [];
 		}
 
 		$response = $this->router->call(
 			provider: $this,
-			method: 'POST',
-			path: 'personen',
-			options: [
-				'body' => $this->buildQueryBody(bsn: $bsn),
-				'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-			]
+			request: $this->personenRequest(body: $this->buildQueryBody(bsn: $bsn))
 		);
 
 		return $this->extractPersonen(response: $response);
-	}//end list()
+	}//end personenFor()
 
 	/**
 	 * Look up a single person by Burgerservicenummer (BSN).
@@ -320,12 +284,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 		try {
 			$envelope = $this->router->callWithMeta(
 				provider: $this,
-				method: 'POST',
-				path: 'personen',
-				options: [
-					'body' => $this->buildQueryBody(bsn: $bsn),
-					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
-				]
+				request: $this->personenRequest(body: $this->buildQueryBody(bsn: $bsn))
 			);
 		} catch (ProviderUnavailableException $e) {
 			return $this->degraded(cause: $e->getCause());
@@ -345,18 +304,77 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	}//end lookupByBsn()
 
 	/**
-	 * Health descriptor — defers to the router's probe so admin UI / OCS
-	 * capabilities report the same status runtime callers would see.
+	 * Count the people the BRP registers at an address object.
 	 *
-	 * @return array{status: string, authStatus: string, message: ?string}
+	 * Issues `ZoekMetAdresseerbaarObjectIdentificatie` with one field and
+	 * keeps only the number of results. Asked only when the source carries
+	 * `configuration.residentCount: true`; the call reaches the connector with
+	 * `withholdBodies`, so the residents' numbers are never stored. Neither the
+	 * answer nor the log holds a person or the address object id.
 	 *
-	 * @spec exclude Thin delegation to ExternalIntegrationRouter::probe
-	 *              (annotated to pluggable-integration-registry task-4);
-	 *              carries no provider-specific health behaviour.
+	 * @param string $addressObjectId The 16-digit adresseerbaarObjectIdentificatie.
+	 *
+	 * @return array<string,mixed> `{ total, meta }`, or `{ unavailable, cause }`.
+	 *
+	 * @spec openspec/specs/integration-person-lookup/spec.md#requirement-brp-count-of-residents-at-an-address-object
 	 */
-	public function health(): array {
-		return $this->router->probe(provider: $this);
-	}//end health()
+	public function countResidentsAtAddressObject(string $addressObjectId): array {
+		$addressObjectId = trim($addressObjectId);
+		if (preg_match('/^\d{16}$/', $addressObjectId) !== 1) {
+			return ['unavailable' => true, 'cause' => self::CAUSE_INVALID_IDENTIFIER];
+		}
+
+		try {
+			$configuration = $this->router->sourceConfiguration(provider: $this);
+			if (($configuration[self::RESIDENT_COUNT_SETTING] ?? null) !== true) {
+				return ['unavailable' => true, 'cause' => self::CAUSE_RESIDENT_COUNT_NOT_ENABLED];
+			}
+
+			$envelope = $this->router->callWithMeta(
+				provider: $this,
+				request: $this->personenRequest(
+					body: [
+						'type' => 'ZoekMetAdresseerbaarObjectIdentificatie',
+						'adresseerbaarObjectIdentificatie' => $addressObjectId,
+						'fields' => ['burgerservicenummer'],
+					],
+					extraOptions: ['withholdBodies' => true]
+				)
+			);
+		} catch (ProviderUnavailableException $e) {
+			return ['unavailable' => true, 'cause' => $e->getCause()];
+		} catch (Throwable $e) {
+			$this->logger->warning('BrpPersonProvider::countResidentsAtAddressObject failed (transport).');
+			return ['unavailable' => true, 'cause' => ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN];
+		}//end try
+
+		return [
+			'total' => count($this->extractPersonen(response: ($envelope['body'] ?? []))),
+			'meta' => $this->shapeMeta(meta: ($envelope['meta'] ?? [])),
+		];
+	}//end countResidentsAtAddressObject()
+
+	/**
+	 * A HAL+JSON query to the BRP `personen` endpoint.
+	 *
+	 * @param array<string,mixed> $body         The query body.
+	 * @param array<string,mixed> $extraOptions Further connector options, after the body and headers.
+	 *
+	 * @return UpstreamRequest
+	 */
+	private function personenRequest(array $body, array $extraOptions=[]): UpstreamRequest {
+		return new UpstreamRequest(
+			method: 'POST',
+			path: 'personen',
+			options: array_merge(
+				[
+					'body' => $body,
+					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
+				],
+				$extraOptions
+			)
+		);
+	}//end personenRequest()
 
 	/**
 	 * Build the `RaadpleegMetBurgerservicenummer` query body for the
@@ -448,19 +466,8 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	 * @return array<int,array<string,mixed>>
 	 */
 	private function extractPersonen(array $response): array {
-		$list = [];
-		if (isset($response['personen']) === true && is_array($response['personen']) === true) {
-			$list = $response['personen'];
-		} elseif (isset($response['_embedded']['personen']) === true
-			&& is_array($response['_embedded']['personen']) === true
-		) {
-			$list = $response['_embedded']['personen'];
-		} elseif (array_is_list($response) === true) {
-			$list = $response;
-		}
-
 		$out = [];
-		foreach ($list as $row) {
+		foreach (self::personenList(response: $response) as $row) {
 			if (is_array($row) === true) {
 				$out[] = $row;
 			}
@@ -468,4 +475,45 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 
 		return $out;
 	}//end extractPersonen()
+
+	/**
+	 * The person list of a response: `personen`, else `_embedded.personen`, else a bare list, else none.
+	 *
+	 * @param array<string,mixed> $response Decoded source response (HAL+JSON).
+	 *
+	 * @return array<mixed> The rows, not yet checked to be objects.
+	 */
+	private static function personenList(array $response): array {
+		$direct = self::listUnder(container: $response, key: 'personen');
+		if ($direct !== null) {
+			return $direct;
+		}
+
+		$embedded = self::listUnder(container: ($response['_embedded'] ?? null), key: 'personen');
+		if ($embedded !== null) {
+			return $embedded;
+		}
+
+		if (array_is_list($response) === true) {
+			return $response;
+		}
+
+		return [];
+	}//end personenList()
+
+	/**
+	 * The array a container holds under a key, or null when the container or the value is not an array.
+	 *
+	 * @param mixed  $container The envelope, or part of it.
+	 * @param string $key       The key.
+	 *
+	 * @return array<mixed>|null
+	 */
+	private static function listUnder(mixed $container, string $key): ?array {
+		if (is_array($container) === false || isset($container[$key]) === false || is_array($container[$key]) === false) {
+			return null;
+		}
+
+		return $container[$key];
+	}//end listUnder()
 }//end class

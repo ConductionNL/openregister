@@ -7,7 +7,7 @@
  * manifest names, so the manifest and SetupController must agree on the id,
  * and the app must not also watch CnAppRoot's internal flag.
  *
- * @spec openspec/changes/adopt-setup-dismiss-action/specs/first-time-setup/spec.md
+ * @spec openspec/specs/first-time-setup/spec.md
  */
 
 import * as fs from 'fs'

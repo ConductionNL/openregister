@@ -8,7 +8,7 @@ import type { APIRequestContext } from '@playwright/test'
  * actually subscribes to.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still resolve
- * once `openspec/changes/object-dates-as-a-calendar-feed/specs/` is archived
+ * once `openspec/changes/archive/2026-10-30-object-dates-as-a-calendar-feed/specs/` is archived
  * into `openspec/specs/`:
  *
  * @e2e calendar-provider::a-caseworker-subscribes-and-sees-only-their-own-work

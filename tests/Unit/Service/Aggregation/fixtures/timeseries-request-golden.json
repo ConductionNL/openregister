@@ -1,0 +1,414 @@
+{
+    "categorical count": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "composite fields": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "fields": [
+                    "status",
+                    "day"
+                ]
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "composite fields empty": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "composite fields not a list": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "composite fields undeclared": {
+        "error": "`fields` member \"colour\" is not a declared property of the schema"
+    },
+    "cumulative float with interval": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": {
+                "field": "day",
+                "start": "2026-01-01",
+                "end": "2026-02-01",
+                "gap": "day"
+            },
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "cumulative int 1 with interval": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": {
+                "field": "day",
+                "start": "2026-01-01",
+                "end": "2026-02-01",
+                "gap": "day"
+            },
+            "metrics": null,
+            "cumulative": true
+        }
+    },
+    "cumulative int 2 with interval": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": {
+                "field": "day",
+                "start": "2026-01-01",
+                "end": "2026-02-01",
+                "gap": "day"
+            },
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "cumulative string 0 without interval": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "cumulative string 1 with interval": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": {
+                "field": "day",
+                "start": "2026-01-01",
+                "end": "2026-02-01",
+                "gap": "day"
+            },
+            "metrics": null,
+            "cumulative": true
+        }
+    },
+    "cumulative string true without interval": {
+        "error": "`cumulative` requires `interval` (and `from`/`to`) to be set — it orders and accumulates over time buckets"
+    },
+    "cumulative without interval": {
+        "error": "`cumulative` requires `interval` (and `from`/`to`) to be set — it orders and accumulates over time buckets"
+    },
+    "everything at once": {
+        "error": "a multi-metric `metrics` list MUST NOT be combined with dateBucket (time-bucket) aggregation"
+    },
+    "field empty": {
+        "error": "`field` is required"
+    },
+    "field missing": {
+        "error": "`field` is required"
+    },
+    "field undeclared": {
+        "error": "`field` \"colour\" is not a declared property of the schema"
+    },
+    "filter passes through": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": {
+                "status": "open"
+            },
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "filter scalar is cast": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [
+                "open"
+            ],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "interval MONTH upper-case": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": {
+                "field": "day",
+                "start": "2026-01-01",
+                "end": "2026-02-01",
+                "gap": "month"
+            },
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "interval day": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": {
+                "field": "day",
+                "start": "2026-01-01",
+                "end": "2026-02-01",
+                "gap": "day"
+            },
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "interval empty is no interval": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "day"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "interval hour on date field": {
+        "error": "sub-day interval \"HOUR\" requires a `date-time` field; \"day\" has format \"date\""
+    },
+    "interval hour on field without format": {
+        "error": "sub-day interval \"HOUR\" requires a `date-time` field; \"status\" has format \"unspecified\""
+    },
+    "interval hour on metadata field": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": {
+                "field": "_updated",
+                "start": "2026-01-01",
+                "end": "2026-02-01",
+                "gap": "hour"
+            },
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "interval hour on non-array property": {
+        "error": "sub-day interval \"HOUR\" requires a `date-time` field; \"note\" has format \"unspecified\""
+    },
+    "interval hour on non-string format": {
+        "error": "sub-day interval \"HOUR\" requires a `date-time` field; \"kind\" has format \"unspecified\""
+    },
+    "interval minute on date-time field": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": {
+                "field": "stamp",
+                "start": "2026-01-01",
+                "end": "2026-02-01",
+                "gap": "minute"
+            },
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "interval unknown": {
+        "error": "`interval` MUST be one of MINUTE, HOUR, DAY, WEEK, MONTH, QUARTER, YEAR (got: fortnight)"
+    },
+    "interval unparseable from": {
+        "error": "`from` and `to` MUST be parseable ISO-8601 datetimes"
+    },
+    "interval unparseable to": {
+        "error": "`from` and `to` MUST be parseable ISO-8601 datetimes"
+    },
+    "interval with fields ignores fields": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": null,
+            "dateBucket": {
+                "field": "day",
+                "start": "2026-01-01",
+                "end": "2026-02-01",
+                "gap": "quarter"
+            },
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "interval with metric, filter and cumulative": {
+        "query": {
+            "metric": "max",
+            "field": "amount",
+            "filter": {
+                "status": "x"
+            },
+            "groupBy": null,
+            "dateBucket": {
+                "field": "stamp",
+                "start": "2026-01-01",
+                "end": "2026-02-01",
+                "gap": "hour"
+            },
+            "metrics": null,
+            "cumulative": true
+        }
+    },
+    "interval without from": {
+        "error": "`from` and `to` are required when `interval` is set"
+    },
+    "interval without to": {
+        "error": "`from` and `to` are required when `interval` is set"
+    },
+    "metadata field": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "_created"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "metric upper-case count": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "metrics empty": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "metrics entry bad field": {
+        "error": "Aggregation \"ad-hoc\" metrics[0] field \"height\" is not declared in the schema properties."
+    },
+    "metrics entry not an object": {
+        "error": "`metrics` entries MUST be objects"
+    },
+    "metrics valid": {
+        "query": {
+            "metric": "count",
+            "field": null,
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": [
+                {
+                    "metric": "count"
+                },
+                {
+                    "metric": "sum",
+                    "field": "amount"
+                }
+            ],
+            "cumulative": false
+        }
+    },
+    "sum declared metricField": {
+        "query": {
+            "metric": "sum",
+            "field": "amount",
+            "filter": [],
+            "groupBy": {
+                "field": "status"
+            },
+            "dateBucket": null,
+            "metrics": null,
+            "cumulative": false
+        }
+    },
+    "sum empty metricField": {
+        "error": "`metricField` is required when metric is \"sum\""
+    },
+    "sum undeclared metricField": {
+        "error": "`metricField` \"height\" is not a declared property of the schema"
+    },
+    "sum without metricField": {
+        "error": "`metricField` is required when metric is \"sum\""
+    },
+    "unknown metric with field": {
+        "error": "aggregation metric MUST be one of: count, sum, avg, min, max (got: median)"
+    }
+}

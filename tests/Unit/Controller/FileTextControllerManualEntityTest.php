@@ -19,15 +19,17 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Controller\FileTextController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FileTextControllerFactory;
+use OCA\OpenRegister\Files\Controller\FileTextController;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Exception\ManualEntityException;
-use OCA\OpenRegister\Service\File\ManualEntityResult;
-use OCA\OpenRegister\Service\File\ManualEntityService;
+use OCA\OpenRegister\Files\Service\File\ManualEntityRequest;
+use OCA\OpenRegister\Files\Service\File\ManualEntityResult;
+use OCA\OpenRegister\Files\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCP\AppFramework\Http;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -106,14 +108,13 @@ class FileTextControllerManualEntityTest extends TestCase {
 		$rootFolder->method('getUserFolder')->willReturn($userFolder);
 		$groupManager->method('isAdmin')->willReturn(true);
 
-		$this->controller = new FileTextController(
+		$this->controller = FileTextControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(originalClassName: TextExtractionService::class),
 			$this->createMock(originalClassName: FileService::class),
 			$this->createMock(originalClassName: EntityRelationMapper::class),
 			$this->logger,
-			$this->createMock(originalClassName: IAppConfig::class),
 			$this->manualEntityService,
 			$this->userSession,
 			$rootFolder,
@@ -169,6 +170,27 @@ class FileTextControllerManualEntityTest extends TestCase {
 		$this->assertSame(expected: 'unsupported_media_type', actual: $response->getData()['error']);
 
 	}//end testWrongContentTypeReturns415()
+
+	/**
+	 * The wholeWord and caseSensitive flags of the body reach the service, defaulting to true.
+	 *
+	 * @return void
+	 */
+	public function testMatchFlagsReachTheService(): void {
+		$this->setupRequest(body: ['value' => 'Jan', 'type' => 'PERSON', 'wholeWord' => false, 'caseSensitive' => 0]);
+		$this->setupAuthenticatedUser();
+
+		$this->manualEntityService->expects($this->once())
+			->method('addManualEntity')
+			->with(
+				$this->callback(
+					static fn (ManualEntityRequest $request): bool => [$request->fileId, $request->value, $request->type, $request->wholeWord(), $request->caseSensitive()] === [42, 'Jan', 'PERSON', false, false]
+				)
+			)
+			->willThrowException(new \RuntimeException('stop'));
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $this->controller->addManualEntity(fileId: 42)->getStatus());
+	}//end testMatchFlagsReachTheService()
 
 	/**
 	 * No session user → 401.
@@ -378,7 +400,6 @@ class FileTextControllerManualEntityTest extends TestCase {
 				entity: $entity,
 				entityWasNew: true,
 				relations: [$relation],
-				matchCount: 1,
 				matchesSkipped: 0
 			)
 		);
@@ -420,7 +441,6 @@ class FileTextControllerManualEntityTest extends TestCase {
 				entity: $entity,
 				entityWasNew: false,
 				relations: [],
-				matchCount: 0,
 				matchesSkipped: 0
 			)
 		);

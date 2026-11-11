@@ -19,11 +19,48 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Case;
 
 use OCA\OpenRegister\Db\CaseItem;
+use OCP\IAppConfig;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Builds plan-item rows.
  */
 final class CaseFixtures {
+
+	/**
+	 * An app config that keeps its values in memory, for the per-item marker keys.
+	 *
+	 * @param TestCase $case The test the mock belongs to.
+	 * @param array<string, string> $store The values, by key (shared by reference with the caller).
+	 *
+	 * @return IAppConfig
+	 */
+	public static function memoryAppConfig(TestCase $case, array &$store): IAppConfig {
+		$config = (new \ReflectionMethod($case, 'createMock'))->invoke($case, IAppConfig::class);
+		$config->method('getKeys')->willReturnCallback(static function () use (&$store): array {
+			return array_keys($store);
+		});
+		$config->method('getValueString')->willReturnCallback(
+			static function (string $app, string $key, string $default = '') use (&$store): string {
+				return ($store[$key] ?? $default);
+			}
+		);
+		$config->method('setValueString')->willReturnCallback(
+			static function (string $app, string $key, string $value) use (&$store): bool {
+				$store[$key] = $value;
+
+				return true;
+			}
+		);
+		$config->method('deleteKey')->willReturnCallback(
+			static function (string $app, string $key) use (&$store): void {
+				unset($store[$key]);
+			}
+		);
+
+		return $config;
+	}//end memoryAppConfig()
+
 
 	/**
 	 * The demo anchor.

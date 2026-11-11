@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\TenantDirectory;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\OrganisationControllerFactory;
 use Exception;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationUsageService;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\AppFramework\Http;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -39,18 +43,27 @@ class OrganisationControllerTest extends TestCase {
 	private LoggerInterface&MockObject $logger;
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
+	/**
+	 * The usage service double.
+	 *
+	 * @var OrganisationUsageService&MockObject
+	 */
+	private OrganisationUsageService&MockObject $usageService;
 
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->organisationService = $this->createMock(OrganisationService::class);
+		// The update tests edit as an administrator of the organisation; a member is refused (OrganisationUpdateRoleTest).
+		$this->organisationService->method('isOrganisationAdmin')->willReturn(true);
 		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->usageService = $this->createMock(originalClassName: OrganisationUsageService::class);
 
-		$this->controller = new OrganisationController(
+		$this->controller = OrganisationControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->organisationService,
@@ -59,7 +72,8 @@ class OrganisationControllerTest extends TestCase {
 			$this->createMock(TenantLifecycleService::class),
 			$this->createMock(TenantUsageMapper::class),
 			$this->userSession,
-			$this->groupManager
+			$this->groupManager,
+			$this->usageService
 		);
 	}
 
@@ -233,7 +247,7 @@ class OrganisationControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['uuid' => 'custom-uuid']);
 		$this->organisationService->expects($this->once())
 			->method('createOrganisation')
-			->with('My Org', 'Desc', true, 'custom-uuid')
+			->with(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'My Org', description: 'Desc', uuid: 'custom-uuid'), true)
 			->willReturn($org);
 
 		$result = $this->controller->create('My Org', 'Desc');
@@ -480,6 +494,42 @@ class OrganisationControllerTest extends TestCase {
 	// ──────────────────────────────────────────────
 	// show()
 	// ──────────────────────────────────────────────
+
+	/**
+	 * Show replaces the entity's unmeasured usage with the measured one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
+	 */
+	public function testShowReturnsMeasuredUsage(): void {
+		$org = $this->createMock(originalClassName: Organisation::class);
+		$org->method('jsonSerialize')->willReturn(['uuid' => 'uuid-1', 'usage' => ['storage' => null, 'requests' => null, 'users' => 2]]);
+		$measured = ['storage' => 4096, 'bandwidth' => null, 'requests' => null, 'users' => 2, 'groups' => 0];
+		$this->usageService->expects($this->once())->method('measure')->with($org)->willReturn($measured);
+
+		$this->organisationService->method('hasAccessToOrganisation')->willReturn(true);
+		$this->organisationMapper->method('findByUuid')->willReturn($org);
+		$this->organisationMapper->method('findChildrenChain')->willReturn([]);
+
+		$data = $this->controller->show('uuid-1')->getData();
+
+		$this->assertSame(expected: $measured, actual: $data['organisation']['usage']);
+	}
+
+	/**
+	 * A refused organisation is not measured.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/organisation-usage-measured/spec.md
+	 */
+	public function testShowDoesNotMeasureWhenNoAccess(): void {
+		$this->organisationService->method('hasAccessToOrganisation')->willReturn(false);
+		$this->usageService->expects($this->never())->method('measure');
+
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $this->controller->show('uuid-1')->getStatus());
+	}
 
 	public function testShowReturnsForbiddenWhenNoAccess(): void {
 		$this->organisationService->method('hasAccessToOrganisation')->willReturn(false);
@@ -1172,8 +1222,8 @@ class OrganisationControllerTest extends TestCase {
 		]);
 
 		$this->organisationMapper->expects($this->once())
-			->method('findByName')
-			->with('Search', 50, 0)
+			->method('findListByName')
+			->with('Search', new ListQuery(50, 0))
 			->willReturn([$org]);
 		$this->organisationMapper->method('findAll')->willReturn([]);
 
@@ -1194,7 +1244,7 @@ class OrganisationControllerTest extends TestCase {
 		$this->organisationMapper->expects($this->once())
 			->method('findAll')
 			->willReturn([]);
-		$this->organisationMapper->expects($this->never())->method('findByName');
+		$this->organisationMapper->expects($this->never())->method('findListByName');
 
 		$this->request->method('getParam')
 			->willReturnMap([
@@ -1319,7 +1369,7 @@ class OrganisationControllerTest extends TestCase {
 	}
 
 	public function testSearchByNameException(): void {
-		$this->organisationMapper->method('findByName')
+		$this->organisationMapper->method('findListByName')
 			->willThrowException(new Exception('Search error'));
 		$this->request->method('getParam')
 			->willReturnMap([
@@ -1392,7 +1442,7 @@ class OrganisationControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 		$this->organisationService->expects($this->once())
 			->method('createOrganisation')
-			->with('Valid Org', '', true, '')
+			->with(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Valid Org'), true)
 			->willReturn($org);
 
 		$result = $this->controller->create('Valid Org');
@@ -1766,8 +1816,8 @@ class OrganisationControllerTest extends TestCase {
 		]);
 
 		$this->organisationMapper->expects($this->once())
-			->method('findByName')
-			->with('Found', 10, 5)
+			->method('findListByName')
+			->with('Found', new ListQuery(10, 5))
 			->willReturn([$org]);
 
 		$this->request->method('getParam')
@@ -2128,7 +2178,7 @@ class OrganisationControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(['someOtherKey' => 'value']);
 		$this->organisationService->expects($this->once())
 			->method('createOrganisation')
-			->with('Org', 'Desc', true, '')
+			->with(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Org', description: 'Desc'), true)
 			->willReturn($org);
 
 		$result = $this->controller->create('Org', 'Desc');
@@ -2146,8 +2196,8 @@ class OrganisationControllerTest extends TestCase {
 		]);
 
 		$this->organisationMapper->expects($this->once())
-			->method('findByName')
-			->with('Search Term', 50, 0)
+			->method('findListByName')
+			->with('Search Term', new ListQuery(50, 0))
 			->willReturn([$org]);
 
 		$this->request->method('getParam')
@@ -2168,13 +2218,11 @@ class OrganisationControllerTest extends TestCase {
 	private function controllerWithRealLifecycle(): OrganisationController {
 		$lifecycle = new TenantLifecycleService(
 			$this->organisationMapper,
-			$this->groupManager,
-			$this->createMock(IUserManager::class),
-			$this->createMock(IEventDispatcher::class),
+			new TenantDirectory($this->groupManager, $this->createMock(IUserManager::class)),
 			$this->logger
 		);
 
-		return new OrganisationController(
+		return OrganisationControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->organisationService,
@@ -2183,7 +2231,8 @@ class OrganisationControllerTest extends TestCase {
 			$lifecycle,
 			$this->createMock(TenantUsageMapper::class),
 			$this->userSession,
-			$this->groupManager
+			$this->groupManager,
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\OrganisationUsageService::class)
 		);
 	}
 

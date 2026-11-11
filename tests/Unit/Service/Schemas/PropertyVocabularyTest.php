@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 declare(strict_types=1);
@@ -537,5 +537,37 @@ class PropertyVocabularyTest extends TestCase {
 			$this->assertFalse(condition: $row['enforced'], message: "'{$row['key']}' claims to be enforced but nothing checks it");
 			$this->assertNotSame(expected: '', actual: $row['description']);
 		}
+	}
+
+	/**
+	 * A closed-list modifier publishes the list the save path enforces.
+	 *
+	 * Asked of the validator, not read off the table: every published value
+	 * saves, and a value outside the list is refused. `textarea` is the value
+	 * dossiq shipped that refused its whole aanvullingsverzoek schema.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 *
+	 * @return void
+	 */
+	public function testAClosedListModifierPublishesTheListTheSavePathEnforces(): void {
+		$validator = new PropertyValidatorHandler();
+		$modifiers = array_column($this->vocabulary->modifiers(), null, 'key');
+
+		foreach (['inputControl', 'matchType'] as $key) {
+			$this->assertArrayHasKey(key: 'allowedValues', array: $modifiers[$key], message: "'{$key}' does not publish its list");
+			$this->assertNotSame(expected: [], actual: $modifiers[$key]['allowedValues']);
+			foreach ($modifiers[$key]['allowedValues'] as $value) {
+				$this->assertTrue(
+					condition: $validator->validateProperty(property: ['type' => 'string', $key => $value], path: '/x'),
+					message: "published {$key} '{$value}' is refused by the save path"
+				);
+			}
+		}
+
+		$this->assertNotContains(needle: 'textarea', haystack: $modifiers['inputControl']['allowedValues']);
+		$this->assertArrayNotHasKey(key: 'allowedValues', array: $modifiers['conceptScheme']);
+		$this->expectExceptionMessage(message: 'textarea');
+		$validator->validateProperty(property: ['type' => 'string', 'inputControl' => 'textarea'], path: '/x');
 	}
 }//end class

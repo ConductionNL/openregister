@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
 use OCA\OpenRegister\Controller\WebhooksController;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -30,7 +31,9 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
+use OCA\OpenRegister\Service\WebhookDispatchServices;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WebhookStores;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use OCP\ICache;
@@ -45,7 +48,14 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Controller\WebhooksController
+ * @uses \OCA\OpenRegister\Controller\Support\WebhooksMappers
+ * @uses \OCA\OpenRegister\Controller\Support\TasksPlatform
+ * @uses \OCA\OpenRegister\Controller\Support\WebhooksControllerServices
  * @covers \OCA\OpenRegister\Service\WebhookService
+ * @uses \OCA\OpenRegister\Db\Mapping
+ * @uses \OCA\OpenRegister\Db\Webhook
+ * @uses \OCA\OpenRegister\Service\MappingService
+ * @uses \OCA\OpenRegister\Twig\MappingRuntimeLoader
  */
 class WebhookMappingPreviewTest extends TestCase {
 
@@ -68,7 +78,7 @@ class WebhookMappingPreviewTest extends TestCase {
 		$groups = $this->createMock(IGroupManager::class);
 		$groups->method('isAdmin')->willReturn($admin);
 
-		return new WebhooksController(
+		return WebhooksControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->createMock(WebhookMapper::class),
@@ -101,12 +111,16 @@ class WebhookMappingPreviewTest extends TestCase {
 
 		$logger = new NullLogger();
 		$this->service = new WebhookService(
-			webhookMapper: $this->createMock(WebhookMapper::class),
-			logger: $logger,
-			webhookLogMapper: $this->createMock(WebhookLogMapper::class),
-			mappingService: new MappingService($mappingMapper, $cacheFactory, $logger),
-			mappingMapper: $mappingMapper,
-			jobList: $this->createMock(IJobList::class)
+			stores: new WebhookStores(
+				webhookMapper: $this->createMock(WebhookMapper::class),
+				webhookLogMapper: $this->createMock(WebhookLogMapper::class),
+				mappingMapper: $mappingMapper,
+				mappingService: new MappingService($mappingMapper, $cacheFactory, $logger)
+			),
+			dispatch: new WebhookDispatchServices(
+				jobList: $this->createMock(IJobList::class)
+			),
+			logger: $logger
 		);
 	}//end setUp()
 
@@ -129,7 +143,7 @@ class WebhookMappingPreviewTest extends TestCase {
 		$webhook = new Webhook();
 		$webhook->setMapping(5);
 		$build = new \ReflectionMethod(WebhookService::class, 'buildPayload');
-		$delivered = $build->invoke($this->service, $webhook, 'OCA\OpenRegister\Event\ObjectCreatedEvent', ['objectUuid' => 'abc', 'action' => 'create'], 1);
+		$delivered = $build->invoke($this->service, new \OCA\OpenRegister\Service\WebhookDelivery(webhook: $webhook, event: new \OCA\OpenRegister\Service\WebhookEvent(name: 'OCA\OpenRegister\Event\ObjectCreatedEvent', payload: ['objectUuid' => 'abc', 'action' => 'create'])));
 		$this->assertSame($delivered, $data['payload']);
 	}//end testThePreviewIsWhatTheDeliverySends()
 

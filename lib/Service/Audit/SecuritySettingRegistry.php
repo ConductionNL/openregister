@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Throwable;
  * non-secret announced as "changed" costs a click, a secret quoted in a
  * notification is a credential stored in somebody's inbox.
  *
- * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+ * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
 class SecuritySettingRegistry {
 	/**
@@ -87,13 +87,10 @@ class SecuritySettingRegistry {
 		],
 		'retention.auditTrailsEnabled' => ['label' => 'Audit trail', 'default' => true, 'secret' => false, 'type' => 'json'],
 		'retention.searchTrailsEnabled' => ['label' => 'Search trail', 'default' => true, 'secret' => false, 'type' => 'json'],
-		'solr.username' => ['label' => 'Search index user name', 'default' => 'solr', 'secret' => false, 'type' => 'json'],
-		'solr.password' => ['label' => 'Search index password', 'default' => 'SolrRocks', 'secret' => true, 'type' => 'json'],
-		'solr.zookeeperPassword' => ['label' => 'Search cluster password', 'default' => '', 'secret' => true, 'type' => 'json'],
 		'@flow_audit_enabled' => ['label' => 'Audit trail for automated flows', 'default' => false, 'secret' => false, 'type' => 'bool'],
-		'@flow_oversight_enabled' => ['label' => 'Oversight of automated flows', 'default' => true, 'secret' => false, 'type' => 'bool'],
 		'@flow_kill_switch' => ['label' => 'Emergency stop for automated flows', 'default' => false, 'secret' => false, 'type' => 'bool'],
 		'@' . AuditSink::CONFIG_PATH => ['label' => 'Audit trail file location', 'default' => '', 'secret' => false, 'type' => 'string'],
+		'@' . ReadEventVisibility::CONFIG_KEY => ['label' => 'Who sees who read a record', 'default' => '[]', 'secret' => false, 'type' => 'string'],
 	];
 
 	/**
@@ -113,7 +110,7 @@ class SecuritySettingRegistry {
 	 *
 	 * @return bool True when a change to it is announced.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function isSecurityRelevant(string $path): bool {
 		return array_key_exists($path, self::SETTINGS);
@@ -126,10 +123,10 @@ class SecuritySettingRegistry {
 	 *
 	 * @return bool True when the flag says so, or the path names a credential.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function isSecret(string $path): bool {
-		if ((self::SETTINGS[$path]['secret'] ?? false) === true) {
+		if (($this->definition(path: $path)['secret'] ?? false) === true) {
 			return true;
 		}
 
@@ -144,13 +141,24 @@ class SecuritySettingRegistry {
 	}//end isSecret()
 
 	/**
+	 * The registry entry of a setting.
+	 *
+	 * @param string $path The setting path.
+	 *
+	 * @return array{label: string, default: mixed, secret: bool, type: string}|null The entry, or null when unregistered.
+	 */
+	private function definition(string $path): ?array {
+		return (self::SETTINGS[$path] ?? null);
+	}//end definition()
+
+	/**
 	 * The label an announcement shows for a setting.
 	 *
 	 * @param string $path The setting path.
 	 *
 	 * @return string The label, or the path itself when none is registered.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function label(string $path): string {
 		return (self::SETTINGS[$path]['label'] ?? $path);
@@ -166,13 +174,13 @@ class SecuritySettingRegistry {
 	 *
 	 * @return array<string, mixed> Path to value.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function snapshot(): array {
 		$blobs = [];
 		$values = [];
-		foreach (self::SETTINGS as $path => $definition) {
-			$values[$path] = $this->read(path: $path, definition: $definition, blobs: $blobs);
+		foreach (array_keys(self::SETTINGS) as $path) {
+			$values[$path] = $this->read(path: $path, blobs: $blobs);
 		}
 
 		return $values;
@@ -181,34 +189,27 @@ class SecuritySettingRegistry {
 	/**
 	 * Read one marked setting.
 	 *
-	 * @param string                                                        $path       The setting path.
-	 * @param array{label: string, default: mixed, secret: bool, type: string} $definition Its registry entry.
-	 * @param array<string, array<mixed>>                                   $blobs      Decoded blobs, cached per snapshot. `json_decode`
-	 *                                                                                  answers an array whose keys it read from the
-	 *                                                                                  document, so the inner shape is not narrower
-	 *                                                                                  than this and claiming it was is what the
-	 *                                                                                  by-ref check caught.
+	 * @param string                      $path  The setting path, a key of SETTINGS.
+	 * @param array<string, array<mixed>> $blobs Decoded blobs, cached per snapshot. `json_decode`
+	 *                                           answers an array whose keys it read from the
+	 *                                           document, so the inner shape is not narrower
+	 *                                           than this and claiming it was is what the
+	 *                                           by-ref check caught.
 	 *
 	 * @return mixed The stored value, or the default.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function read(string $path, array $definition, array &$blobs): mixed {
-		$default = $definition['default'];
+	private function read(string $path, array &$blobs): mixed {
+		$default = self::SETTINGS[$path]['default'];
 
 		try {
 			if (str_starts_with($path, '@') === true) {
-				return $this->readKey(key: substr($path, 1), type: $definition['type'], default: $default);
+				return $this->readKey(path: $path);
 			}
 
 			[$blob, $field] = explode('.', $path, 2);
-			if (array_key_exists($blob, $blobs) === false) {
-				$decoded = json_decode($this->appConfig->getValueString(self::APP, $blob, ''), true);
-				$blobs[$blob] = [];
-				if (is_array($decoded) === true) {
-					$blobs[$blob] = $decoded;
-				}
-			}
+			$this->loadBlob(blob: $blob, blobs: $blobs);
 
 			return ($blobs[$blob][$field] ?? $default);
 		} catch (Throwable $unreadable) {
@@ -217,18 +218,38 @@ class SecuritySettingRegistry {
 	}//end read()
 
 	/**
+	 * Decode one JSON settings blob into the per-call cache, once.
+	 *
+	 * @param string                              $blob  The app-config key holding the blob.
+	 * @param array<string, array<mixed>> $blobs The decoded blobs read so far; a blob that is no JSON object caches as [].
+	 *
+	 * @return void
+	 */
+	private function loadBlob(string $blob, array &$blobs): void {
+		if (array_key_exists($blob, $blobs) === true) {
+			return;
+		}
+
+		$decoded = json_decode($this->appConfig->getValueString(self::APP, $blob, ''), true);
+		$blobs[$blob] = [];
+		if (is_array($decoded) === true) {
+			$blobs[$blob] = $decoded;
+		}
+	}//end loadBlob()
+
+	/**
 	 * Read a setting stored under its own key.
 	 *
-	 * @param string $key     The app config key.
-	 * @param string $type    `bool` or `string`.
-	 * @param mixed  $default The default value.
+	 * @param string $path The setting path: `@` and the app config key, a key of SETTINGS.
 	 *
 	 * @return mixed The stored value.
 	 *
-	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
-	private function readKey(string $key, string $type, mixed $default): mixed {
-		if ($type === 'bool') {
+	private function readKey(string $path): mixed {
+		$key = substr($path, 1);
+		$default = self::SETTINGS[$path]['default'];
+		if (self::SETTINGS[$path]['type'] === 'bool') {
 			return $this->appConfig->getValueBool(self::APP, $key, (bool)$default);
 		}
 

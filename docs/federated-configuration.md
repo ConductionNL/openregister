@@ -26,7 +26,7 @@ rules.
 ## Choose which GitHub credential the store uses
 
 The store never assumes your only GitHub key is the one you meant to use. In the
-app's **Configuration store** settings pane (personal settings), pick which of
+app's **Configuration store** settings pane (user settings), pick which of
 your GitHub credentials the store should publish and browse with. The choice is
 saved as a per-user preference; the credential itself is custodied by the broker.
 
@@ -58,14 +58,30 @@ with a credential they did not choose.
 
 ## Trust and governance (admin)
 
+> **Upgrade note.** After this update, an instance with no trusted keys refuses
+> federated installs with a 403. This holds for flows, registers and shared objects
+> alike. Add a trusted key or turn on `allowUnverifiedBundles` to install again. The
+> output of `/api/federated-config/bundle` is unsigned, so copying a bundle between
+> instances needs that setting or a published, signed bundle.
+>
+> Set `installGroups` before you turn the setting on. While `installGroups` is
+> empty, any signed-in user may install, and with the setting on that includes
+> bundles nothing vouches for.
+
 An administrator manages trust at `GET`/`PUT /api/federated-config/trust`:
 
 - **`sourceAllowlist`** — comma-separated GitHub sources you install from. Empty
   means "not yet enforced"; once set, an install from a source not on the list is
   refused. A bare org (e.g. `ConductionNL`) covers all its repositories.
-- **`trustedKeys`** — comma-separated base64 publisher public keys you trust. Empty
-  means signatures are not yet enforced; once set, an unsigned or untrusted-key
-  bundle is refused. Append a key with `PUT {trustKey: "<base64>"}`.
+- **`trustedKeys`**: comma-separated base64 publisher public keys you trust. Append
+  a key with `PUT {trustKey: "<base64>"}`. An install needs a bundle signed by a key
+  on this list. With an empty list, every install is refused until you add a key or
+  turn on `allowUnverifiedBundles`.
+- **`allowUnverifiedBundles`**: set `PUT {field: "allowUnverifiedBundles", value: true}`
+  to accept bundles nothing vouches for while the key list is empty. `true`, `"true"`
+  and `"1"` turn it on; anything else turns it off. A key on the list always wins over
+  this setting. Set `installGroups` first: an empty `installGroups` lets any signed-in
+  user install.
 - **`publishGroups`** / **`installGroups`** — Nextcloud groups permitted to publish
   / install. Empty means any signed-in user; admins are always allowed.
 

@@ -1,0 +1,1030 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`confirm dialog auditTrail asks 1`] = `
+"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> t:Delete</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Do you want to permanently delete this audit trail entry? This action cannot be undone.</p>
+    <div class="audit-trail-info">
+      <p><strong>t:ID:</strong> 5</p>
+      <p><strong>t:Action:</strong><span class="action-badge action-create">CREATE</span></p>
+      <p><strong>t:Object:</strong> 9</p>
+      <p><strong>t:Created:</strong> 1/1/2026, 12:00:00 AM</p>
+    </div></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog auditTrail cancels 1`] = `
+[
+  [
+    "navigationStore.setDialog",
+    false,
+  ],
+]
+`;
+
+exports[`confirm dialog auditTrail closed by hand after a success, stops its timer and asks again 1`] = `
+"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> t:Delete</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Do you want to permanently delete this audit trail entry? This action cannot be undone.</p>
+    <div class="audit-trail-info">
+      <p><strong>t:ID:</strong> 5</p>
+      <p><strong>t:Action:</strong><span class="action-badge action-create">CREATE</span></p>
+      <p><strong>t:Object:</strong> 9</p>
+      <p><strong>t:Created:</strong> 1/1/2026, 12:00:00 AM</p>
+    </div></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog auditTrail confirms, reports success and closes by itself 1`] = `
+"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Close</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>t:Audit trail successfully deleted</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog auditTrail confirms, reports success and closes by itself 2`] = `
+{
+  "afterTimer": [
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "calls": [
+    [
+      "auditTrailStore.refreshAuditTrailList",
+    ],
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`confirm dialog auditTrail reports a refusal 1`] = `
+"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Close</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog auditTrail shows the busy state 1`] = `
+"<x-ncdialog name="t:Delete Audit Trail" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> t:Delete</slot-default>
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Do you want to permanently delete this audit trail entry? This action cannot be undone.</p>
+    <div class="audit-trail-info">
+      <p><strong>t:ID:</strong> 5</p>
+      <p><strong>t:Action:</strong><span class="action-badge action-create">CREATE</span></p>
+      <p><strong>t:Object:</strong> 9</p>
+      <p><strong>t:Created:</strong> 1/1/2026, 12:00:00 AM</p>
+    </div></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog clear asks 1`] = `
+"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> t:Clear Entries</slot-default>
+      <slot-icon>
+        <x-deleteoutline size="20"></x-deleteoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Do you want to permanently delete all filtered audit trail entries? This action cannot be undone.</p>
+    <div class="clear-info">
+      <p><strong>t:Entries to be deleted:</strong> 3</p>
+      <div class="active-filters">
+        <p><strong>t:Active filters:</strong></p>
+        <ul class="filters-list">
+          <li class="filter-item"><span class="filter-key">t:Action:</span><span class="filter-value">create</span></li>
+        </ul>
+      </div>
+    </div></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog clear cancels 1`] = `
+[
+  [
+    "navigationStore.setDialog",
+    false,
+  ],
+]
+`;
+
+exports[`confirm dialog clear closed by hand after a success, stops its timer and asks again 1`] = `
+"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> t:Clear Entries</slot-default>
+      <slot-icon>
+        <x-deleteoutline size="20"></x-deleteoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Do you want to permanently delete all filtered audit trail entries? This action cannot be undone.</p>
+    <div class="clear-info">
+      <p><strong>t:Entries to be deleted:</strong> 3</p>
+      <div class="active-filters">
+        <p><strong>t:Active filters:</strong></p>
+        <ul class="filters-list">
+          <li class="filter-item"><span class="filter-key">t:Action:</span><span class="filter-value">create</span></li>
+        </ul>
+      </div>
+    </div></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog clear confirms, reports success and closes by itself 1`] = `
+"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Close</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>t:{count} audit trails cleared successfully</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog clear confirms, reports success and closes by itself 2`] = `
+{
+  "afterTimer": [],
+  "calls": [
+    [
+      "auditTrailStore.refreshAuditTrailList",
+    ],
+  ],
+}
+`;
+
+exports[`confirm dialog clear reports a refusal 1`] = `
+"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Close</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog clear shows the busy state 1`] = `
+"<x-ncdialog name="t:Clear Filtered Audit Trails" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> t:Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> t:Clear Entries</slot-default>
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p>t:Do you want to permanently delete all filtered audit trail entries? This action cannot be undone.</p>
+    <div class="clear-info">
+      <p><strong>t:Entries to be deleted:</strong> 3</p>
+      <div class="active-filters">
+        <p><strong>t:Active filters:</strong></p>
+        <ul class="filters-list">
+          <li class="filter-item"><span class="filter-key">t:Action:</span><span class="filter-value">create</span></li>
+        </ul>
+      </div>
+    </div></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog object asks 1`] = `
+"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Delete</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Do you want to permanently delete <span>book</span><b>Dune</b>? This action cannot be undone. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog object cancels 1`] = `
+[
+  [
+    "navigationStore.setDialog",
+    false,
+  ],
+]
+`;
+
+exports[`confirm dialog object closed by hand after a success, stops its timer and asks again 1`] = `
+"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Delete</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Do you want to permanently delete <span>book</span><b>Dune</b>? This action cannot be undone. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog object confirms, reports success and closes by itself 1`] = `
+"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Close</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>n:Object successfully deleted</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog object confirms, reports success and closes by itself 2`] = `
+{
+  "afterTimer": [
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "calls": [
+    [
+      "objectStore.registerObjectType",
+      "slug",
+      {
+        "title": "Book",
+      },
+      1,
+    ],
+    [
+      "objectStore.deleteObject",
+      "slug",
+      "u1",
+    ],
+    [
+      "objectStore.refetchSearchCollection",
+    ],
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`confirm dialog object reports a refusal 1`] = `
+"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Close</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog object shows the busy state 1`] = `
+"<x-ncdialog name="Delete Book — Dune" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Delete</slot-default>
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Do you want to permanently delete <span>book</span><b>Dune</b>? This action cannot be undone. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog organisation asks 1`] = `
+"<x-ncdialog name="Delete Organisation" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Delete Organisation</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> You can only delete organisations that you own. You are not the owner of <b>O</b>. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog organisation cancels 1`] = `
+[
+  [
+    "navigationStore.setModal",
+    false,
+  ],
+]
+`;
+
+exports[`confirm dialog organisation closed by hand after a success, stops its timer and asks again 1`] = `
+"<x-ncdialog name="Delete Organisation" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Delete Organisation</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> You can only delete organisations that you own. You are not the owner of <b>O</b>. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog organisation confirms, reports success and closes by itself 1`] = `
+"<x-ncdialog name="Delete Organisation" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Delete Organisation</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> You can only delete organisations that you own. You are not the owner of <b>O</b>. </p>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>Cannot read properties of undefined (reading 'push')</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog organisation confirms, reports success and closes by itself 2`] = `
+{
+  "afterTimer": [],
+  "calls": [
+    [
+      "organisationStore.deleteOrganisation",
+      {
+        "name": "O",
+        "owner": "me",
+        "users": [
+          1,
+        ],
+        "uuid": "a",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`confirm dialog organisation reports a refusal 1`] = `
+"<x-ncdialog name="Delete Organisation" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Delete Organisation</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> You can only delete organisations that you own. You are not the owner of <b>O</b>. </p>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog organisation shows the blocked state 1`] = `
+"<x-ncdialog name="Delete Organisation" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Delete Organisation</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Cannot delete the default organisation. The default organisation is required for the system to function properly. </p>
+    <p> You can only delete organisations that you own. You are not the owner of <b>O</b>. </p>
+    <p> This organisation has 2 members. Please remove all members before deleting the organisation. </p>
+    <p> Cannot delete your currently active organisation. Please switch to another organisation first. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog organisation shows the blocked state 2`] = `2`;
+
+exports[`confirm dialog organisation shows the busy state 1`] = `
+"<x-ncdialog name="Delete Organisation" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Delete Organisation</slot-default>
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> You can only delete organisations that you own. You are not the owner of <b>O</b>. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog register asks 1`] = `
+"<x-ncdialog name="Register verwijderen" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Annuleer</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Verwijderen</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Wil je <b>R</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog register cancels 1`] = `
+[
+  [
+    "navigationStore.setDialog",
+    false,
+  ],
+]
+`;
+
+exports[`confirm dialog register closed by hand after a success, stops its timer and asks again 1`] = `
+"<x-ncdialog name="Register verwijderen" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Annuleer</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Verwijderen</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Wil je <b>R</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog register confirms, reports success and closes by itself 1`] = `
+"<x-ncdialog name="Register verwijderen" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Sluiten</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Register succesvol verwijderd</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog register confirms, reports success and closes by itself 2`] = `
+{
+  "afterTimer": [
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "calls": [
+    [
+      "registerStore.deleteRegister",
+      {
+        "schemas": [],
+        "title": "R",
+      },
+    ],
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`confirm dialog register reports a refusal 1`] = `
+"<x-ncdialog name="Register verwijderen" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Annuleer</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Verwijderen</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Wil je <b>R</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog register shows the blocked state 1`] = `
+"<x-ncdialog name="Register verwijderen" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Sluiten</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Het register kan niet worden verwijderd omdat het nog schema's bevat. Verwijder eerst alle schema's voordat u het register verwijdert. Er zijn nog <b>2</b> schema's in het register. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog register shows the blocked state 2`] = `1`;
+
+exports[`confirm dialog register shows the busy state 1`] = `
+"<x-ncdialog name="Register verwijderen" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Annuleer</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Verwijderen</slot-default>
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Wil je <b>R</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog schema asks 1`] = `
+"<x-ncdialog name="Verwijder Schema" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Annuleren</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Verwijder</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Wil je <b>S</b> permanent verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog schema cancels 1`] = `
+[
+  [
+    "navigationStore.setDialog",
+    false,
+  ],
+]
+`;
+
+exports[`confirm dialog schema closed by hand after a success, stops its timer and asks again 1`] = `
+"<x-ncdialog name="Verwijder Schema" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Annuleren</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Verwijder</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Wil je <b>S</b> permanent verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog schema confirms, reports success and closes by itself 1`] = `
+"<x-ncdialog name="Verwijder Schema" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Sluiten</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog schema confirms, reports success and closes by itself 2`] = `
+{
+  "afterTimer": [
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "calls": [
+    [
+      "schemaStore.deleteSchema",
+      {
+        "id": 3,
+        "title": "S",
+      },
+    ],
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`confirm dialog schema reports a refusal 1`] = `
+"<x-ncdialog name="Verwijder Schema" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Annuleren</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Verwijder</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Wil je <b>S</b> permanent verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog schema shows the busy state 1`] = `
+"<x-ncdialog name="Verwijder Schema" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Annuleren</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Verwijder</slot-default>
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Wil je <b>S</b> permanent verwijderen? Deze actie kan niet ongedaan worden gemaakt. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog source asks 1`] = `
+"<x-ncdialog name="Delete Source" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Delete</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Do you want to permanently delete <b>S</b>? This action cannot be undone. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog source cancels 1`] = `
+[
+  [
+    "navigationStore.setDialog",
+    false,
+  ],
+]
+`;
+
+exports[`confirm dialog source closed by hand after a success, stops its timer and asks again 1`] = `
+"<x-ncdialog name="Delete Source" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Delete</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Do you want to permanently delete <b>S</b>? This action cannot be undone. </p></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog source confirms, reports success and closes by itself 1`] = `
+"<x-ncdialog name="Delete Source" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Close</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <x-ncnotecard type="success">
+      <slot-default>
+        <p>Source successfully deleted</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog source confirms, reports success and closes by itself 2`] = `
+{
+  "afterTimer": [
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+  "calls": [
+    [
+      "sourceStore.deleteSource",
+      {
+        "title": "S",
+      },
+    ],
+    [
+      "navigationStore.setDialog",
+      false,
+    ],
+  ],
+}
+`;
+
+exports[`confirm dialog source reports a refusal 1`] = `
+"<x-ncdialog name="Delete Source" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="false" variant="error">
+      <slot-default> Delete</slot-default>
+      <slot-icon>
+        <x-trashcanoutline size="20"></x-trashcanoutline>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Do you want to permanently delete <b>S</b>? This action cannot be undone. </p>
+    <x-ncnotecard type="error">
+      <slot-default>
+        <p>refused</p></slot-default>
+    </x-ncnotecard></slot-default>
+</x-ncdialog>"
+`;
+
+exports[`confirm dialog source shows the busy state 1`] = `
+"<x-ncdialog name="Delete Source" size="normal" noclose="true">
+  <slot-actions>
+    <x-ncbutton>
+      <slot-default> Cancel</slot-default>
+      <slot-icon>
+        <x-cancel size="20"></x-cancel>
+      </slot-icon>
+    </x-ncbutton>
+    <x-ncbutton disabled="true" variant="error">
+      <slot-default> Delete</slot-default>
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <p> Do you want to permanently delete <b>S</b>? This action cannot be undone. </p></slot-default>
+</x-ncdialog>"
+`;

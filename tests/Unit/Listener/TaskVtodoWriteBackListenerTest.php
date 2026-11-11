@@ -22,7 +22,9 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
+use OCA\OpenRegister\Listener\Support\TaskVtodoWriteBackServices;
 use OCA\OpenRegister\Listener\TaskVtodoWriteBackListener;
+use OCA\OpenRegister\Service\Task\TaskCalendarDocument;
 use OCA\OpenRegister\Service\Task\TaskProjectionService;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
 use OCP\Calendar\Events\CalendarObjectDeletedEvent;
@@ -56,7 +58,7 @@ class TaskVtodoWriteBackListenerTest extends TestCase {
 			$session->method('getUser')->willReturn($user);
 		}
 
-		return new TaskVtodoWriteBackListener($this->gate, $this->projections, $session, new NullLogger());
+		return new TaskVtodoWriteBackListener($this->gate, new TaskVtodoWriteBackServices($this->projections, new TaskCalendarDocument()), $session, new NullLogger());
 	}
 
 	private function projected(string $status): string {

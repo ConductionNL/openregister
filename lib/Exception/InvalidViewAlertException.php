@@ -60,4 +60,26 @@ class InvalidViewAlertException extends InvalidArgumentException {
 	public function getField(): string {
 		return $this->field;
 	}//end getField()
+
+	/**
+	 * The HTTP status a save refused for this reason answers with.
+	 *
+	 * @return int 422: the alert does not read.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function getStatus(): int {
+		return 422;
+	}//end getStatus()
+
+	/**
+	 * Extra fields for the refusal's response body.
+	 *
+	 * @return array<string, mixed> None for a malformed alert.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function getDetails(): array {
+		return [];
+	}//end getDetails()
 }//end class

@@ -4,6 +4,56 @@ import { ref, computed } from 'vue'
 import { objectStore } from '../store/store.js'
 
 /**
+ * Copy a file from its binary data, keeping name, type and modification time.
+ *
+ * @param {File} file The file.
+ * @return {File} The copy.
+ */
+function copyFile(file) {
+	return new File([file], file.name, {
+		type: file.type,
+		lastModified: file.lastModified,
+	})
+}
+
+/**
+ * Copy a file and mark it pending, with tags and status as defined
+ * (writable, enumerable, not configurable) properties.
+ *
+ * @param {File} file The file.
+ * @param {Array} tags The tags to attach.
+ * @return {File} The pending copy.
+ */
+function pendingCopy(file, tags) {
+	const newFile = copyFile(file)
+	Object.defineProperty(newFile, 'tags', {
+		value: tags,
+		writable: true,
+		enumerable: true,
+	})
+	Object.defineProperty(newFile, 'status', {
+		value: 'pending',
+		writable: true,
+		enumerable: true,
+	})
+	return newFile
+}
+
+/**
+ * Copy a file and mark it pending, with tags and status as plain properties.
+ *
+ * @param {File} file The file.
+ * @param {Array} tags The tags to attach.
+ * @return {File} The pending copy.
+ */
+function assignedPendingCopy(file, tags) {
+	const newFile = copyFile(file)
+	newFile.tags = tags
+	newFile.status = 'pending'
+	return newFile
+}
+
+/**
  * File selection composable
  * @param {Array} options
  *
@@ -42,81 +92,36 @@ export function useFileSelection(options) {
 		return '*'
 	})
 
+	// Append dropped files not yet in the list, or start a new list
+	const merge = (files) => {
+		const kept = filesList.value
+		if (kept?.length > 0) {
+			const added = files.filter(
+				(file) => !kept.some((f) => f.name === file.name),
+			)
+			return [...kept, ...added.map((file) => pendingCopy(file, tags))]
+		}
+		return Array.from(files, (file) => pendingCopy(file, tags))
+	}
+
+	// The file list after a drop
+	const select = (files) => {
+		const list =
+			files instanceof FileList
+				? Array.from(files, (file) => assignedPendingCopy(file, tags))
+				: files
+		if (!allowMultiple) {
+			return list.length > 1 ? [list[0]] : list
+		}
+		return merge(list)
+	}
+
 	// Handling of files drop
 	const onDrop = (files) => {
 		if (!files || files.length === 0) {
 			return
 		}
-		if (files instanceof FileList) {
-			files = Array.from(files, (file) => {
-				// Create new File object using the original file's binary data
-				const newFile = new File([file], file.name, {
-					type: file.type,
-					lastModified: file.lastModified,
-				})
-				newFile.tags = tags
-				newFile.status = 'pending'
-				return newFile
-			})
-		}
-
-		if (files.length > 1 && !allowMultiple) {
-			files = [files[0]]
-		}
-
-		if (filesList.value?.length > 0 && allowMultiple) {
-			const filteredFiles = files.filter(
-				(file) => !filesList.value.some((f) => f.name === file.name),
-			)
-
-			const filteredFilesWithLabels = filteredFiles.map((file) => {
-				// Create new File object using the original file's binary data
-				const newFile = new File([file], file.name, {
-					type: file.type,
-					lastModified: file.lastModified,
-				})
-				// Add tags
-				Object.defineProperty(newFile, 'tags', {
-					value: tags,
-					writable: true,
-					enumerable: true,
-				})
-				// Add status
-				Object.defineProperty(newFile, 'status', {
-					value: 'pending', // Default status
-					writable: true,
-					enumerable: true,
-				})
-				return newFile
-			})
-
-			files = [...filesList.value, ...filteredFilesWithLabels]
-		}
-
-		if (files.length > 0 && !filesList.value?.length > 0 && allowMultiple) {
-			files = Array.from(files, (file) => {
-				// Create new File object using the original file's binary data
-				const newFile = new File([file], file.name, {
-					type: file.type,
-					lastModified: file.lastModified,
-				})
-				// Add tags
-				Object.defineProperty(newFile, 'tags', {
-					value: tags,
-					writable: true,
-					enumerable: true,
-				})
-				// Add status
-				Object.defineProperty(newFile, 'status', {
-					value: 'pending', // Default status
-					writable: true,
-					enumerable: true,
-				})
-				return newFile
-			})
-		}
-
-		filesList.value = files
+		filesList.value = select(files)
 		onFileDrop && onFileDrop()
 		onFileSelect && onFileSelect()
 	}

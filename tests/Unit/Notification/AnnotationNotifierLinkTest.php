@@ -25,19 +25,22 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+ * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Notification;
 
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
+use OCA\OpenRegister\Notifications\Service\ObjectDeepLinks;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -47,6 +50,7 @@ use OCP\Notification\INotification;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 
 /**
  * Locks the link an object notification carries.
@@ -98,8 +102,8 @@ class AnnotationNotifierLinkTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnMap(
 			[
-				[RegisterMapper::class, $registerMapper],
-				[SchemaMapper::class, $schemaMapper],
+				[RegisterMapperInterface::class, $registerMapper],
+				[SchemaMapperInterface::class, $schemaMapper],
 			]
 		);
 
@@ -128,7 +132,7 @@ class AnnotationNotifierLinkTest extends TestCase {
 				: self::BASE . '/index.php/apps/openregister/route/' . $route
 		);
 
-		return new AnnotationNotifier($factory, $urlGenerator, $registry);
+		return new AnnotationNotifier($factory, new ObjectDeepLinks($urlGenerator, $registry));
 	}//end makeNotifier()
 
 	/**
@@ -189,12 +193,7 @@ class AnnotationNotifierLinkTest extends TestCase {
 
 	public function testAClaimedSchemaLinksToTheOwningApp(): void {
 		$registry = $this->makeRegistry();
-		$registry->register(
-			appId: 'pipelinq',
-			registerSlug: 'pipelinq',
-			schemaSlug: 'client',
-			urlTemplate: '/apps/pipelinq/clients/{uuid}'
-		);
+		$registry->add(registration: new DeepLinkRegistration(appId: 'pipelinq', registerSlug: 'pipelinq', schemaSlug: 'client', urlTemplate: '/apps/pipelinq/clients/{uuid}'));
 
 		$this->makeNotifier($registry)->prepare(
 			$this->makeNotification(
@@ -225,7 +224,7 @@ class AnnotationNotifierLinkTest extends TestCase {
 			'en'
 		);
 
-		$expected = self::BASE . '/index.php/apps/openregister/#/registers/3/schemas/4/objects/o-9';
+		$expected = self::BASE . '/index.php/apps/openregister/objects/3/4/o-9';
 		$this->assertSame($expected, $this->notificationLink);
 		$this->assertSame([['View', $expected]], $this->actionLinks);
 	}//end testAnUnclaimedSchemaLinksToTheOpenRegisterObjectView()
@@ -237,7 +236,7 @@ class AnnotationNotifierLinkTest extends TestCase {
 		);
 
 		$this->assertSame(
-			self::BASE . '/index.php/apps/openregister/#/registers/3/schemas/4/objects/o-9',
+			self::BASE . '/index.php/apps/openregister/objects/3/4/o-9',
 			$this->notificationLink
 		);
 	}//end testWithoutARegistryTheLinkStillPointsAtTheObject()

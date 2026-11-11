@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\SortRequest;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -121,7 +122,9 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 		$schema->setProperties($properties);
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
-		$method->invoke($this->handler, $this->makeQueryBuilder(), $order, $schema, null, $dateTimeColumns);
+		$sort = new SortRequest(order: $order, schema: $schema);
+		$sort->dateTimeColumns = $dateTimeColumns;
+		$method->invoke($this->handler, $this->makeQueryBuilder(), $sort);
 
 		return $this->orderBy;
 	}//end sort()
@@ -173,7 +176,8 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 			]
 		);
 
-		$this->assertSame([['t.title', 'DESC'], ['t.priority', 'ASC']], $result);
+		// Text sorts lower-cased since 9 October 2026; a number keeps its column.
+		$this->assertSame([['LOWER("t"."title")', 'DESC'], ['t.priority', 'ASC']], $result);
 	}//end testNonDatePropertyKeepsBareColumn()
 
 	public function testEncryptedDatePropertyKeepsBareColumn(): void {
@@ -225,7 +229,8 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 			properties: ['occurredAt' => ['type' => 'string']]
 		);
 
-		$this->assertSame([['t.occurred_at', 'DESC']], $result);
+		// Not a date by the schema, so it sorts as text: lower-cased since 9 October 2026.
+		$this->assertSame([['LOWER("t"."occurred_at")', 'DESC']], $result);
 	}//end testNonDatePropertyOnDateColumnKeepsBareColumn()
 
 	public function testInvalidDirectionFallsBackToAscending(): void {

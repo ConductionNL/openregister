@@ -50,7 +50,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
-use DateTime;
 use JWadhams\JsonLogic;
 use Throwable;
 
@@ -69,33 +68,26 @@ class FlowExpression {
 	/**
 	 * Build the document an expression is evaluated against.
 	 *
-	 * @param array $item The current item.
-	 * @param integer $itemIndex Its position in the list.
-	 * @param integer $itemCount How many items the step received.
-	 * @param array $context Run-level metadata.
-	 * @param array $subject The object the run is about.
+	 * `subject` is always present and empty here; a caller whose expressions
+	 * read the object a run is about (a case sentry) fills it in.
+	 *
+	 * @param array                     $item    The current item.
+	 * @param FlowExpressionDataOptions $options Its position, the list size and the run-level metadata.
 	 *
 	 * @return array<string, mixed> The data document.
 	 *
 	 * @spec openspec/changes/or-flow-expressions/specs/flow-expressions/spec.md
 	 */
-	public static function dataFor(
-		array $item,
-		int $itemIndex = 0,
-		int $itemCount = 1,
-		array $context = [],
-		array $subject = [],
-	): array {
+	public static function documentFor(array $item, FlowExpressionDataOptions $options): array {
 		return [
 			'json' => (array)($item[FlowItems::JSON] ?? []),
 			'binary' => (array)($item[FlowItems::BINARY] ?? []),
-			'itemIndex' => $itemIndex,
-			'itemCount' => $itemCount,
-			'context' => $context,
-			'subject' => $subject,
+			'itemIndex' => $options->itemIndex,
+			'itemCount' => $options->itemCount,
+			'context' => $options->context,
+			'subject' => [],
 		];
-
-	}//end dataFor()
+	}//end documentFor()
 
 	/**
 	 * Evaluate an expression.
@@ -173,7 +165,7 @@ class FlowExpression {
 		}
 
 		try {
-			JsonLogic::apply($logic, self::dataFor(item: []));
+			JsonLogic::apply($logic, self::documentFor(item: [], options: new FlowExpressionDataOptions()));
 			return true;
 		} catch (Throwable $e) {
 			return false;
@@ -182,11 +174,9 @@ class FlowExpression {
 	}//end isValid()
 
 	/**
-	 * Add the operators flows need and JSONLogic does not ship.
+	 * Add the operators flows need and JSONLogic does not ship, once per request.
 	 *
-	 * Deliberately small. Each one exists because a flow author would
-	 * otherwise have to reach for a Code node to do something ordinary —
-	 * which is the gap this whole decision is trying not to open.
+	 * The operators themselves are {@see FlowExpressionOperators}.
 	 *
 	 * @return void
 	 *
@@ -198,85 +188,8 @@ class FlowExpression {
 		}
 
 		self::$operatorsRegistered = true;
-
-		// Strings.
-		JsonLogic::add_operation('upper', static fn ($a) => mb_strtoupper((string)$a));
-		JsonLogic::add_operation('lower', static fn ($a) => mb_strtolower((string)$a));
-		JsonLogic::add_operation('trim', static fn ($a) => trim((string)$a));
-		JsonLogic::add_operation('split', static fn ($a, $sep = ',') => explode((string)$sep, (string)$a));
-		JsonLogic::add_operation('join', static fn ($a, $sep = ',') => implode((string)$sep, (array)$a));
-		JsonLogic::add_operation('replace', static fn ($a, $s, $r) => str_replace((string)$s, (string)$r, (string)$a));
-		JsonLogic::add_operation(
-			'matches',
-			static function ($a, $pattern) {
-				// A bad pattern is the author's error and must not warn into
-				// the log on every item; @ plus an explicit false check.
-				return @preg_match((string)$pattern, (string)$a) === 1;
-			}
-		);
-
-		// Dates. `now` takes no argument; `dateFormat` and `dateAdd` accept
-		// anything strtotime understands, which is what a stored ISO string is.
-		JsonLogic::add_operation('now', static fn () => (new DateTime())->format('c'));
-		JsonLogic::add_operation(
-			'dateFormat',
-			static function ($value, $format = 'c') {
-				$time = strtotime((string)$value);
-				if ($time === false) {
-					return null;
-				}
-
-				return date((string)$format, $time);
-			}
-		);
-		JsonLogic::add_operation(
-			'dateAdd',
-			static function ($value, $modifier) {
-				$time = strtotime((string)$modifier, strtotime((string)$value));
-				if ($time === false) {
-					return null;
-				}
-
-				return date('c', $time);
-			}
-		);
-
-		// Arrays.
-		JsonLogic::add_operation('unique', static fn ($a) => array_values(array_unique((array)$a)));
-		JsonLogic::add_operation(
-			'sort',
-			static function ($a) {
-				$list = (array)$a;
-				sort($list);
-				return $list;
-			}
-		);
-		JsonLogic::add_operation(
-			'length',
-			static function ($a) {
-				if (is_array($a) === true) {
-					return count($a);
-				}
-
-				return mb_strlen((string)$a);
-			}
-		);
-
-		// Structure. `coalesce` is the null-safe read authors reach for most.
-		JsonLogic::add_operation(
-			'coalesce',
-			static function (...$values) {
-				foreach ($values as $value) {
-					if ($value !== null && $value !== '') {
-						return $value;
-					}
-				}
-
-				return null;
-			}
-		);
-		JsonLogic::add_operation('toJson', static fn ($a) => json_encode($a));
-		JsonLogic::add_operation('fromJson', static fn ($a) => json_decode((string)$a, true));
-
+		foreach (FlowExpressionOperators::all() as $name => $operation) {
+			JsonLogic::add_operation($name, $operation);
+		}
 	}//end registerOperators()
 }//end class

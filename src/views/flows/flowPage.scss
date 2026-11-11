@@ -1,0 +1,65 @@
+// SPDX-License-Identifier: EUPL-1.2
+// SPDX-FileCopyrightText: 2026 Conduction B.V.
+// ---
+// The layout the flow overview and the run page share: the page column, its
+// header and title, and the bordered cards. Each page passes its own block
+// name, so the class names in the templates stay what they were.
+
+@mixin flow-page($page) {
+	.#{$page} {
+		display: flex;
+		flex-direction: column;
+		gap: calc(var(--default-grid-baseline, 4px) * 5);
+		max-width: 1200px;
+		padding: calc(var(--default-grid-baseline, 4px) * 6)
+			calc(var(--default-grid-baseline, 4px) * 8)
+			calc(var(--default-grid-baseline, 4px) * 12);
+		box-sizing: border-box;
+	}
+
+	.#{$page}__header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 16px;
+	}
+
+	.#{$page}__title {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.#{$page}__title h1 {
+		margin: 0;
+		font-size: 30px;
+		font-weight: 700;
+		line-height: 1.2;
+	}
+}
+
+@mixin flow-card($card) {
+	.#{$card} {
+		background: var(--color-main-background);
+		border: 1px solid var(--color-border);
+		border-radius: var(--border-radius-large);
+		min-width: 0;
+	}
+
+	.#{$card}__head {
+		padding: 12px 20px;
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.#{$card}__head h2 {
+		margin: 0;
+		font-size: 16px;
+		font-weight: 600;
+	}
+
+	.#{$card}__body {
+		margin: 0;
+		padding: 20px;
+	}
+}

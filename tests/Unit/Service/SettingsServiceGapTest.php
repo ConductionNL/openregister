@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Kernel\Contracts\DeckPlacement;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
@@ -86,12 +86,11 @@ class SettingsServiceGapTest extends TestCase {
 		$groupManager = $this->createMock(IGroupManager::class);
 		$organisationMapper = $this->createMock(OrganisationMapper::class);
 		$schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-		$facetCacheService = $this->createMock(FacetCacheHandler::class);
 		$searchTrailMapper = $this->createMock(SearchTrailMapper::class);
 		$userManager = $this->createMock(IUserManager::class);
 		$db = $this->createMock(IDBConnection::class);
 
-		$this->searchBackendHandler = $this->createMock(SearchBackendHandler::class);
+		$this->searchBackendHandler = new SearchBackendHandler();
 		$this->llmSettingsHandler = $this->createMock(LlmSettingsHandler::class);
 		$this->fileSettingsHandler = $this->createMock(FileSettingsHandler::class);
 		$this->objectRetentionHandler = $this->createMock(ObjectRetentionHandler::class);
@@ -100,17 +99,8 @@ class SettingsServiceGapTest extends TestCase {
 
 		$this->service = new SettingsService(
 			$this->config,
-			$auditTrailMapper,
-			$cacheFactory,
-			$groupManager,
 			$this->logger,
-			$organisationMapper,
-			$schemaCacheService,
-			$facetCacheService,
-			$searchTrailMapper,
-			$userManager,
 			$db,
-			null,
 			null,
 			'openregister',
 			null,
@@ -618,7 +608,7 @@ class SettingsServiceGapTest extends TestCase {
 				json_encode(['boardId' => 4, 'stackId' => 5])
 			);
 
-		$this->service->setDeckDefault('case', 4, 5);
+		$this->service->setDeckDefault(schemaSlug: 'case', placement: new DeckPlacement(boardId: 4, stackId: 5));
 	}
 
 	// clearDeckDefault() was removed together with this test: it had no

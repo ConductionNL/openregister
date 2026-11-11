@@ -1,0 +1,1068 @@
+{
+    "api-base-app": {
+        "returned": "https://git.example.org/api/v4",
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ]
+        ]
+    },
+    "api-base-system": {
+        "returned": "https://gitlab.com/api/v4",
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ]
+        ]
+    },
+    "branches": {
+        "returned": [
+            {
+                "name": "main",
+                "commit": "c1",
+                "protected": true,
+                "default": true
+            },
+            {
+                "name": "feature",
+                "commit": null,
+                "protected": false,
+                "default": false
+            }
+        ],
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching branches from GitLab",
+                {
+                    "project_id": 12
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/branches",
+                {
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "branches-404": {
+        "threw": "Exception",
+        "message": "Failed to fetch branches: HTTP 404",
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching branches from GitLab",
+                {
+                    "project_id": 12
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/branches",
+                {
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitLabHandler] GitLab API get branches failed",
+                {
+                    "error": "HTTP 404",
+                    "project_id": 12
+                }
+            ]
+        ]
+    },
+    "file": {
+        "returned": {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "Good",
+                "version": "1.2.0"
+            },
+            "x-openregister": {
+                "app": "app",
+                "type": "app"
+            }
+        },
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching file from GitLab",
+                {
+                    "project_id": 12,
+                    "path": "dir/good.openregister.json",
+                    "ref": "dev"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/files/dir%2Fgood.openregister.json/raw",
+                {
+                    "query": {
+                        "ref": "dev"
+                    },
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "file-connect": {
+        "threw": "Exception",
+        "message": "Failed to fetch file: could not connect",
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching file from GitLab",
+                {
+                    "project_id": 12,
+                    "path": "good.json",
+                    "ref": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/files/good.json/raw",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitLabHandler] GitLab API get file content failed",
+                {
+                    "error": "could not connect",
+                    "project_id": 12,
+                    "path": "good.json",
+                    "ref": "main"
+                }
+            ]
+        ]
+    },
+    "file-invalid": {
+        "threw": "Exception",
+        "message": "Invalid JSON in file: Syntax error",
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching file from GitLab",
+                {
+                    "project_id": 12,
+                    "path": "bad.openregister.json",
+                    "ref": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/files/bad.openregister.json/raw",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": []
+                }
+            ]
+        ]
+    },
+    "list": {
+        "returned": [
+            {
+                "path": "openregister.json",
+                "id": "b1",
+                "config": {
+                    "title": "Good",
+                    "description": "",
+                    "version": "1.2.0",
+                    "app": "app",
+                    "type": "app"
+                }
+            },
+            {
+                "path": "lib/xonly.openregister.json",
+                "id": null,
+                "config": {
+                    "title": "X",
+                    "description": "xd",
+                    "version": "9.0.0",
+                    "app": null,
+                    "type": "manual"
+                }
+            }
+        ],
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Listing configuration files from GitLab",
+                {
+                    "project_id": 12,
+                    "ref": "dev",
+                    "path": "lib"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/tree",
+                {
+                    "query": {
+                        "ref": "dev",
+                        "path": "lib",
+                        "recursive": true
+                    },
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching file from GitLab",
+                {
+                    "project_id": 12,
+                    "path": "openregister.json",
+                    "ref": "dev"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/files/openregister.json/raw",
+                {
+                    "query": {
+                        "ref": "dev"
+                    },
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching file from GitLab",
+                {
+                    "project_id": 12,
+                    "path": "lib/xonly.openregister.json",
+                    "ref": "dev"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/files/lib%2Fxonly.openregister.json/raw",
+                {
+                    "query": {
+                        "ref": "dev"
+                    },
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching file from GitLab",
+                {
+                    "project_id": 12,
+                    "path": "plain.openregister.json",
+                    "ref": "dev"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/files/plain.openregister.json/raw",
+                {
+                    "query": {
+                        "ref": "dev"
+                    },
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[GitLabHandler] File does not contain required OpenRegister structure",
+                {
+                    "path": "plain.openregister.json"
+                }
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching file from GitLab",
+                {
+                    "project_id": 12,
+                    "path": "bad.openregister.json",
+                    "ref": "dev"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/files/bad.openregister.json/raw",
+                {
+                    "query": {
+                        "ref": "dev"
+                    },
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ],
+            [
+                "log.debug",
+                "[GitLabHandler] Failed to parse configuration file",
+                {
+                    "path": "bad.openregister.json",
+                    "error": "Invalid JSON in file: Syntax error"
+                }
+            ]
+        ]
+    },
+    "list-403": {
+        "threw": "Exception",
+        "message": "Failed to list configuration files: HTTP 403",
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Listing configuration files from GitLab",
+                {
+                    "project_id": 12,
+                    "ref": "main",
+                    "path": ""
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/tree",
+                {
+                    "query": {
+                        "ref": "main",
+                        "path": "",
+                        "recursive": true
+                    },
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitLabHandler] GitLab API list files failed",
+                {
+                    "error": "HTTP 403",
+                    "project_id": 12,
+                    "ref": "main"
+                }
+            ]
+        ]
+    },
+    "list-defaults": {
+        "returned": [
+            {
+                "path": "openregister.json",
+                "id": "b1",
+                "config": {
+                    "title": "Good",
+                    "description": "",
+                    "version": "1.2.0",
+                    "app": "app",
+                    "type": "app"
+                }
+            },
+            {
+                "path": "lib/xonly.openregister.json",
+                "id": null,
+                "config": {
+                    "title": "X",
+                    "description": "xd",
+                    "version": "9.0.0",
+                    "app": null,
+                    "type": "manual"
+                }
+            }
+        ],
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Listing configuration files from GitLab",
+                {
+                    "project_id": 12,
+                    "ref": "main",
+                    "path": ""
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/tree",
+                {
+                    "query": {
+                        "ref": "main",
+                        "path": "",
+                        "recursive": true
+                    },
+                    "headers": []
+                }
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching file from GitLab",
+                {
+                    "project_id": 12,
+                    "path": "openregister.json",
+                    "ref": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/files/openregister.json/raw",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": []
+                }
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching file from GitLab",
+                {
+                    "project_id": 12,
+                    "path": "lib/xonly.openregister.json",
+                    "ref": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/files/lib%2Fxonly.openregister.json/raw",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": []
+                }
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching file from GitLab",
+                {
+                    "project_id": 12,
+                    "path": "plain.openregister.json",
+                    "ref": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/files/plain.openregister.json/raw",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": []
+                }
+            ],
+            [
+                "log.debug",
+                "[GitLabHandler] File does not contain required OpenRegister structure",
+                {
+                    "path": "plain.openregister.json"
+                }
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching file from GitLab",
+                {
+                    "project_id": 12,
+                    "path": "bad.openregister.json",
+                    "ref": "main"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/12/repository/files/bad.openregister.json/raw",
+                {
+                    "query": {
+                        "ref": "main"
+                    },
+                    "headers": []
+                }
+            ],
+            [
+                "log.debug",
+                "[GitLabHandler] Failed to parse configuration file",
+                {
+                    "path": "bad.openregister.json",
+                    "error": "Invalid JSON in file: Syntax error"
+                }
+            ]
+        ]
+    },
+    "project": {
+        "returned": {
+            "id": 12,
+            "path_with_namespace": "org/app",
+            "default_branch": "dev"
+        },
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching GitLab project by path",
+                {
+                    "namespace": "my group",
+                    "project": "app"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/my+group%2Fapp",
+                {
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "project-404": {
+        "threw": "Exception",
+        "message": "Failed to fetch project: HTTP 404",
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Fetching GitLab project by path",
+                {
+                    "namespace": "org",
+                    "project": "app"
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/projects/org%2Fapp",
+                {
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitLabHandler] GitLab API get project failed",
+                {
+                    "error": "HTTP 404",
+                    "namespace": "org",
+                    "project": "app"
+                }
+            ]
+        ]
+    },
+    "search": {
+        "returned": {
+            "total_count": 4,
+            "results": [
+                {
+                    "project_id": 3,
+                    "path": "lib/app.openregister.json",
+                    "ref": "dev",
+                    "url": "{\"x-openregister\":{}}",
+                    "name": "app.openregister",
+                    "config": {
+                        "title": "app.openregister",
+                        "description": "",
+                        "version": "unknown",
+                        "app": null,
+                        "type": "unknown"
+                    }
+                },
+                {
+                    "project_id": 4,
+                    "path": "conf.json",
+                    "ref": "main",
+                    "url": "",
+                    "name": "conf",
+                    "config": {
+                        "title": "conf",
+                        "description": "",
+                        "version": "unknown",
+                        "app": null,
+                        "type": "unknown"
+                    }
+                }
+            ],
+            "page": 1,
+            "per_page": 30
+        },
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Searching GitLab for OpenRegister configurations",
+                {
+                    "_search": "",
+                    "query": "x-openregister",
+                    "page": 1
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/search",
+                {
+                    "query": {
+                        "scope": "blobs",
+                        "search": "x-openregister",
+                        "page": 1,
+                        "per_page": 30
+                    },
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ]
+        ]
+    },
+    "search-500": {
+        "threw": "Exception",
+        "message": "Failed to search GitLab: HTTP 500",
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Searching GitLab for OpenRegister configurations",
+                {
+                    "_search": "zaak",
+                    "query": "x-openregister zaak",
+                    "page": 1
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/search",
+                {
+                    "query": {
+                        "scope": "blobs",
+                        "search": "x-openregister zaak",
+                        "page": 1,
+                        "per_page": 30
+                    },
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ],
+            [
+                "log.error",
+                "[GitLabHandler] GitLab API search failed",
+                {
+                    "error": "HTTP 500",
+                    "_search": "zaak",
+                    "query": "x-openregister zaak"
+                }
+            ]
+        ]
+    },
+    "search-terms": {
+        "returned": {
+            "total_count": 4,
+            "results": [
+                {
+                    "project_id": 3,
+                    "path": "lib/app.openregister.json",
+                    "ref": "dev",
+                    "url": "{\"x-openregister\":{}}",
+                    "name": "app.openregister",
+                    "config": {
+                        "title": "app.openregister",
+                        "description": "",
+                        "version": "unknown",
+                        "app": null,
+                        "type": "unknown"
+                    }
+                },
+                {
+                    "project_id": 4,
+                    "path": "conf.json",
+                    "ref": "main",
+                    "url": "",
+                    "name": "conf",
+                    "config": {
+                        "title": "conf",
+                        "description": "",
+                        "version": "unknown",
+                        "app": null,
+                        "type": "unknown"
+                    }
+                }
+            ],
+            "page": 2,
+            "per_page": 10
+        },
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Searching GitLab for OpenRegister configurations",
+                {
+                    "_search": "zaak",
+                    "query": "x-openregister zaak",
+                    "page": 2
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://git.example.org/api/v4/search",
+                {
+                    "query": {
+                        "scope": "blobs",
+                        "search": "x-openregister zaak",
+                        "page": 2,
+                        "per_page": 10
+                    },
+                    "headers": []
+                }
+            ]
+        ]
+    },
+    "search-zero": {
+        "returned": {
+            "total_count": 4,
+            "results": [
+                {
+                    "project_id": 3,
+                    "path": "lib/app.openregister.json",
+                    "ref": "dev",
+                    "url": "{\"x-openregister\":{}}",
+                    "name": "app.openregister",
+                    "config": {
+                        "title": "app.openregister",
+                        "description": "",
+                        "version": "unknown",
+                        "app": null,
+                        "type": "unknown"
+                    }
+                },
+                {
+                    "project_id": 4,
+                    "path": "conf.json",
+                    "ref": "main",
+                    "url": "",
+                    "name": "conf",
+                    "config": {
+                        "title": "conf",
+                        "description": "",
+                        "version": "unknown",
+                        "app": null,
+                        "type": "unknown"
+                    }
+                }
+            ],
+            "page": 1,
+            "per_page": 30
+        },
+        "calls": [
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_url"
+            ],
+            [
+                "config.getSystemValue",
+                "gitlab_api_url",
+                "https://gitlab.com/api/v4"
+            ],
+            [
+                "log.info",
+                "[GitLabHandler] Searching GitLab for OpenRegister configurations",
+                {
+                    "_search": "0",
+                    "query": "x-openregister",
+                    "page": 1
+                }
+            ],
+            [
+                "appConfig.getValueString",
+                "openregister",
+                "gitlab_api_token"
+            ],
+            [
+                "client.request",
+                "GET",
+                "https://gitlab.com/api/v4/search",
+                {
+                    "query": {
+                        "scope": "blobs",
+                        "search": "x-openregister",
+                        "page": 1,
+                        "per_page": 30
+                    },
+                    "headers": {
+                        "PRIVATE-TOKEN": "tok"
+                    }
+                }
+            ]
+        ]
+    }
+}
