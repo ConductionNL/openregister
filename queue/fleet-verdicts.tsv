@@ -2459,3 +2459,4 @@ integriq	3223	6a4e1ac8f47904b0b631c5f6e4196d98d7d0880b	GREEN	FXL	flagged path un
 integriq	3143	b9f29cb5bb9e2d627f5315e2476d8c78a812641e	GREEN	FXL	golden runs in a separate process, so the 128MB guard cannot fire; control: fails at 200MB without it; merged
 integriq	3121	eb571a67b27435f100e183ed4206f19f8389282d	GREEN	FXL	placeholder key restored to the one in en.js; l10n check OK; merged
 launchpad	1000	28b9b7f1866c439c27664b80259aea9b1b88f0ee	GREEN	FXL	development merged in cleanly, workspace vitest 119/119; merged
+decidiq	1969	13333867f24a99b6f6cc0958398ebaee6eaadb49	GREEN	FXL	golden dates recorded as offsets from today, re-recorded on development code; merged
