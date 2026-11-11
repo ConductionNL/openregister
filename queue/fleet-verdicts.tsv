@@ -2979,3 +2979,4 @@ dossiq	5984	78b0f38bcc53c7a97b0b0fd1dfddbe3f4de3a9d4	GREEN	FV9-05:3	tree green o
 dossiq	5985	a5dcd9a03e81183bf41c37970bdf5906be4587a4	GREEN	FV9-05:3	tree green on php+js unit suites (48 inherited php failures), floor held
 dossiq	5986	b4dda28de9169393da6c3773003c98f517c51a68	GREEN	FV9-05:3	tree green on php+js unit suites (48 inherited php failures), floor held
 dossiq	5987	8b034ae29fd378c5f0173058347acde64fdd5355	GREEN	FV9-05:3	tree green on php+js unit suites (48 inherited php failures), floor held
+stackiq	1667	a1bf89fbd90f15b8bc21e3d3c8dfa9d8ec86c674	RED	FV9-01:4	unit tests fail beyond development: OCA\Stackiq\Tests\Unit\Service\CmdbExportImportServiceTest::testAnUnresolvableOwnerIsSkippedWithAWarning (added test errors: OpenRegister PackDefinitionValidator is not available)
