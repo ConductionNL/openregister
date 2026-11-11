@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Service\Rbac\OwnershipReassignment;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetStore;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -39,6 +40,8 @@ use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ObjectCheck;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
@@ -59,8 +62,8 @@ class ExampleSetStoreTest extends TestCase {
 
 		$validator = $this->createMock(ValidateObject::class);
 		$validator->expects($this->once())
-			->method('validateObjectWithPlannedUsers')
-			->with(['assignee' => 'daan.verbeek'], 42, $this->anything(), ['daan.verbeek'])
+			->method('validateWithPlannedAccounts')
+			->with(['assignee' => 'daan.verbeek'], new \OCA\OpenRegister\Service\Object\PlannedAccountsCheck(schema: 42, plannedUsers: ['daan.verbeek']))
 			->willReturn(new ValidationResult(null));
 		$validator->expects($this->never())->method('validateObject');
 
@@ -127,7 +130,7 @@ class ExampleSetStoreTest extends TestCase {
 		$objects->method('find')->willReturn($row);
 		$objects->expects($this->once())
 			->method('deleteObject')
-			->with('case-1', 'dossiq', 'case', false, false, true)
+			->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'case-1' && $deletion->target->register == 'dossiq' && $deletion->target->schema == 'case'), false, false, true)
 			->willReturn(true);
 
 		$this->assertSame('', $this->storeOver(objects: $objects)->deleteRecorded(ref: new ObjectRef(register: 'dossiq', schema: 'case', id: 'case-1')));
@@ -219,7 +222,7 @@ class ExampleSetStoreTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('runAsSystem')->willReturnCallback(static fn (callable $operation) => SystemOperationContext::run($operation));
 		$objects->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$seen, $actions, $saved): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen, $actions, $saved): ObjectEntity {
 				$seen[] = ['system' => SystemOperationContext::isActive(), 'declared' => $actions->writesDeclaredState(uuid: 'case-1')];
 				return $saved;
 			}
@@ -277,12 +280,15 @@ class ExampleSetStoreTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('runAsSystem')->willReturnCallback(static fn (callable $operation) => SystemOperationContext::run($operation));
 		$objects->expects($this->once())->method('saveObject')->with(
-			$this->anything(), $this->anything(), 'besluiten', 'decision', null, false, false, false, true, null, null, false, false, false, 'pieter'
+			$this->anything(),
+			$this->callback(static fn (ObjectSaveOptions $options): bool => $options->target->register == 'besluiten' && $options->target->schema == 'decision' && $options->uuid === null && $options->policy->silent === false && $options->policy->validation === true && $options->uploadedFiles === null && $options->actor->currentUser === null && $options->policy->failIfExists === false && $options->actor->unowned === false && $options->policy->dedupOverride === false && $options->actor->owner == 'pieter'),
+			false,
+			false
 		)->willReturn($saved);
 		$system    = [];
 		$ownership = $this->createMock(ObjectOwnershipService::class);
-		$ownership->method('reassignMany')->willReturnCallback(
-			static function (array $identifiers, string $newOwner) use (&$system): array {
+		$ownership->method('reassign')->willReturnCallback(
+			static function (array $identifiers, OwnershipReassignment $reassignment) use (&$system): array {
 				$system[] = SystemOperationContext::isActive();
 				return ['failed' => ($identifiers === ['gone'] ? [['identifier' => 'gone', 'reason' => 'not found']] : [])];
 			}

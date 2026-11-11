@@ -50,6 +50,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * Proves the resolution diagnostics are wired and fire.
@@ -88,13 +89,15 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 		$this->db->method('getQueryBuilder')->willReturnCallback(fn () => $this->emptyQueryBuilder());
 
 		return new RegisterMapper(
-			$this->db,
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(ContainerInterface::class),
-			new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
-			$this->createMock(IAppConfig::class),
-			$this->logger
+			db: $this->db,
+			tenancy: new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new RegisterMapperServices(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				container: $this->createMock(ContainerInterface::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				logger: $this->logger
+			)
 		);
 	}
 

@@ -37,7 +37,7 @@ use OCA\OpenRegister\Service\Object\RenderContext;
 use OCA\OpenRegister\Service\Object\RenderPath;
 use OCA\OpenRegister\Service\Object\RenderPreloads;
 use OCA\OpenRegister\Service\Object\RenderRun;
-use OCA\OpenRegister\Service\Object\RenderSelection;
+use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;

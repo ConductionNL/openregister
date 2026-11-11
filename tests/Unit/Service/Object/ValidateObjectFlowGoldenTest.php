@@ -208,7 +208,7 @@ class ValidateObjectFlowGoldenTest extends TestCase {
 			),
 			'planned user'     => (function () use ($handler): array {
 				$schema = $this->schema(['who' => ['type' => 'string', 'format' => 'user']], 10);
-				$result = $handler->validateObjectWithPlannedUsers(object: ['who' => 'ghost'], schema: $schema, plannedUsers: ['ghost', 5]);
+				$result = $handler->validateWithPlannedAccounts(object: ['who' => 'ghost'], check: new \OCA\OpenRegister\Service\Object\PlannedAccountsCheck(schema: $schema, plannedUsers: ['ghost', 5]));
 
 				return [$result->isValid(), $this->outcome($handler, ['object' => ['who' => 'ghost'], 'schema' => $schema])];
 			})(),

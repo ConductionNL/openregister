@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -36,6 +37,9 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
 
 /**
  * LockHandler
@@ -243,7 +247,7 @@ class LockHandler {
 		);
 		$this->forgetDisplacedRun(displaced: $displaced, after: $objectAfter);
 		if ($request->break === true) {
-			$this->stores->auditTrailMapper->createAuditTrailEntry(object: $objectAfter, action: 'lock.broken', context: $displaced);
+			$this->stores->auditTrailMapper->recordObjectEvent(event: new ObjectAuditEvent(object: $objectAfter, action: 'lock.broken', context: $displaced));
 		}
 
 		$this->recordUnlock(before: $objectBefore, after: $objectAfter);

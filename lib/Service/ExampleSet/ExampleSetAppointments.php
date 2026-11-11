@@ -138,25 +138,37 @@ class ExampleSetAppointments extends ExampleSetEngineRows {
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-put-appointments-on-its-objects
 	 */
 	public function write(ExampleSetRow $row): array {
-		$app = $row->app;
-		$data = $row->data;
-		$objectUuid = (string) $data['object'];
+		$objectUuid = (string) $row->data['object'];
 		$target     = $this->target(uuid: $objectUuid);
 		if ($target === null) {
 			return ['error' => 'no object or task "'.$objectUuid.'" to put the appointment on', 'entry' => null];
 		}
 
 		try {
-			$event = $this->createEvent(data: $data);
-			$link  = $this->link(target: ['object' => $objectUuid, ...$target], event: $event);
-			$this->describe(link: $link, data: $data);
-			$this->insertLink(link: $link, app: $app);
+			$event = $this->placeAppointment(row: $row, target: ['object' => $objectUuid, ...$target]);
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'entry' => null];
 		}
 
 		return ['error' => '', 'entry' => ['object' => $objectUuid, 'calendar' => $event['calendar'], 'uri' => $event['uri'], 'uid' => $event['uid']]];
 	}//end write()
+
+	/**
+	 * Create the calendar event and link it, described, to its object or task.
+	 *
+	 * @param ExampleSetRow        $row    The row: its data and the app writing it.
+	 * @param array<string, mixed> $target The object uuid and where the link goes.
+	 *
+	 * @return array<string, mixed> The created event.
+	 */
+	private function placeAppointment(ExampleSetRow $row, array $target): array {
+		$event = $this->createEvent(data: $row->data);
+		$link  = $this->link(target: $target, event: $event);
+		$this->describe(link: $link, data: $row->data);
+		$this->insertLink(link: $link, app: $row->app);
+
+		return $event;
+	}//end placeAppointment()
 
 	/**
 	 * Write the event to the owner's calendar, made when the account has none with that uri yet.

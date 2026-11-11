@@ -41,7 +41,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTimeImmutable;
-use DateTimeInterface;
 
 /**
  * Refuses an external grant with no end, and names the ones about to lapse.
@@ -93,26 +92,31 @@ class ExternalGrantGuard implements ExternalGrantGuardInterface {
 		$offending = [];
 
 		foreach ($this->entries(authorization: $authorization) as $found) {
-			if ($this->isExternal(entry: $found['entry']) === false) {
-				continue;
+			if ($this->isExternal(entry: $found['entry']) === true && $this->hasUsableEnd(entry: $found['entry']) === false) {
+				$offending[] = $this->endlessOffence(found: $found);
 			}
-
-			if ($this->hasUsableEnd(entry: $found['entry']) === true) {
-				continue;
-			}
-
-			$offending[] = [
-				'action' => $found['action'],
-				'principal' => $this->principalOf(entry: $found['entry']),
-				'rule' => self::RULE,
-				'message' => 'A grant to a principal outside the organisation carries an end date. '
-					. 'Add `' . GrantConstraints::UNTIL_KEY . '` to this entry, or drop `'
-					. self::EXTERNAL_KEY . '` if the principal is not external after all.',
-			];
 		}
 
 		return $offending;
 	}//end endlessExternalGrants()
+
+	/**
+	 * The finding for an external grant written without a usable end date.
+	 *
+	 * @param array{action: string, entry: mixed} $found The entry and the action it sits under.
+	 *
+	 * @return array{action: string, principal: mixed, rule: string, message: string} The finding.
+	 */
+	private function endlessOffence(array $found): array {
+		return [
+			'action' => $found['action'],
+			'principal' => $this->principalOf(entry: $found['entry']),
+			'rule' => self::RULE,
+			'message' => 'A grant to a principal outside the organisation carries an end date. '
+				. 'Add `' . GrantConstraints::UNTIL_KEY . '` to this entry, or drop `'
+				. self::EXTERNAL_KEY . '` if the principal is not external after all.',
+		];
+	}//end endlessOffence()
 
 	/**
 	 * The refusal body for a block that may not be written, or null.
@@ -145,16 +149,16 @@ class ExternalGrantGuard implements ExternalGrantGuardInterface {
 	 * mid-sentence, which is only possible if somebody can ask which grants are
 	 * about to run out.
 	 *
-	 * @param array|null             $authorization The block as written.
-	 * @param int                    $days          How far ahead to look.
-	 * @param DateTimeInterface|null $now           The moment, or null for the real one.
+	 * @param array|null       $authorization The block as written.
+	 * @param LapseWindow|null $window        The moment and how far ahead to look; null for now and the default window.
 	 *
 	 * @return array<int, array<string, mixed>> The grants about to lapse, soonest first.
 	 *
 	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
-	public function lapsingWithin(?array $authorization, int $days = self::DEFAULT_WARNING_DAYS, ?DateTimeInterface $now = null): array {
-		return $this->lapsingIn(authorization: $authorization, window: new LapseWindow(now: ($now ?? new DateTimeImmutable()), days: $days));
+	public function lapsingWithin(?array $authorization, ?LapseWindow $window = null): array {
+		$window ??= new LapseWindow(now: new DateTimeImmutable(), days: self::DEFAULT_WARNING_DAYS);
+		return $this->lapsingIn(authorization: $authorization, window: $window);
 	}//end lapsingWithin()
 
 	/**
@@ -168,21 +172,10 @@ class ExternalGrantGuard implements ExternalGrantGuardInterface {
 	private function lapsingIn(?array $authorization, LapseWindow $window): array {
 		$lapsing = [];
 		foreach ($this->entries(authorization: $authorization) as $found) {
-			$ends = $this->externalEndOf(entry: $found['entry']);
-			// An end already past is not a warning, it is a lapse. Reporting it
-			// as "about to lapse" would send somebody to renew access that has
-			// already stopped answering.
-			if ($ends === null || $ends <= $window->now->getTimestamp() || $ends > $window->horizon()) {
-				continue;
+			$warning = $this->lapseWarning(found: $found, window: $window);
+			if ($warning !== null) {
+				$lapsing[] = $warning;
 			}
-
-			$lapsing[] = [
-				'action' => $found['action'],
-				'principal' => $this->principalOf(entry: $found['entry']),
-				'holders' => $this->holdersOf(entry: $found['entry']),
-				'endsAt' => date(DATE_ATOM, $ends),
-				'daysLeft' => (int)ceil((($ends - $window->now->getTimestamp()) / 86400)),
-			];
 		}
 
 		usort(
@@ -192,6 +185,32 @@ class ExternalGrantGuard implements ExternalGrantGuardInterface {
 
 		return $lapsing;
 	}//end lapsingIn()
+
+	/**
+	 * The warning for one entry whose external end falls inside the window, or null.
+	 *
+	 * @param array{action: string, entry: mixed} $found  The entry and the action it was written under.
+	 * @param LapseWindow                         $window The moment and how far ahead to look.
+	 *
+	 * @return array<string, mixed>|null The warning.
+	 */
+	private function lapseWarning(array $found, LapseWindow $window): ?array {
+		$ends = $this->externalEndOf(entry: $found['entry']);
+		// An end already past is not a warning, it is a lapse. Reporting it
+		// as "about to lapse" would send somebody to renew access that has
+		// already stopped answering.
+		if ($ends === null || $ends <= $window->now->getTimestamp() || $ends > $window->horizon()) {
+			return null;
+		}
+
+		return [
+			'action' => $found['action'],
+			'principal' => $this->principalOf(entry: $found['entry']),
+			'holders' => $this->holdersOf(entry: $found['entry']),
+			'endsAt' => date(DATE_ATOM, $ends),
+			'daysLeft' => (int)ceil((($ends - $window->now->getTimestamp()) / 86400)),
+		];
+	}//end lapseWarning()
 
 	/**
 	 * The end of an external entry, or null for an internal one or one without an end.
@@ -222,23 +241,49 @@ class ExternalGrantGuard implements ExternalGrantGuardInterface {
 
 		$found = [];
 		foreach ($authorization as $action => $value) {
-			if (is_string($action) === false
-				|| in_array($action, self::SKIPPED_KEYS, true) === true
-				|| is_array($value) === false
-			) {
+			if (self::isRuleList(action: $action, value: $value) === false) {
 				continue;
 			}
 
-			foreach ($value as $entry) {
-				$found[] = [
-					'action' => $action,
-					'entry' => $entry,
-				];
-			}
+			$found = array_merge($found, self::entriesUnder(action: $action, entries: $value));
 		}
 
 		return $found;
 	}//end entries()
+
+	/**
+	 * Whether a block key and its value are a verb's rule list.
+	 *
+	 * @param mixed $action The key.
+	 * @param mixed $value  Its value.
+	 *
+	 * @return bool True for a verb that is not skipped, holding a list.
+	 */
+	private static function isRuleList(mixed $action, mixed $value): bool {
+		return (is_string($action) === true
+			&& in_array($action, self::SKIPPED_KEYS, true) === false
+			&& is_array($value) === true);
+	}//end isRuleList()
+
+	/**
+	 * Every entry of one verb's rule list, with the verb.
+	 *
+	 * @param string            $action  The verb.
+	 * @param array<int, mixed> $entries The entries.
+	 *
+	 * @return array<int, array{action: string, entry: mixed}> The entries.
+	 */
+	private static function entriesUnder(string $action, array $entries): array {
+		$found = [];
+		foreach ($entries as $entry) {
+			$found[] = [
+				'action' => $action,
+				'entry' => $entry,
+			];
+		}
+
+		return $found;
+	}//end entriesUnder()
 
 	/**
 	 * Whether an entry declares its principal is outside the organisation.

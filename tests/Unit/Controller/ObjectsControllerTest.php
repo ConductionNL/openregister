@@ -6,6 +6,8 @@ namespace Unit\Controller;
 
 use Exception;
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -32,6 +34,11 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Unit tests for ObjectsController
@@ -79,7 +86,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->webhookService = $this->createMock(WebhookService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// resolveRegisterSchemaIds() reuses the entities resolved by
+		// resolveRegisterSchemaRef() reuses the entities resolved by
 		// ObjectService::setRegister()/setSchema(); the ObjectService mock
 		// returns null from the entity getters by default, so entities stay
 		// null (same as the old throwing-DI-stub behavior).
@@ -501,7 +508,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')->willReturn([
+		$this->objectService->method('migrate')->willReturn([
 			'success' => true,
 			'migrated' => 1,
 		]);
@@ -523,7 +530,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')
+		$this->objectService->method('migrate')
 			->willThrowException(new \OCA\OpenRegister\Exception\NotAuthorizedException('No access'));
 
 		$result = $this->controller->migrate($this->objectService);
@@ -542,7 +549,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')
+		$this->objectService->method('migrate')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
 		$result = $this->controller->migrate($this->objectService);
@@ -560,7 +567,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')
+		$this->objectService->method('migrate')
 			->willThrowException(new Exception('Migration error'));
 
 		$result = $this->controller->migrate($this->objectService);
@@ -645,7 +652,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, null],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')->willReturn([
+		$this->objectService->method('validateAndSaveTable')->willReturn([
 			'processed' => 10,
 			'updated' => 8,
 			'failed' => 2,
@@ -670,7 +677,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, null],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')
+		$this->objectService->method('validateAndSaveTable')
 			->willThrowException(new DBException('Validation error'));
 
 		$result = $this->controller->validate();
@@ -780,7 +787,7 @@ class ObjectsControllerTest extends TestCase {
 	public function testIndexReturns404WhenRegisterNotFound(): void {
 		$this->request->method('getParams')->willReturn([]);
 
-		// resolveRegisterSchemaIds calls objectService->setRegister which throws
+		// resolveRegisterSchemaRef calls objectService->setRegister which throws
 		$this->objectService->method('setRegister')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
@@ -2097,7 +2104,7 @@ class ObjectsControllerTest extends TestCase {
 
 	/**
 	 * Test objects() with register and schema query params that resolve (but no magic mapping).
-	 * When resolveRegisterSchemaIds resolves but entities are null (DI mapper throws),
+	 * When resolveRegisterSchemaRef resolves but entities are null (DI mapper throws),
 	 * falls through to normal searchObjectsPaginated path.
 	 */
 	public function testObjectsWithRegisterSchemaParamsResolvesToNormalSearch(): void {
@@ -2285,10 +2292,7 @@ class ObjectsControllerTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
+				$this->callback(static fn (ObjectSaveOptions $options): bool => true),
 				true,
 				true
 			)
@@ -2584,7 +2588,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['field1' => 'field2'],
 		]);
 
-		$this->objectService->method('migrateObjects')
+		$this->objectService->method('migrate')
 			->willThrowException(new \InvalidArgumentException('Invalid mapping'));
 
 		$result = $this->controller->migrate($this->objectService);
@@ -2605,7 +2609,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, '10'],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')->willReturn([
+		$this->objectService->method('validateAndSaveTable')->willReturn([
 			'processed' => 50,
 			'updated' => 45,
 			'failed' => 5,
@@ -3686,7 +3690,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, null],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')->willReturn([
+		$this->objectService->method('validateAndSaveTable')->willReturn([
 			'processed' => 10,
 			'updated' => 5,
 			'failed' => 5,
@@ -3795,7 +3799,7 @@ class ObjectsControllerTest extends TestCase {
 			'mapping' => ['name' => 'title', 'desc' => 'description'],
 		]);
 
-		$this->objectService->method('migrateObjects')->willReturn([
+		$this->objectService->method('migrate')->willReturn([
 			'success' => true,
 			'migrated' => 3,
 			'failed' => 0,
@@ -3956,7 +3960,7 @@ class ObjectsControllerTest extends TestCase {
 				['offset', null, '50'],
 			]);
 
-		$this->objectService->method('validateAndSaveObjectsBySchema')->willReturn([
+		$this->objectService->method('validateAndSaveTable')->willReturn([
 			'processed' => 25,
 			'updated' => 20,
 			'failed' => 5,
@@ -4316,7 +4320,7 @@ class ObjectsControllerTest extends TestCase {
 		]);
 		$this->objectService->method('getExtendedObjects')->willReturn([]);
 
-		// resolveRegisterSchemaIds needs to return the register entity
+		// resolveRegisterSchemaRef needs to return the register entity
 		// Since it accesses \OC::$server, we test that the show path handles null entities gracefully
 		$result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
 
@@ -5201,7 +5205,7 @@ class ObjectsControllerTest extends TestCase {
 
 		$this->assertSame(200, $result->getStatus());
 		$data = $result->getData();
-		// resolveRegisterSchemaIds accesses \OC::$server which throws in unit tests,
+		// resolveRegisterSchemaRef accesses \OC::$server which throws in unit tests,
 		// entities are null, so registers/schemas are empty arrays which get stripped
 		// by stripEmptyValues. The key @self should still exist.
 		$this->assertArrayHasKey('@self', $data);
@@ -6421,13 +6425,13 @@ class ObjectsControllerTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturnCallback(static fn ($id) => $schemas[$id]);
 
 		$mover = $this->createMock(\OCA\OpenRegister\Service\Object\MoveObject::class);
-		$mover->expects($this->once())->method('move')->with(
-			$object,
-			$registers['a'],
-			$schemas['b'],
-			$registers['r'],
-			$schemas['s'],
-			'alice'
+		$mover->expects($this->once())->method('perform')->with(
+			new \OCA\OpenRegister\Service\Object\ObjectMove(
+				object: $object,
+				source: new \OCA\OpenRegister\Service\Object\MoveAddress(register: $registers['a'], schema: $schemas['b']),
+				target: new \OCA\OpenRegister\Service\Object\MoveAddress(register: $registers['r'], schema: $schemas['s']),
+				actor: 'alice'
+			)
 		)->willReturn(['moved' => $moved]);
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$permissions->expects($this->exactly(2))->method('hasPermission')->willReturnCallback(
@@ -6457,7 +6461,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Register());
 		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
 		$mover = $this->createMock(\OCA\OpenRegister\Service\Object\MoveObject::class);
-		$mover->expects($this->never())->method('move');
+		$mover->expects($this->never())->method('perform');
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturn(false);
 		$this->moveServices(mover: $mover, permissions: $permissions);
@@ -6524,7 +6528,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testMigrateRefusals(array $params, string $expected): void {
 		$this->request->method('getParams')->willReturn($params);
-		$this->objectService->expects($this->never())->method('migrateObjects');
+		$this->objectService->expects($this->never())->method('migrate');
 
 		$result = $this->controller->migrate($this->objectService);
 
@@ -6541,7 +6545,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn(
 			['sourceRegister' => '', 'sourceSchema' => '0', 'targetRegister' => 't', 'targetSchema' => 'u', 'objects' => ['o'], 'mapping' => ['a' => 'b']]
 		);
-		$this->objectService->expects($this->once())->method('migrateObjects')->with('', '0', 't', 'u', ['o'], ['a' => 'b'])->willReturn(['done' => 1]);
+		$this->objectService->expects($this->once())->method('migrate')->with(new ObjectMigration(source: new RegisterSchemaRef(register: '', schema: '0'), target: new RegisterSchemaRef(register: 't', schema: 'u'), objectIds: ['o'], mapping: ['a' => 'b']))->willReturn(['done' => 1]);
 
 		$this->assertSame(['done' => 1], $this->controller->migrate($this->objectService)->getData());
 	}
@@ -6587,7 +6591,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testLockAnswersWhetherItIsHeld(): void {
 		$this->request->method('getParams')->willReturn(['process' => 'edit', 'duration' => '60']);
-		$this->objectService->expects($this->once())->method('lockObject')->with('id', 'edit', 60)
+		$this->objectService->expects($this->once())->method('lockObject')->with(new LockRequest(identifier: 'id', process: 'edit', duration: 60))
 			->willReturn(['uuid' => 'id', 'held' => false]);
 
 		$result = $this->controller->lock('r', 's', 'id');
@@ -6602,7 +6606,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testLockWithoutAHoldReport(): void {
 		$this->request->method('getParams')->willReturn([]);
-		$this->objectService->expects($this->once())->method('lockObject')->with('id', null, null)->willReturn(['uuid' => 'id']);
+		$this->objectService->expects($this->once())->method('lockObject')->with(new LockRequest(identifier: 'id'))->willReturn(['uuid' => 'id']);
 
 		$this->assertSame(['uuid' => 'id', 'locked' => true], $this->controller->lock('r', 's', 'id')->getData());
 	}
@@ -6637,7 +6641,9 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testDestroyPassesTheRouteScope(): void {
 		$this->setupAdminUser();
-		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', false, false)->willReturn(true);
+		$this->objectService->expects($this->once())->method('deleteObject')
+			->with(new ObjectDeletion(uuid: 'id', target: new ObjectFindTarget(register: 'r', schema: 's')), false, false)
+			->willReturn(true);
 
 		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
 	}
@@ -6649,7 +6655,9 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testDestroyScopesANonAdmin(): void {
 		$this->userSession->method('getUser')->willReturn($this->createMock(\OCP\IUser::class));
-		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', true, true)->willReturn(true);
+		$this->objectService->expects($this->once())->method('deleteObject')
+			->with(new ObjectDeletion(uuid: 'id', target: new ObjectFindTarget(register: 'r', schema: 's')), true, true)
+			->willReturn(true);
 
 		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
 	}
@@ -6822,9 +6830,7 @@ class ObjectsControllerTest extends TestCase {
 			static fn (string $key, $default = null) => ($key === 'type') ? 'json' : $default
 		);
 		$this->exportService->expects($this->once())->method('exportToJson')->with(
-			$registerEntity,
-			$schemaEntity,
-			['status' => 'open']
+			new ObjectExportRequest(register: $registerEntity, schema: $schemaEntity, filters: ['status' => 'open'])
 		)->willReturn('{"results":[1,2]}');
 
 		$result = $this->controller->export('1', '2', $this->objectService);
@@ -7797,10 +7803,7 @@ class ObjectsControllerTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
+				$this->callback(static fn (ObjectSaveOptions $options): bool => true),
 				true,
 				true
 			)

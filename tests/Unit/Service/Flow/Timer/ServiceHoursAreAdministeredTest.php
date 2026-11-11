@@ -31,6 +31,8 @@ declare(strict_types=1);
 namespace Unit\Service\Flow\Timer;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\CalendarSpan;
+use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
 use DateTimeZone;
 use OCA\OpenRegister\Service\Flow\Timer\ServiceHours;
 use OCA\OpenRegister\Service\Flow\Timer\ServiceHoursClock;
@@ -128,12 +130,7 @@ class ServiceHoursAreAdministeredTest extends TestCase {
 		$calculator = new SlaCalculator();
 		$calendar = WorkingCalendar::fromArray($this->definition($this->nineToFive()));
 
-		$due = $calculator->add(
-			from: $this->amsterdam('2026-09-18 16:00:00'),
-			value: 4.0,
-			unit: SlaCalculator::UNIT_HOURS,
-			calendar: $calendar
-		);
+		$due = $calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($this->amsterdam('2026-09-18 16:00:00')), value: 4.0, unit: SlaCalculator::UNIT_HOURS, calendar: $calendar));
 
 		$this->assertSame('2026-09-21 12:00', $due->setTimezone(new DateTimeZone('Europe/Amsterdam'))->format('Y-m-d H:i'));
 	}//end testFourServiceHoursFromFridayAfternoonAreDueMondayAtNoon()
@@ -158,12 +155,7 @@ class ServiceHoursAreAdministeredTest extends TestCase {
 
 		$calendar = WorkingCalendar::fromArray($this->definition($split));
 
-		$due = $calculator->add(
-			from: $this->amsterdam('2026-09-21 11:00:00'),
-			value: 4.0,
-			unit: SlaCalculator::UNIT_HOURS,
-			calendar: $calendar
-		);
+		$due = $calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($this->amsterdam('2026-09-21 11:00:00')), value: 4.0, unit: SlaCalculator::UNIT_HOURS, calendar: $calendar));
 
 		$this->assertSame('2026-09-21 16:00', $due->setTimezone(new DateTimeZone('Europe/Amsterdam'))->format('Y-m-d H:i'));
 		$this->assertSame(7.0, $calendar->getHoursPerWorkingDay());
@@ -180,12 +172,7 @@ class ServiceHoursAreAdministeredTest extends TestCase {
 		$calculator = new SlaCalculator();
 		$calendar = WorkingCalendar::fromArray($this->definition($this->nineToFive()));
 
-		$due = $calculator->add(
-			from: $this->amsterdam('2026-12-24 16:30:00'),
-			value: 2.0,
-			unit: SlaCalculator::UNIT_HOURS,
-			calendar: $calendar
-		);
+		$due = $calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($this->amsterdam('2026-12-24 16:30:00')), value: 2.0, unit: SlaCalculator::UNIT_HOURS, calendar: $calendar));
 
 		$this->assertSame('2026-12-28 10:30', $due->setTimezone(new DateTimeZone('Europe/Amsterdam'))->format('Y-m-d H:i'));
 	}//end testAClosedDayIsSkippedEntirely()
@@ -201,12 +188,7 @@ class ServiceHoursAreAdministeredTest extends TestCase {
 		$calculator = new SlaCalculator();
 		$calendar = WorkingCalendar::fromArray($this->definition(null));
 
-		$due = $calculator->add(
-			from: $this->amsterdam('2026-09-18 16:00:00'),
-			value: 4.0,
-			unit: SlaCalculator::UNIT_HOURS,
-			calendar: $calendar
-		);
+		$due = $calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($this->amsterdam('2026-09-18 16:00:00')), value: 4.0, unit: SlaCalculator::UNIT_HOURS, calendar: $calendar));
 
 		$this->assertFalse($calendar->getServiceHours()->areDeclared());
 		$this->assertSame('2026-09-18 20:00', $due->setTimezone(new DateTimeZone('Europe/Amsterdam'))->format('Y-m-d H:i'));
@@ -231,12 +213,7 @@ class ServiceHoursAreAdministeredTest extends TestCase {
 			->willReturnCallback(fn (WorkingCalendar $calendar, ServiceHours $windows): ServiceHoursFrame => new ServiceHoursFrame(calendar: $calendar, windows: $windows));
 
 		$calculator = new SlaCalculator(hoursClock: $clock);
-		$calculator->add(
-			from: $this->amsterdam('2026-09-18 16:00:00'),
-			value: 4.0,
-			unit: SlaCalculator::UNIT_HOURS,
-			calendar: WorkingCalendar::fromArray($this->definition($this->nineToFive()))
-		);
+		$calculator->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($this->amsterdam('2026-09-18 16:00:00')), value: 4.0, unit: SlaCalculator::UNIT_HOURS, calendar: WorkingCalendar::fromArray($this->definition($this->nineToFive()))));
 
 		$quiet = $this->getMockBuilder(ServiceHoursClock::class)
 			->onlyMethods(['frame'])
@@ -244,12 +221,7 @@ class ServiceHoursAreAdministeredTest extends TestCase {
 		$quiet->expects($this->never())->method('frame');
 
 		$plain = new SlaCalculator(hoursClock: $quiet);
-		$plain->add(
-			from: $this->amsterdam('2026-09-18 16:00:00'),
-			value: 4.0,
-			unit: SlaCalculator::UNIT_HOURS,
-			calendar: WorkingCalendar::fromArray($this->definition(null))
-		);
+		$plain->add(new SlaAddition(start: DateTimeImmutable::createFromInterface($this->amsterdam('2026-09-18 16:00:00')), value: 4.0, unit: SlaCalculator::UNIT_HOURS, calendar: WorkingCalendar::fromArray($this->definition(null))));
 	}//end testTheClockIsAskedOnlyWhenWindowsAreDeclared()
 
 	/**
@@ -264,11 +236,7 @@ class ServiceHoursAreAdministeredTest extends TestCase {
 		$calculator = new SlaCalculator();
 		$calendar = WorkingCalendar::fromArray($this->definition($this->nineToFive()));
 
-		$elapsed = $calculator->elapsedBusinessHours(
-			from: $this->amsterdam('2026-09-18 16:00:00'),
-			to: $this->amsterdam('2026-09-21 10:00:00'),
-			calendar: $calendar
-		);
+		$elapsed = $calculator->elapsedBusinessHours(new CalendarSpan(from: $this->amsterdam('2026-09-18 16:00:00'), to: $this->amsterdam('2026-09-21 10:00:00'), calendar: $calendar));
 
 		$this->assertSame(2.0, $elapsed);
 	}//end testElapsedHoursAreMeasuredInsideTheWindows()

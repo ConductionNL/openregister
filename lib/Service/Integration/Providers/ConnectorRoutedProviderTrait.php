@@ -23,17 +23,54 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
+use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Support\FleetAppId;
+use OCP\App\IAppManager;
+use OCP\IL10N;
 
 /**
  * Descriptor methods shared by the connector-backed integration providers.
  *
  * The using provider declares the constants `SOURCE_ID` (its connector
- * source) and `REQUIRED_APP` (the connector app), and provides
- * `$this->appManager` (IAppManager) and `$this->router`
- * (ExternalIntegrationRouterInterface).
+ * source) and `REQUIRED_APP` (the connector app), and fills the router, app
+ * manager and localisation, from a ConnectorRouting through useRouting() or
+ * as constructor-promoted properties of the same name and type.
  */
 trait ConnectorRoutedProviderTrait {
+
+	/**
+	 * External-call router.
+	 *
+	 * @var ExternalIntegrationRouterInterface
+	 */
+	private ExternalIntegrationRouterInterface $router;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Take the router, app manager and localisation from the routing bundle.
+	 *
+	 * @param ConnectorRouting $routing The router, app manager and localisation.
+	 *
+	 * @return void
+	 */
+	private function useRouting(ConnectorRouting $routing): void {
+		$this->router     = $routing->router;
+		$this->appManager = $routing->appManager;
+		$this->l10n       = $routing->l10n;
+	}//end useRouting()
 
 	/**
 	 * Named group this integration belongs to (AD-16).

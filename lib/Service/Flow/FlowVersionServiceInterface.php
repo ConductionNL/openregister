@@ -63,18 +63,16 @@ interface FlowVersionServiceInterface {
 	/**
 	 * Publish the flow's head, deprecating whatever was published before it.
 	 *
-	 * @param Flow        $flow        The flow whose head is being published.
-	 * @param string|null $publishedBy The acting user.
-	 * @param string|null $bump        `major` to raise the derived verdict,
-	 *                                 `minor` to assert there was no removal.
-	 *                                 Null lets the diff decide.
+	 * @param Flow               $flow    The flow whose head is being published.
+	 * @param FlowPublishOptions $options The acting user, and the bump: `major` to raise the derived verdict,
+	 *                                    `minor` to assert there was no removal; null lets the diff decide.
 	 *
 	 * @return FlowVersion The now-published version.
 	 *
 	 * @throws FlowLifecycleRefused When the head is not a draft, or has a dead end.
 	 * @throws Throwable            When the transaction could not be committed.
 	 */
-	public function publish(Flow $flow, ?string $publishedBy = null, ?string $bump = null): FlowVersion;
+	public function publish(Flow $flow, FlowPublishOptions $options=new FlowPublishOptions()): FlowVersion;
 
 	/**
 	 * Publish an app's changed flow declaration as the next version, when the

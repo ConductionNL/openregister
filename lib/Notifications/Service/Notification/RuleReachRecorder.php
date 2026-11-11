@@ -85,10 +85,7 @@ class RuleReachRecorder {
 	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md
 	 */
 	public function reachedNobody(string $ruleId, string $objectUuid = ''): void {
-		$rule = trim($ruleId);
-		if ($rule === '') {
-			$rule = '(unnamed rule)';
-		}
+		$rule = self::ruleName(ruleId: $ruleId);
 
 		$seen = ($this->reachedNobody[$rule] ?? 0);
 		$this->reachedNobody[$rule] = ($seen + 1);
@@ -111,6 +108,22 @@ class RuleReachRecorder {
 			]
 		);
 	}//end reachedNobody()
+
+	/**
+	 * The rule's name as it is counted and logged; a blank one is "(unnamed rule)".
+	 *
+	 * @param string $ruleId The rule.
+	 *
+	 * @return string
+	 */
+	private static function ruleName(string $ruleId): string {
+		$rule = trim($ruleId);
+		if ($rule === '') {
+			return '(unnamed rule)';
+		}
+
+		return $rule;
+	}//end ruleName()
 
 	/**
 	 * Note that this rule did reach somebody, so a later run can tell the

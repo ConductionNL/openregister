@@ -27,9 +27,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Store\Source;
 
+use Generator;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -218,15 +220,37 @@ class GitHubStoreSource implements StoreSourceInterface {
 	 */
 	private function fetchTopics(array $topics, string $query): array {
 		$run = new GitHubSearchRun(client: $this->clientService->newClient(), query: $query);
-		$cards = [];
-		$outcome = GenericStoreService::OUTCOME_OK;
 
+		return self::combine(answers: $this->answersFor(run: $run, topics: $topics));
+	}//end fetchTopics()
+
+	/**
+	 * Search each non-empty topic in turn.
+	 *
+	 * @param GitHubSearchRun $run    The client and the free-text query of this search.
+	 * @param string[]        $topics The topics searched.
+	 *
+	 * @return Generator<int, array{outcome: string, cards: array}> One answer per topic.
+	 */
+	private function answersFor(GitHubSearchRun $run, array $topics): Generator {
 		foreach ($topics as $topic) {
-			if ($topic === '') {
-				continue;
+			if ($topic !== '') {
+				yield $this->fetchTopic(run: $run, topic: $topic);
 			}
+		}
+	}//end answersFor()
 
-			$one = $this->fetchTopic(run: $run, topic: $topic);
+	/**
+	 * Combine the answers of several topics into one capped answer.
+	 *
+	 * @param iterable<array{outcome: string, cards: array}> $answers One answer per topic.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 */
+	private static function combine(iterable $answers): array {
+		$cards   = [];
+		$outcome = GenericStoreService::OUTCOME_OK;
+		foreach ($answers as $one) {
 			if ($one['outcome'] !== GenericStoreService::OUTCOME_OK) {
 				// Worst outcome wins across topics: one reachable topic does
 				// not make a half-answer look complete.
@@ -234,18 +258,32 @@ class GitHubStoreSource implements StoreSourceInterface {
 				continue;
 			}
 
-			foreach ($one['cards'] as $card) {
-				// De-duplicate by full name: a repository carrying two of the
-				// declared topics is one item, not two.
-				$cards[$card['slug']] = $card;
-			}
+			$cards = self::withCards(cards: $cards, more: $one['cards']);
 		}
 
 		return [
 			'outcome' => $outcome,
 			'cards' => array_slice(array_values($cards), 0, self::MAX_HITS),
 		];
-	}//end fetchTopics()
+	}//end combine()
+
+	/**
+	 * Add cards to those found so far, one per repository.
+	 *
+	 * @param array<string, array<string, mixed>> $cards The cards so far, by slug.
+	 * @param array<int, array<string, mixed>>    $more  The cards of one topic.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	private static function withCards(array $cards, array $more): array {
+		foreach ($more as $card) {
+			// De-duplicate by full name: a repository carrying two of the
+			// declared topics is one item, not two.
+			$cards[$card['slug']] = $card;
+		}
+
+		return $cards;
+	}//end withCards()
 
 	/**
 	 * Search a single topic.
@@ -257,17 +295,7 @@ class GitHubStoreSource implements StoreSourceInterface {
 	 */
 	private function fetchTopic(GitHubSearchRun $run, string $topic): array {
 		try {
-			$response = $run->client->get(
-				self::API_HOST . '/search/repositories',
-				[
-					'query' => ['q' => $run->termFor(topic: $topic), 'per_page' => self::MAX_HITS],
-					'headers' => ['Accept' => 'application/vnd.github+json'],
-					'timeout' => self::TIMEOUT,
-					'connect_timeout' => self::TIMEOUT,
-					'allow_redirects' => false,
-					'http_errors' => false,
-				]
-			);
+			$response = $this->searchTopic(run: $run, topic: $topic);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'[store/github] search failed: ' . $e->getMessage(),
@@ -281,6 +309,42 @@ class GitHubStoreSource implements StoreSourceInterface {
 			return ['outcome' => $outcome, 'cards' => []];
 		}
 
+		return $this->cardsOf(response: $response, topic: $topic);
+	}//end fetchTopic()
+
+	/**
+	 * Ask GitHub's repository search for one topic.
+	 *
+	 * @param GitHubSearchRun $run   The client and the free-text query of this search.
+	 * @param string          $topic The topic searched.
+	 *
+	 * @return IResponse
+	 *
+	 * @throws Throwable When the request cannot be made.
+	 */
+	private function searchTopic(GitHubSearchRun $run, string $topic): IResponse {
+		return $run->client->get(
+			self::API_HOST . '/search/repositories',
+			[
+				'query' => ['q' => $run->termFor(topic: $topic), 'per_page' => self::MAX_HITS],
+				'headers' => ['Accept' => 'application/vnd.github+json'],
+				'timeout' => self::TIMEOUT,
+				'connect_timeout' => self::TIMEOUT,
+				'allow_redirects' => false,
+				'http_errors' => false,
+			]
+		);
+	}//end searchTopic()
+
+	/**
+	 * The cards of a successful search response; invalid when it lists no items.
+	 *
+	 * @param IResponse $response The search response.
+	 * @param string    $topic    The topic searched.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 */
+	private function cardsOf(IResponse $response, string $topic): array {
 		$body = json_decode((string)$response->getBody(), true);
 		if (is_array($body) === false || is_array(($body['items'] ?? null)) === false) {
 			return ['outcome' => GenericStoreService::OUTCOME_INVALID, 'cards' => []];
@@ -294,7 +358,7 @@ class GitHubStoreSource implements StoreSourceInterface {
 		}
 
 		return ['outcome' => GenericStoreService::OUTCOME_OK, 'cards' => $cards];
-	}//end fetchTopic()
+	}//end cardsOf()
 
 	/**
 	 * Map an HTTP status onto a store outcome.

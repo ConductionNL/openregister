@@ -30,9 +30,11 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJobInterface;
 use OCA\OpenRegister\Controller\Support\DestructionListApproval;
 use OCA\OpenRegister\Controller\Support\RetentionControllerServices;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -283,10 +285,12 @@ class RetentionController extends Controller {
 		$this->jobList->add(DestructionExecutionJobInterface::JOB_CLASS, [DestructionExecutionJobInterface::ARGUMENT_LIST_UUID => $approval->id]);
 		$objectCount = count($approval->listData['objects']);
 		$excludedCount = count($approval->listData['excluded'] ?? []);
-		$this->auditMapper->createAuditTrailEntry(
-			$listObject,
-			'archival.destruction_approved',
-			['approvedBy' => $approval->userId, 'objectCount' => $objectCount, 'excluded' => $excludedCount]
+		$this->auditMapper->recordObjectEvent(
+			event: new ObjectAuditEvent(
+				object: $listObject,
+				action: 'archival.destruction_approved',
+				context: ['approvedBy' => $approval->userId, 'objectCount' => $objectCount, 'excluded' => $excludedCount]
+			)
 		);
 
 		return new JSONResponse(['status' => 'approved', 'objectCount' => $objectCount, 'excludedCount' => $excludedCount]);
@@ -430,14 +434,16 @@ class RetentionController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			$this->retentionService->placeLegalHold($object, $reason, $this->ownerKeyParam());
+			$this->retentionService->placeHold($object, new HoldOrder($reason, $this->ownerKeyParam()));
 			$this->objectMapper->update($object);
 
 			// Create audit trail.
-			$this->auditMapper->createAuditTrailEntry(
-				$object,
-				'archival.legal_hold_placed',
-				['reason' => $reason]
+			$this->auditMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: 'archival.legal_hold_placed',
+					context: ['reason' => $reason]
+				)
 			);
 
 			return new JSONResponse(
@@ -479,14 +485,16 @@ class RetentionController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			$this->retentionService->releaseLegalHold($object, $reason, $this->ownerKeyParam());
+			$this->retentionService->releaseHold($object, new HoldOrder($reason, $this->ownerKeyParam()));
 			$this->objectMapper->update($object);
 
 			// Create audit trail.
-			$this->auditMapper->createAuditTrailEntry(
-				$object,
-				'archival.legal_hold_released',
-				['reason' => $reason]
+			$this->auditMapper->recordObjectEvent(
+				event: new ObjectAuditEvent(
+					object: $object,
+					action: 'archival.legal_hold_released',
+					context: ['reason' => $reason]
+				)
 			);
 
 			return new JSONResponse(

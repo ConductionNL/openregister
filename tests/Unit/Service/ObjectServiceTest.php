@@ -21,8 +21,10 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
-use OCA\OpenRegister\Service\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -32,6 +34,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -42,10 +45,12 @@ use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\ObjectFindRequest;
+use OCA\OpenRegister\Service\Object\ReadScope;
 use OCA\OpenRegister\Service\Object\LockHandler;
-use OCA\OpenRegister\Service\Object\LockRequest;
-use OCA\OpenRegister\Service\Object\LockRunStep;
-use OCA\OpenRegister\Service\Object\UnlockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
@@ -79,6 +84,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Comprehensive unit tests for ObjectService.
@@ -189,7 +199,7 @@ class ObjectServiceTest extends TestCase {
 		$this->schema->setId(2);
 
 		// Instantiate ObjectService with all constructor params (positional).
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->getHandler,
@@ -228,7 +238,7 @@ class ObjectServiceTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 	}
@@ -551,7 +561,7 @@ class ObjectServiceTest extends TestCase {
 
 		$result = $this->service->find(
 			id: '550e8400-e29b-41d4-a716-446655440000',
-			schema: $this->schema
+			options: new ObjectFindOptions(schema: $this->schema)
 		);
 
 		$this->assertSame($entity, $result);
@@ -593,7 +603,7 @@ class ObjectServiceTest extends TestCase {
 		$registerBefore = $this->getProperty('currentRegister');
 		$schemaBefore = $this->getProperty('currentSchema');
 
-		$this->service->find(id: 'test', register: $this->register);
+		$this->service->find(id: 'test', options: new ObjectFindOptions(register: $this->register));
 
 		// Context is restored to exactly what it was before find() ran.
 		$this->assertSame($registerBefore, $this->getProperty('currentRegister'));
@@ -759,8 +769,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->service->saveObject(
 			object: ['x' => 1],
-			register: $this->register,
-			schema: $schemaNoVal
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $schemaNoVal))
 		);
 
 		$this->assertNotNull($handlerScope, 'The save never reached the handler.');
@@ -802,7 +811,7 @@ class ObjectServiceTest extends TestCase {
 			->method('deleteObject')
 			->willReturn(true);
 
-		$result = $this->service->deleteObject(uuid: '550e8400-e29b-41d4-a716-446655440000');
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: '550e8400-e29b-41d4-a716-446655440000'));
 
 		$this->assertTrue($result);
 	}
@@ -825,7 +834,7 @@ class ObjectServiceTest extends TestCase {
 			->method('deleteObject')
 			->willReturn(true);
 
-		$result = $this->service->deleteObject(uuid: 'nonexistent');
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'nonexistent'));
 
 		$this->assertTrue($result);
 	}
@@ -1046,9 +1055,7 @@ class ObjectServiceTest extends TestCase {
 			->willReturn($lockInfo);
 
 		$result = $this->service->lockObject(
-			identifier: 'obj-uuid',
-			process: 'import',
-			duration: 3600
+			request: new LockRequest(identifier: 'obj-uuid', process: 'import', duration: 3600)
 		);
 
 		$this->assertSame($lockInfo, $result);
@@ -1064,9 +1071,20 @@ class ObjectServiceTest extends TestCase {
 			->with(new UnlockRequest(identifier: 'obj-uuid', advisory: false, runUuid: null, break: false))
 			->willReturn(true);
 
-		$result = $this->service->unlockObject(identifier: 'obj-uuid');
+		$result = $this->service->unlockObject(request: new UnlockRequest(identifier: 'obj-uuid'));
 
 		$this->assertTrue($result);
+	}
+
+	/**
+	 * Test unlockObject refuses a break request and leaves the lock handler untouched.
+	 */
+	public function testUnlockObjectRefusesABreakRequest(): void {
+		$this->lockHandler->expects($this->never())->method('unlock');
+
+		$this->expectException(\InvalidArgumentException::class);
+
+		$this->service->unlockObject(request: new UnlockRequest(identifier: 'obj-uuid', break: true));
 	}
 
 	// ── 13. count() tests ───────────────────────────────────────────────
@@ -1524,13 +1542,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with(
-				schema: $this->schema,
-				action: 'create',
-				userId: null,
-				objectOwner: null,
-				rbac: true
-			);
+			->with($this->schema, 'create');
 
 		$this->invokePrivate('checkSavePermissions', [null, true]);
 	}
@@ -1552,14 +1564,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with(
-				schema: $this->schema,
-				action: 'update',
-				userId: null,
-				objectOwner: 'user1',
-				rbac: true,
-				object: $entity
-			);
+			->with($this->schema, 'update', new PermissionCheckOptions(objectOwner: 'user1', object: $entity), true);
 
 		$this->invokePrivate('checkSavePermissions', ['existing-uuid', true]);
 	}
@@ -1577,13 +1582,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with(
-				schema: $this->schema,
-				action: 'create',
-				userId: null,
-				objectOwner: null,
-				rbac: true
-			);
+			->with($this->schema, 'create');
 
 		$this->invokePrivate('checkSavePermissions', ['new-uuid', true]);
 	}
@@ -1661,7 +1660,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->renderHandler
 			->expects($this->once())
-			->method('renderEntity')
+			->method('render')
 			->willReturn($renderedEntity);
 
 		$result = $this->service->renderEntity(entity: $entity);
@@ -1699,20 +1698,14 @@ class ObjectServiceTest extends TestCase {
 			->expects($this->once())
 			->method('findSilent')
 			->with(
-				'test-uuid',
-				$this->anything(),
-				$this->anything(),
-				['owner'],
-				true,
-				false,
-				false
+				new ObjectFindRequest(id: 'test-uuid', extend: ['owner'], files: true, rbac: false, multitenancy: false, audit: false),
+				$this->anything()
 			)
 			->willReturn($entity);
 
 		$result = $this->service->findSilent(
 			id: 'test-uuid',
-			_extend: ['owner'],
-			files: true,
+			options: new ObjectFindOptions(extend: ['owner'], files: true),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -1734,16 +1727,15 @@ class ObjectServiceTest extends TestCase {
 
 		$handlerScope = null;
 		$this->getHandler->method('findSilent')->willReturnCallback(
-			function ($id, $register = null, $schema = null, ...$rest) use ($entity, &$handlerScope): ObjectEntity {
-				$handlerScope = ['register' => $register, 'schema' => $schema];
+			function (ObjectFindRequest $request, ReadScope $scope) use ($entity, &$handlerScope): ObjectEntity {
+				$handlerScope = ['register' => $scope->register, 'schema' => $scope->schema];
 				return $entity;
 			}
 		);
 
 		$this->service->findSilent(
 			id: 'test-uuid',
-			register: $this->register,
-			schema: $this->schema
+			options: new ObjectFindOptions(register: $this->register, schema: $this->schema)
 		);
 
 		$this->assertNotNull($handlerScope, 'The read never reached the handler.');
@@ -1991,7 +1983,7 @@ class ObjectServiceTest extends TestCase {
 			->method('migrateObjects')
 			->willReturn(['success' => true, 'migrated' => 2]);
 
-		$result = $this->service->migrateObjects('1', '2', '3', '4', ['uuid-1'], ['field1' => 'field2']);
+		$result = $this->service->migrate(new ObjectMigration(source: new RegisterSchemaRef(register: '1', schema: '2'), target: new RegisterSchemaRef(register: '3', schema: '4'), objectIds: ['uuid-1'], mapping: ['field1' => 'field2']));
 
 		$this->assertTrue($result['success']);
 	}
@@ -2050,7 +2042,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->expectException(\OCA\OpenRegister\Exception\NotAuthorizedException::class);
 
-		$this->service->migrateObjects('1', '2', '3', '4', ['uuid-1'], ['a' => 'b']);
+		$this->service->migrate(new ObjectMigration(source: new RegisterSchemaRef(register: '1', schema: '2'), target: new RegisterSchemaRef(register: '3', schema: '4'), objectIds: ['uuid-1'], mapping: ['a' => 'b']));
 	}
 
 	public function testMigrateObjectsMovesOnlyObjectsTheCallerMayReadAndUpdate(): void {
@@ -2075,7 +2067,7 @@ class ObjectServiceTest extends TestCase {
 				]
 			);
 
-		$result = $this->service->migrateObjects('1', '2', '3', '4', ['uuid-1', 'uuid-2', 'uuid-3'], ['a' => 'b']);
+		$result = $this->service->migrate(new ObjectMigration(source: new RegisterSchemaRef(register: '1', schema: '2'), target: new RegisterSchemaRef(register: '3', schema: '4'), objectIds: ['uuid-1', 'uuid-2', 'uuid-3'], mapping: ['a' => 'b']));
 
 		$this->assertSame(1, $result['statistics']['objectsMigrated']);
 		$this->assertSame(2, $result['statistics']['objectsFailed']);
@@ -2104,7 +2096,7 @@ class ObjectServiceTest extends TestCase {
 			->method('validateAndSaveObjectsBySchema')
 			->willReturn(['processed' => 10, 'updated' => 8, 'failed' => 2, 'total' => 10, 'errors' => []]);
 
-		$result = $this->service->validateAndSaveObjectsBySchema(1, 2);
+		$result = $this->service->validateAndSaveTable(new RegisterSchemaRef(register: 1, schema: 2), ListQuery::unbounded());
 
 		$this->assertSame(10, $result['processed']);
 		$this->assertSame(8, $result['updated']);
@@ -2501,7 +2493,7 @@ class ObjectServiceTest extends TestCase {
 			});
 
 		try {
-			$this->service->patchObject('42', ['title' => 'Updated Title']);
+			$this->service->patchObject(patch: new ObjectPatch(objectId: '42', data: ['title' => 'Updated Title']));
 		} catch (\Throwable $e) {
 			// Expected — deep pipeline.
 		}
@@ -2673,15 +2665,15 @@ class ObjectServiceTest extends TestCase {
 	}
 
 	/**
-	 * Test ensureObjectFolder returns null on general exception.
+	 * Test ensureObjectFolder refuses the save when the lookup fails.
 	 */
-	public function testEnsureObjectFolderReturnsNullOnGeneralException(): void {
+	public function testEnsureObjectFolderRefusesOnGeneralException(): void {
 		$this->objectEntityMapper->method('find')
 			->willThrowException(new Exception('Database error'));
 
-		$result = $this->invokePrivate('ensureObjectFolder', ['some-uuid']);
+		$this->expectException(\OCA\OpenRegister\Exception\FolderAccessDeniedException::class);
 
-		$this->assertNull($result);
+		$this->invokePrivate('ensureObjectFolder', ['some-uuid']);
 	}
 
 	/**
@@ -2752,7 +2744,7 @@ class ObjectServiceTest extends TestCase {
 		// Rendering echoes the resolved object back.
 		$this->renderHandler->method('renderEntity')->willReturn($object);
 
-		$result = $this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+		$result = $this->service->find(id: $uuid, options: new ObjectFindOptions(register: $this->register, schema: $this->schema));
 
 		$this->assertSame($object, $result);
 		$this->assertSame(2, $callCount, 'find() should retry across all magic tables');
@@ -2775,7 +2767,7 @@ class ObjectServiceTest extends TestCase {
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
 
 		try {
-			$this->service->find(id: 'employee-jansen', register: $this->register, schema: $this->schema);
+			$this->service->find(id: 'employee-jansen', options: new ObjectFindOptions(register: $this->register, schema: $this->schema));
 		} finally {
 			$this->assertSame(1, $callCount, 'slug lookups must not trigger a cross-schema retry');
 		}
@@ -2846,8 +2838,7 @@ class ObjectServiceTest extends TestCase {
 
 		$result = $this->service->find(
 			id: '550e8400-e29b-41d4-a716-446655440000',
-			schema: $this->schema,
-			_render: false
+			options: new ObjectFindOptions(schema: $this->schema, render: false)
 		);
 
 		$this->assertSame($entity, $result);
@@ -2879,9 +2870,9 @@ class ObjectServiceTest extends TestCase {
 		$callCount = 0;
 		$calls = [];
 		$this->getHandler->method('find')->willReturnCallback(
-			function (...$args) use (&$callCount, &$calls, $object): ObjectEntity {
+			function (ObjectFindRequest $request, ReadScope $scope) use (&$callCount, &$calls, $object): ObjectEntity {
 				$callCount++;
-				$calls[] = $args;
+				$calls[] = [$request->id, $scope->register, $scope->schema];
 				if ($callCount === 1) {
 					throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found in magic table');
 				}
@@ -2897,17 +2888,17 @@ class ObjectServiceTest extends TestCase {
 		$this->renderHandler->method('renderEntity')->willReturn($object);
 
 		// First read: scoped miss + cross-table fallback (2 handler calls).
-		$this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+		$this->service->find(id: $uuid, options: new ObjectFindOptions(register: $this->register, schema: $this->schema));
 		$this->assertSame(2, $callCount);
 
 		// Second read with the SAME stale scope: exactly ONE more handler call…
-		$result = $this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+		$result = $this->service->find(id: $uuid, options: new ObjectFindOptions(register: $this->register, schema: $this->schema));
 
 		$this->assertSame($object, $result);
 		$this->assertSame(3, $callCount, 'a repeated uuid lookup must not re-run the cross-table fallback');
 
 		// …and that call is scoped to the resolved true context, not unscoped.
-		// GetObject::find positional args: [0]=id, [1]=register, [2]=schema.
+		// Recorded per call: [0]=id, [1]=register, [2]=schema.
 		$this->assertSame($trueRegister, $calls[2][1], 'cache hit must target the resolved register');
 		$this->assertSame($trueSchema, $calls[2][2], 'cache hit must target the resolved schema');
 	}
@@ -2949,8 +2940,8 @@ class ObjectServiceTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturn($trueSchema);
 		$this->renderHandler->method('renderEntity')->willReturn($object);
 
-		$this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
-		$result = $this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+		$this->service->find(id: $uuid, options: new ObjectFindOptions(register: $this->register, schema: $this->schema));
+		$result = $this->service->find(id: $uuid, options: new ObjectFindOptions(register: $this->register, schema: $this->schema));
 
 		$this->assertSame($object, $result, 'the cross-table fallback must still resolve the object');
 		$this->assertSame(4, $callCount, 'stale cache entry must fall back to the cross-table lookup');

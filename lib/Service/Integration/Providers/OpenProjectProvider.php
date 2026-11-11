@@ -41,10 +41,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Db\OpenProjectLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
-use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Support\FleetAppId;
-use OCP\App\IAppManager;
-use OCP\IL10N;
 use Throwable;
 
 /**
@@ -75,27 +72,6 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'integriq';
 
 	/**
-	 * External-call router.
-	 *
-	 * @var ExternalIntegrationRouterInterface
-	 */
-	private ExternalIntegrationRouterInterface $router;
-
-	/**
-	 * NC app manager.
-	 *
-	 * @var IAppManager
-	 */
-	private IAppManager $appManager;
-
-	/**
-	 * Localisation.
-	 *
-	 * @var IL10N
-	 */
-	private IL10N $l10n;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ConnectorRouting                    $routing    The router, app manager and localisation.
@@ -107,9 +83,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 		ConnectorRouting $routing,
 		private ?OpenProjectLinkMapperInterface $linkMapper = null,
 	) {
-		$this->router = $routing->router;
-		$this->appManager = $routing->appManager;
-		$this->l10n = $routing->l10n;
+		$this->useRouting(routing: $routing);
 	}//end __construct()
 
 	public function getId(): string {
@@ -149,17 +123,15 @@ class OpenProjectProvider extends AbstractIntegrationProvider {
 	 * When no link rows exist (or the mapper isn't wired) it falls back
 	 * to the external router so a fresh source still surfaces rows.
 	 *
-	 * @param string $register Register slug or numeric id.
-	 * @param string $schema Schema slug or numeric id.
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Optional: `_search`, `_limit`, `_page`.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @spec openspec/specs/integration-openproject/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		return $this->linkedOrSourced(ref: new ObjectRef(register: $register, schema: $schema, id: $objectId), filters: $filters);
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->linkedOrSourced(ref: $ref, filters: $filters);
 	}//end list()
 
 	/**

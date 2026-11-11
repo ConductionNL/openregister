@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\ObjectAction;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -77,13 +78,15 @@ class ObjectActionHistory implements ObjectActionHistoryInterface {
 			throw new NotAuthorizedException(message: 'You do not have permission to read this object.');
 		}
 
-		$entries = $this->auditTrail->findAll(
-			limit: self::LIMIT,
-			filters: [
-				'object_uuid' => (string)$object->getUuid(),
-				'action' => ObjectActionAudit::ACTION_RUN . ',' . ObjectActionAudit::ACTION_MACRO,
-			],
-			sort: ['created' => 'DESC', 'id' => 'DESC']
+		$entries = $this->auditTrail->findTrail(
+			query: new ListQuery(
+				limit: self::LIMIT,
+				filters: [
+					'object_uuid' => (string)$object->getUuid(),
+					'action' => ObjectActionAudit::ACTION_RUN . ',' . ObjectActionAudit::ACTION_MACRO,
+				],
+				sort: ['created' => 'DESC', 'id' => 'DESC']
+			)
 		);
 
 		return array_values(array_map(fn (AuditTrail $entry): array => $this->entry(audit: $entry), $entries));

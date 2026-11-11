@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\SaveObject\UpdatePreparation;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload;
 use OCA\OpenRegister\Service\ProtectedCarryForward;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -181,7 +183,12 @@ class SaveObjectUnwritablePreserveTest extends TestCase {
 		$method = new ReflectionMethod(SaveObject::class, 'prepareObjectForUpdate');
 		$method->setAccessible(true);
 
-		return $method->invokeArgs($handler, [$existing, $schema, new \OCA\OpenRegister\Service\Object\SaveObject\ObjectPayload($data, ['organisation' => 'org-a']), null])->getObject();
+		$preparation = new UpdatePreparation(
+			existingObject: $existing,
+			schema: $schema,
+			payload: new ObjectPayload(data: $data, selfData: ['organisation' => 'org-a'])
+		);
+		return $method->invokeArgs($handler, [$preparation])->getObject();
 	}//end prepareUpdate()
 
 	/**

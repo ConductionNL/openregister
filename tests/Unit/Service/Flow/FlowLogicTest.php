@@ -10,8 +10,10 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunStart;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
@@ -76,7 +78,7 @@ class RouteTaggingDispatcher implements FlowStepDispatcher {
 
 		if ($type === 'route') {
 			return array_map(
-				fn (array $item): array => FlowItems::item(json: (array)($item['json'] ?? []), output: $this->tag),
+				fn (array $item): array => FlowItems::item(json: (array)($item['json'] ?? []), options: new FlowItemOptions(output: $this->tag)),
 				$items
 			);
 		}
@@ -449,7 +451,7 @@ class SwitchAndEndNodeTest extends TestCase {
 		$node = new SwitchNode($this->l10n(), $this->createMock(IURLGenerator::class));
 		$items = [FlowItems::item(json: ['a' => 1]), FlowItems::item(json: ['a' => 2])];
 
-		$this->assertSame($items, $node->execute($items, [], []));
+		$this->assertSame($items, $node->execute(new FlowNodeCall(items: $items, config: [], context: [])));
 		$this->assertTrue($node->isAvailableForScope(IManager::SCOPE_USER));
 	}
 
@@ -457,14 +459,14 @@ class SwitchAndEndNodeTest extends TestCase {
 		$node = new EndNode($this->l10n(), $this->createMock(IURLGenerator::class));
 
 		$this->expectException(FlowStop::class);
-		$node->execute([], ['message' => 'halt'], []);
+		$node->execute(new FlowNodeCall(items: [], config: ['message' => 'halt'], context: []));
 	}
 
 	public function testStopCarriesTheErrorFlag(): void {
 		$node = new EndNode($this->l10n(), $this->createMock(IURLGenerator::class));
 
 		try {
-			$node->execute([], ['error' => true, 'message' => 'bad'], []);
+			$node->execute(new FlowNodeCall(items: [], config: ['error' => true, 'message' => 'bad'], context: []));
 			$this->fail('expected FlowStop');
 		} catch (FlowStop $e) {
 			$this->assertTrue($e->isError());

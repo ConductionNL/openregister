@@ -37,6 +37,9 @@ use OCP\IRequest;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\QueryHandlers;
+use OCA\OpenRegister\Service\Object\QueryPlatform;
+use OCA\OpenRegister\Service\Object\QueryRefinements;
 
 /**
  * Pins the pagination arithmetic, the queries handed to the mapper, the render
@@ -254,14 +257,20 @@ class QueryHandlerPaginatedDatabaseTest extends TestCase {
 		}
 
 		return new QueryHandler(
-			$mapper,
-			$render,
-			$this->createMock(SearchQueryHandler::class),
-			$facets,
-			$performance,
-			$content,
-			$this->createMock(IAppContainer::class),
-			$history
+			platform: new QueryPlatform(
+				objectMapper: $mapper,
+				renderHandler: $render,
+				container: $this->createMock(IAppContainer::class)
+			),
+			handlers: new QueryHandlers(
+				searchQueryHandler: $this->createMock(SearchQueryHandler::class),
+				facetHandler: $facets,
+				performanceHandler: $performance,
+				contentSearchHandler: $content
+			),
+			refinements: new QueryRefinements(
+				historyNarrowing: $history
+			)
 		);
 	}//end handlerFor()
 }//end class

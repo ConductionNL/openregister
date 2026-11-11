@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
 use OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -292,24 +293,22 @@ class DedupCreatePolicyTest extends TestCase {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testTheOverrideHasAParameterOnEverySaveHopNotOnlyTheBody(): void {
-		foreach (
-			[
-				\OCA\OpenRegister\Service\ObjectService::class,
-				\OCA\OpenRegister\Service\Object\SaveObject::class,
-			] as $class
-		) {
-			$method = new \ReflectionMethod($class, 'saveObject');
-			$names = array_map(
-				static fn (\ReflectionParameter $parameter): string => $parameter->getName(),
-				$method->getParameters()
-			);
+		$this->assertTrue(
+			property_exists(\OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy::class, 'dedupOverride'),
+			'ObjectService::saveObject() must carry the override in its save policy: the controller strips it from the body.'
+		);
 
-			$this->assertContains(
-				'_dedupOverride',
-				$names,
-				$class . '::saveObject() must carry the override as a parameter: the controller strips it from the body.'
-			);
-		}
+		$method = new \ReflectionMethod(\OCA\OpenRegister\Service\Object\SaveObject::class, 'saveObject');
+		$names = array_map(
+			static fn (\ReflectionParameter $parameter): string => $parameter->getName(),
+			$method->getParameters()
+		);
+
+		$this->assertContains(
+			'_dedupOverride',
+			$names,
+			'SaveObject::saveObject() must carry the override as a parameter: the controller strips it from the body.'
+		);
 	}//end testTheOverrideHasAParameterOnEverySaveHopNotOnlyTheBody()
 
 	/**
@@ -326,13 +325,13 @@ class DedupCreatePolicyTest extends TestCase {
 
 		$captured = [];
 		$this->auditTrailMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->willReturnCallback(
+			->method('recordObjectEvent')
+			->willReturnCallback(AuditTrailEvents::positional(
 				function (ObjectEntity $subject, string $action, array $context) use (&$captured): AuditTrail {
 					$captured = ['uuid' => $subject->getUuid(), 'action' => $action, 'context' => $context];
 					return new AuditTrail();
 				}
-			);
+			));
 
 		$this->policy->recordOverride($object, $this->oneMatch());
 
@@ -350,7 +349,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testNoOverrideWritesNoAuditEntry(): void {
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->policy->recordOverride(new ObjectEntity(), []);
 	}//end testNoOverrideWritesNoAuditEntry()

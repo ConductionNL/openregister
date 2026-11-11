@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
+use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuardInterface;
 use OCA\OpenRegister\Service\Party\PartyRoleServiceInterface;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
@@ -371,8 +372,7 @@ class PartyController extends Controller {
 	private function removeParty(ObjectEntity $object, string $partyUuid): int {
 		return $this->roles->removeParty(
 			objectUuid: (string)$object->getUuid(),
-			partyUuid: $partyUuid,
-			role: self::textOrNull(value: $this->request->getParam('role', ''))
+			holding: new PartyHolding(partyUuid: $partyUuid, role: self::textOrNull(value: $this->request->getParam('role', '')))
 		);
 	}//end removeParty()
 

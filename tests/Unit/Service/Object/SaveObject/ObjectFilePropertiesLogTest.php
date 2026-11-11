@@ -87,8 +87,8 @@ final class ObjectFilePropertiesLogTest extends TestCase {
 			static fn ($schema, $propertyName): bool => $propertyName === 'file'
 		);
 		$files->method('handleFileProperty')->willReturnCallback(
-			static function ($objectEntity, array &$object, string $propertyName): void {
-				$object[$propertyName] = 42;
+			static function (ObjectFileWrite $write, string $propertyName): void {
+				$write->data[$propertyName] = 42;
 			}
 		);
 

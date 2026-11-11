@@ -80,6 +80,25 @@ class FlowLifecycleRefused extends RuntimeException implements FlowLifecycleRefu
 	public const REASON_VERSION_IN_USE = 'version-in-use';
 
 	/**
+	 * The sentence each reason reads as.
+	 *
+	 * @var array<string, string>
+	 */
+	private const MESSAGES = [
+		self::REASON_IMMUTABLE => 'This version of the flow is published and cannot be edited. '
+			. 'Create a draft version to make changes; the published version keeps serving until '
+			. 'you publish the draft.',
+		self::REASON_NOT_A_DRAFT => 'Only a draft version can be published.',
+		self::REASON_NOT_PUBLISHED => 'Only a published version can be deprecated.',
+		self::REASON_NO_PUBLISHED_VERSION => 'This flow has no published version, so it cannot back '
+			. 'a run. Publish a version first.',
+		self::REASON_DEAD_END => 'This version cannot be published while it has a node a token '
+			. 'cannot leave.',
+		self::REASON_VERSION_IN_USE => 'This version cannot be removed while a run is still pinned '
+			. 'to it.',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string      $reason  One of the REASON_* constants.
@@ -95,28 +114,8 @@ class FlowLifecycleRefused extends RuntimeException implements FlowLifecycleRefu
 		private readonly ?string $state = null,
 		?string $detail = null,
 	) {
-		$messages = [
-			self::REASON_IMMUTABLE => 'This version of the flow is published and cannot be edited. '
-				. 'Create a draft version to make changes; the published version keeps serving until '
-				. 'you publish the draft.',
-			self::REASON_NOT_A_DRAFT => 'Only a draft version can be published.',
-			self::REASON_NOT_PUBLISHED => 'Only a published version can be deprecated.',
-			self::REASON_NO_PUBLISHED_VERSION => 'This flow has no published version, so it cannot back '
-				. 'a run. Publish a version first.',
-			self::REASON_DEAD_END => 'This version cannot be published while it has a node a token '
-				. 'cannot leave.',
-			self::REASON_VERSION_IN_USE => 'This version cannot be removed while a run is still pinned '
-				. 'to it.',
-		];
-
-		$where = ' (flow ' . $flowId;
-		if ($state !== null) {
-			$where .= ', state ' . $state;
-		}
-
-		$where .= ')';
-
-		$message = ($messages[$reason] ?? 'This flow lifecycle transition was refused.') . $where;
+		$message = (self::MESSAGES[$reason] ?? 'This flow lifecycle transition was refused.')
+			. self::where(flowId: $flowId, state: $state);
 
 		if ($detail !== null && trim($detail) !== '') {
 			$message .= ' ' . $detail;
@@ -125,6 +124,23 @@ class FlowLifecycleRefused extends RuntimeException implements FlowLifecycleRefu
 		parent::__construct(message: $message);
 
 	}//end __construct()
+
+	/**
+	 * Where the refusal happened: the flow, and the state when there is one.
+	 *
+	 * @param string      $flowId The flow the refusal is about.
+	 * @param string|null $state  The lifecycle state that caused it, or null.
+	 *
+	 * @return string The parenthesised location.
+	 */
+	private static function where(string $flowId, ?string $state): string {
+		$where = ' (flow ' . $flowId;
+		if ($state !== null) {
+			$where .= ', state ' . $state;
+		}
+
+		return $where . ')';
+	}//end where()
 
 	/**
 	 * The machine-readable reason.

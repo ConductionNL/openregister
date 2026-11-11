@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Relation\Derivation;
 use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationStores;
+use OCA\OpenRegister\Service\Relation\ParentInheritance;
 use OCA\OpenRegister\Service\Relation\ProvenanceLink;
 use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\RelationEndpoint;
@@ -139,10 +140,8 @@ class ObjectRelationServiceWritesGoldenTest extends TestCase {
 
 		$out[] = $service->recordSplit(source: $parent, created: $child)->jsonSerialize();
 		$out[] = $service->recordSplit(source: $parent, created: $child, link: new ProvenanceLink(entry: 'e1', relationType: 'cites'))->jsonSerialize();
-		$out[] = $service->applyInheritance(
-			parent: $parent,
-			childData: ['own' => 'C', 'cls' => ''],
-			inherits: ['classification' => 'cls', 'confidentiality' => 'conf', 'responsible' => 'resp', 'x' => 'own', 'y' => 'zero', 'z' => 'none', 'w' => 'cls']
+		$out[] = $service->inherit(
+			inheritance: new ParentInheritance(parent: $parent, childData: ['own' => 'C', 'cls' => ''], inherits: ['classification' => 'cls', 'confidentiality' => 'conf', 'responsible' => 'resp', 'x' => 'own', 'y' => 'zero', 'z' => 'none', 'w' => 'cls'])
 		);
 		$out[] = $service->recordDerived(derivation: new Derivation(parent: $parent, child: $child))->jsonSerialize();
 		$out[] = $service->recordDerived(derivation: new Derivation(parent: $parent, child: $child, link: new ProvenanceLink(entry: 'e2', relationType: 'cites'), inherited: ['a' => 1]))->jsonSerialize();

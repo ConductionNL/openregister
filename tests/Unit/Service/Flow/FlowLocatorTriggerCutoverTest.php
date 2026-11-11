@@ -120,7 +120,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnpublishedFlowIsFilteredFromTheColumnFallback(): void {
-		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn([]);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
 		$this->mapper->method('findByTrigger')->willReturn([$this->flow('never-published'), $this->flow('published-1')]);
 
@@ -160,7 +160,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnreadableVersionTableFailsOpen(): void {
-		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn([]);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
 		$this->mapper->method('findByTrigger')->willReturn([$this->flow('legacy-1')]);
 
@@ -189,7 +189,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnconvertedFlowStillFiresThroughItsColumns(): void {
-		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn([]);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
 		$this->mapper->method('findByTrigger')->willReturn([$this->flow('legacy-1')]);
 
@@ -207,7 +207,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAConvertedFlowFiresFromTheIndex(): void {
-		$this->triggerMapper->method('flowUuidsFor')->willReturn(['converted-1']);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn(['converted-1']);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn(['converted-1']);
 		$this->mapper->method('findByTrigger')->willReturn([]);
 		$this->mapper->method('findByUuid')->willReturn($this->flow('converted-1'));
@@ -231,7 +231,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 */
 	public function testAConvertedFlowDoesNotFireFromItsStaleColumns(): void {
 		// The index knows this flow, but NOT for this event.
-		$this->triggerMapper->method('flowUuidsFor')->willReturn([]);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn([]);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn(['converted-1']);
 
 		// Its old column still matches.
@@ -251,7 +251,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFlowMatchedByBothSourcesIsReturnedOnce(): void {
-		$this->triggerMapper->method('flowUuidsFor')->willReturn(['both-1']);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn(['both-1']);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn([]);
 		$this->mapper->method('findByTrigger')->willReturn([$this->flow('both-1')]);
 		$this->mapper->method('findByUuid')->willReturn($this->flow('both-1'));
@@ -274,7 +274,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnreadableIndexFallsBackToTheColumnsForEveryFlow(): void {
-		$this->triggerMapper->method('flowUuidsFor')
+		$this->triggerMapper->method('flowUuidsSubscribedTo')
 			->willThrowException(new RuntimeException('no such table'));
 		$this->mapper->method('findByTrigger')->willReturn([$this->flow('legacy-1')]);
 
@@ -295,7 +295,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 	 * @return void
 	 */
 	public function testAStaleIndexRowIsReported(): void {
-		$this->triggerMapper->method('flowUuidsFor')->willReturn(['ghost-1']);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn(['ghost-1']);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn(['ghost-1']);
 		$this->mapper->method('findByTrigger')->willReturn([]);
 		$this->mapper->method('findByUuid')->willThrowException(new RuntimeException('gone'));
@@ -316,7 +316,7 @@ class FlowLocatorTriggerCutoverTest extends TestCase {
 		$ownerless->setUuid('ownerless-1');
 		$ownerless->setEnabled(true);
 
-		$this->triggerMapper->method('flowUuidsFor')->willReturn(['ownerless-1']);
+		$this->triggerMapper->method('flowUuidsSubscribedTo')->willReturn(['ownerless-1']);
 		$this->triggerMapper->method('representedFlowUuids')->willReturn(['ownerless-1']);
 		$this->mapper->method('findByTrigger')->willReturn([]);
 		$this->mapper->method('findByUuid')->willReturn($ownerless);

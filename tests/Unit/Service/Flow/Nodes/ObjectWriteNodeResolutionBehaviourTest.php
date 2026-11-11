@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\FlowSubjectCandidates;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
@@ -44,6 +45,7 @@ use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
@@ -151,7 +153,7 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 	 */
 	private function savesAs(array $uuids): void {
 		$this->objects->method('saveObject')->willReturnCallback(
-			static function (mixed $object) use (&$uuids): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$uuids): ObjectEntity {
 				$entity = new ObjectEntity();
 				$entity->setUuid((string)array_shift($uuids));
 				$entity->setObject((array)$object);
@@ -167,7 +169,7 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 		$this->objects->expects(self::never())->method('saveObject');
 
 		try {
-			$this->node->execute($this->items([['name' => 'a']]), $this->config(), ['runAs' => 'alice']);
+			$this->node->execute(new FlowNodeCall(items: $this->items([['name' => 'a']]), config: $this->config(), context: ['runAs' => 'alice']));
 			self::fail('An unknown register must refuse the step.');
 		} catch (UnexpectedValueException $e) {
 			self::assertSame('The register "cases" could not be resolved.', $e->getMessage());
@@ -183,15 +185,15 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$this->expectExceptionMessage('The schema "7" could not be resolved.');
 
-		$this->node->execute($this->items([['name' => 'a']]), $this->config(['schema' => 7]), ['runAs' => 'alice']);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['name' => 'a']]), config: $this->config(['schema' => 7]), context: ['runAs' => 'alice']));
 	}//end testANumericSchemaIsLookedUpByIdAndAMissOneIsNamed()
 
 	public function testANumericSchemaThatResolvesIsWrittenUnder(): void {
 		$this->registers->method('find')->willReturn($this->register);
 		$this->schemas->method('find')->with('2', self::anything(), false, false)->willReturn($this->schema);
 		$this->objects->expects(self::once())->method('saveObject')
-			->with(['title' => 'a'], self::anything(), $this->register, $this->schema)
-			->willReturnCallback(static function (): ObjectEntity {
+			->with(['title' => 'a'], $this->callback(fn (ObjectSaveOptions $options): bool => $options->target->register == $this->register && $options->target->schema == $this->schema))
+			->willReturnCallback(static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 				$entity = new ObjectEntity();
 				$entity->setUuid('u-1');
 				$entity->setObject(['title' => 'a']);
@@ -199,7 +201,7 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 				return $entity;
 			});
 
-		$out = $this->node->execute($this->items([['name' => 'a']]), $this->config(['schema' => '2']), ['runAs' => 'alice']);
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items([['name' => 'a']]), config: $this->config(['schema' => '2']), context: ['runAs' => 'alice']));
 
 		self::assertSame('u-1', $out[0][FlowItems::JSON]['uuid']);
 	}//end testANumericSchemaThatResolvesIsWrittenUnder()
@@ -213,7 +215,7 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 
 		$this->expectException(SchemaNotInRegisterException::class);
 
-		$this->node->execute($this->items([['name' => 'a']]), $this->config(['schema' => 'foreign']), ['runAs' => 'alice']);
+		$this->node->execute(new FlowNodeCall(items: $this->items([['name' => 'a']]), config: $this->config(['schema' => 'foreign']), context: ['runAs' => 'alice']));
 	}//end testASchemaSlugTheRegisterDoesNotCarryIsRefusedNotResolvedGlobally()
 
 	public function testTheWrittenObjectIsOfferedAsTheSubjectOnce(): void {
@@ -231,11 +233,11 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 				})
 			);
 
-		$this->node->execute(
-			$this->items([['name' => 'a'], ['name' => 'b'], ['name' => 'c']]),
-			$this->config(['subjectRole' => ' zaak ']),
-			$context
-		);
+		$this->node->execute(new FlowNodeCall(
+			items: $this->items([['name' => 'a'], ['name' => 'b'], ['name' => 'c']]),
+			config: $this->config(['subjectRole' => ' zaak ']),
+			context: $context
+		));
 	}//end testTheWrittenObjectIsOfferedAsTheSubjectOnce()
 
 	public function testTheSubjectIsReadUnderTheOutputKey(): void {
@@ -244,11 +246,11 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 		$this->recorder->expects(self::once())->method('recordOne')
 			->with(self::anything(), self::callback(static fn (FlowSubjectCandidates $candidates): bool => $candidates->uuids === ['u-9']));
 
-		$out = $this->node->execute(
-			$this->items([['name' => 'a', 'uuid' => 'incoming']]),
-			$this->config(['subjectRole' => 'zaak', 'output' => 'written']),
-			['runAs' => 'alice']
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['name' => 'a', 'uuid' => 'incoming']]),
+			config: $this->config(['subjectRole' => 'zaak', 'output' => 'written']),
+			context: ['runAs' => 'alice']
+		));
 
 		self::assertSame('incoming', $out[0][FlowItems::JSON]['uuid'], 'the incoming record is kept beside the output key');
 	}//end testTheSubjectIsReadUnderTheOutputKey()
@@ -258,7 +260,7 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 		$this->savesAs(['u-1']);
 		$this->recorder->expects(self::never())->method('recordOne');
 
-		$out = $this->node->execute($this->items([['name' => 'a']]), $this->config(['subjectRole' => '  ']), ['runAs' => 'alice']);
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items([['name' => 'a']]), config: $this->config(['subjectRole' => '  ']), context: ['runAs' => 'alice']));
 
 		self::assertSame('u-1', $out[0][FlowItems::JSON]['uuid']);
 	}//end testNoSubjectIsRecordedWithoutARole()
@@ -272,9 +274,9 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 		$this->objects->expects(self::once())->method('deleteObject')->willReturn(true);
 		$this->recorder->expects(self::never())->method('recordOne');
 
-		$out = $this->node->execute(
-			$this->items([['retiredId' => 'r1']]),
-			[
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['retiredId' => 'r1']]),
+			config: [
 				'register' => 'cases',
 				'schema' => 'case',
 				'operation' => 'delete',
@@ -282,8 +284,8 @@ class ObjectWriteNodeResolutionBehaviourTest extends TestCase {
 				'subjectRole' => 'zaak',
 				'match' => [['property' => 'sourceId', 'value' => '{{retiredId}}']],
 			],
-			['runAs' => 'alice']
-		);
+			context: ['runAs' => 'alice']
+		));
 
 		self::assertTrue($out[0][FlowItems::JSON]['deleted']);
 	}//end testADeletedObjectIsNeverRecordedAsTheSubject()

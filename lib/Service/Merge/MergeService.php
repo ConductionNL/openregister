@@ -11,7 +11,7 @@
  * annotation. Every object read/write goes through `ObjectService` (RBAC +
  * tenant scoped, audited).
  *
- * `previewMerge` is side-effect-free. `executeMerge` is one server-authoritative
+ * `previewMerge` is side-effect-free. `merge` is one server-authoritative
  * unit of work: snapshot -> relink -> recompute -> status flip -> persist
  * mergeOperation -> dispatch event. `reverseMerge` restores the snapshot
  * within `reversalWindowDays`, best-effort per source-record link (an
@@ -41,6 +41,9 @@ namespace OCA\OpenRegister\Service\Merge;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
@@ -53,6 +56,8 @@ use OCA\OpenRegister\Exception\MergeDecisionException;
 use OCA\OpenRegister\Exception\MergeNotFullyReadableException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
+use OCA\OpenRegister\Service\Survivorship\GoldenRecordRequest;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
@@ -62,6 +67,8 @@ use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Server-authoritative, reversible merge engine driven by
@@ -265,40 +272,6 @@ class MergeService implements ObjectMergerInterface {
 		];
 	}//end previewMerge()
 
-	/**
-	 * Execute a merge atomically (server-authoritative): snapshot both
-	 * objects, relink the losing object's source records onto the survivor,
-	 * recompute the survivor via `SurvivorshipResolver`, flip statuses,
-	 * persist a `mergeOperation` row, and dispatch `ObjectsMergedEvent`.
-	 *
-	 * @param string $from Uuid of the object being merged away.
-	 * @param string $into Uuid of the surviving object.
-	 * @param string $reason Steward-supplied merge reason.
-	 * @param string $mergedBy Acting user uid.
-	 * @param array<string, mixed>|null $decisions Per-property choices (`property => 'from' | 'into'`).
-	 *                                            Null keeps the pre-existing behaviour exactly: the
-	 *                                            resolver's proposal applies and no payload property
-	 *                                            is rewritten.
-	 *
-	 * @return array<string, mixed> The persisted `mergeOperation` row.
-	 *
-	 * @throws RuntimeException When self-merge, already-merged, or the survivor is not active.
-	 * @throws MergeDecisionException When the decision map does not describe the preview it approves.
-	 * @throws MergeNotFullyReadableException When either object carries a property the caller may not read.
-	 *
-	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.3
-	 */
-	public function executeMerge(
-		string $from,
-		string $into,
-		string $reason,
-		string $mergedBy,
-		?array $decisions = null,
-	): array {
-		$instruction = new MergeInstruction(from: $from, into: $into, reason: $reason, mergedBy: $mergedBy);
-
-		return $this->merge(instruction: $instruction, decisions: $decisions);
-	}//end executeMerge()
 
 	/**
 	 * Execute a merge (server-authoritative), in order: snapshot both objects,
@@ -371,7 +344,7 @@ class MergeService implements ObjectMergerInterface {
 	 * The resolver overrides a decision map stands for, or null without one.
 	 *
 	 * A decision map is turned into resolver OVERRIDES, which is the whole
-	 * of design D-1: `SurvivorshipResolver::resolveGoldenRecord()` has
+	 * of design D-1: `SurvivorshipResolver::resolve()` has
 	 * always taken an `$overrides` argument and nothing ever passed one, so
 	 * the human's choice rides the mechanism that already existed rather
 	 * than a second execution path beside it. The overrides are also
@@ -446,9 +419,10 @@ class MergeService implements ObjectMergerInterface {
 		$fromObject->setObject($run->fromData);
 		$this->objectService->saveObject(
 			object: $fromObject,
-			register: $fromObject->getRegister(),
-			schema: $fromObject->getSchema(),
-			uuid: $fromObject->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $fromObject->getRegister(), schema: $fromObject->getSchema()),
+				uuid: $fromObject->getUuid()
+			)
 		);
 	}//end markMerged()
 
@@ -466,9 +440,10 @@ class MergeService implements ObjectMergerInterface {
 		$intoObject->setObject($this->survivorPayload(run: $run));
 		$run->survivor = $this->objectService->saveObject(
 			object: $intoObject,
-			register: $intoObject->getRegister(),
-			schema: $intoObject->getSchema(),
-			uuid: $intoObject->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $intoObject->getRegister(), schema: $intoObject->getSchema()),
+				uuid: $intoObject->getUuid()
+			)
 		);
 	}//end saveSurvivor()
 
@@ -483,11 +458,13 @@ class MergeService implements ObjectMergerInterface {
 	 */
 	private function survivorPayload(MergeRun $run): array {
 		$survivorshipConfig = $this->getSurvivorshipConfig(schema: $run->pair->schema);
-		$resolution         = $this->resolver->resolveGoldenRecord(
-			sourceRecords: $this->survivorSources(pair: $run->pair, intoData: $run->intoData),
-			config: $survivorshipConfig,
-			trust: $this->survivorTrust(pair: $run->pair),
-			overrides: $run->overrides
+		$resolution         = $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $this->survivorSources(pair: $run->pair, intoData: $run->intoData),
+				config: $survivorshipConfig,
+				trust: $this->survivorTrust(pair: $run->pair),
+				overrides: $run->overrides
+			)
 		);
 
 		foreach (($run->overrides ?? []) as $property => $override) {
@@ -530,7 +507,12 @@ class MergeService implements ObjectMergerInterface {
 			$mergeOperation['fieldDecisions'] = $decisions;
 		}
 
-		return $this->objectService->saveObject(object: $mergeOperation, register: self::MERGE_REGISTER, schema: self::MERGE_SCHEMA);
+		return $this->objectService->saveObject(
+			object: $mergeOperation,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::MERGE_REGISTER, schema: self::MERGE_SCHEMA)
+			)
+		);
 	}//end persistOperation()
 
 	/**
@@ -617,7 +599,10 @@ class MergeService implements ObjectMergerInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function reverseMerge(string $mergeOperationId, string $reversedBy): array {
-		$operationEntity = WriteCause::asLookup(fn () => $this->objectService->find(id: $mergeOperationId, schema: self::MERGE_SCHEMA));
+		$operationEntity = WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $mergeOperationId,
+			options: new ObjectFindOptions(schema: self::MERGE_SCHEMA)
+		));
 		if ($operationEntity === null) {
 			throw new RuntimeException('Merge operation not found.');
 		}
@@ -659,9 +644,10 @@ class MergeService implements ObjectMergerInterface {
 		$operationEntity->setObject($operation);
 		$savedOperation = $this->objectService->saveObject(
 			object: $operationEntity,
-			register: self::MERGE_REGISTER,
-			schema: self::MERGE_SCHEMA,
-			uuid: $operationEntity->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::MERGE_REGISTER, schema: self::MERGE_SCHEMA),
+				uuid: $operationEntity->getUuid()
+			)
 		);
 
 		$this->logger->info(
@@ -903,9 +889,10 @@ class MergeService implements ObjectMergerInterface {
 			try {
 				$this->objectService->saveObject(
 					object: $object,
-					register: $object->getRegister(),
-					schema: $object->getSchema(),
-					uuid: $object->getUuid()
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+						uuid: $object->getUuid()
+					)
 				);
 				$moves[] = [
 					'sourceUuid' => (string)$object->getUuid(),
@@ -968,11 +955,12 @@ class MergeService implements ObjectMergerInterface {
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.2
 	 */
 	private function recomputeSurvivor(MergePair $pair): array {
-		return $this->resolver->resolveGoldenRecord(
-			sourceRecords: $this->survivorSources(pair: $pair, intoData: ($pair->intoObject->getObject() ?? [])),
-			config: $this->getSurvivorshipConfig(schema: $pair->schema),
-			trust: $this->survivorTrust(pair: $pair),
-			overrides: null
+		return $this->resolver->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $this->survivorSources(pair: $pair, intoData: ($pair->intoObject->getObject() ?? [])),
+				config: $this->getSurvivorshipConfig(schema: $pair->schema),
+				trust: $this->survivorTrust(pair: $pair)
+			)
 		);
 	}//end recomputeSurvivor()
 
@@ -997,16 +985,16 @@ class MergeService implements ObjectMergerInterface {
 
 		return array_merge(
 			$this->sourceRecordResolver->resolveSources(
-				masterData: $intoData,
-				masterUuid: (string)$pair->intoObject->getUuid(),
-				config: $survivorshipConfig,
-				masterRegister: (string)$pair->intoObject->getRegister()
+				master: new MasterRecord(data: $intoData, uuid: (string)$pair->intoObject->getUuid(), register: (string)$pair->intoObject->getRegister()),
+				config: $survivorshipConfig
 			),
 			$this->sourceRecordResolver->resolveSources(
-				masterData: ($pair->fromObject->getObject() ?? []),
-				masterUuid: (string)$pair->fromObject->getUuid(),
-				config: $survivorshipConfig,
-				masterRegister: (string)$pair->fromObject->getRegister()
+				master: new MasterRecord(
+					data: ($pair->fromObject->getObject() ?? []),
+					uuid: (string)$pair->fromObject->getUuid(),
+					register: (string)$pair->fromObject->getRegister()
+				),
+				config: $survivorshipConfig
 			)
 		);
 	}//end survivorSources()
@@ -1057,9 +1045,10 @@ class MergeService implements ObjectMergerInterface {
 			$entity->setObject($state);
 			$this->objectService->saveObject(
 				object: $entity,
-				register: $entity->getRegister(),
-				schema: $entity->getSchema(),
-				uuid: $entity->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $entity->getRegister(), schema: $entity->getSchema()),
+					uuid: $entity->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -1131,9 +1120,10 @@ class MergeService implements ObjectMergerInterface {
 			$entity->setObject($data);
 			$this->objectService->saveObject(
 				object: $entity,
-				register: $entity->getRegister(),
-				schema: $entity->getSchema(),
-				uuid: $entity->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $entity->getRegister(), schema: $entity->getSchema()),
+					uuid: $entity->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -1275,9 +1265,9 @@ class MergeService implements ObjectMergerInterface {
 		try {
 			return WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
+				options: new ObjectFindOptions(render: false),
 				_rbac: true,
-				_multitenancy: true,
-				_render: false
+				_multitenancy: true
 			));
 		} catch (Throwable $e) {
 			$this->logger->warning('[MergeService] unrendered read failed: ' . $e->getMessage());
@@ -1307,10 +1297,12 @@ class MergeService implements ObjectMergerInterface {
 
 		foreach ([$pair->fromObject, $pair->intoObject] as $subject) {
 			try {
-				$this->auditTrailMapper->createAuditTrailEntry(
-					object: $subject,
-					action: self::MERGE_REFUSED_ACTION,
-					context: $context
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(
+						object: $subject,
+						action: self::MERGE_REFUSED_ACTION,
+						context: $context
+					)
 				);
 			} catch (Throwable $e) {
 				$this->logger->warning('[MergeService] attempted-merge audit failed: ' . $e->getMessage());

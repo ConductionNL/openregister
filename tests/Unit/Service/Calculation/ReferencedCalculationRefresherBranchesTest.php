@@ -19,10 +19,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Calculation;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -32,6 +34,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * ReferencedCalculationRefresherBranchesTest.
@@ -140,7 +143,10 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 
 	public function testANewObjectCountsEveryFieldAsChangedAndSkipsBrokenRegisterSchemas(): void {
 		$this->rows->expects($this->once())->method('findAllInRegisterSchemaTable')
-			->with($this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), ReferencedCalculationRefresher::SYNC_LIMIT, null, ['caseType' => 'type-1'])
+			->with(
+				$this->isInstanceOf(RegisterSchema::class),
+				new ListQuery(ReferencedCalculationRefresher::SYNC_LIMIT, null, ['caseType' => 'type-1'])
+			)
 			->willReturn([$this->referrer('case-1'), $this->referrer('case-2')]);
 		$this->objects->expects($this->exactly(2))->method('saveObject');
 
@@ -173,7 +179,8 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 	public function testAFailedReSaveIsLoggedAndNotCounted(): void {
 		$this->rows->method('findAllInRegisterSchemaTable')->willReturn([$this->referrer('bad'), $this->referrer('good')]);
 		$this->objects->method('saveObject')->willReturnCallback(
-			static function (mixed ...$args): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				if ($args[4] === 'bad') {
 					throw new RuntimeException('locked');
 				}
@@ -205,7 +212,7 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 		$depthsReached = [];
 		$this->rows->method('findAllInRegisterSchemaTable')->willReturn([$this->referrer('case-1')]);
 		$this->objects->method('saveObject')->willReturnCallback(
-			function () use ($refresher, &$depthsReached): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($refresher, &$depthsReached): ObjectEntity {
 				// A save that changes a read field again triggers the next level.
 				$depthsReached[] = $refresher->refresh($this->caseType(['startableFlows' => [count($depthsReached)]]), null);
 				return new ObjectEntity();
@@ -283,7 +290,10 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 		$register->setSchemas([2, 3]);
 		$this->registers->method('find')->willReturn($register);
 		$this->rows->expects($this->once())->method('findAllInRegisterSchemaTable')
-			->with($register, $this->callback(static fn (Schema $s): bool => $s->getSlug() === 'case'), ReferencedCalculationRefresher::SYNC_LIMIT, null, ['caseType' => 'type-1'])
+			->with(
+				$this->callback(static fn (RegisterSchema $t): bool => $t->register === $register && $t->schema->getSlug() === 'case'),
+				new ListQuery(ReferencedCalculationRefresher::SYNC_LIMIT, null, ['caseType' => 'type-1'])
+			)
 			->willReturn([]);
 
 		$this->refresher()->refresh($this->caseType(['title' => 'same', 'startableFlows' => [1]]), $this->caseType(['title' => 'same']));

@@ -4,7 +4,7 @@ namespace Unit\Tool;
 
 use BadMethodCallException;
 use OCA\OpenRegister\Db\Application;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ApplicationMapper;
 use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
 use OCA\OpenRegister\Mcp\Tool\UpdateApplicationCommand;

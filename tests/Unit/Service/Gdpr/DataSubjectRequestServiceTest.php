@@ -46,6 +46,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Gdpr\ErasureRequest;
+use OCA\OpenRegister\Service\Gdpr\SubjectQuery;
 
 /**
  * Test class for DataSubjectRequestService.
@@ -250,7 +253,7 @@ class DataSubjectRequestServiceTest extends TestCase {
 			}
 		);
 
-		$results = $this->service->findSubjectData(subjectId: 'jane@example.org');
+		$results = $this->service->findSubjectData(new SubjectQuery(subjectId: 'jane@example.org'));
 
 		$this->assertCount(1, $results);
 		$this->assertSame('uuid-a', $results[0]['object']['@self']['id'] ?? $results[0]['object']['id'] ?? 'uuid-a');
@@ -323,16 +326,16 @@ class DataSubjectRequestServiceTest extends TestCase {
 		// EXACTLY ONE WRITE. The retained record is never handed to the audited
 		// save path at all, so it cannot be tombstoned on the way past.
 		$this->objectService->expects($this->once())->method('saveObject')->willReturnCallback(
-			function ($object) use ($ordinary) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($ordinary) {
 				$this->assertSame($ordinary, $object);
 				return $ordinary;
 			}
 		);
 
-		$summary = $this->service->erase(
+		$summary = $this->service->erase(new ErasureRequest(
 			subjectId: 'jane@example.org',
 			eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT
-		);
+		));
 
 		$this->assertSame(2, $summary['matchedCount']);
 
@@ -400,10 +403,10 @@ class DataSubjectRequestServiceTest extends TestCase {
 
 		$this->objectService->expects($this->never())->method('saveObject');
 
-		$summary = $this->service->erase(
+		$summary = $this->service->erase(new ErasureRequest(
 			subjectId: 'jane@example.org',
 			eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT
-		);
+		));
 
 		$this->assertCount(0, $summary['erased']);
 		$this->assertCount(1, $summary['withheld']);
@@ -464,13 +467,13 @@ class DataSubjectRequestServiceTest extends TestCase {
 
 		// Only the free object is written (erased) via the audited save path.
 		$this->objectService->expects($this->once())->method('saveObject')->willReturnCallback(
-			function ($object) use ($free) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($free) {
 				$this->assertSame($free, $object);
 				return $free;
 			}
 		);
 
-		$summary = $this->service->erase(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$summary = $this->service->erase(new ErasureRequest(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT));
 
 		$this->assertSame(2, $summary['matchedCount']);
 		$this->assertCount(1, $summary['erased']);
@@ -509,7 +512,7 @@ class DataSubjectRequestServiceTest extends TestCase {
 		$this->retentionService->method('validateNotImmutable')->willReturn(null);
 		$this->objectService->method('saveObject')->willReturnArgument(0);
 
-		$this->service->erase(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT);
+		$this->service->erase(new ErasureRequest(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_WHOLE_OBJECT));
 		$this->assertNotNull($object->getDeleted());
 		$this->assertSame('gdpr-erasure', $object->getDeleted()['deletedReason']);
 		// Whole-object mode leaves the payload intact.
@@ -533,7 +536,7 @@ class DataSubjectRequestServiceTest extends TestCase {
 		$this->retentionService->method('validateNotImmutable')->willReturn(null);
 		$this->objectService->method('saveObject')->willReturnArgument(0);
 
-		$this->service->erase(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE);
+		$this->service->erase(new ErasureRequest(subjectId: 'jane@example.org', eraseMode: DataSubjectRequestService::ERASE_MODE_PSEUDONYMISE));
 
 		$payload = $object->getObject();
 		$this->assertSame('[erased]', $payload['email']);
@@ -560,7 +563,7 @@ class DataSubjectRequestServiceTest extends TestCase {
 		// saveObject() must never be called on a dry run.
 		$this->objectService->expects($this->never())->method('saveObject');
 
-		$summary = $this->service->erase(subjectId: 'jane@example.org', dryRun: true);
+		$summary = $this->service->erase(new ErasureRequest(subjectId: 'jane@example.org', dryRun: true));
 
 		$this->assertTrue($summary['dryRun']);
 		$this->assertCount(1, $summary['erased']);

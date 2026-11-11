@@ -170,23 +170,14 @@ class AdoptLeafOrganisationsCommand extends Command {
 	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$registerSlug = (string)$input->getOption('register');
-		$schemaSlug = (string)$input->getOption('schema');
 		$dryRun = ((bool)$input->getOption('apply') === false);
 
-		if ($registerSlug === '') {
+		if ((string)$input->getOption('register') === '') {
 			$output->writeln('<error>--register is required.</error>');
 			return Command::FAILURE;
 		}
 
-		if ($dryRun === true) {
-			$output->writeln(
-				'<comment>Running in DRY-RUN mode — nothing will be written. '
-				. 'Re-run with --apply to adopt.</comment>'
-			);
-		}
-
-		$rows = $this->readRows(input: $input, output: $output);
+		$rows = $this->rowsToAdopt(input: $input, output: $output);
 		if ($rows === null) {
 			return Command::FAILURE;
 		}
@@ -194,26 +185,73 @@ class AdoptLeafOrganisationsCommand extends Command {
 		$tally = $this->adoptAll(run: new AdoptionRun(output: $output, dryRun: $dryRun), rows: $rows);
 
 		$output->writeln(self::summaryLine(tally: $tally, dryRun: $dryRun));
+		$this->logAdoption(input: $input, tally: $tally);
 
+		return self::exitCode(tally: $tally);
+	}//end execute()
+
+	/**
+	 * Announce a dry run, then read the rows to adopt.
+	 *
+	 * @param InputInterface  $input  The console input.
+	 * @param OutputInterface $output The console output.
+	 *
+	 * @return array|null The rows, or null when they could not be read.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private function rowsToAdopt(InputInterface $input, OutputInterface $output): ?array {
+		if ((bool)$input->getOption('apply') === false) {
+			$output->writeln(
+				'<comment>Running in DRY-RUN mode — nothing will be written. '
+				. 'Re-run with --apply to adopt.</comment>'
+			);
+		}
+
+		return $this->readRows(input: $input, output: $output);
+	}//end rowsToAdopt()
+
+	/**
+	 * Log what the run adopted, merged, skipped and failed, for which register and schema.
+	 *
+	 * @param InputInterface     $input The console input.
+	 * @param array<string, int> $tally The run's counts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private function logAdoption(InputInterface $input, array $tally): void {
 		$this->logger->info(
 			'OpenRegister: adopted leaf organisations',
 			[
-				'register' => $registerSlug,
-				'schema' => $schemaSlug,
+				'register' => (string)$input->getOption('register'),
+				'schema' => (string)$input->getOption('schema'),
 				'adopted' => $tally['adopted'],
 				'merged' => $tally['merged'],
 				'skipped' => $tally['skipped'],
 				'failed' => $tally['failed'],
-				'dryRun' => $dryRun,
+				'dryRun' => ((bool)$input->getOption('apply') === false),
 			]
 		);
+	}//end logAdoption()
 
+	/**
+	 * FAILURE when any row failed, SUCCESS otherwise.
+	 *
+	 * @param array<string, int> $tally The run's counts.
+	 *
+	 * @return int The exit code.
+	 *
+	 * @spec openspec/changes/consolidate-organisation-on-or/specs/consolidated-organisation/spec.md#requirement-a-leaf-apps-organisations-are-adopted-not-re-created-req-org-106
+	 */
+	private static function exitCode(array $tally): int {
 		if ($tally['failed'] > 0) {
 			return Command::FAILURE;
 		}
 
 		return Command::SUCCESS;
-	}//end execute()
+	}//end exitCode()
 
 	/**
 	 * Read every leaf row, or report why they could not be read.

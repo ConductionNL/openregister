@@ -29,12 +29,15 @@ use OCA\OpenRegister\Service\Object\CorrectionAuditing;
 use OCA\OpenRegister\Service\Object\CorrectionService;
 use OCA\OpenRegister\Service\Object\CorrectionTarget;
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
+use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Every branch of a correction.
@@ -131,9 +134,9 @@ class CorrectionServiceBehaviourTest extends TestCase {
 		$saved = new ObjectEntity();
 		$saved->setUuid('u-1');
 		$saved->setLastLog($lastLog);
-		$this->objects->method('findSilent')->with('obj-1', [], false, 'reg', 'sch', false, false)->willReturn($existing);
+		$this->objects->method('findSilent')->with(...FindCallShape::findSilentArgs('obj-1', [], false, 'reg', 'sch', false, false))->willReturn($existing);
 		$this->objects->expects($this->once())->method('saveObject')
-			->with(['name' => 'New', 'size' => 3, 'id' => 'u-1', 'colour' => 'red'], [], 'reg', 'sch', 'u-1')
+			->with(['name' => 'New', 'size' => 3, 'id' => 'u-1', 'colour' => 'red'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'reg' && $options->target->schema == 'sch' && $options->uuid == 'u-1'))
 			->willReturn($saved);
 
 		return $saved;
@@ -244,7 +247,7 @@ class CorrectionServiceBehaviourTest extends TestCase {
 		$entry->setChanged(['name' => ['old' => 'Old', 'new' => 'New']]);
 		$this->audit->method('find')->with(41)->willReturn($entry);
 		$this->audit->expects($this->once())->method('update')->with($this->identicalTo($entry))->willReturnArgument(0);
-		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+		$this->audit->expects($this->never())->method('recordObjectEvent');
 
 		$result = $this->correct();
 
@@ -273,8 +276,8 @@ class CorrectionServiceBehaviourTest extends TestCase {
 			}
 
 			$this->audit->expects($this->never())->method('update');
-			$this->audit->expects($this->once())->method('createAuditTrailEntry')
-				->with($this->identicalTo($saved), 'correction', $this->context(), 'bob')->willReturn($own);
+			$this->audit->expects($this->once())->method('recordObjectEvent')
+				->with(AuditTrailEvents::matching([$this->identicalTo($saved), 'correction', $this->context(), 'bob']))->willReturn($own);
 
 			$this->assertSame($own, $this->correct()['audit']);
 		}
@@ -289,7 +292,7 @@ class CorrectionServiceBehaviourTest extends TestCase {
 		$saved = $this->storedAndSaved(lastLog: ['id' => 7]);
 		$this->audit->method('find')->willReturn(new AuditTrail());
 		$this->audit->method('update')->willThrowException(new RuntimeException('locked'));
-		$this->audit->method('createAuditTrailEntry')->willThrowException(new RuntimeException('disk full'));
+		$this->audit->method('recordObjectEvent')->willThrowException(new RuntimeException('disk full'));
 		$this->logger->expects($this->once())->method('warning')->with(
 			'[CorrectionService] Could not relabel the audit entry as a correction',
 			$this->callback(fn (array $c): bool => $c['auditId'] === 7 && $c['error'] === 'locked')

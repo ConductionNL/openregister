@@ -37,11 +37,8 @@ interface CalendarLinkServiceInterface {
 	 * not own the VEVENT). Re-fetches event details from CalDAV to
 	 * populate cached fields (summary/dtstart/dtend/location).
 	 *
-	 * @param string $objectUuid Object UUID.
-	 * @param int $registerId Register id.
-	 * @param int $schemaId Schema id.
-	 * @param string $calendarUri Calendar URI (per-user CalDAV path component).
-	 * @param string $eventUid VEVENT UID.
+	 * @param LinkTarget       $target The object, register and schema to link to.
+	 * @param CalendarEventKey $key    The calendar URI (per-user CalDAV path component) and the VEVENT UID.
 	 *
 	 * @return CalendarLink The persisted link row.
 	 *
@@ -49,13 +46,7 @@ interface CalendarLinkServiceInterface {
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md
 	 */
-	public function linkEvent(
-		string $objectUuid,
-		int $registerId,
-		int $schemaId,
-		string $calendarUri,
-		string $eventUid,
-	): CalendarLink;
+	public function linkLocatedEvent(LinkTarget $target, CalendarEventKey $key): CalendarLink;
 
 	/**
 	 * Create a new VEVENT through CalendarEventService and record a link-table row.

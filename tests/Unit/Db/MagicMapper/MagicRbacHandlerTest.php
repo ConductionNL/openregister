@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\RbacPermissionAsk;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCP\IAppConfig;
@@ -16,6 +17,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Unit tests for MagicRbacHandler::hasPermission().
@@ -54,13 +58,19 @@ class MagicRbacHandlerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->userManager,
-			$this->appConfig,
-			$this->conditionMatcher,
-			$this->container,
-			$this->logger
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $this->userManager
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->conditionMatcher,
+				container: $this->container,
+				logger: $this->logger
+			)
 		);
 	}
 
@@ -94,7 +104,7 @@ class MagicRbacHandlerTest extends TestCase {
 			->expects($this->never())
 			->method('objectMatchesConditions');
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->handler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 	}
 
 	public function testOwnerBypassShortCircuitsBeforeConditionMatcher(): void {
@@ -109,10 +119,12 @@ class MagicRbacHandlerTest extends TestCase {
 
 		$this->assertTrue(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: 'jan',
-				objectData: ['status' => 'closed']
+				ask: new RbacPermissionAsk(
+					schema: $schema,
+					action: 'read',
+					objectOwner: 'jan',
+					objectData: ['status' => 'closed']
+				)
 			)
 		);
 	}
@@ -125,7 +137,7 @@ class MagicRbacHandlerTest extends TestCase {
 			->expects($this->never())
 			->method('objectMatchesConditions');
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->handler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 	}
 
 	public function testActionNotConfiguredOnNonEmptyBlockDeniesAccess(): void {
@@ -142,7 +154,7 @@ class MagicRbacHandlerTest extends TestCase {
 			->expects($this->never())
 			->method('objectMatchesConditions');
 
-		$this->assertFalse($this->handler->hasPermission($schema, 'update'));
+		$this->assertFalse($this->handler->hasPermission(new RbacPermissionAsk($schema, 'update')));
 	}
 
 	public function testActionNotConfiguredOnNonEmptyBlockDeniesAnonymous(): void {
@@ -158,7 +170,7 @@ class MagicRbacHandlerTest extends TestCase {
 			->expects($this->never())
 			->method('objectMatchesConditions');
 
-		$this->assertFalse($this->handler->hasPermission($schema, 'delete'));
+		$this->assertFalse($this->handler->hasPermission(new RbacPermissionAsk($schema, 'delete')));
 	}
 
 	public function testSimplePublicRuleGrantsAnonymousAccessWithoutDelegation(): void {
@@ -169,7 +181,7 @@ class MagicRbacHandlerTest extends TestCase {
 			->expects($this->never())
 			->method('objectMatchesConditions');
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->handler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 	}
 
 	public function testSimpleGroupRuleGrantsMemberWithoutDelegation(): void {
@@ -180,7 +192,7 @@ class MagicRbacHandlerTest extends TestCase {
 			->expects($this->never())
 			->method('objectMatchesConditions');
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->handler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 	}
 
 	public function testSimpleGroupRuleDeniesNonMemberWithoutDelegation(): void {
@@ -191,7 +203,7 @@ class MagicRbacHandlerTest extends TestCase {
 			->expects($this->never())
 			->method('objectMatchesConditions');
 
-		$this->assertFalse($this->handler->hasPermission($schema, 'read'));
+		$this->assertFalse($this->handler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 	}
 
 	public function testConditionalPublicRuleWithMatchDelegatesToConditionMatcher(): void {
@@ -213,10 +225,12 @@ class MagicRbacHandlerTest extends TestCase {
 
 		$this->assertTrue(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: null,
-				objectData: ['publishDate' => '2025-01-01']
+				ask: new RbacPermissionAsk(
+					schema: $schema,
+					action: 'read',
+					objectOwner: null,
+					objectData: ['publishDate' => '2025-01-01']
+				)
 			)
 		);
 	}
@@ -236,10 +250,12 @@ class MagicRbacHandlerTest extends TestCase {
 
 		$this->assertFalse(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: null,
-				objectData: ['publishDate' => '2099-01-01']
+				ask: new RbacPermissionAsk(
+					schema: $schema,
+					action: 'read',
+					objectOwner: null,
+					objectData: ['publishDate' => '2099-01-01']
+				)
 			)
 		);
 	}
@@ -259,10 +275,12 @@ class MagicRbacHandlerTest extends TestCase {
 
 		$this->assertFalse(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: null,
-				objectData: ['status' => 'open']
+				ask: new RbacPermissionAsk(
+					schema: $schema,
+					action: 'read',
+					objectOwner: null,
+					objectData: ['status' => 'open']
+				)
 			)
 		);
 	}
@@ -281,7 +299,7 @@ class MagicRbacHandlerTest extends TestCase {
 			->expects($this->never())
 			->method('objectMatchesConditions');
 
-		$this->assertTrue($this->handler->hasPermission($schema, 'read'));
+		$this->assertTrue($this->handler->hasPermission(new RbacPermissionAsk($schema, 'read')));
 	}
 
 	public function testConditionalRuleWithEmptyMatchActsAsPlainGroupMatch(): void {
@@ -296,10 +314,12 @@ class MagicRbacHandlerTest extends TestCase {
 
 		$this->assertTrue(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: null,
-				objectData: ['status' => 'anything']
+				ask: new RbacPermissionAsk(
+					schema: $schema,
+					action: 'read',
+					objectOwner: null,
+					objectData: ['status' => 'anything']
+				)
 			)
 		);
 	}
@@ -323,10 +343,12 @@ class MagicRbacHandlerTest extends TestCase {
 
 		$this->assertTrue(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: null,
-				objectData: ['status' => 'open']
+				ask: new RbacPermissionAsk(
+					schema: $schema,
+					action: 'read',
+					objectOwner: null,
+					objectData: ['status' => 'open']
+				)
 			)
 		);
 	}
@@ -346,10 +368,12 @@ class MagicRbacHandlerTest extends TestCase {
 
 		$this->assertTrue(
 			$this->handler->hasPermission(
-				schema: $schema,
-				action: 'read',
-				objectOwner: null,
-				objectData: ['assignedTo' => 'jan']
+				ask: new RbacPermissionAsk(
+					schema: $schema,
+					action: 'read',
+					objectOwner: null,
+					objectData: ['assignedTo' => 'jan']
+				)
 			)
 		);
 	}

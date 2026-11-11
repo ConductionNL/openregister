@@ -235,13 +235,25 @@ class SearchIndexMaintenance implements SearchIndexMaintenanceInterface {
 	private function schemaSlugsByTable(?int $registerId): array {
 		$tables = [];
 		foreach ($this->stores->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
-			if (($register instanceof Register) === true && ($registerId === null || (int)$register->getId() === $registerId)) {
+			if ($this->isRegisterInScope(register: $register, registerId: $registerId) === true) {
 				$tables += $this->tablesOfRegister(register: $register);
 			}
 		}
 
 		return $tables;
 	}//end schemaSlugsByTable()
+
+	/**
+	 * Whether a findAll row is a register within the requested scope.
+	 *
+	 * @param mixed    $register   A row of the register listing.
+	 * @param int|null $registerId Limit to one register, or null for all of them.
+	 *
+	 * @return bool True when it is a register and in scope.
+	 */
+	private function isRegisterInScope(mixed $register, ?int $registerId): bool {
+		return ($register instanceof Register) === true && ($registerId === null || (int)$register->getId() === $registerId);
+	}//end isRegisterInScope()
 
 	/**
 	 * The magic tables of one register, with the slug of the schema each holds.

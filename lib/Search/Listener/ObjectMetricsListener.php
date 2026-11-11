@@ -104,34 +104,60 @@ class ObjectMetricsListener implements IEventListener {
 				return;
 			}
 
-			$this->metricsService->recordMetric(
-				record: new MetricRecord(
-					metricType: $metricType,
-					subject: new MetricSubject(
-						entityType: 'object',
-						entityId: $object->getUuid(),
-						userId: $this->currentUserId()
-					),
-					outcome: new MetricOutcome(status: 'success', durationMs: null, errorMessage: null),
-					metadata: [
-						'register' => (string)($object->getRegister() ?? ''),
-						'schema' => (string)($object->getSchema() ?? ''),
-					]
-				)
-			);
+			$this->metricsService->recordMetric(record: $this->metricRecord(metricType: $metricType, object: $object));
 		} catch (Throwable $e) {
 			// Observability must never break the write it observes.
-			$this->logger->warning(
-				message: '[ObjectMetricsListener] Failed to record CRUD metric',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'metric_type' => $metricType,
-					'error' => $e->getMessage(),
-				]
-			);
+			$this->logRecordFailure(metricType: $metricType, error: $e);
 		}//end try
 	}//end handle()
+
+	/**
+	 * The successful CRUD metric row for an object, attributed to the acting user.
+	 *
+	 * @param string       $metricType The metric type constant.
+	 * @param ObjectEntity $object     The affected object.
+	 *
+	 * @return MetricRecord The metric row.
+	 *
+	 * @spec openspec/specs/production-observability/spec.md#crud-operation-counters
+	 */
+	private function metricRecord(string $metricType, ObjectEntity $object): MetricRecord {
+		return new MetricRecord(
+			metricType: $metricType,
+			subject: new MetricSubject(
+				entityType: 'object',
+				entityId: $object->getUuid(),
+				userId: $this->currentUserId()
+			),
+			outcome: new MetricOutcome(status: 'success', durationMs: null, errorMessage: null),
+			metadata: [
+				'register' => (string)($object->getRegister() ?? ''),
+				'schema' => (string)($object->getSchema() ?? ''),
+			]
+		);
+	}//end metricRecord()
+
+	/**
+	 * Log a CRUD metric that could not be recorded.
+	 *
+	 * @param string    $metricType The metric type constant.
+	 * @param Throwable $error      Why recording failed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/production-observability/spec.md#crud-operation-counters
+	 */
+	private function logRecordFailure(string $metricType, Throwable $error): void {
+		$this->logger->warning(
+			message: '[ObjectMetricsListener] Failed to record CRUD metric',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'metric_type' => $metricType,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end logRecordFailure()
 
 	/**
 	 * Map an inbound event to its metric type constant.

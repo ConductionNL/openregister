@@ -38,6 +38,8 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\QueryHandlers;
+use OCA\OpenRegister\Service\Object\QueryPlatform;
 
 class QueryHandlerContentSearchTest extends TestCase {
 	private MagicMapper&MockObject $objectMapper;
@@ -69,13 +71,18 @@ class QueryHandlerContentSearchTest extends TestCase {
 		$this->contentSearchHandler = $this->createMock(ContentSearchHandler::class);
 
 		$this->handler = new QueryHandler(
-			$this->objectMapper,
-			$this->createMock(RenderObject::class),
-			$this->createMock(SearchQueryHandler::class),
-			$this->createMock(FacetHandler::class),
-			$this->createMock(PerformanceOptimizationHandler::class),
-			$this->contentSearchHandler,
-			$this->createMock(IAppContainer::class));
+			platform: new QueryPlatform(
+				objectMapper: $this->objectMapper,
+				renderHandler: $this->createMock(RenderObject::class),
+				container: $this->createMock(IAppContainer::class)
+			),
+			handlers: new QueryHandlers(
+				searchQueryHandler: $this->createMock(SearchQueryHandler::class),
+				facetHandler: $this->createMock(FacetHandler::class),
+				performanceHandler: $this->createMock(PerformanceOptimizationHandler::class),
+				contentSearchHandler: $this->contentSearchHandler
+			)
+		);
 	}//end setUp()
 
 	public function testContentSearchHandlerIsNeverCalledWhenFlagAbsent(): void {

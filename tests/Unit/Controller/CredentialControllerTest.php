@@ -32,6 +32,9 @@ use OCA\OpenRegister\Controller\CredentialController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialOutbound;
+use OCA\OpenRegister\Service\Credential\CredentialPrincipals;
+use OCA\OpenRegister\Service\Credential\CredentialSources;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
@@ -50,6 +53,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
@@ -161,13 +166,19 @@ class CredentialControllerTest extends TestCase {
 		$clientService->method('newClient')->willReturn($client);
 
 		$broker = new CredentialBrokerService(
-			$objectService,
-			$store,
-			$catalogue,
-			$session,
-			$clientService,
-			$this->createMock(LoggerInterface::class),
-			$this->createMock(OrganisationService::class)
+			sources: new CredentialSources(
+				objectService: $objectService,
+				credentialStore: $store,
+				catalogue: $catalogue
+			),
+			principals: new CredentialPrincipals(
+				userSession: $session,
+				organisationService: $this->createMock(OrganisationService::class)
+			),
+			outbound: new CredentialOutbound(
+				clientService: $clientService,
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 
 		$request = $this->createMock(IRequest::class);
@@ -585,13 +596,15 @@ class CredentialControllerTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturn($entity);
 		$objectService->method('deleteObject')->willReturnCallback(
-			function (string $uuid): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+				$uuid = $deletion->uuid;
 				$this->writtenUuids[] = $uuid;
 				return true;
 			}
 		);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ...$rest) use ($saveFails) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($saveFails) {
+				$rest = [$options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->saves++;
 				$this->writtenUuids[] = ($rest[3] ?? null);
 				if ($saveFails === true) {

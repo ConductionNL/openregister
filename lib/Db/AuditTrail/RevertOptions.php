@@ -40,4 +40,24 @@ final class RevertOptions {
 		public readonly bool $overwriteVersion = false,
 	) {
 	}//end __construct()
+
+	/**
+	 * Options for a reversion point as a request hands it over, typed in this strict file.
+	 *
+	 * A non-strict caller would otherwise coerce a boolean or float point to an id.
+	 *
+	 * @param mixed $until            DateTime, AuditTrail ID or version to revert to; null for the whole trail.
+	 * @param bool  $overwriteVersion Whether to overwrite the version rather than increment it.
+	 *
+	 * @return self The options.
+	 *
+	 * @throws \TypeError When the point is not a DateTime, int, string or null.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the constructor's version flag.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	public static function forPoint(mixed $until, bool $overwriteVersion=false): self {
+		return new self(until: $until, overwriteVersion: $overwriteVersion);
+	}//end forPoint()
 }//end class

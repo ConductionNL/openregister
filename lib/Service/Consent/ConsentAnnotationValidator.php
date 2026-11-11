@@ -90,52 +90,118 @@ final class ConsentAnnotationValidator implements ConsentAnnotationValidatorInte
 	 * @return array<int, array{code: string, message: string}>
 	 */
 	private function validateProperty(string $name, array $definition): array {
-		$errors = [];
-
-		$type = ($definition['type'] ?? null);
-		if ($type !== 'array') {
-			$typeLabel = 'unknown';
-			if (is_string($type) === true) {
-				$typeLabel = $type;
-			}
-
-			$errors[] = [
-				'code' => 'consent-not-array',
-				'message' => sprintf(
-					'Property "%s" declares x-openregister-consent but is type "%s"; it must be type "array".',
-					$name,
-					$typeLabel
-				),
-			];
-		}
+		$errors = $this->typeFindings(name: $name, type: ($definition['type'] ?? null));
 
 		$annotation = $definition['x-openregister-consent'];
 		if (is_array($annotation) === false) {
-			$errors[] = [
-				'code' => 'consent-malformed',
-				'message' => sprintf('Property "%s" x-openregister-consent must be an object.', $name),
-			];
+			$errors[] = $this->malformedFinding(name: $name);
 
 			return $errors;
 		}
 
-		$purpose = ($annotation['purpose'] ?? null);
-		if (is_string($purpose) === false || $purpose === '') {
-			$errors[] = [
-				'code' => 'consent-missing-purpose',
-				'message' => sprintf('Property "%s" x-openregister-consent must declare a non-empty "purpose".', $name),
-			];
-		}
-
-		$subjectProperty = ($annotation['subjectProperty'] ?? null);
-		if ($subjectProperty !== null && is_string($subjectProperty) === false) {
-			$errors[] = [
-				'code' => 'consent-bad-subject-property',
-				'message' => sprintf('Property "%s" x-openregister-consent.subjectProperty must be a string when present.', $name),
-			];
-		}
-
-		return $errors;
+		return array_merge(
+			$errors,
+			$this->purposeFindings(name: $name, annotation: $annotation),
+			$this->subjectPropertyFindings(name: $name, annotation: $annotation)
+		);
 
 	}//end validateProperty()
+
+	/**
+	 * The annotated property MUST be declared `type: array`.
+	 *
+	 * @param string $name The property name (for error messages).
+	 * @param mixed  $type The property's declared type.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function typeFindings(string $name, mixed $type): array {
+		if ($type === 'array') {
+			return [];
+		}
+
+		return [
+			[
+				'code' => 'consent-not-array',
+				'message' => sprintf(
+					'Property "%s" declares x-openregister-consent but is type "%s"; it must be type "array".',
+					$name,
+					$this->typeLabel(type: $type)
+				),
+			],
+		];
+	}//end typeFindings()
+
+	/**
+	 * A declared type as the message names it: the string, or `unknown`.
+	 *
+	 * @param mixed $type The property's declared type.
+	 *
+	 * @return string The label.
+	 */
+	private function typeLabel(mixed $type): string {
+		if (is_string($type) === true) {
+			return $type;
+		}
+
+		return 'unknown';
+	}//end typeLabel()
+
+	/**
+	 * The finding for an annotation that is not an object.
+	 *
+	 * @param string $name The property name (for error messages).
+	 *
+	 * @return array{code: string, message: string}
+	 */
+	private function malformedFinding(string $name): array {
+		return [
+			'code' => 'consent-malformed',
+			'message' => sprintf('Property "%s" x-openregister-consent must be an object.', $name),
+		];
+	}//end malformedFinding()
+
+	/**
+	 * `purpose` is mandatory and non-empty.
+	 *
+	 * @param string               $name       The property name (for error messages).
+	 * @param array<string, mixed> $annotation The `x-openregister-consent` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function purposeFindings(string $name, array $annotation): array {
+		$purpose = ($annotation['purpose'] ?? null);
+		if (is_string($purpose) === true && $purpose !== '') {
+			return [];
+		}
+
+		return [
+			[
+				'code' => 'consent-missing-purpose',
+				'message' => sprintf('Property "%s" x-openregister-consent must declare a non-empty "purpose".', $name),
+			],
+		];
+	}//end purposeFindings()
+
+	/**
+	 * `subjectProperty`, when present, is a string.
+	 *
+	 * @param string               $name       The property name (for error messages).
+	 * @param array<string, mixed> $annotation The `x-openregister-consent` block.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function subjectPropertyFindings(string $name, array $annotation): array {
+		$subjectProperty = ($annotation['subjectProperty'] ?? null);
+		if ($subjectProperty === null || is_string($subjectProperty) === true) {
+			return [];
+		}
+
+		return [
+			[
+				'code' => 'consent-bad-subject-property',
+				'message' => sprintf('Property "%s" x-openregister-consent.subjectProperty must be a string when present.', $name),
+			],
+		];
+	}//end subjectPropertyFindings()
 }//end class

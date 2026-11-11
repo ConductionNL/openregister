@@ -32,6 +32,8 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowRunStepMapper;
 use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Db\Flow\FlowSelection;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionStore;
 use OCA\OpenRegister\Service\Flow\FlowDeletionSweep;
@@ -72,14 +74,14 @@ final class FlowServiceListingScopeGoldenTest extends TestCase {
 
 		$mapper = $this->createMock(FlowMapper::class);
 		$mapper->method('findAllFlows')->willReturnCallback(
-			function (?string $app=null, ?string $applicationSlug=null, ?string $organisation=null, ?bool $enabled=null, int $limit=100, int $offset=0) use ($flow): array {
+			function (FlowSelection $selection, ListQuery $query) use ($flow): array {
 				$this->calls[] = [
-					'app'             => $app,
-					'applicationSlug' => $applicationSlug,
-					'organisation'    => $organisation,
-					'enabled'         => $enabled,
-					'limit'           => $limit,
-					'offset'          => $offset,
+					'app'             => $selection->app,
+					'applicationSlug' => $selection->applicationSlug,
+					'organisation'    => $selection->organisation,
+					'enabled'         => $selection->enabled,
+					'limit'           => $query->limit,
+					'offset'          => $query->offset,
 				];
 
 				return [$flow];

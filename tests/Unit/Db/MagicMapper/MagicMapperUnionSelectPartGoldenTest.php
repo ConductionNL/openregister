@@ -27,6 +27,7 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -160,16 +161,15 @@ class MagicMapperUnionSelectPartGoldenTest extends TestCase {
 		$db->method('getQueryBuilder')->willReturn($qb);
 
 		$search = $this->createMock(MagicSearchHandler::class);
-		$search->method('buildWhereConditionsSql')->willReturnCallback(
-			function (...$args) use ($where): array {
-				$named = [];
-				foreach ((new ReflectionMethod(MagicSearchHandler::class, 'buildWhereConditionsSql'))->getParameters() as $i => $param) {
-					if (array_key_exists($i, $args) === true) {
-						$named[$param->getName()] = $args[$i];
-					}
-				}
-
-				$named['schema'] = $named['schema']->getId();
+		$search->method('buildWhereClause')->willReturnCallback(
+			function (WhereClauseRequest $request) use ($where): array {
+				$named = [
+					'query'           => $request->query,
+					'schema'          => $request->table->schema->getId(),
+					'existingColumns' => $request->existingColumns,
+					'registerId'      => $request->table->registerId,
+					'tableName'       => $request->table->tableName,
+				];
 				$this->events[] = ['where' => $named];
 				return $where;
 			}
