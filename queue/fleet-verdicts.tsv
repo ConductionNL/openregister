@@ -937,3 +937,26 @@ shillinq	2572	6449392efe506314d027d70c7fae9e901d87b6a2	GREEN	FV03:7	tree green (
 shillinq	2574	2e6742bbeedcce2fba23010af7849515aecee39e	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
 shillinq	2576	be3d2530ddfc10ad3279dc53fb9096a307031821	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
 shillinq	2578	57fa9a23011459cf362a36f75b8c9ce22028a793	GREEN	FV03:7	tree green (phpunit 7286 ok, vitest 1070 ok), diff review clean
+integriq	3114	08a6a968c2a87e32dc7439df3471246c06859619	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3115	72ec1ec87907b53fdc043732cd1de5cfba3b98b2	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3116	7fef84c5950339cf5ce3fd43387f53545ee11d2b	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3118	09488813b6dd19ed3735fc0fdd4f016cf2ea8b18	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3119	26083ab7df253fe1da12531b6b4856eb85dd9d0b	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3120	e5eb13f779cba42e4f00bd10203aff8665424569	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3121	3b7776f2f5bb3ecdf4732139691293956a84fb8b	BLOCK	FV09:3	src/modals/Rule/EditRule.vue changes the translated placeholder key from 'Enter your JavaScript code here...' to 'Enter your JavaScript code here…', which is not in l10n/en.js, so every locale falls back to the untranslated English string
+integriq	3123	5cf9891a47a2825ea7be1e8f98897988b76cc198	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3125	8c8b64e9db11358641a89f32feaf3a64ff992ee8	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3128	2497e788d53af57de87c123ca5d7eb3c21035d71	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3129	5fb2fb25dc8c7afca55023096f6d22c908366268	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3130	1f835b221c2f69180d7d8c2bb8ca2fc2afd7eacb	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3131	025448ed4312414ca10c8f3cb2031a40c752a218	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3132	03af3b3683f756008c80660ab13c5563112308a9	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3133	684c93511e6850102be560d32634a45e25f33902	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3134	8d73f59827bc151adf39929d59f9bcb874382b00	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3135	2fbcabe9b8b528350541885320b9ba66f16caefe	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3136	cf1a8175c7d6f0ca2abd443a2e0dfbe4f52e5ec4	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3138	4370f3fe27cde12f238284b572ff474146903aef	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3139	55cffcac55f231b839cf7d6bd643aa360704fb35	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3140	0483943cada0ba45dae8ea61f87ab4f028d0f0e9	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3141	b467870776eea46f33ec1ca2fe0c917f1f64ba53	GREEN	FV09:3	unit suite green on the verify tree
+integriq	3142	305eb169205d4a78389f3128a7ebe2720c8c07d7	GREEN	FV09:3	unit suite green on the verify tree
