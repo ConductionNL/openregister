@@ -72,6 +72,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -585,7 +586,7 @@ class AppendOnlyTest extends TestCase {
 
 		$this->expectException(AppendOnlyException::class);
 
-		$this->service->patchObject(objectId: 'stored-uuid', data: ['name' => 'changed']);
+		$this->service->patchObject(patch: new ObjectPatch(objectId: 'stored-uuid', data: ['name' => 'changed']));
 	}//end testPatchOfExistingObjectRefusedOnAppendOnlySchema()
 
 	/**

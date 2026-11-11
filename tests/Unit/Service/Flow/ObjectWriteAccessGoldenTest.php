@@ -52,6 +52,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
@@ -391,7 +392,10 @@ final class ObjectWriteAccessGoldenTest extends TestCase {
 			}
 		);
 		$store->method('patchObject')->willReturnCallback(
-			function (string $objectId, array $data, mixed ...$rest): ObjectEntity {
+			function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$objectId = $patch->objectId;
+				$data = $patch->data;
+				$rest = [$patch->target->register, $patch->target->schema, $_rbac, $_multitenancy, $patch->currentUser];
 				$this->calls[] = ['patchObject' => $objectId, 'data' => $data, 'as' => $this->acting, 'arguments' => array_map(
 					static fn (mixed $one): mixed => match (true) {
 						$one instanceof IUser => $one->getUID(),

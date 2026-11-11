@@ -1914,7 +1914,7 @@
             {
                 "exception": [
                     "TypeError",
-                    "MockObject::find(): Argument #1 ($id) must be of type string, int given"
+                    "GetObject::find(): Argument #1 ($id) must be of type string, int given"
                 ]
             }
         ],
