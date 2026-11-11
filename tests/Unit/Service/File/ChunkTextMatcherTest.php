@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Exception\ChunkMatcherException;
+use OCA\OpenRegister\Files\Service\File\ChunkSearch;
 use OCA\OpenRegister\Files\Service\File\ChunkTextMatcher;
 use OCA\OpenRegister\Files\Service\File\ManualEntityRequest;
 use OCP\IUser;
@@ -99,11 +100,11 @@ class ChunkTextMatcherTest extends TestCase {
 			chunkIndex: 0
 		);
 
-		$matches = $this->matcher->match(
+		$matches = $this->matcher->search(new ChunkSearch(
 			chunks: [$chunk],
 			request: $this->request(needle: 'Jan Jansen', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
+		));
 
 		$this->assertCount(expectedCount: 1, haystack: $matches);
 		$this->assertSame(expected: 10, actual: $matches[0]['chunkId']);
@@ -126,11 +127,11 @@ class ChunkTextMatcherTest extends TestCase {
 			chunkIndex: 0
 		);
 
-		$matches = $this->matcher->match(
+		$matches = $this->matcher->search(new ChunkSearch(
 			chunks: [$chunk],
 			request: $this->request(needle: 'Jan', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
+		));
 
 		$this->assertCount(expectedCount: 3, haystack: $matches);
 		$this->assertSame(expected: 0, actual: $matches[0]['positionStart']);
@@ -164,11 +165,11 @@ class ChunkTextMatcherTest extends TestCase {
 			chunkIndex: 1
 		);
 
-		$matches = $this->matcher->match(
+		$matches = $this->matcher->search(new ChunkSearch(
 			chunks: [$chunk0, $chunk1],
 			request: $this->request(needle: 'Jansen', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
+		));
 
 		// Exactly one match: the dedup kept chunk 0 (lowest chunkIndex)
 		// and dropped chunk 1's copy at the same absolute position.
@@ -198,11 +199,11 @@ class ChunkTextMatcherTest extends TestCase {
 			chunkIndex: 1
 		);
 
-		$matches = $this->matcher->match(
+		$matches = $this->matcher->search(new ChunkSearch(
 			chunks: [$chunk0, $chunk1],
 			request: $this->request(needle: 'Anna', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
+		));
 
 		$this->assertCount(expectedCount: 2, haystack: $matches);
 		$this->assertSame(expected: 30, actual: $matches[0]['chunkId']);
@@ -232,16 +233,16 @@ class ChunkTextMatcherTest extends TestCase {
 			chunkIndex: 1
 		);
 
-		$first = $this->matcher->match(
+		$first = $this->matcher->search(new ChunkSearch(
 			chunks: [$chunk0, $chunk1],
 			request: $this->request(needle: 'Jansen', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
-		$second = $this->matcher->match(
+		));
+		$second = $this->matcher->search(new ChunkSearch(
 			chunks: [$chunk0, $chunk1],
 			request: $this->request(needle: 'Jansen', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
+		));
 
 		$this->assertSame(expected: $first, actual: $second);
 
@@ -260,11 +261,11 @@ class ChunkTextMatcherTest extends TestCase {
 			chunkIndex: 0
 		);
 
-		$matches = $this->matcher->match(
+		$matches = $this->matcher->search(new ChunkSearch(
 			chunks: [$chunk],
 			request: $this->request(needle: 'Jan', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
+		));
 
 		$this->assertSame(expected: [], actual: $matches);
 
@@ -283,11 +284,11 @@ class ChunkTextMatcherTest extends TestCase {
 			chunkIndex: 0
 		);
 
-		$matches = $this->matcher->match(
+		$matches = $this->matcher->search(new ChunkSearch(
 			chunks: [$chunk],
 			request: $this->request(needle: 'Jan', wholeWord: false, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
+		));
 
 		$this->assertCount(expectedCount: 2, haystack: $matches);
 
@@ -306,11 +307,11 @@ class ChunkTextMatcherTest extends TestCase {
 			chunkIndex: 0
 		);
 
-		$matches = $this->matcher->match(
+		$matches = $this->matcher->search(new ChunkSearch(
 			chunks: [$chunk],
 			request: $this->request(needle: 'Jan', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
+		));
 
 		$this->assertSame(expected: [], actual: $matches);
 
@@ -329,11 +330,11 @@ class ChunkTextMatcherTest extends TestCase {
 			chunkIndex: 0
 		);
 
-		$matches = $this->matcher->match(
+		$matches = $this->matcher->search(new ChunkSearch(
 			chunks: [$chunk],
 			request: $this->request(needle: 'Jan', wholeWord: true, caseSensitive: false),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
+		));
 
 		$this->assertCount(expectedCount: 1, haystack: $matches);
 
@@ -352,11 +353,11 @@ class ChunkTextMatcherTest extends TestCase {
 			chunkIndex: 0
 		);
 
-		$matches = $this->matcher->match(
+		$matches = $this->matcher->search(new ChunkSearch(
 			chunks: [$chunk],
 			request: $this->request(needle: 'Jan Jansen', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
+		));
 
 		$this->assertSame(expected: [], actual: $matches);
 
@@ -368,11 +369,11 @@ class ChunkTextMatcherTest extends TestCase {
 	 * @return void
 	 */
 	public function testEmptyChunkList(): void {
-		$matches = $this->matcher->match(
+		$matches = $this->matcher->search(new ChunkSearch(
 			chunks: [],
 			request: $this->request(needle: 'Jan', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
+		));
 
 		$this->assertSame(expected: [], actual: $matches);
 
@@ -389,11 +390,11 @@ class ChunkTextMatcherTest extends TestCase {
 		$longNeedle = str_repeat(string: 'A', times: 201);
 
 		try {
-			$this->matcher->match(
+			$this->matcher->search(new ChunkSearch(
 				chunks: [],
 				request: $this->request(needle: $longNeedle, wholeWord: true, caseSensitive: true),
 				chunkOverlap: self::CHUNK_OVERLAP
-			);
+			));
 			$this->fail(message: 'Expected ChunkMatcherException');
 		} catch (ChunkMatcherException $e) {
 			$this->assertSame(
@@ -420,11 +421,11 @@ class ChunkTextMatcherTest extends TestCase {
 			chunkIndex: 0
 		);
 
-		$matches = $this->matcher->match(
+		$matches = $this->matcher->search(new ChunkSearch(
 			chunks: [$chunk],
 			request: $this->request(needle: '', wholeWord: true, caseSensitive: true),
 			chunkOverlap: self::CHUNK_OVERLAP
-		);
+		));
 
 		$this->assertSame(expected: [], actual: $matches);
 

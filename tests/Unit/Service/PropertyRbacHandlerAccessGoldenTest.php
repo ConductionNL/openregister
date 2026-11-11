@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
@@ -146,13 +148,13 @@ class PropertyRbacHandlerAccessGoldenTest extends TestCase {
 		$actual = [];
 		foreach (array_keys(self::authorizations()) as $property) {
 			$log = [];
-			$read = $handler->canReadProperty($schema, $property, $object);
+			$read = $handler->canReadProperty(new SchemaProperty($schema, $property), new PropertyAccessRequest($object));
 			$readLog = $log;
 			$log = [];
-			$update = $handler->canUpdateProperty($schema, $property, $object);
+			$update = $handler->canUpdateProperty(new SchemaProperty($schema, $property), new PropertyAccessRequest($object));
 			$updateLog = $log;
 			$log = [];
-			$create = $handler->canUpdateProperty($schema, $property, $object, true);
+			$create = $handler->canUpdateProperty(new SchemaProperty($schema, $property), new PropertyAccessRequest($object, true));
 			$actual[$property] = ['read' => [$read, $readLog], 'update' => [$update, $updateLog], 'create' => [$create, $log]];
 		}
 

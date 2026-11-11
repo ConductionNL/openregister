@@ -175,7 +175,7 @@ class MetadataHydrationHandler {
 		$value = null;
 		if ($field->path !== null) {
 			$properties = $field->relationProperties(schemaProperties: $source->schemaProperties);
-			$value = $this->extractMetadataValue(data: $source->data, fieldPath: $field->path, schemaProperties: $properties);
+			$value = $this->metadataText(fieldPath: $field->path, source: new TemplateSource(data: $source->data, schemaProperties: $properties));
 		}
 
 		if ($value === null || trim($value) === '') {
@@ -197,7 +197,7 @@ class MetadataHydrationHandler {
 	 */
 	private function tryCommonFields(array $data, array $fieldNames): ?string {
 		foreach ($fieldNames as $field) {
-			$value = $this->extractMetadataValue(data: $data, fieldPath: $field);
+			$value = $this->metadataText(fieldPath: $field, source: new TemplateSource(data: $data, schemaProperties: []));
 			if ($value !== null && trim($value) !== '') {
 				return $value;
 			}
@@ -257,30 +257,6 @@ class MetadataHydrationHandler {
 	}//end rawValueAtPath()
 
 	/**
-	 * Extracts metadata value from object data with support for twig-like concatenation and fallbacks.
-	 *
-	 * This method supports multiple formats:
-	 * 1. Simple dot notation paths: "naam", "contact.email"
-	 * 2. Pipe-separated fallbacks: "name | ggm_naam | identifier" (tries each until one has a value)
-	 * 3. Twig-like templates: "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
-	 * 4. Twig templates with fallbacks: "{{ name | ggm_naam }} - {{ type }}"
-	 *
-	 * For twig-like templates, it extracts field names from {{ }} syntax and concatenates
-	 * their values with spaces, handling empty/null values gracefully.
-	 *
-	 * @param array $data The object data.
-	 * @param string $fieldPath The field path, fallback chain, or twig-like template.
-	 * @param array $schemaProperties Optional schema properties for relation field detection.
-	 *
-	 * @return string|null The extracted/concatenated value, or null if not found.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function extractMetadataValue(array $data, string $fieldPath, array $schemaProperties = []): ?string {
-		return $this->metadataText(fieldPath: $fieldPath, source: new TemplateSource(data: $data, schemaProperties: $schemaProperties));
-	}//end extractMetadataValue()
-
-	/**
 	 * The metadata text a field path, fallback chain or twig-like template yields.
 	 *
 	 * @param string         $fieldPath The field path, fallback chain, or twig-like template.
@@ -290,7 +266,7 @@ class MetadataHydrationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function metadataText(string $fieldPath, TemplateSource $source): ?string {
+	public function metadataText(string $fieldPath, TemplateSource $source): ?string {
 		// Check if this is a twig-like template with {{ }} syntax.
 		if (str_contains($fieldPath, '{{') === true && str_contains($fieldPath, '}}') === true) {
 			return $this->renderTemplate(template: $fieldPath, source: $source);
@@ -333,7 +309,7 @@ class MetadataHydrationHandler {
 	 * 🔴 WITHOUT THIS, A TRANSLATABLE NAME FIELD IS SHOWN TO USERS AS RAW JSON.
 	 *
 	 * A property marked `translatable: true` stores `{"nl": "…", "en": "…"}`.
-	 * `extractMetadataValue()` must return a string, and it used to satisfy
+	 * `metadataText()` must return a string, and it used to satisfy
 	 * that by `json_encode`-ing whatever array it was handed. So a schema whose
 	 * `objectNameField` names a translatable property stored the literal
 	 * `{"nl":"Rijkswaterstaat - Onderhoudscontract software 2026"}` in
@@ -390,24 +366,6 @@ class MetadataHydrationHandler {
 	}//end isLanguageKeyedObject()
 
 	/**
-	 * Processes a pipe-separated fallback chain and returns the first non-empty value.
-	 *
-	 * This method parses strings like "name | ggm_naam | identifier" and tries each
-	 * field in order, returning the first one that has a non-empty value.
-	 *
-	 * @param array $data The object data.
-	 * @param string $fieldChain The pipe-separated field chain (e.g., "name | ggm_naam | identifier").
-	 * @param array $schemaProperties Optional schema properties for relation field detection.
-	 *
-	 * @return string|null The first non-empty value found, or null if none found.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function processFieldWithFallbacks(array $data, string $fieldChain, array $schemaProperties = []): ?string {
-		return $this->fallbackValue(fieldChain: $fieldChain, source: new TemplateSource(data: $data, schemaProperties: $schemaProperties));
-	}//end processFieldWithFallbacks()
-
-	/**
 	 * The first filled value of a pipe-separated fallback chain.
 	 *
 	 * @param string         $fieldChain The pipe-separated field names.
@@ -417,7 +375,7 @@ class MetadataHydrationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function fallbackValue(string $fieldChain, TemplateSource $source): ?string {
+	public function fallbackValue(string $fieldChain, TemplateSource $source): ?string {
 		foreach (array_map('trim', explode('|', $fieldChain)) as $field) {
 			$value = $this->chainValue(field: $field, source: $source);
 			if ($value !== null) {
@@ -480,34 +438,13 @@ class MetadataHydrationHandler {
 	}//end filledPathValue()
 
 	/**
-	 * Processes twig-like templates by extracting field values and concatenating them.
-	 *
-	 * This method parses templates like "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
-	 * and replaces each {{ fieldName }} with the corresponding value from the data.
-	 * Empty or null values are handled gracefully and excess whitespace is cleaned up.
-	 *
-	 * Supports fallback syntax within {{ }} blocks:
-	 * - "{{ name | ggm_naam | identifier }}" tries each field until one has a value
-	 * - "{{ name | ggm_naam }} - {{ type }}" combines fallbacks with concatenation
-	 *
-	 * Supports map filter syntax within {{ }} blocks:
-	 * - "{{ field | map: key1=val1, key2=val2 }}" looks up the field value in the map
-	 * - Falls back to the raw field value if no mapping matches
-	 *
-	 * @param array $data The object data.
-	 * @param string $template The twig-like template string.
-	 * @param array $schemaProperties Optional schema properties for relation field detection.
-	 *
-	 * @return null|string The processed result or null if no values found.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function processTwigLikeTemplate(array $data, string $template, array $schemaProperties = []): ?string {
-		return $this->renderTemplate(template: $template, source: new TemplateSource(data: $data, schemaProperties: $schemaProperties));
-	}//end processTwigLikeTemplate()
-
-	/**
 	 * A twig-like template with each placeholder replaced by its value.
+	 *
+	 * Parses templates like "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}";
+	 * empty values are skipped and excess whitespace is cleaned up. Inside a block,
+	 * "{{ name | ggm_naam }}" tries each field until one has a value, and
+	 * "{{ field | map: key1=val1, key2=val2 }}" looks the value up in the map,
+	 * falling back to the raw value.
 	 *
 	 * @param string         $template The twig-like template string.
 	 * @param TemplateSource $source   The object data and schema properties.
@@ -516,7 +453,7 @@ class MetadataHydrationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function renderTemplate(string $template, TemplateSource $source): ?string {
+	public function renderTemplate(string $template, TemplateSource $source): ?string {
 		preg_match_all('/\{\{\s*([^}]+)\s*\}\}/', $template, $matches);
 		if (empty($matches[0]) === true) {
 			return null;
@@ -622,27 +559,6 @@ class MetadataHydrationHandler {
 	}//end plainTemplateValue()
 
 	/**
-	 * Processes a map filter expression by looking up a field value in a key-value map.
-	 *
-	 * Parses map definitions like "key1=val1, key2=val2" and returns the mapped value
-	 * for the field's current value. Falls back to the raw field value if no mapping matches.
-	 *
-	 * Example: field "richting" has value "AnaarB", map is "AnaarB=→, BnaarA=←, bi-directioneel=↔"
-	 * Result: "→"
-	 *
-	 * @param array $data The object data.
-	 * @param string $fieldName The field name to look up.
-	 * @param string $mapDefinition The map definition string (e.g., "key1=val1, key2=val2").
-	 *
-	 * @return string|null The mapped value, the raw field value as fallback, or null if field is empty.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function processMapFilter(array $data, string $fieldName, string $mapDefinition): ?string {
-		return $this->mapFilterValue(fieldValue: $this->getValueFromPath(data: $data, path: $fieldName), mapDefinition: $mapDefinition);
-	}//end processMapFilter()
-
-	/**
 	 * The mapped value of a field value, the raw value without a mapping, or
 	 * the first mapped value when the field is empty.
 	 *
@@ -653,7 +569,7 @@ class MetadataHydrationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function mapFilterValue(mixed $fieldValue, string $mapDefinition): ?string {
+	public function mapFilterValue(mixed $fieldValue, string $mapDefinition): ?string {
 		$map = new MapFilterDefinition(definition: $mapDefinition);
 
 		// When the field is empty, default to the first mapped value.
@@ -666,28 +582,6 @@ class MetadataHydrationHandler {
 	}//end mapFilterValue()
 
 	/**
-	 * Processes an ifFilled filter expression that returns one value when a field is filled
-	 * and another when it is empty.
-	 *
-	 * Example: field "buitengemeentelijkVoorziening" is filled, definition is "extern, intern"
-	 * Result: "extern" (because field has a value)
-	 *
-	 * Example: field "buitengemeentelijkVoorziening" is null, definition is "extern, intern"
-	 * Result: "intern" (because field is empty)
-	 *
-	 * @param array $data The object data.
-	 * @param string $fieldName The field name to check.
-	 * @param string $definition The comma-separated pair "valueIfFilled, valueIfEmpty".
-	 *
-	 * @return string|null The selected value based on whether the field is filled or empty.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function processIfFilledFilter(array $data, string $fieldName, string $definition): ?string {
-		return $this->ifFilledValue(fieldValue: $this->getValueFromPath(data: $data, path: $fieldName), definition: $definition);
-	}//end processIfFilledFilter()
-
-	/**
 	 * The first value of "valueIfFilled, valueIfEmpty" when the field value is filled, the second otherwise.
 	 *
 	 * @param mixed  $fieldValue The field's value, as getValueFromPath() reads it.
@@ -697,7 +591,7 @@ class MetadataHydrationHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function ifFilledValue(mixed $fieldValue, string $definition): string {
+	public function ifFilledValue(mixed $fieldValue, string $definition): string {
 		$parts = array_map('trim', explode(',', $definition, 2));
 		if (count($parts) < 2) {
 			return $parts[0] ?? null;

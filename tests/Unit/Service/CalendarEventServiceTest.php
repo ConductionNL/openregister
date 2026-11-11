@@ -4,6 +4,7 @@ namespace Unit\Service;
 
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IConfig;
@@ -137,7 +138,7 @@ class CalendarEventServiceTest extends TestCase {
 	public function testRequireEventOfAcceptsAnEventLinkedToTheObject(): void {
 		$this->setupOneLinkedEvent();
 
-		$this->service->requireEventOf('abc-123', '1', 'event1.ics');
+		$this->service->requireEventOf('abc-123', new CalendarObjectAddress('1', 'event1.ics'));
 		$this->addToAssertionCount(1);
 	}
 
@@ -145,14 +146,14 @@ class CalendarEventServiceTest extends TestCase {
 		$this->setupOneLinkedEvent();
 
 		$this->expectExceptionCode(404);
-		$this->service->requireEventOf('other', '1', 'event1.ics');
+		$this->service->requireEventOf('other', new CalendarObjectAddress('1', 'event1.ics'));
 	}
 
 	public function testRequireEventOfRefusesACalendarThatIsNotTheCallers(): void {
 		$this->setupOneLinkedEvent();
 
 		$this->expectExceptionCode(404);
-		$this->service->requireEventOf('abc-123', '99', 'event1.ics');
+		$this->service->requireEventOf('abc-123', new CalendarObjectAddress('99', 'event1.ics'));
 	}
 
 	public function testGetEventsForObjectSkipsNonMatching(): void {

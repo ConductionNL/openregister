@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Db\FlowClaim;
+use OCA\OpenRegister\Service\Flow\FlowRunOrigin;
 use OCA\OpenRegister\Db\FlowClaimMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -59,6 +60,7 @@ use OCA\OpenRegister\Service\Flow\FlowStreamWalk;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalkLimits;
 use OCA\OpenRegister\Service\Flow\FlowStreamWalkParts;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
+use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
 use OCA\OpenRegister\Tests\Unit\Db\FluentQueryBuilderTrait;
 use OCP\EventDispatcher\Event;
@@ -87,7 +89,7 @@ class InMemoryFlowRunMapper extends FlowRunMapper {
 		IEventDispatcher $dispatcher,
 		private readonly FlowRun $row,
 	) {
-		parent::__construct(db: $db, dispatcher: $dispatcher);
+		parent::__construct(db: $db, entityEvents: new EntityEventPublisher(dispatcher: $dispatcher));
 	}
 
 	/**
@@ -352,7 +354,9 @@ class RunLockReleaseTerminalityTest extends TestCase {
 	private function walkFlow(FlowStepDispatcher $dispatcher): array {
 		return $this->engine->run(
 			start: (new FlowRunStart(flow: $this->flow(), store: new FlowRunMarkingStore(run: $this->row), subject: new stdClass(), dispatcher: $dispatcher))->withStreams(streams: $this->walk),
-			items: [FlowItems::item(json: ['n' => 1])]
+			origin: new FlowRunOrigin(
+				items: [FlowItems::item(json: ['n' => 1])]
+			)
 		);
 	}//end walkFlow()
 
@@ -409,7 +413,9 @@ class RunLockReleaseTerminalityTest extends TestCase {
 
 			$result = $this->engine->run(
 				start: (new FlowRunStart(flow: $flow, store: new FlowRunMarkingStore(run: $this->row), subject: new stdClass(), dispatcher: $drivers[$status]()))->withStreams(streams: $this->walk),
-				items: [FlowItems::item(json: ['n' => 1])]
+				origin: new FlowRunOrigin(
+					items: [FlowItems::item(json: ['n' => 1])]
+				)
 			);
 
 			$this->assertSame($status, $result['status'], 'the walk did not reach ' . $status);

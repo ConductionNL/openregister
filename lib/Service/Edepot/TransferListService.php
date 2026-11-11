@@ -30,10 +30,8 @@ namespace OCA\OpenRegister\Service\Edepot;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -55,16 +53,12 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	/**
 	 * Constructor.
 	 *
-	 * @param TransferRecordService $transferRecordService Durable transfer-record persistence.
-	 * @param IAppConfig            $appConfig             The app configuration.
-	 * @param INotificationManager  $notificationManager   The notification manager.
-	 * @param LoggerInterface       $logger                Logger.
+	 * @param TransferStores       $stores              The transfer records, the app settings and the log.
+	 * @param INotificationManager $notificationManager The notification manager.
 	 */
 	public function __construct(
-		private readonly TransferRecordService $transferRecordService,
-		private readonly IAppConfig $appConfig,
+		private readonly TransferStores $stores,
 		private readonly INotificationManager $notificationManager,
-		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -83,9 +77,9 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	 */
 	private function persist(array $transferList): array {
 		try {
-			return $this->transferRecordService->saveTransferList($transferList);
+			return $this->stores->records->saveTransferList($transferList);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
+			$this->stores->logger->warning(
 				message: '[TransferListService] Could not persist transfer list: ' . $e->getMessage(),
 				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => ($transferList['uuid'] ?? '')]
 			);
@@ -102,7 +96,7 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	 * @return void
 	 */
 	private function logStep(string $message, array $context): void {
-		$this->logger->info(message: '[TransferListService] '.$message, context: $context);
+		$this->stores->logger->info(message: '[TransferListService] '.$message, context: $context);
 	}//end logStep()
 
 	/**
@@ -162,23 +156,6 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 		return $this->persist(transferList: $transferList);
 	}//end approveTransferList()
 
-	/**
-	 * Reject a transfer list.
-	 *
-	 * @param array<string,mixed> $transferList The transfer list data.
-	 * @param string              $archivistId  The rejecting archivist user ID.
-	 * @param string              $reason       The reason for rejection.
-	 *
-	 * @return array<string,mixed> The updated transfer list data.
-	 *
-	 * @throws InvalidArgumentException If the list is not in review status, or no reason is given.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
-	 * @spec openspec/specs/edepot-transfer/spec.md
-	 */
-	public function rejectTransferList(array $transferList, string $archivistId, string $reason): array {
-		return $this->reject(transferList: $transferList, rejection: new TransferRejection(archivistId: $archivistId, reason: $reason));
-	}//end rejectTransferList()
 
 	/**
 	 * Reject a transfer list in review.
@@ -199,11 +176,7 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 		}
 
 		$transferList['status']           = self::STATUS_REJECTED;
-		$transferList['approvalMetadata'] = [
-			'rejectedBy' => $rejection->archivistId,
-			'rejectedAt' => (new DateTime())->format('c'),
-			'rejectionReason' => $rejection->reason,
-		];
+		$transferList['approvalMetadata'] = self::rejectionMetadata(rejection: $rejection);
 		$this->logStep(
 			message: 'Transfer list rejected',
 			context: ['uuid' => $transferList['uuid'], 'rejectedBy' => $rejection->archivistId, 'reason' => $rejection->reason]
@@ -213,21 +186,20 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	}//end reject()
 
 	/**
-	 * Exclude objects from a transfer list.
+	 * Who rejected the list, when, and why.
 	 *
-	 * @param array<string,mixed> $transferList The transfer list data.
-	 * @param array<int, string>  $objectUuids  UUIDs of objects to exclude.
-	 * @param string              $reason       The reason for exclusion.
+	 * @param TransferRejection $rejection The rejection.
 	 *
-	 * @return array<string,mixed> The updated transfer list data.
-	 *
-	 * @throws InvalidArgumentException If the list is not in review status.
-	 *
-	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+	 * @return array{rejectedBy: string, rejectedAt: string, rejectionReason: string} The metadata.
 	 */
-	public function excludeObjects(array $transferList, array $objectUuids, string $reason): array {
-		return $this->exclude(transferList: $transferList, exclusion: new TransferExclusion(objectUuids: $objectUuids, reason: $reason));
-	}//end excludeObjects()
+	private static function rejectionMetadata(TransferRejection $rejection): array {
+		return [
+			'rejectedBy' => $rejection->archivistId,
+			'rejectedAt' => (new DateTime())->format('c'),
+			'rejectionReason' => $rejection->reason,
+		];
+	}//end rejectionMetadata()
+
 
 	/**
 	 * Take objects off a transfer list in review.
@@ -292,12 +264,12 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	public function notifyArchivists(array $transferList): void {
 		try {
 			$this->notificationManager->notify($this->archivistNotification(transferList: $transferList));
-			$this->logger->info(
+			$this->stores->logger->info(
 				message: '[TransferListService] Notification sent for transfer list',
 				context: ['uuid' => $transferList['uuid']]
 			);
 		} catch (\Exception $e) {
-			$this->logger->warning(
+			$this->stores->logger->warning(
 				message: '[TransferListService] Failed to send notification',
 				context: ['uuid' => $transferList['uuid'], 'error' => $e->getMessage()]
 			);
@@ -346,7 +318,7 @@ class TransferListService implements TransferListServiceInterface, TransferListR
 	 * @return string The format.
 	 */
 	private function packageFormat(): string {
-		$packageFormat = $this->appConfig->getValueString('openregister', 'edepot_package_format', 'zip');
+		$packageFormat = $this->stores->settings->getValueString('openregister', 'edepot_package_format', 'zip');
 		if (in_array($packageFormat, ['zip', 'bagit'], true) === false) {
 			return 'zip';
 		}

@@ -31,6 +31,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\AuditQueryControllerServices;
 use OCA\OpenRegister\Service\AuditQueryServiceInterface;
 use OCP\AppFramework\Controller;
@@ -39,6 +41,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Handles GET /api/v2/audit and GET /api/v2/audit/export.
@@ -77,16 +80,14 @@ class AuditQueryController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app id.
 	 * @param IRequest $request The request object.
 	 * @param AuditQueryControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		AuditQueryControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->auditQueryService = $services->auditQueryService;
 		$this->userSession = $services->userSession;
 		$this->groupManager = $services->groupManager;
@@ -99,22 +100,9 @@ class AuditQueryController extends Controller {
 	 * @return JSONResponse|null 401 when anonymous, 403 when non-admin, null when allowed.
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(
-				data: ['error' => 'Authentication required'],
-				statusCode: 401
-			);
-		}
+		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			return new JSONResponse(
-				data: ['error' => 'Forbidden: this endpoint is admin-only'],
-				statusCode: 403
-			);
-		}
-
-		return null;
+		return $gate->refusal(forbidden: 'Forbidden: this endpoint is admin-only');
 	}//end requireAdmin()
 
 	/**
@@ -153,7 +141,7 @@ class AuditQueryController extends Controller {
 		$limit = (int)$this->request->getParam('limit', '50');
 		$offset = (int)$this->request->getParam('offset', '0');
 
-		$result = $this->auditQueryService->query(filters: $filters, limit: $limit, offset: $offset);
+		$result = $this->auditQueryService->query(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
 
 		return new JSONResponse(data: $result);
 	}//end query()
@@ -183,7 +171,7 @@ class AuditQueryController extends Controller {
 		$limit = (int)$this->request->getParam('limit', '200');
 		$offset = (int)$this->request->getParam('offset', '0');
 
-		$result = $this->auditQueryService->query(filters: $filters, limit: $limit, offset: $offset);
+		$result = $this->auditQueryService->query(query: new ListQuery(limit: $limit, offset: $offset, filters: $filters));
 		$entries = $result['entries'];
 
 		if (strtolower($format) === 'json') {

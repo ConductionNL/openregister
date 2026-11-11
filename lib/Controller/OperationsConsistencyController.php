@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Exception\ConsistencyCheckWouldWriteException;
 use OCA\OpenRegister\Exception\RepairRefusedException;
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
@@ -32,7 +33,6 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
 use OCA\OpenRegister\Controller\Support\OperationsConsistencyControllerServices;
 
 /**
@@ -74,21 +74,17 @@ class OperationsConsistencyController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string                   $appName     Application name.
 	 * @param IRequest                 $request     HTTP request.
 	 * @param OperationsConsistencyControllerServices $services The services, bundled.
-	 * @param IUserSession             $userSession Names the administrator acting.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		OperationsConsistencyControllerServices $services,
-		IUserSession $userSession,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$this->check = $services->check;
 		$this->repair = $services->repair;
-		$this->acting = new OperationsActingRequest(request: $request, userSession: $userSession);
+		$this->acting = new OperationsActingRequest(request: $request, userSession: $services->userSession);
 	}//end __construct()
 
 	/**

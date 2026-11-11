@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\OrganisationUsageService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -59,24 +61,23 @@ class OrganisationUsageServiceGoldenTest extends TestCase {
 		$files = $this->createMock(FileMapperInterface::class);
 		$files->method('sumSizesByFileIds')->willReturn(10);
 		$test = $this;
-		return new class($magic, $files, new NullLogger(), $schemas, $test) extends OrganisationUsageService {
+		$catalog = new SchemaCatalog($this->createMock(RegisterMapperInterface::class), $schemas, $magic);
+		return new class($catalog, $files, new NullLogger(), $test) extends OrganisationUsageService {
 			/**
 			 * Constructor.
 			 *
-			 * @param MagicMapperInterface             $magic   The magic mapper.
+			 * @param SchemaCatalog                    $catalog The register, schema and magic mappers.
 			 * @param FileMapperInterface              $files   The file mapper.
 			 * @param NullLogger                       $logger  The logger.
-			 * @param SchemaMapperInterface            $schemas The schema mapper.
 			 * @param OrganisationUsageServiceGoldenTest $test  Records fetched keys.
 			 */
 			public function __construct(
-				MagicMapperInterface $magic,
+				SchemaCatalog $catalog,
 				FileMapperInterface $files,
 				NullLogger $logger,
-				SchemaMapperInterface $schemas,
 				private OrganisationUsageServiceGoldenTest $test,
 			) {
-				parent::__construct($magic, $files, $logger, $schemas);
+				parent::__construct($catalog, $files, $logger);
 			}
 
 			/**

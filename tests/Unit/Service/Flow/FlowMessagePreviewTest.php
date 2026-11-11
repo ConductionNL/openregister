@@ -19,7 +19,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplatingInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\PlaceholderValues;
 use OCA\OpenRegister\Service\Flow\FlowMessagePreview;
+use OCA\OpenRegister\Service\Flow\MessageSend;
+use OCA\OpenRegister\Service\Flow\RecipientLookup;
 use OCA\OpenRegister\Service\Flow\FlowRecipientAddresses;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -51,8 +54,8 @@ class FlowMessagePreviewTest extends TestCase {
 	protected function setUp(): void {
 		$this->addresses = $this->createMock(FlowRecipientAddresses::class);
 		$templating      = $this->createMock(NotificationTemplatingInterface::class);
-		$templating->method('interpolate')->willReturnCallback(
-			static fn (string $template, array $data, array $context) => str_replace('{name}', (string) ($data['name'] ?? ''), $template).($context['tag'] ?? '')
+		$templating->method('render')->willReturnCallback(
+			static fn (string $template, PlaceholderValues $values) => str_replace('{name}', (string) ($values->data['name'] ?? ''), $template).($values->context['tag'] ?? '')
 		);
 		$this->preview = new FlowMessagePreview($this->addresses, $templating);
 	}
@@ -63,17 +66,19 @@ class FlowMessagePreviewTest extends TestCase {
 	 * @return void
 	 */
 	public function testNotificationMessage(): void {
-		$this->addresses->expects($this->once())->method('resolveRecipients')
-			->with(['alice'], ['name' => 'Ann'], false)
+		$this->addresses->expects($this->once())->method('resolveAll')
+			->with(['alice'], new RecipientLookup(json: ['name' => 'Ann'], acceptAddresses: false))
 			->willReturn(['uids' => ['alice'], 'addresses' => [['address' => 'x@example.org']]]);
 
 		$this->assertSame(
 			[['channel' => 'notification', 'to' => ['alice', 'x@example.org'], 'subject' => 'Hi Ann!', 'body' => 'For Ann!']],
 			$this->preview->messages(
 				'notification',
-				['recipients' => ['alice'], 'title' => 'Hi {name}', 'message' => 'For {name}', 'subject' => 'unused'],
-				[['json' => ['name' => 'Ann']]],
-				['tag' => '!']
+				new MessageSend(
+					config: ['recipients' => ['alice'], 'title' => 'Hi {name}', 'message' => 'For {name}', 'subject' => 'unused'],
+					items: [['json' => ['name' => 'Ann']]],
+					context: ['tag' => '!']
+				)
 			)
 		);
 	}
@@ -84,13 +89,13 @@ class FlowMessagePreviewTest extends TestCase {
 	 * @return void
 	 */
 	public function testEmailMessage(): void {
-		$this->addresses->expects($this->once())->method('resolveRecipients')
-			->with([], [], true)
+		$this->addresses->expects($this->once())->method('resolveAll')
+			->with([], new RecipientLookup(json: [], acceptAddresses: true))
 			->willReturn(['uids' => [], 'addresses' => [['address' => 'a@example.org'], ['address' => 'b@example.org']]]);
 
 		$this->assertSame(
 			[['channel' => 'email', 'to' => ['a@example.org', 'b@example.org'], 'subject' => 'S', 'body' => 'B']],
-			$this->preview->messages('email', ['subject' => 'S', 'body' => 'B', 'title' => 'unused'], [[]], [])
+			$this->preview->messages('email', new MessageSend(config: ['subject' => 'S', 'body' => 'B', 'title' => 'unused'], items: [[]], context: []))
 		);
 	}
 
@@ -100,7 +105,7 @@ class FlowMessagePreviewTest extends TestCase {
 	 * @return void
 	 */
 	public function testTalkMessage(): void {
-		$this->addresses->expects($this->never())->method('resolveRecipients');
+		$this->addresses->expects($this->never())->method('resolveAll');
 
 		$this->assertSame(
 			[
@@ -109,9 +114,11 @@ class FlowMessagePreviewTest extends TestCase {
 			],
 			$this->preview->messages(
 				'talk',
-				['conversation' => ' room-{name} ', 'message' => 'Hello {name}'],
-				[['json' => ['name' => 'Ann']], ['json' => ['name' => 'Bo']]],
-				[]
+				new MessageSend(
+					config: ['conversation' => ' room-{name} ', 'message' => 'Hello {name}'],
+					items: [['json' => ['name' => 'Ann']], ['json' => ['name' => 'Bo']]],
+					context: []
+				)
 			)
 		);
 	}
@@ -122,7 +129,7 @@ class FlowMessagePreviewTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoItemsNoMessages(): void {
-		$this->addresses->expects($this->never())->method('resolveRecipients');
-		$this->assertSame([], $this->preview->messages('email', [], [], []));
+		$this->addresses->expects($this->never())->method('resolveAll');
+		$this->assertSame([], $this->preview->messages('email', new MessageSend(config: [], items: [], context: [])));
 	}
 }

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Search\Service\Search;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCP\IDBConnection;
 
 /**
@@ -33,18 +34,32 @@ use OCP\IDBConnection;
  */
 final class SearchIndexStores {
 	/**
+	 * Register mapper.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Magic table mapper.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	public readonly MagicMapperInterface $magicMapper;
+
+	/**
 	 * Bundle the services.
 	 *
-	 * @param IDBConnection           $db             Database connection.
-	 * @param RegisterMapperInterface $registerMapper Register mapper.
-	 * @param MagicMapperInterface    $magicMapper    Magic table mapper.
+	 * @param IDBConnection          $db      Database connection.
+	 * @param SchemaCatalogInterface $catalog The register and magic table mappers.
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
 		public readonly IDBConnection $db,
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly MagicMapperInterface $magicMapper,
+		SchemaCatalogInterface $catalog,
 	) {
+		$this->registerMapper = $catalog->registers();
+		$this->magicMapper    = $catalog->tables();
 	}//end __construct()
 }//end class

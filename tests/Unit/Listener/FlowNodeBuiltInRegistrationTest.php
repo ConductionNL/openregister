@@ -27,6 +27,20 @@ use OCA\OpenRegister\Listener\FlowNodes\ActionFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\BoundaryFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\CaseFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\CoreFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\WaitFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\OutputFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ObjectLookupFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ObjectChangeFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ItemLoopFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ItemListFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\ItemHandlingFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\HandOffFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\FieldFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\EvaluationFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\DestinationFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\DataMappingFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\CoordinationFlowNodes;
+use OCA\OpenRegister\Listener\FlowNodes\BranchFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\DataShapingFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\HumanTaskFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\LockFlowNodes;
@@ -100,51 +114,37 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 
 	private function listener(): FlowNodeRegistrationListener {
 		$core = new CoreFlowNodes(
-			new DataShapingFlowNodes(
-				$this->node(SetFieldsNodeInterface::class),
-				$this->node(ActionInputsNodeInterface::class),
-				$this->node(ExplodeNodeInterface::class),
-				$this->node(FilterNodeInterface::class),
-			),
-			new WaitAndBranchFlowNodes(
-				$this->node(WaitNodeInterface::class),
-				$this->node(AwaitSignalNodeInterface::class),
-				$this->node(SwitchNodeInterface::class),
-				$this->node(EndNodeInterface::class),
-			),
-			new RoutingFlowNodes(
-				$this->node(MergeNodeInterface::class),
-				$this->node(LoopNodeInterface::class),
-				$this->node(SubFlowNodeInterface::class),
-				$this->node(RouterNodeInterface::class),
-			),
-			new ObjectFlowNodes(
-				$this->node(ObjectWriteNodeInterface::class),
-				$this->node(TransitionNodeInterface::class),
-				$this->node(LinkObjectNodeInterface::class),
-				$this->node(ObjectReadNodeInterface::class),
-			),
+			new ItemHandlingFlowNodes(new DataShapingFlowNodes(
+				new FieldFlowNodes($this->node(SetFieldsNodeInterface::class), $this->node(ActionInputsNodeInterface::class)),
+				new ItemListFlowNodes($this->node(ExplodeNodeInterface::class), $this->node(FilterNodeInterface::class)),
+			), new WaitAndBranchFlowNodes(
+				new WaitFlowNodes($this->node(WaitNodeInterface::class), $this->node(AwaitSignalNodeInterface::class)),
+				new BranchFlowNodes($this->node(SwitchNodeInterface::class), $this->node(EndNodeInterface::class)),
+			)),
+			new DestinationFlowNodes(new RoutingFlowNodes(
+				new ItemLoopFlowNodes($this->node(MergeNodeInterface::class), $this->node(LoopNodeInterface::class)),
+				new HandOffFlowNodes($this->node(SubFlowNodeInterface::class), $this->node(RouterNodeInterface::class)),
+			), new ObjectFlowNodes(
+				new ObjectChangeFlowNodes($this->node(ObjectWriteNodeInterface::class), $this->node(TransitionNodeInterface::class)),
+				new ObjectLookupFlowNodes($this->node(LinkObjectNodeInterface::class), $this->node(ObjectReadNodeInterface::class)),
+			)),
 		);
 		$actions = new ActionFlowNodes(
-			new ReshapingFlowNodes(
-				$this->node(FlowStateNodeInterface::class),
-				$this->node(MapNodeInterface::class),
-				$this->node(IterateNodeInterface::class),
-				$this->node(DecisionTableNodeInterface::class),
-			),
-			new MessagingFlowNodes(
+			new OutputFlowNodes(new ReshapingFlowNodes(
+				new DataMappingFlowNodes($this->node(FlowStateNodeInterface::class), $this->node(MapNodeInterface::class)),
+				new EvaluationFlowNodes($this->node(IterateNodeInterface::class), $this->node(DecisionTableNodeInterface::class)),
+			), new MessagingFlowNodes(
 				$this->node(SendNotificationNodeInterface::class),
 				$this->node(SendEmailNodeInterface::class),
 				$this->node(SendTalkMessageNodeInterface::class),
-			),
-			new HumanTaskFlowNodes(
+			)),
+			new CoordinationFlowNodes(new HumanTaskFlowNodes(
 				$this->node(UserTaskNodeInterface::class),
 				$this->node(PortalTaskNodeInterface::class),
-			),
-			new LockFlowNodes(
+			), new LockFlowNodes(
 				$this->node(LockObjectNodeInterface::class),
 				$this->node(UnlockObjectNodeInterface::class),
-			),
+			)),
 		);
 		$boundary = new BoundaryFlowNodes(
 			new CaseFlowNodes(

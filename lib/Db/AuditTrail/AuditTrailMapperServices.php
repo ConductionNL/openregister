@@ -22,11 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\AuditTrail;
 
+use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * The container the mapper resolves its lazy collaborators from, and its logger.
+ * The container the mapper resolves its lazy collaborators from, its logger, and the
+ * session and request an audit entry reads its actor and request context from.
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
@@ -34,12 +37,16 @@ final readonly class AuditTrailMapperServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ContainerInterface $container DI container for lazy collaborator resolution.
-	 * @param LoggerInterface    $logger    Logger.
+	 * @param ContainerInterface $container   DI container for lazy collaborator resolution.
+	 * @param LoggerInterface    $logger      Logger.
+	 * @param IUserSession       $userSession User session service.
+	 * @param IRequest           $request     Current request.
 	 */
 	public function __construct(
 		public ContainerInterface $container,
 		public LoggerInterface $logger,
+		public IUserSession $userSession,
+		public IRequest $request,
 	) {
 	}//end __construct()
 }//end class

@@ -135,6 +135,23 @@ class ScriptManifestLoader {
 			return self::$manifestCache[$path];
 		}
 
+		$decoded = self::readManifest(path: $path);
+		if ($decoded === null) {
+			return null;
+		}
+
+		self::$manifestCache[$path] = $decoded;
+		return $decoded;
+	}//end loadManifest()
+
+	/**
+	 * Read and decode a manifest file.
+	 *
+	 * @param string $path The manifest path.
+	 *
+	 * @return array|null The manifest, or null when the file is missing, unreadable or not a JSON object or array.
+	 */
+	private static function readManifest(string $path): ?array {
 		if (is_file($path) === false) {
 			return null;
 		}
@@ -149,7 +166,6 @@ class ScriptManifestLoader {
 			return null;
 		}
 
-		self::$manifestCache[$path] = $decoded;
 		return $decoded;
-	}//end loadManifest()
+	}//end readManifest()
 }//end class

@@ -35,12 +35,16 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialAppTokenService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
 use OCA\OpenRegister\Service\Credential\CredentialRelinkRequiredException;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Sharing\ShareGrantee;
+use OCA\OpenRegister\Service\Sharing\ShareListCheck;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\CredentialControllerFactory;
 use OCP\IGroupManager;
@@ -51,6 +55,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
 
 /**
  * Characterisation of CredentialController's branching endpoints.
@@ -296,7 +301,7 @@ class CredentialControllerCharacterisationTest extends TestCase {
 	 */
 	public function testAnInvalidCreateIs400AndMintsNothing(): void {
 		$this->catalogue->method('get')->willReturnCallback(static fn (string $id): ?array => ($id === 'gh' ? ['identifier' => 'gh'] : null));
-		$this->broker->expects($this->never())->method('mint');
+		$this->broker->expects($this->never())->method('mintCredential');
 
 		foreach ([['name' => '  ', 'provider' => 'gh'], ['name' => 'n', 'provider' => 'nope']] as $params) {
 			$this->params = $params;
@@ -320,8 +325,11 @@ class CredentialControllerCharacterisationTest extends TestCase {
 			'kind' => ' secret ',
 			'clientId' => '',
 		];
-		$this->broker->expects($this->once())->method('mint')
-			->with('My token', 'gh', 'alice', ['hermiq', 'pipelinq'], null, 'personal', null, ['kind' => 'secret'])
+		$this->broker->expects($this->once())->method('mintCredential')
+			->with(
+				new CredentialMint(name: 'My token', provider: 'gh', owner: 'alice', metadata: ['kind' => 'secret']),
+				new CredentialMintOptions(allowedApps: ['hermiq', 'pipelinq'], secret: null, scope: 'personal', organisation: null)
+			)
 			->willReturn($this->credential('alice', ['name' => 'My token']));
 
 		$response = $this->controller()->create();
@@ -348,7 +356,7 @@ class CredentialControllerCharacterisationTest extends TestCase {
 		$this->assertSame(400, $this->controller()->create()->getStatus());
 
 		$this->params = ['name' => 'n', 'provider' => 'gh', 'scope' => 'organisation', 'organisation' => 'org-1', 'secret' => 's3'];
-		$this->broker->method('mint')->willReturnOnConsecutiveCalls(
+		$this->broker->method('mintCredential')->willReturnOnConsecutiveCalls(
 			$this->throwException(new InvalidArgumentException('host')),
 			$this->throwException(new RuntimeException('vault')),
 			$this->credential('alice', ['scope' => 'organisation'])
@@ -424,9 +432,9 @@ class CredentialControllerCharacterisationTest extends TestCase {
 		);
 		$seen = [];
 		$this->shares->method('grants')->willReturnCallback(
-			function (...$args) use (&$seen): bool {
-				$seen[] = $args;
-				return $args[0] !== null;
+			function (ShareGrantee $grantee, ShareListCheck $check) use (&$seen): bool {
+				$seen[] = [$check->sharedWith, $grantee->userId, $grantee->groups, $check->permissions];
+				return $check->sharedWith !== null;
 			}
 		);
 
@@ -465,7 +473,7 @@ class CredentialControllerCharacterisationTest extends TestCase {
 	 */
 	public function testTheTokenEndpointBrokersWithTheTokensApp(): void {
 		$this->params = ['method' => 'POST', 'path' => '/x', 'headers' => ['A' => 1, 2 => 'b', 'C' => []], 'body' => ['k' => 'v']];
-		$this->tokens->expects($this->once())->method('verify')->with('tok', 'POST', '/x')
+		$this->tokens->expects($this->once())->method('verify')->with('tok', new BrokerTokenBinding(method: 'POST', path: '/x'))
 			->willReturn(['credentialId' => 'cred-1', 'appId' => 'hermiq']);
 		$this->broker->expects($this->once())->method('request')
 			->with('cred-1', 'hermiq', 'POST', '/x', ['A' => '1'], '{"k":"v"}')

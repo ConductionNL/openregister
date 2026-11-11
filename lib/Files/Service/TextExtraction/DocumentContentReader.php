@@ -95,39 +95,54 @@ class DocumentContentReader {
 	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-image-references-come-back-in-document-order-req-docx-006
 	 */
 	public function paragraph(DOMElement $paragraph, array $relationships): array {
-		$inline = ['text' => '', 'images' => [], 'textBoxes' => []];
-		$this->collect(element: $paragraph, relationships: $relationships, inline: $inline, picture: ['name' => '', 'description' => '']);
+		$run = new InlineReadRun(relationships: $relationships);
+		$this->collect(run: $run, element: $paragraph);
+		$inline = $run->inline;
 		$inline['text'] = trim((string)preg_replace('/\s+/u', ' ', $inline['text']));
 
 		return $inline;
 	}//end paragraph()
 
 	/**
-	 * The rows of a table, each a list of cell texts, as written; a cell's lines are joined by a newline.
+	 * A table's rows, each a list of cell texts, as written (a cell's lines are joined by a newline),
+	 * and the pictures found in its cells.
 	 *
 	 * @param DOMElement $table A `w:tbl` element.
 	 * @param Relationships $relationships The document part's relationships.
 	 * @param int $depth How deeply the table is nested.
-	 * @param list<DocumentImage> $images Pictures found in the cells, extended in place.
 	 *
-	 * @return list<list<string>>
+	 * @return TableContent The rows and the pictures.
 	 *
 	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-tables-come-back-as-rows-of-cell-text-req-docx-005
 	 */
-	public function tableRows(DOMElement $table, array $relationships, int $depth, array &$images): array {
+	public function table(DOMElement $table, array $relationships, int $depth): TableContent {
+		$run = new BlockReadRun(relationships: $relationships, depth: $depth);
+		$rows = $this->rowsOf(run: $run, table: $table);
+
+		return new TableContent(rows: $rows, images: $run->images);
+	}//end table()
+
+	/**
+	 * The text of each cell of a table, row by row, at the run's depth.
+	 *
+	 * @param BlockReadRun $run   The read: relationships, depth and pictures so far.
+	 * @param DOMElement   $table A `w:tbl` element.
+	 *
+	 * @return list<list<string>>
+	 */
+	private function rowsOf(BlockReadRun $run, DOMElement $table): array {
 		$rows = [];
 		foreach ($this->elements->children(parent: $table, localName: 'tr') as $row) {
 			$cells = [];
 			foreach ($this->elements->children(parent: $row, localName: 'tc') as $cell) {
-				$lines = $this->containerLines(container: $cell, relationships: $relationships, depth: $depth, images: $images);
-				$cells[] = implode("\n", $lines);
+				$cells[] = implode("\n", $this->containerLines(run: $run, container: $cell));
 			}
 
 			$rows[] = $cells;
 		}
 
 		return $rows;
-	}//end tableRows()
+	}//end rowsOf()
 
 	/**
 	 * The block container a wrapper element holds: a content control's content, or custom XML itself.
@@ -153,22 +168,20 @@ class DocumentContentReader {
 	/**
 	 * The non-empty text lines of a cell or text box, nested tables and content controls included.
 	 *
-	 * @param DOMElement $container The cell, text box, or wrapper content.
-	 * @param Relationships $relationships The document part's relationships.
-	 * @param int $depth How deeply the container is nested.
-	 * @param list<DocumentImage> $images Pictures found, extended in place.
+	 * @param BlockReadRun $run       The read: relationships, the container's depth and pictures so far.
+	 * @param DOMElement   $container The cell, text box, or wrapper content.
 	 *
 	 * @return list<string>
 	 */
-	private function containerLines(DOMElement $container, array $relationships, int $depth, array &$images): array {
-		if ($depth > self::MAX_DEPTH) {
+	private function containerLines(BlockReadRun $run, DOMElement $container): array {
+		if ($run->depth > self::MAX_DEPTH) {
 			return [];
 		}
 
 		$lines = [];
 		foreach ($container->childNodes as $child) {
 			if ($child instanceof DOMElement) {
-				array_push($lines, ...$this->elementLines(element: $child, relationships: $relationships, depth: $depth, images: $images));
+				array_push($lines, ...$this->elementLines(run: $run, element: $child));
 			}
 		}
 
@@ -178,27 +191,28 @@ class DocumentContentReader {
 	/**
 	 * The text lines one element inside a cell contributes.
 	 *
-	 * @param DOMElement $element A paragraph, nested table, content control or custom XML wrapper.
-	 * @param Relationships $relationships The document part's relationships.
-	 * @param int $depth How deeply its container is nested.
-	 * @param list<DocumentImage> $images Pictures found, extended in place.
+	 * @param BlockReadRun $run     The read: relationships, its container's depth and pictures so far.
+	 * @param DOMElement   $element A paragraph, nested table, content control or custom XML wrapper.
 	 *
 	 * @return list<string>
 	 */
-	private function elementLines(DOMElement $element, array $relationships, int $depth, array &$images): array {
+	private function elementLines(BlockReadRun $run, DOMElement $element): array {
 		if ($element->localName === 'p') {
-			$inline = $this->paragraph(paragraph: $element, relationships: $relationships);
-			array_push($images, ...$inline['images']);
+			$inline = $this->paragraph(paragraph: $element, relationships: $run->relationships);
+			array_push($run->images, ...$inline['images']);
 			$lines = [$inline['text']];
 			foreach ($inline['textBoxes'] as $textBox) {
-				array_push($lines, ...$this->containerLines(container: $textBox, relationships: $relationships, depth: ($depth + 1), images: $images));
+				array_push($lines, ...$this->nestedLines(run: $run, container: $textBox));
 			}
 
 			return $lines;
 		}
 
 		if ($element->localName === 'tbl') {
-			return array_merge(...$this->tableRows(table: $element, relationships: $relationships, depth: ($depth + 1), images: $images));
+			$run->depth++;
+			$rows = $this->rowsOf(run: $run, table: $element);
+			$run->depth--;
+			return array_merge(...$rows);
 		}
 
 		$content = $this->wrapperContent(element: $element);
@@ -206,36 +220,52 @@ class DocumentContentReader {
 			return [];
 		}
 
-		return $this->containerLines(container: $content, relationships: $relationships, depth: ($depth + 1), images: $images);
+		return $this->nestedLines(run: $run, container: $content);
 	}//end elementLines()
+
+	/**
+	 * The lines of a container one level deeper than the run's depth.
+	 *
+	 * @param BlockReadRun $run       The read: relationships, depth and pictures so far.
+	 * @param DOMElement   $container A text box or wrapper content.
+	 *
+	 * @return list<string>
+	 */
+	private function nestedLines(BlockReadRun $run, DOMElement $container): array {
+		$run->depth++;
+		$lines = $this->containerLines(run: $run, container: $container);
+		$run->depth--;
+
+		return $lines;
+	}//end nestedLines()
 
 	/**
 	 * Collect text, pictures and text boxes under an element, never entering a fallback or a text box.
 	 *
-	 * @param DOMElement $element The element whose children to read.
-	 * @param Relationships $relationships The document part's relationships.
-	 * @param InlineContent $inline The content so far, extended in place.
-	 * @param PictureContext $picture The name and alt text of the drawing or shape being read.
+	 * @param InlineReadRun $run     The read: relationships, content so far and the picture being read.
+	 * @param DOMElement    $element The element whose children to read.
 	 *
 	 * @return void
 	 */
-	private function collect(DOMElement $element, array $relationships, array &$inline, array $picture): void {
+	private function collect(InlineReadRun $run, DOMElement $element): void {
+		$picture = $run->picture;
 		foreach ($element->childNodes as $child) {
 			if (($child instanceof DOMElement) === false || in_array($child->localName, self::SKIPPED, true) === true) {
 				continue;
 			}
 
 			if ($child->localName === 'blip' || $child->localName === 'imagedata') {
-				$inline['images'][] = $this->image(element: $child, relationships: $relationships, picture: $picture);
+				$run->inline['images'][] = $this->image(run: $run, element: $child);
 				continue;
 			}
 
-			if ($this->collectText(element: $child, inline: $inline) === true) {
+			if ($this->collectText(element: $child, inline: $run->inline) === true) {
 				continue;
 			}
 
-			$context = $this->pictureContext(element: $child, picture: $picture);
-			$this->collect(element: $child, relationships: $relationships, inline: $inline, picture: $context);
+			$run->picture = $this->pictureContext(element: $child, picture: $picture);
+			$this->collect(run: $run, element: $child);
+			$run->picture = $picture;
 		}
 	}//end collect()
 
@@ -321,18 +351,17 @@ class DocumentContentReader {
 	/**
 	 * One image block: the target from the relationships, whether it is linked, its name and alt text.
 	 *
-	 * @param DOMElement $element An `a:blip` (drawing) or `v:imagedata` (VML) element.
-	 * @param Relationships $relationships The document part's relationships.
-	 * @param PictureContext $picture The name and alt text of the enclosing drawing or shape.
+	 * @param InlineReadRun $run     The read: relationships and the enclosing drawing or shape.
+	 * @param DOMElement    $element An `a:blip` (drawing) or `v:imagedata` (VML) element.
 	 *
 	 * @return DocumentImage
 	 */
-	private function image(DOMElement $element, array $relationships, array $picture): array {
+	private function image(InlineReadRun $run, DOMElement $element): array {
 		// A drawing names its part in r:embed or its URL in r:link; VML uses r:id and names the picture in o:title.
 		$relationshipId = $this->elements->relationshipAttribute(element: $element, localNames: ['embed', 'link', 'id']);
-		$relationship = ($relationships[$relationshipId] ?? ['target' => '', 'external' => false]);
+		$relationship = ($run->relationships[$relationshipId] ?? ['target' => '', 'external' => false]);
 
-		$name = $picture['name'];
+		$name = $run->picture['name'];
 		if ($name === '' && $element->localName === 'imagedata') {
 			$name = $this->elements->attribute(element: $element, localName: 'title');
 		}
@@ -342,7 +371,7 @@ class DocumentContentReader {
 			'target' => $relationship['target'],
 			'external' => $relationship['external'],
 			'name' => $name,
-			'description' => $picture['description'],
+			'description' => $run->picture['description'],
 		];
 	}//end image()
 }//end class

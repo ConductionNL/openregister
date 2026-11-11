@@ -46,13 +46,13 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Form\FormPayloadFindings;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IL10N;
-use OCP\IUser;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Full validation, one allowed promotion, the same id, one event.
@@ -68,41 +68,6 @@ use Throwable;
 class DraftActivation implements DraftActivationInterface {
 
 	/**
-	 * The schema's full validator.
-	 *
-	 * @var ObjectValidatorInterface
-	 */
-	private readonly ObjectValidatorInterface $validator;
-
-	/**
-	 * Turns a refusal into per-property findings.
-	 *
-	 * @var FormPayloadFindings
-	 */
-	private readonly FormPayloadFindings $findings;
-
-	/**
-	 * Announces the object that left draft.
-	 *
-	 * @var IEventDispatcher
-	 */
-	private readonly IEventDispatcher $events;
-
-	/**
-	 * The clock, for the moment of receipt.
-	 *
-	 * @var ITimeFactory
-	 */
-	private readonly ITimeFactory $time;
-
-	/**
-	 * Translations.
-	 *
-	 * @var IL10N
-	 */
-	private readonly IL10N $l10n;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ObjectOperationsInterface $objects Reads and saves objects.
@@ -111,22 +76,15 @@ class DraftActivation implements DraftActivationInterface {
 	 */
 	public function __construct(
 		private readonly ObjectOperationsInterface $objects,
-		DraftActivationChecks $checks,
-		DraftActivationSignals $signals,
+		private readonly DraftActivationChecks $checks,
+		private readonly DraftActivationSignals $signals,
 	) {
-		$this->validator = $checks->validator;
-		$this->findings = $checks->findings;
-		$this->l10n = $checks->l10n;
-		$this->events = $signals->events;
-		$this->time = $signals->time;
 	}//end __construct()
 
 	/**
 	 * Make the owner's draft definitive: status `active`, same id, fully valid.
 	 *
-	 * @param DraftAddress         $address The draft's register, schema and uuid.
-	 * @param DraftOwner           $owner   The asserted owner (decision 195).
-	 * @param array<string, mixed> $changes Last property values, laid over the stored draft before it is judged.
+	 * @param DraftPromotion $promotion The draft, its asserted owner, and the last changes laid over it.
 	 *
 	 * @return ObjectEntity The object, now `active`.
 	 *
@@ -134,8 +92,11 @@ class DraftActivation implements DraftActivationInterface {
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
-	public function activate(DraftAddress $address, DraftOwner $owner, array $changes = []): ObjectEntity {
-		$draft = $this->ownDraft(address: $address, owner: $owner);
+	public function activate(DraftPromotion $promotion): ObjectEntity {
+		$address = $promotion->address;
+		$owner   = $promotion->owner;
+		$changes = $promotion->changes;
+		$draft   = $this->ownDraft(address: $address, owner: $owner);
 		$uuid = (string)$draft->getUuid();
 
 		unset($changes['@self'], $changes['id']);
@@ -155,12 +116,13 @@ class DraftActivation implements DraftActivationInterface {
 			// as DraftFinder::own() is on the form path.
 			$saved = $this->objects->saveObject(
 				object: $object,
-				register: $address->register,
-				schema: $address->schema,
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $address->register, schema: $address->schema),
+					uuid: $uuid,
+					actor: new SaveActor(currentUser: $owner->user())
+				),
 				_rbac: $owner->isScoped() === false,
-				_multitenancy: true,
-				currentUser: $owner->user()
+				_multitenancy: true
 			);
 			// Two requests on one draft can both pass the "still a draft" read.
 			// The save that did not use the allowance found it already sent:
@@ -174,9 +136,9 @@ class DraftActivation implements DraftActivationInterface {
 			DraftStatusPolicy::resetPromotions();
 		}
 
-		$receivedAt = DateTimeImmutable::createFromMutable($this->time->getDateTime());
+		$receivedAt = DateTimeImmutable::createFromMutable($this->signals->time->getDateTime());
 		// Creation side effects run now, once (decision 227): the created event, then the receipt.
-		(new ObjectEventGate(events: $this->events))->leftDraft(object: $saved, receivedAt: $receivedAt);
+		(new ObjectEventGate(events: $this->signals->events))->leftDraft(object: $saved, receivedAt: $receivedAt);
 
 		return $saved;
 	}//end activate()
@@ -187,9 +149,8 @@ class DraftActivation implements DraftActivationInterface {
 	 * The owner is built here, from the user the caller's session holds, so
 	 * no controller ever writes an owner assertion of its own.
 	 *
-	 * @param DraftAddress         $address The draft's register, schema and uuid.
-	 * @param IUser                $user    The acting user.
-	 * @param array<string, mixed> $changes Last property values, laid over the stored draft before it is judged.
+	 * @param UserDraftActivation $activation The draft's register, schema and uuid, the acting user, and the last
+	 *                                        property values laid over the stored draft before it is judged.
 	 *
 	 * @return ObjectEntity The object, now `active`.
 	 *
@@ -197,8 +158,14 @@ class DraftActivation implements DraftActivationInterface {
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
-	public function activateAsUser(DraftAddress $address, IUser $user, array $changes = []): ObjectEntity {
-		return $this->activate(address: $address, owner: DraftOwner::ofUser(user: $user), changes: $changes);
+	public function activateAsUser(UserDraftActivation $activation): ObjectEntity {
+		return $this->activate(
+			promotion: new DraftPromotion(
+				address: $activation->address,
+				owner: DraftOwner::ofUser(user: $activation->user),
+				changes: $activation->changes
+			)
+		);
 	}//end activateAsUser()
 
 	/**
@@ -216,21 +183,21 @@ class DraftActivation implements DraftActivationInterface {
 
 		if ($draft === null) {
 			throw new DraftActivationRefusedException(
-				message: $this->l10n->t('This draft does not exist.'),
+				message: $this->checks->l10n->t('This draft does not exist.'),
 				reason: DraftActivationRefusedException::NOT_FOUND
 			);
 		}
 
 		if ($draft->isDraft() === false) {
 			throw new DraftActivationRefusedException(
-				message: $this->l10n->t('This is not a draft, so there is nothing to make definitive.'),
+				message: $this->checks->l10n->t('This is not a draft, so there is nothing to make definitive.'),
 				reason: DraftActivationRefusedException::NOT_A_DRAFT
 			);
 		}
 
 		if ($owner->owns(object: $draft) === false) {
 			throw new DraftActivationRefusedException(
-				message: $this->l10n->t('Only the person who started this draft can make it definitive.'),
+				message: $this->checks->l10n->t('Only the person who started this draft can make it definitive.'),
 				reason: DraftActivationRefusedException::NOT_THE_OWNER
 			);
 		}
@@ -259,12 +226,9 @@ class DraftActivation implements DraftActivationInterface {
 		try {
 			return $this->objects->find(
 				id: $address->draftId,
-				register: $address->register,
-				schema: $address->schema,
+				options: new ObjectFindOptions(register: $address->register, schema: $address->schema, render: false, audit: false),
 				_rbac: false,
-				_multitenancy: false,
-				_render: false,
-				_audit: false
+				_multitenancy: false
 			);
 		} catch (Throwable) {
 			return null;
@@ -284,10 +248,10 @@ class DraftActivation implements DraftActivationInterface {
 	private function validateInFull(Schema $schema, array $object): void {
 		$excused = (new DraftStatusPolicy())->serverFilledExcusals(schema: $schema, object: $object);
 		try {
-			$result = $this->validator->validateObject(object: $object, schema: $schema, notSupplied: $excused);
-			$findings = $this->findings->fromResult(result: $result);
+			$result = $this->checks->validator->validateObject(object: $object, schema: $schema, notSupplied: $excused);
+			$findings = $this->checks->findings->fromResult(result: $result);
 		} catch (CustomValidationException $exception) {
-			$findings = $this->findings->fromThrowable(exception: $exception);
+			$findings = $this->checks->findings->fromThrowable(exception: $exception);
 		}
 
 		if ($findings !== []) {
@@ -309,13 +273,13 @@ class DraftActivation implements DraftActivationInterface {
 			return $this->alreadyLeft();
 		}
 
-		if ($this->findings->isPayloadRefusal(exception: $exception) === true) {
-			return $this->invalid(findings: $this->findings->fromThrowable(exception: $exception));
+		if ($this->checks->findings->isPayloadRefusal(exception: $exception) === true) {
+			return $this->invalid(findings: $this->checks->findings->fromThrowable(exception: $exception));
 		}
 
 		if ($exception instanceof NotAuthorizedException) {
 			return new DraftActivationRefusedException(
-				message: $this->l10n->t('You may not save this object.'),
+				message: $this->checks->l10n->t('You may not save this object.'),
 				reason: DraftActivationRefusedException::NOT_THE_OWNER
 			);
 		}
@@ -330,7 +294,7 @@ class DraftActivation implements DraftActivationInterface {
 	 */
 	private function alreadyLeft(): DraftActivationRefusedException {
 		return new DraftActivationRefusedException(
-			message: $this->l10n->t('This is not a draft, so there is nothing to make definitive.'),
+			message: $this->checks->l10n->t('This is not a draft, so there is nothing to make definitive.'),
 			reason: DraftActivationRefusedException::NOT_A_DRAFT
 		);
 	}//end alreadyLeft()
@@ -344,7 +308,7 @@ class DraftActivation implements DraftActivationInterface {
 	 */
 	private function invalid(array $findings): DraftActivationRefusedException {
 		return new DraftActivationRefusedException(
-			message: $this->l10n->t('This draft is not complete yet. Check the fields marked below.'),
+			message: $this->checks->l10n->t('This draft is not complete yet. Check the fields marked below.'),
 			reason: DraftActivationRefusedException::INVALID,
 			findings: $findings
 		);

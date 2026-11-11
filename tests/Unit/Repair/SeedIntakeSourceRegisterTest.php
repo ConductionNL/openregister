@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
 
 use OCA\OpenRegister\Repair\SeedIntakeSourceRegister;
+use OCA\OpenRegister\Repair\RegisterDescriptorImport;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
@@ -64,7 +65,7 @@ final class SeedIntakeSourceRegisterTest extends TestCase {
 	}
 
 	private function step(): SeedIntakeSourceRegister {
-		return new SeedIntakeSourceRegister($this->importer, $this->appManager, $this->logger);
+		return new SeedIntakeSourceRegister(new RegisterDescriptorImport($this->importer, $this->appManager, $this->logger));
 	}
 
 	public function testNameNamesTheStep(): void {

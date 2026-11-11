@@ -81,13 +81,14 @@ class NotificationDispatchLogMapper extends QBMapper {
 	 * timestamp is no older than `$windowSeconds` from now. A match means
 	 * the current dispatch is a duplicate and should be skipped.
 	 *
-	 * @param string $notificationSlug The notification annotation key.
-	 * @param string $idempotencyKey The resolved idempotency key.
-	 * @param int $windowSeconds Retention window. Default 86400 (24 h).
+	 * @param DispatchIdempotencyKey $key           The notification and its resolved idempotency key.
+	 * @param int                    $windowSeconds Retention window. Default 86400 (24 h).
 	 *
 	 * @return bool True when a duplicate exists within the window.
+	 *
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	public function isDuplicate(string $notificationSlug, string $idempotencyKey, int $windowSeconds = self::DEFAULT_WINDOW_SECONDS): bool {
+	public function isDuplicate(DispatchIdempotencyKey $key, int $windowSeconds = self::DEFAULT_WINDOW_SECONDS): bool {
 		// Use UTC consistently: PHP server timezone may differ from the DB
 		// session timezone, and 'Y-m-d H:i:s' in local time would let
 		// duplicates slip through (or, conversely, double-fire across DST
@@ -98,7 +99,7 @@ class NotificationDispatchLogMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select($qb->createFunction('COUNT(*)'))
 			->from($this->getTableName());
-		$this->whereEquals(qb: $qb, columns: ['notification_slug' => $notificationSlug, 'idempotency_key' => $idempotencyKey]);
+		$this->whereEquals(qb: $qb, columns: ['notification_slug' => $key->notificationSlug, 'idempotency_key' => $key->idempotencyKey]);
 		$qb->andWhere($qb->expr()->gte('dispatched_at', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_STR)));
 
 		$result = $qb->executeQuery();

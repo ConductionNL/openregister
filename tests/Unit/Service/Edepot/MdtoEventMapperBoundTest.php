@@ -70,7 +70,7 @@ class MdtoEventMapperBoundTest extends TestCase {
 	 */
 	private function events(array $recent, array $creation, array &$logged): array {
 		$mapper = $this->createMock(AuditTrailMapperInterface::class);
-		$mapper->method('findAll')->willReturnOnConsecutiveCalls($recent, $creation);
+		$mapper->method('findTrail')->willReturnOnConsecutiveCalls($recent, $creation);
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('info')->willReturnCallback(
 			function (string $message, array $context) use (&$logged): void {
@@ -80,7 +80,7 @@ class MdtoEventMapperBoundTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setUuid('u-1');
 
-		return (new MdtoEventMapper(auditTrailMapper: $mapper, logger: $logger))->forObject(object: $object);
+		return (new MdtoEventMapper(new \OCA\OpenRegister\Service\Edepot\AuditRecording($mapper, $logger)))->forObject(object: $object);
 	}//end events()
 
 	/**

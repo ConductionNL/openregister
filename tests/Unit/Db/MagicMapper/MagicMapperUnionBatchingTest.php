@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
@@ -70,7 +71,7 @@ class MagicMapperUnionBatchingTest extends TestCase {
 		);
 
 		$this->mapper = new MagicMapper(
-			$this->createMock(IDBConnection::class),
+			$this->mysqlConnection(),
 			new MagicMapperLookups(
 				$this->createMock(SchemaMapper::class),
 				$this->createMock(RegisterMapper::class),
@@ -252,7 +253,6 @@ class MagicMapperUnionBatchingTest extends TestCase {
 			[
 				'rows' => $rows,
 				'query' => ['_search' => 'x', '_offset' => 1, '_limit' => 2],
-				'isPostgres' => false,
 			]
 		);
 
@@ -274,7 +274,7 @@ class MagicMapperUnionBatchingTest extends TestCase {
 
 		$page = $this->call(
 			'mergeUnionBatchRows',
-			['rows' => $rows, 'query' => ['_search' => 'x'], 'isPostgres' => false]
+			['rows' => $rows, 'query' => ['_search' => 'x']]
 		);
 
 		$this->assertSame(['aa', 'mm', 'zz'], array_column($page, '_uuid'));
@@ -295,7 +295,7 @@ class MagicMapperUnionBatchingTest extends TestCase {
 
 		$page = $this->call(
 			'mergeUnionBatchRows',
-			['rows' => $rows, 'query' => ['_order' => ['title' => 'ASC']], 'isPostgres' => false]
+			['rows' => $rows, 'query' => ['_order' => ['title' => 'ASC']]]
 		);
 
 		$this->assertSame(['a', 'c', 'b'], array_column($page, '_uuid'));
@@ -309,7 +309,7 @@ class MagicMapperUnionBatchingTest extends TestCase {
 	public function testMergeClampsANumericLimitToTheMaximumPage(): void {
 		$rows = array_map(static fn (int $index): array => ['_uuid' => sprintf('%05d', $index)], range(1, 1001));
 
-		$merged = $this->call('mergeUnionBatchRows', ['rows' => $rows, 'query' => ['_limit' => 5000], 'isPostgres' => false]);
+		$merged = $this->call('mergeUnionBatchRows', ['rows' => $rows, 'query' => ['_limit' => 5000]]);
 
 		$this->assertCount(1000, $merged);
 	}//end testMergeClampsANumericLimitToTheMaximumPage()
@@ -323,9 +323,20 @@ class MagicMapperUnionBatchingTest extends TestCase {
 
 		$page = $this->call(
 			'mergeUnionBatchRows',
-			['rows' => $rows, 'query' => ['_offset' => 1, '_limit' => false], 'isPostgres' => false]
+			['rows' => $rows, 'query' => ['_offset' => 1, '_limit' => false]]
 		);
 
 		$this->assertSame(['b', 'c'], array_column($page, '_uuid'));
 	}//end testMergeWithoutALimitReturnsTheRestOfTheSet()
+	/**
+	 * A connection on a MySQL platform, the non-PostgreSQL dialect the union merge assertions are written for.
+	 *
+	 * @return IDBConnection The connection.
+	 */
+	private function mysqlConnection(): IDBConnection {
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabasePlatform')->willReturn($this->createMock(AbstractMySQLPlatform::class));
+
+		return $db;
+	}//end mysqlConnection()
 }//end class

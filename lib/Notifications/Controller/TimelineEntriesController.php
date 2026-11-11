@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryPin;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntrySearch;
 use OCA\OpenRegister\Notifications\Service\Timeline\ReferenceService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntrySearchService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineEntryService;
@@ -44,6 +45,8 @@ use OCA\OpenRegister\Notifications\Service\Timeline\TimelinePermissionException;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
+use OCA\OpenRegister\Notifications\Controller\Support\QueryText;
+use OCA\OpenRegister\Notifications\Controller\Support\ReadableObject;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -51,6 +54,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Timeline entries on an object, and the search across them.
@@ -158,13 +162,24 @@ class TimelineEntriesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function index(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+		return $this->entriesAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	}//end index()
+
+	/**
+	 * The timeline of the object at a route path.
+	 *
+	 * @param array<string, string> $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function entriesAt(array $path): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
 		return $this->listOn(object: $object);
-	}//end index()
+	}//end entriesAt()
 
 	/**
 	 * The entries of a resolved object the caller may see, in the visibility they asked for.
@@ -185,9 +200,7 @@ class TimelineEntriesController extends Controller {
 		try {
 			$entries = $this->entries->listForObject(
 				object: $object,
-				visibility: $filter,
-				limit: (int)($params['limit'] ?? 50),
-				offset: (int)($params['offset'] ?? 0)
+				query: new ListQuery(limit: (int)($params['limit'] ?? 50), offset: (int)($params['offset'] ?? 0), filters: ['visibility' => $filter])
 			);
 		} catch (Throwable $e) {
 			return $this->unexpected(exception: $e, context: 'index');
@@ -228,13 +241,24 @@ class TimelineEntriesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function create(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->resolveObject(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+		return $this->createAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id]);
+	}//end create()
+
+	/**
+	 * Write an entry on the object at a route path.
+	 *
+	 * @param array<string, string> $path The register, schema and object id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function createAt(array $path): JSONResponse {
+		$object = $this->resolveObject(path: $path);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		return $this->writeOn(object: $object, scope: ['register' => $register, 'schema' => $schema]);
-	}//end create()
+		return $this->writeOn(object: $object, scope: ['register' => $path['register'], 'schema' => $path['schema']]);
+	}//end createAt()
 
 	/**
 	 * Write the requested entry onto a resolved object and every related object.
@@ -306,13 +330,25 @@ class TimelineEntriesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function show(string $register, string $schema, string $id, string $entryId): JSONResponse {
-		$resolved = $this->resolveEntry(path: ['register' => $register, 'schema' => $schema, 'id' => $id], entryId: $entryId);
+		return $this->showAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id], entryId: $entryId);
+	}//end show()
+
+	/**
+	 * One entry of the object at a route path.
+	 *
+	 * @param array<string, string> $path    The register, schema and object id from the route.
+	 * @param string                $entryId The entry id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function showAt(array $path, string $entryId): JSONResponse {
+		$resolved = $this->resolveEntry(path: $path, entryId: $entryId);
 		if ($resolved instanceof JSONResponse) {
 			return $resolved;
 		}
 
 		return $this->shown(object: $resolved[0], entry: $resolved[1]);
-	}//end show()
+	}//end showAt()
 
 	/**
 	 * An entry the caller may read, with what its text points at.
@@ -352,13 +388,25 @@ class TimelineEntriesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function update(string $register, string $schema, string $id, string $entryId): JSONResponse {
-		$resolved = $this->resolveEntry(path: ['register' => $register, 'schema' => $schema, 'id' => $id], entryId: $entryId);
+		return $this->updateAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id], entryId: $entryId);
+	}//end update()
+
+	/**
+	 * Update one entry of the object at a route path.
+	 *
+	 * @param array<string, string> $path    The register, schema and object id from the route.
+	 * @param string                $entryId The entry id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function updateAt(array $path, string $entryId): JSONResponse {
+		$resolved = $this->resolveEntry(path: $path, entryId: $entryId);
 		if ($resolved instanceof JSONResponse) {
 			return $resolved;
 		}
 
 		return $this->updatedOn(object: $resolved[0], entry: $resolved[1]);
-	}//end update()
+	}//end updateAt()
 
 	/**
 	 * Apply the requested pin and follow-up change to an entry.
@@ -433,13 +481,25 @@ class TimelineEntriesController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function source(string $register, string $schema, string $id, string $entryId): JSONResponse {
-		$resolved = $this->resolveEntry(path: ['register' => $register, 'schema' => $schema, 'id' => $id], entryId: $entryId);
+		return $this->sourceAt(path: ['register' => $register, 'schema' => $schema, 'id' => $id], entryId: $entryId);
+	}//end source()
+
+	/**
+	 * The source of one entry of the object at a route path.
+	 *
+	 * @param array<string, string> $path    The register, schema and object id from the route.
+	 * @param string                $entryId The entry id from the route.
+	 *
+	 * @return JSONResponse The answer, or the refusal for an object that does not resolve.
+	 */
+	private function sourceAt(array $path, string $entryId): JSONResponse {
+		$resolved = $this->resolveEntry(path: $path, entryId: $entryId);
 		if ($resolved instanceof JSONResponse) {
 			return $resolved;
 		}
 
 		return $this->sourceOf(object: $resolved[0], entry: $resolved[1]);
-	}//end source()
+	}//end sourceAt()
 
 	/**
 	 * The raw inbound message of an entry the caller may read.
@@ -488,17 +548,19 @@ class TimelineEntriesController extends Controller {
 	#[NoAdminRequired]
 	public function searchEntries(): JSONResponse {
 		$params = $this->request->getParams();
-		$term = $this->text(params: $params, key: 'q');
+		$term = (new QueryText(params: $params))->value(key: 'q');
 		if ($term === null) {
 			return new JSONResponse(['message' => 'A search needs a term'], Http::STATUS_BAD_REQUEST);
 		}
 
 		try {
-			$results = $this->search->searchAsArrays(
-				term: $term,
-				visibility: $this->askedVisibility(params: $params),
-				kind: $this->text(params: $params, key: 'kind'),
-				limit: (int)($params['limit'] ?? 25)
+			$results = $this->search->findHitsAsArrays(
+				search: new EntrySearch(
+					term: $term,
+					visibility: $this->askedVisibility(params: $params),
+					kind: (new QueryText(params: $params))->value(key: 'kind'),
+					limit: (int)($params['limit'] ?? 25)
+				)
 			);
 		} catch (Throwable $e) {
 			return $this->unexpected(exception: $e, context: 'search');
@@ -520,7 +582,7 @@ class TimelineEntriesController extends Controller {
 	 * @return string|null The flag, or null for no narrowing.
 	 */
 	private function askedVisibility(array $params): ?string {
-		$visibility = $this->text(params: $params, key: 'visibility');
+		$visibility = (new QueryText(params: $params))->value(key: 'visibility');
 		if ($visibility === null) {
 			return null;
 		}
@@ -532,26 +594,6 @@ class TimelineEntriesController extends Controller {
 		return $visibility;
 	}//end askedVisibility()
 
-	/**
-	 * Read one optional, non-empty string off the query.
-	 *
-	 * @param array<string,mixed> $params The request parameters.
-	 * @param string              $key    The key.
-	 *
-	 * @return string|null The value, or null when absent, empty or not a string.
-	 */
-	private function text(array $params, string $key): ?string {
-		if (isset($params[$key]) === false || is_string($params[$key]) === false) {
-			return null;
-		}
-
-		$value = trim($params[$key]);
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
-	}//end text()
 
 	/**
 	 * Whether a caller may read an entry carrying this visibility.
@@ -652,21 +694,7 @@ class TimelineEntriesController extends Controller {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
 		}
 
-		try {
-			// setObject() throws for an unknown object, or one the caller may not read.
-			$this->objects->setRegister($path['register']);
-			$this->objects->setSchema($path['schema']);
-			$this->objects->setObject($path['id']);
-			$object = $this->objects->getObject();
-		} catch (Throwable $e) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		if (($object instanceof ObjectEntity) === false) {
-			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
-		}
-
-		return $object;
+		return (new ReadableObject(objects: $this->objects))->resolve(path: $path);
 	}//end resolveObject()
 
 	/**

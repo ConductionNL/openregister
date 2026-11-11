@@ -80,15 +80,14 @@ interface ViewerReachCheckInterface {
 	 * them one at a time from the controller left the third free to be called
 	 * with the wrong answer to the first two.
 	 *
-	 * @param array<string, mixed> $view   The serialised view.
-	 * @param ViewerReach          $reach  The caller's reach.
-	 * @param array<string, mixed> $update The fields the caller sent; only those whose value changes are judged.
+	 * @param ReachedView          $reached The serialised view and the caller's reach.
+	 * @param array<string, mixed> $update  The fields the caller sent; only those whose value changes are judged.
 	 *
 	 * @return array<int, string> The refused field names, empty when the update may proceed.
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
-	public function refusedFields(array $view, ViewerReach $reach, array $update): array;
+	public function refusedFields(ReachedView $reached, array $update): array;
 
 	/**
 	 * Refuse a save whose alert names recipients this caller may not add.
@@ -99,9 +98,8 @@ interface ViewerReachCheckInterface {
 	 * will write. The stored alert's recipients are not judged as additions, but
 	 * one the save itself stops reaching is refused.
 	 *
-	 * @param array<string, mixed> $view  The stored view, or `['owner' => <uid>]` on create.
-	 * @param ViewerReach          $reach The caller's reach.
-	 * @param array<string, mixed> $data  The request body.
+	 * @param ReachedView          $reached The stored view (or `['owner' => <uid>]` on create) and the caller's reach.
+	 * @param array<string, mixed> $data    The request body.
 	 *
 	 * @return void
 	 *
@@ -109,7 +107,7 @@ interface ViewerReachCheckInterface {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
-	public function assertMayNameRecipients(array $view, ViewerReach $reach, array $data): void;
+	public function assertMayNameRecipients(ReachedView $reached, array $data): void;
 
 	/**
 	 * Whether a recipient, a `user:<uid>` or a group id, may read the view.

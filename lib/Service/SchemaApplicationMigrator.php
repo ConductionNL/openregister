@@ -56,7 +56,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 
 	}//end __construct()
 
-
 	/**
 	 * Which slugs appear under BOTH application ids.
 	 *
@@ -84,7 +83,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 
 	}//end planCollisions()
 
-
 	/**
 	 * The lower-cased slugs as a set, in first-seen order.
 	 *
@@ -101,7 +99,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 		return $set;
 
 	}//end lowerSlugSet()
-
 
 	/**
 	 * Count rows owned by an application id.
@@ -126,7 +123,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 		return (int)($row['c'] ?? 0);
 
 	}//end countFor()
-
 
 	/**
 	 * Read every schema slug owned by an application id.
@@ -155,7 +151,6 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 
 	}//end slugsFor()
 
-
 	/**
 	 * Find slugs that exist under BOTH application ids.
 	 *
@@ -174,28 +169,25 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 
 	}//end collidingSlugs()
 
-
 	/**
-	 * Re-point every row owned by `from` at `to`.
+	 * Re-point every row of one table owned by the move's `from` at its `to`.
 	 *
-	 * @param string $table The table to update.
-	 * @param string $from  The current application id.
-	 * @param string $to    The new application id.
+	 * @param string          $table The table to update.
+	 * @param ApplicationMove $move  The application ids.
 	 *
 	 * @return int The number of rows updated.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function moveApplication(string $table, string $from, string $to): int {
+	public function moveTable(string $table, ApplicationMove $move): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($table)
-			->set('application', $qb->createNamedParameter($to))
-			->where($qb->expr()->eq('application', $qb->createNamedParameter($from)));
+			->set('application', $qb->createNamedParameter($move->to))
+			->where($qb->expr()->eq('application', $qb->createNamedParameter($move->from)));
 
 		return (int)$qb->executeStatement();
 
-	}//end moveApplication()
-
+	}//end moveTable()
 
 	/**
 	 * Perform the migration, refusing when it would create duplicates.
@@ -227,29 +219,26 @@ class SchemaApplicationMigrator implements SchemaApplicationMigratorInterface {
 			return $result;
 		}
 
-		return $this->moveBoth(result: $result, from: $from, to: $to);
+		return $this->moveBoth(result: $result, move: new ApplicationMove(from: $from, to: $to));
 
 	}//end migrate()
-
 
 	/**
 	 * Move the schemas, then the registers, and record the counts as a successful migration.
 	 *
 	 * @param array{ok: bool, reason: string, collisions: string[], schemas: int, registers: int} $result The outcome so far.
-	 * @param string                                                                              $from   The current application id.
-	 * @param string                                                                              $to     The new application id.
+	 * @param ApplicationMove                                                                     $move   The application ids.
 	 *
 	 * @return array{ok: bool, reason: string, collisions: string[], schemas: int, registers: int} The outcome.
 	 */
-	private function moveBoth(array $result, string $from, string $to): array {
-		$result['schemas']   = $this->moveApplication(table: 'openregister_schemas', from: $from, to: $to);
-		$result['registers'] = $this->moveApplication(table: 'openregister_registers', from: $from, to: $to);
+	private function moveBoth(array $result, ApplicationMove $move): array {
+		$result['schemas']   = $this->moveTable(table: 'openregister_schemas', move: $move);
+		$result['registers'] = $this->moveTable(table: 'openregister_registers', move: $move);
 		$result['ok']        = true;
 		$result['reason']    = 'migrated';
 
 		return $result;
 
 	}//end moveBoth()
-
 
 }//end class

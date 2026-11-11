@@ -17,10 +17,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Survivorship;
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Survivorship\GoldenRecordRequest;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipTrustLookup;
 use OCA\OpenRegister\Service\Survivorship\SourceFreshness;
+use OCA\OpenRegister\Service\Survivorship\TierPosition;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTuple;
 use PHPUnit\Framework\TestCase;
@@ -52,11 +54,13 @@ final class SurvivorshipBranchesGoldenTest extends TestCase {
 	 * @return array<string, mixed>
 	 */
 	private function resolve(array $sources, array $config=[], array $trustRows=[], mixed $overrides=null): array {
-		return (new SurvivorshipResolver())->resolveGoldenRecord(
-			$sources,
-			$config,
-			new SurvivorshipTrustLookup('org', $trustRows, new TrustTierResolver(), $this->asOf()),
-			$overrides
+		return (new SurvivorshipResolver())->resolve(
+			request: new GoldenRecordRequest(
+				sourceRecords: $sources,
+				config: $config,
+				trust: new SurvivorshipTrustLookup('org', $trustRows, new TrustTierResolver(), $this->asOf()),
+				overrides: $overrides
+			)
 		);
 	}//end resolve()
 
@@ -271,14 +275,14 @@ final class SurvivorshipBranchesGoldenTest extends TestCase {
 		$asOf     = $this->asOf();
 		$anchor   = new DateTimeImmutable('2026-05-22T00:00:00+00:00');
 
-		$this->assertSame('gold', $resolver->applyFreshnessDecay('gold', $order, new SourceFreshness(null, $anchor, $asOf)));
-		$this->assertSame('gold', $resolver->applyFreshnessDecay('gold', $order, new SourceFreshness(0, $anchor, $asOf)));
-		$this->assertSame('gold', $resolver->applyFreshnessDecay('gold', $order, new SourceFreshness(-3, $anchor, $asOf)));
-		$this->assertSame('gold', $resolver->applyFreshnessDecay('gold', $order, new SourceFreshness(5, null, $asOf)));
-		$this->assertSame('gold', $resolver->applyFreshnessDecay('gold', $order, new SourceFreshness(10, $anchor, $asOf)));
-		$this->assertSame('silver', $resolver->applyFreshnessDecay('gold', $order, new SourceFreshness(9, $anchor, $asOf)));
-		$this->assertSame('discard', $resolver->applyFreshnessDecay('discard', $order, new SourceFreshness(1, $anchor, $asOf)));
-		$this->assertSame('odd', $resolver->applyFreshnessDecay('odd', $order, new SourceFreshness(1, $anchor, $asOf)));
+		$this->assertSame('gold', $resolver->applyFreshnessDecay(new TierPosition('gold', $order), new SourceFreshness(null, $anchor, $asOf)));
+		$this->assertSame('gold', $resolver->applyFreshnessDecay(new TierPosition('gold', $order), new SourceFreshness(0, $anchor, $asOf)));
+		$this->assertSame('gold', $resolver->applyFreshnessDecay(new TierPosition('gold', $order), new SourceFreshness(-3, $anchor, $asOf)));
+		$this->assertSame('gold', $resolver->applyFreshnessDecay(new TierPosition('gold', $order), new SourceFreshness(5, null, $asOf)));
+		$this->assertSame('gold', $resolver->applyFreshnessDecay(new TierPosition('gold', $order), new SourceFreshness(10, $anchor, $asOf)));
+		$this->assertSame('silver', $resolver->applyFreshnessDecay(new TierPosition('gold', $order), new SourceFreshness(9, $anchor, $asOf)));
+		$this->assertSame('discard', $resolver->applyFreshnessDecay(new TierPosition('discard', $order), new SourceFreshness(1, $anchor, $asOf)));
+		$this->assertSame('odd', $resolver->applyFreshnessDecay(new TierPosition('odd', $order), new SourceFreshness(1, $anchor, $asOf)));
 	}//end testFreshnessDecayBranches()
 
 	/**

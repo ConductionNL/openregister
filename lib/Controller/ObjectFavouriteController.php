@@ -41,7 +41,9 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ObjectFavouriteControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Notifications\Db\Watcher;
+use OCA\OpenRegister\Service\Interaction\AddressedObject;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -105,21 +107,34 @@ class ObjectFavouriteController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function star(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
+		return $this->starForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end star()
+
+	/**
+	 * star() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse The stored star.
+	 */
+	private function starForObject(ObjectRef $ref): JSONResponse {
+		$object = $this->endpoint->resolve(ref: $ref);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
 
-		$star = fn (): Watcher => $this->services->favourites->star(object: $object, register: $register, schema: $schema);
+		$star = fn (): Watcher => $this->services->favourites->star(target: new AddressedObject(object: $object, register: (string)$ref->register, schema: (string)$ref->schema));
 		$favourite = $this->endpoint->run(operation: $star, context: 'star');
 		if ($favourite instanceof JSONResponse) {
 			return $favourite;
 		}
 
 		$body = array_merge($favourite->jsonSerialize(), ['favourite' => true, 'watching' => true]);
-		return $this->deprecated(response: new JSONResponse($body), route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
-
-	}//end star()
+		return $this->deprecated(
+			response: new JSONResponse($body),
+			route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id)
+		);
+	}//end starForObject()
 
 	/**
 	 * Remove the calling user's star from an object.
@@ -140,7 +155,18 @@ class ObjectFavouriteController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function unstar(string $register, string $schema, string $id): JSONResponse {
-		$object = $this->endpoint->resolve(register: $register, schema: $schema, id: $id);
+		return $this->unstarForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end unstar()
+
+	/**
+	 * unstar() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse The new state.
+	 */
+	private function unstarForObject(ObjectRef $ref): JSONResponse {
+		$object = $this->endpoint->resolve(ref: $ref);
 		if ($object instanceof JSONResponse) {
 			return $object;
 		}
@@ -151,9 +177,11 @@ class ObjectFavouriteController extends Controller {
 		}
 
 		$body = ['favourite' => false, 'watching' => false, 'removed' => $removed];
-		return $this->deprecated(response: new JSONResponse($body), route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id));
-
-	}//end unstar()
+		return $this->deprecated(
+			response: new JSONResponse($body),
+			route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id)
+		);
+	}//end unstarForObject()
 
 	/**
 	 * Mark a response as coming from a deprecated route, naming its successor.

@@ -301,6 +301,10 @@ import {
 	addScopeIds,
 } from '../../services/trailFilters.js'
 import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
+import {
+	activityPeriodOptions,
+	searchSuccessOptions,
+} from './trailOptions.js'
 
 /**
  * Leave a statistic as the API reports it.
@@ -343,6 +347,25 @@ function searchStatisticsOf(stats) {
 		complex: 0,
 	}
 	return shown
+}
+
+/**
+ * The filter fields' state before anything is picked.
+ *
+ * @return {object} The filter fields
+ */
+function searchFilterState() {
+	return {
+		activeTab: 'filters-tab',
+		selectedSuccessStatus: null,
+		selectedActivityPeriod: { value: 'daily', label: 'Daily' },
+		searchTermFilter: '',
+		executionTimeFrom: '',
+		executionTimeTo: '',
+		resultCountFrom: '',
+		resultCountTo: '',
+		filteredCount: 0,
+	}
 }
 
 const ACTIVITY_PERIOD_FORMATS = {
@@ -397,68 +420,14 @@ export default {
 
 	data() {
 		return {
-			successOptions: [
-				{
-					label: t('openregister', 'Successful'),
-					value: 'true',
-				},
-				{
-					label: t('openregister', 'Failed'),
-					value: 'false',
-				},
-			],
-
-			activityPeriodOptions: [
-				{
-					label: t('openregister', 'Hourly'),
-					value: 'hourly',
-				},
-				{
-					label: t('openregister', 'Daily'),
-					value: 'daily',
-				},
-				{
-					label: t('openregister', 'Weekly'),
-					value: 'weekly',
-				},
-				{
-					label: t('openregister', 'Monthly'),
-					value: 'monthly',
-				},
-			],
-
-			activeTab: 'filters-tab',
-			selectedSuccessStatus: null,
-			selectedActivityPeriod: { value: 'daily', label: 'Daily' },
-			searchTermFilter: '',
-			executionTimeFrom: '',
-			executionTimeTo: '',
-			resultCountFrom: '',
-			resultCountTo: '',
-			filteredCount: 0,
-
-			// Statistics
-			totalSearchTrails: 0,
-			totalResults: 0,
-			averageResultsPerSearch: 0,
-			averageExecutionTime: 0,
-			successRate: 0,
-			uniqueSearchTerms: 0,
-			uniqueUsers: 0,
-			uniqueOrganizations: 0,
-			avgSearchesPerSession: 0,
-			avgObjectViewsPerSession: 0,
-			queryComplexity: {
-				simple: 0,
-				medium: 0,
-				complex: 0,
-			},
-
+			successOptions: searchSuccessOptions(),
+			activityPeriodOptions: activityPeriodOptions(),
+			...searchFilterState(),
+			...searchStatisticsOf({}),
 			popularTerms: [],
 			registerSchemaStats: [],
 			userAgentStats: [],
 			currentActivityData: [],
-
 			filterTimeout: null,
 		}
 	},

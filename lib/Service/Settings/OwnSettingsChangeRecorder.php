@@ -40,8 +40,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Settings;
 
-use OCA\OpenRegister\Service\Audit\SecuritySettingAnnouncer;
-use OCA\OpenRegister\Service\Audit\SecuritySettingRegistry;
 use OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -84,27 +82,6 @@ class OwnSettingsChangeRecorder {
 	];
 
 	/**
-	 * Writes the audit rows.
-	 *
-	 * @var SettingsChangeAuditor
-	 */
-	private readonly SettingsChangeAuditor $auditor;
-
-	/**
-	 * Knows which keys are secret.
-	 *
-	 * @var SecuritySettingRegistry
-	 */
-	private readonly SecuritySettingRegistry $registry;
-
-	/**
-	 * Tells the administrators, when wired.
-	 *
-	 * @var SecuritySettingAnnouncer|null
-	 */
-	private readonly ?SecuritySettingAnnouncer $announcer;
-
-	/**
 	 * Constructor.
 	 *
 	 * @param IAppConfig         $appConfig  The stored settings.
@@ -113,12 +90,9 @@ class OwnSettingsChangeRecorder {
 	 */
 	public function __construct(
 		private readonly IAppConfig $appConfig,
-		SettingsAuditTrail $auditTrail,
+		private readonly SettingsAuditTrail $auditTrail,
 		private readonly LoggerInterface $logger,
 	) {
-		$this->auditor = $auditTrail->auditor;
-		$this->registry = $auditTrail->registry;
-		$this->announcer = $auditTrail->announcer;
 	}//end __construct()
 
 	/**
@@ -132,8 +106,8 @@ class OwnSettingsChangeRecorder {
 	 */
 	public function snapshot(array $keys): array {
 		$security = [];
-		if ($this->announcer !== null) {
-			$security = $this->announcer->snapshot();
+		if ($this->auditTrail->announcer !== null) {
+			$security = $this->auditTrail->announcer->snapshot();
 		}
 
 		return [
@@ -155,33 +129,66 @@ class OwnSettingsChangeRecorder {
 	public function record(array $before, array $keys): int {
 		$written = 0;
 		try {
-			$after = $this->read(keys: $keys);
-			$secretKeys = [];
-			foreach (array_keys(array_merge($before['settings'], $after)) as $key) {
-				if ($this->registry->isSecret(path: (string) $key) === true) {
-					$secretKeys[] = (string) $key;
-				}
-			}
-
-			$written = $this->auditor->recordUpdate(
-				app: self::APP,
-				before: $before['settings'],
-				after: $after,
-				secretKeys: $secretKeys
-			);
-
-			if ($this->announcer !== null) {
-				$this->announcer->announce(before: $before['security'], after: $this->announcer->snapshot());
-			}
+			$written = $this->recordRows(before: $before['settings'], after: $this->read(keys: $keys));
+			$this->announceSecurity(before: $before['security']);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[OwnSettingsChangeRecorder] A settings change was stored but not recorded: ' . $e->getMessage(),
 				context: ['app' => self::APP]
 			);
-		}//end try
+		}
 
 		return $written;
 	}//end record()
+
+	/**
+	 * Write the audit rows for what moved, with the secret keys masked.
+	 *
+	 * @param array<string, mixed> $before The settings before the write.
+	 * @param array<string, mixed> $after  The settings after the write.
+	 *
+	 * @return int How many audit rows were written.
+	 */
+	private function recordRows(array $before, array $after): int {
+		return $this->auditTrail->auditor->recordUpdate(
+			app: self::APP,
+			before: $before,
+			after: $after,
+			secretKeys: $this->secretKeysIn(before: $before, after: $after)
+		);
+	}//end recordRows()
+
+	/**
+	 * The keys on either side that the registry declares secret.
+	 *
+	 * @param array<string, mixed> $before The settings before the write.
+	 * @param array<string, mixed> $after  The settings after the write.
+	 *
+	 * @return array<int, string> The secret keys.
+	 */
+	private function secretKeysIn(array $before, array $after): array {
+		$secretKeys = [];
+		foreach (array_keys(array_merge($before, $after)) as $key) {
+			if ($this->auditTrail->registry->isSecret(path: (string) $key) === true) {
+				$secretKeys[] = (string) $key;
+			}
+		}
+
+		return $secretKeys;
+	}//end secretKeysIn()
+
+	/**
+	 * Tell the announcer what moved in the security settings, when there is one.
+	 *
+	 * @param array<string, mixed> $before The security snapshot taken before the write.
+	 *
+	 * @return void
+	 */
+	private function announceSecurity(array $before): void {
+		if ($this->auditTrail->announcer !== null) {
+			$this->auditTrail->announcer->announce(before: $before, after: $this->auditTrail->announcer->snapshot());
+		}
+	}//end announceSecurity()
 
 	/**
 	 * Read the given keys, flattened to one entry per field.
@@ -194,37 +201,61 @@ class OwnSettingsChangeRecorder {
 		$values = [];
 		foreach ($keys as $key) {
 			try {
-				if (str_starts_with($key, self::PLAIN_PREFIX) === true) {
-					$plain = substr($key, strlen(self::PLAIN_PREFIX));
-					if ($this->appConfig->hasKey(self::APP, $plain) === true) {
-						$values[$plain] = $this->readPlain(key: $plain);
-					}
-
-					continue;
-				}
-
-				$raw = $this->appConfig->getValueString(self::APP, $key, '');
-				if ($raw === '') {
-					continue;
-				}
-
-				$decoded = json_decode($raw, true);
-				if (is_array($decoded) === false) {
-					$values[$key] = $raw;
-					continue;
-				}
-
-				$values = array_merge($values, $this->flatten(prefix: $key, data: $decoded));
+				$values = array_replace($values, $this->valuesOf(key: $key));
 			} catch (Throwable $e) {
 				$this->logger->warning(
 					message: '[OwnSettingsChangeRecorder] Could not read setting ' . $key . ': ' . $e->getMessage(),
 					context: ['app' => self::APP]
 				);
-			}//end try
-		}//end foreach
+			}
+		}
 
 		return $values;
 	}//end read()
+
+	/**
+	 * One key's flat entries: a plain value by its own name, a JSON object flattened under the key, else the raw string.
+	 *
+	 * @param string $key The app config key, with the plain prefix for a plain value.
+	 *
+	 * @return array<string, mixed> Flat key to value; empty when unset.
+	 *
+	 * @throws Throwable When the value cannot be read.
+	 */
+	private function valuesOf(string $key): array {
+		if (str_starts_with($key, self::PLAIN_PREFIX) === true) {
+			return $this->plainValue(key: substr($key, strlen(self::PLAIN_PREFIX)));
+		}
+
+		$raw = $this->appConfig->getValueString(self::APP, $key, '');
+		if ($raw === '') {
+			return [];
+		}
+
+		$decoded = json_decode($raw, true);
+		if (is_array($decoded) === false) {
+			return [$key => $raw];
+		}
+
+		return $this->flatten(prefix: $key, data: $decoded);
+	}//end valuesOf()
+
+	/**
+	 * A plain app config value by its own name, or nothing when the key is not set.
+	 *
+	 * @param string $key The app config key, without the plain prefix.
+	 *
+	 * @return array<string, mixed> The value by its key; empty when unset.
+	 *
+	 * @throws Throwable When the value cannot be read.
+	 */
+	private function plainValue(string $key): array {
+		if ($this->appConfig->hasKey(self::APP, $key) === false) {
+			return [];
+		}
+
+		return [$key => $this->readPlain(key: $key)];
+	}//end plainValue()
 
 	/**
 	 * Read one plain app config value with the getter its stored type needs.

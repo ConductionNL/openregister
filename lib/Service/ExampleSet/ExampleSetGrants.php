@@ -147,8 +147,7 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	/**
 	 * Why a filled grant cannot be made in this run, or '': refusal(), then the object, the principal and the dates.
 	 *
-	 * @param array<string, mixed> $data    The filled grant fields.
-	 * @param array<int, string>   $users   The account ids the set creates or adopts.
+	 * @param FilledRow            $row     The filled grant fields and the account ids the set creates or adopts.
 	 * @param array<string, mixed> $context The context: the set's `objects`, the groups it created (`setGroups`) and
 	 *                                      the install day.
 	 *
@@ -156,36 +155,37 @@ class ExampleSetGrants extends ExampleSetEngineRows {
 	 *
 	 * @spec openspec/changes/example-set-access-links-and-grants/specs/example-sets/spec.md#requirement-a-fragment-may-declare-grants-on-its-objects
 	 */
-	protected function refusalIn(array $data, array $users, array $context): string {
-		$why = $this->refusal(data: $data, users: $users);
+	protected function refusalIn(FilledRow $row, array $context): string {
+		$why = $this->refusal(data: $row->data, users: $row->users);
 		if ($why !== '') {
 			return $why;
 		}
 
-		if ($this->isObjectOfSet(uuid: ($data['object'] ?? null), context: $context) === false) {
-			return 'object '.(string) json_encode($data['object'] ?? null).' is not an object the set writes';
+		if ($this->isObjectOfSet(uuid: ($row->data['object'] ?? null), context: $context) === false) {
+			return 'object '.(string) json_encode($row->data['object'] ?? null).' is not an object the set writes';
 		}
 
-		$why = $this->principalRefusal(data: $data, users: $users, context: $context);
+		$why = $this->principalRefusal(row: $row, context: $context);
 		if ($why !== '') {
 			return $why;
 		}
 
-		return $this->datesRefusal(data: $data, context: $context);
+		return $this->datesRefusal(data: $row->data, context: $context);
 	}//end refusalIn()
 
 	/**
 	 * Why the grant's principal is no account of the set (a user grant) or no group the set created (a group
 	 * grant), or ''.
 	 *
-	 * @param array<string, mixed> $data    The filled grant fields; `type` is user or group.
-	 * @param array<int, string>   $users   The account ids the set creates or adopts.
+	 * @param FilledRow            $row     The filled grant fields (`type` is user or group) and the account ids the
+	 *                                      set creates or adopts.
 	 * @param array<string, mixed> $context The context; `setGroups` holds the groups the set created.
 	 *
 	 * @return string
 	 */
-	private function principalRefusal(array $data, array $users, array $context): string {
-		$principals = $users;
+	private function principalRefusal(FilledRow $row, array $context): string {
+		$data       = $row->data;
+		$principals = $row->users;
 		if ($data['type'] === 'group') {
 			$principals = array_values(array_filter((array) ($context['setGroups'] ?? []), 'is_string'));
 		}

@@ -23,6 +23,7 @@ namespace Unit\Service\Survivorship;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Survivorship\MasterRecord;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -63,11 +64,7 @@ class SourceRecordResolverTest extends TestCase {
 	public function testEmbeddedReturnsInlineRecords(): void {
 		$this->objectService->expects($this->never())->method('findAll');
 
-		$sources = $this->resolver->resolveSources(
-			masterData: ['sources' => [['sourceSystem' => 'crm', 'values' => ['name' => 'Acme']]]],
-			masterUuid: 'master-1',
-			config: ['sourceLinkField' => 'sources']
-		);
+		$sources = $this->resolver->resolveSources(master: new MasterRecord(data: ['sources' => [['sourceSystem' => 'crm', 'values' => ['name' => 'Acme']]]], uuid: 'master-1'), config: ['sourceLinkField' => 'sources']);
 
 		$this->assertCount(1, $sources);
 		$this->assertSame('crm', $sources[0]['sourceSystem']);
@@ -78,22 +75,14 @@ class SourceRecordResolverTest extends TestCase {
 			$this->entity(['sourceSystem' => 'kvk', 'values' => ['name' => 'Acme BV']])
 		);
 
-		$sources = $this->resolver->resolveSources(
-			masterData: ['sources' => ['uuid-a']],
-			masterUuid: 'master-1',
-			config: ['sourceLinkField' => 'sources']
-		);
+		$sources = $this->resolver->resolveSources(master: new MasterRecord(data: ['sources' => ['uuid-a']], uuid: 'master-1'), config: ['sourceLinkField' => 'sources']);
 
 		$this->assertCount(1, $sources);
 		$this->assertSame('kvk', $sources[0]['sourceSystem']);
 	}//end testEmbeddedResolvesUuidReferences()
 
 	public function testEmbeddedWithNoSourceLinkFieldReturnsEmpty(): void {
-		$sources = $this->resolver->resolveSources(
-			masterData: ['sources' => [['sourceSystem' => 'crm']]],
-			masterUuid: 'master-1',
-			config: []
-		);
+		$sources = $this->resolver->resolveSources(master: new MasterRecord(data: ['sources' => [['sourceSystem' => 'crm']]], uuid: 'master-1'), config: []);
 
 		$this->assertSame([], $sources);
 		$this->assertFalse($this->resolver->isReverseFk([]));
@@ -125,7 +114,7 @@ class SourceRecordResolverTest extends TestCase {
 				$this->entity(['currentMasterEntity' => 'master-1', 'sourceSystem' => 'kvk', 'mappedAttributes' => ['name' => 'Acme BV']]),
 			]);
 
-		$sources = $this->resolver->resolveSources(masterData: [], masterUuid: 'master-1', config: $config);
+		$sources = $this->resolver->resolveSources(master: new MasterRecord(data: [], uuid: 'master-1'), config: $config);
 
 		$this->assertCount(2, $sources);
 		$this->assertSame(['crm', 'kvk'], array_column($sources, 'sourceSystem'));
@@ -147,7 +136,7 @@ class SourceRecordResolverTest extends TestCase {
 			$this->entity(['currentMasterEntity' => 'other-master', 'sourceSystem' => 'stray']),
 		]);
 
-		$sources = $this->resolver->resolveSources(masterData: [], masterUuid: 'master-1', config: $config);
+		$sources = $this->resolver->resolveSources(master: new MasterRecord(data: [], uuid: 'master-1'), config: $config);
 
 		$this->assertCount(1, $sources);
 		$this->assertSame('crm', $sources[0]['sourceSystem']);
@@ -164,7 +153,7 @@ class SourceRecordResolverTest extends TestCase {
 
 		$this->objectService->expects($this->never())->method('findAll');
 
-		$this->assertSame([], $this->resolver->resolveSources(masterData: [], masterUuid: '', config: $config));
+		$this->assertSame([], $this->resolver->resolveSources(master: new MasterRecord(data: [], uuid: ''), config: $config));
 	}//end testReverseFkWithEmptyMasterUuidReturnsEmpty()
 
 	public function testMalformedReverseFkFallsBackToEmbedded(): void {
@@ -178,11 +167,7 @@ class SourceRecordResolverTest extends TestCase {
 		$this->objectService->expects($this->never())->method('findAll');
 		$this->assertFalse($this->resolver->isReverseFk($config));
 
-		$sources = $this->resolver->resolveSources(
-			masterData: ['sources' => [['sourceSystem' => 'crm']]],
-			masterUuid: 'master-1',
-			config: $config
-		);
+		$sources = $this->resolver->resolveSources(master: new MasterRecord(data: ['sources' => [['sourceSystem' => 'crm']]], uuid: 'master-1'), config: $config);
 
 		$this->assertCount(1, $sources);
 		$this->assertSame('crm', $sources[0]['sourceSystem']);

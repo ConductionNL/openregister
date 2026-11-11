@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
 use OCA\OpenRegister\Service\Operations\ConsistencyRepairServiceInterface;
+use OCP\IUserSession;
 
 /**
  * The services of OperationsConsistencyController, bundled so its constructor stays small.
@@ -36,10 +37,12 @@ final class OperationsConsistencyControllerServices {
 	 *
 	 * @param ConsistencyCheckServiceInterface  $check  The read-only consistency check.
 	 * @param ConsistencyRepairServiceInterface $repair The repair, as a separate act.
+	 * @param IUserSession                      $userSession The administrator acting.
 	 */
 	public function __construct(
 		public readonly ConsistencyCheckServiceInterface $check,
 		public readonly ConsistencyRepairServiceInterface $repair,
+		public readonly IUserSession $userSession,
 	) {
 	}//end __construct()
 }//end class

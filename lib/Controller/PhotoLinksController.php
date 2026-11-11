@@ -43,6 +43,7 @@ use OCA\OpenRegister\Controller\Support\LinkedSourceResponses;
 use OCA\OpenRegister\Controller\Support\ObjectLinkRoute;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\PhotoLinkServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -101,13 +102,24 @@ class PhotoLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function index(string $register, string $schema, string $id): JSONResponse {
+		return $this->indexForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end index()
+
+	/**
+	 * index() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function indexForObject(ObjectRef $ref): JSONResponse {
 		return $this->whenPhotosInstalled(
 			answer: fn (): JSONResponse => $this->listLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 				action: $this->resultsOf(fetch: fn (ObjectEntity $object): array => $this->photoLinkService->getLinkedAlbums($object->getUuid()))
 			)
 		);
-	}//end index()
+	}//end indexForObject()
 
 	/**
 	 * Link an existing Photos album.
@@ -126,17 +138,27 @@ class PhotoLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function link(string $register, string $schema, string $id): JSONResponse {
+		return $this->linkForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end link()
+
+	/**
+	 * link() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function linkForObject(ObjectRef $ref): JSONResponse {
 		return $this->whenPhotosInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
-				action: LinkedSourceActions::linkById(
-					request: $this->request,
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				action: (new LinkedSourceActions(request: $this->request))->linkById(
 					param: 'albumId',
 					link: fn (ObjectEntity $object, int $albumId) => $this->photoLinkService->linkAlbum($this->linkTargetOf(object: $object), $albumId)
 				)
 			)
 		);
-	}//end link()
+	}//end linkForObject()
 
 	/**
 	 * Create a new Photos album and link it.
@@ -155,13 +177,24 @@ class PhotoLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function createAndLink(string $register, string $schema, string $id): JSONResponse {
+		return $this->createAndLinkForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+	}//end createAndLink()
+
+	/**
+	 * createAndLink() for the object the route names.
+	 *
+	 * @param ObjectRef $ref The object the route names.
+	 *
+	 * @return JSONResponse
+	 */
+	private function createAndLinkForObject(ObjectRef $ref): JSONResponse {
 		return $this->whenPhotosInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 				action: $this->namedLinkOf(create: $this->photoLinkService->createAndLinkAlbum(...))
 			)
 		);
-	}//end createAndLink()
+	}//end createAndLinkForObject()
 
 	/**
 	 * Unlink a Photos album.
@@ -179,13 +212,25 @@ class PhotoLinksController extends Controller {
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */
 	public function destroy(string $register, string $schema, string $id, string $albumId): JSONResponse {
+		return $this->destroyForObject(ref: new ObjectRef(register: $register, schema: $schema, id: $id), albumId: $albumId);
+	}//end destroy()
+
+	/**
+	 * destroy() for the object the route names.
+	 *
+	 * @param ObjectRef $ref     The object the route names.
+	 * @param string    $albumId Album id (numeric).
+	 *
+	 * @return JSONResponse
+	 */
+	private function destroyForObject(ObjectRef $ref, string $albumId): JSONResponse {
 		return $this->whenPhotosInstalled(
 			answer: fn (): JSONResponse => $this->onLinkedObject(
-				route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id),
+				route: new ObjectLinkRoute(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
 				action: LinkedSourceActions::unlink(unlink: fn (string $uuid) => $this->photoLinkService->unlinkAlbum($uuid, (int)$albumId))
 			)
 		);
-	}//end destroy()
+	}//end destroyForObject()
 
 	/**
 	 * List the current user's Photos albums (picker source).

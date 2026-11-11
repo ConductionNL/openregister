@@ -496,7 +496,8 @@ class FolderManagementHandlerTest extends TestCase {
 	public function testSetFileServiceDoesNotThrow(): void {
 		$fileService = $this->createMock(FileService::class);
 		$this->handler->setFileService($fileService);
-		$this->assertTrue(true);
+
+		$this->assertSame($fileService, (new \ReflectionProperty($this->handler, 'fileService'))->getValue($this->handler));
 	}
 
 	// =========================================================================

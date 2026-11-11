@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -52,15 +53,16 @@ interface MessageMapperInterface {
 	 * Retrieves all messages for a specific conversation with pagination support.
 	 * Results are ordered by creation date ascending (oldest first) for chronological display.
 	 *
-	 * @param int $conversationId Conversation ID to filter messages by
-	 * @param int $limit Maximum number of results to return (default: 100)
-	 * @param int $offset Offset for pagination (default: 0)
+	 * @param int       $conversationId Conversation ID to filter messages by
+	 * @param ListQuery $page           The page: limit (default 100) and offset (default 0)
 	 *
 	 * @return Message[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Notifications\Db\Message>
+	 *
+	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function findByConversation(int $conversationId, int $limit = 100, int $offset = 0): array;
+	public function findByConversation(int $conversationId, ListQuery $page = new ListQuery(limit: 100)): array;
 
 	/**
 	 * Find recent messages in a conversation

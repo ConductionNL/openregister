@@ -13,7 +13,7 @@
  * The decisive steps are the import path's own. A saved column mapping is
  * applied by {@see \OCA\OpenRegister\Service\MigrationPack\MappingEngine},
  * the row becomes an object through
- * {@see \OCA\OpenRegister\Service\ImportService::transformCsvRowToObject()},
+ * {@see \OCA\OpenRegister\Service\ImportService::transformCsvRow()},
  * it is validated by {@see \OCA\OpenRegister\Service\Object\ValidateObject}
  * and written by {@see \OCA\OpenRegister\Service\ObjectService::saveObjects()}.
  * What this service adds is the step that was missing: the decision, taken
@@ -45,12 +45,19 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewRow;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Previews an import, then commits the preview.
@@ -277,6 +284,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 			return;
 		}
 
+		// NOSEMGREP: php.lang.security.unlink-use.unlink-use -- The path is a copy this app staged in the temp dir; only a staged path is removed.
 		if (is_file((string)$path) === true && unlink((string)$path) === false) {
 			$this->store->logger->warning(
 				message: '[ImportPreviewService] The staged source could not be removed',
@@ -311,8 +319,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 * written (D-1).
 	 *
 	 * @param ImportPreview $preview The previewed preview.
-	 * @param string|null $sourceHash The sha256 of the file being committed.
-	 * @param IUser|null $currentUser The actor.
+	 * @param ImportCommit  $commit  The sha256 of the file being committed, and the actor.
 	 *
 	 * @return ImportPreview The preview, in state committed.
 	 *
@@ -320,9 +327,9 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function commit(ImportPreview $preview, ?string $sourceHash, ?IUser $currentUser = null): ImportPreview {
-		$this->assertCommittable(preview: $preview, sourceHash: $sourceHash);
-		return $this->applyDecisions(run: $this->commitRun(preview: $preview, currentUser: $currentUser));
+	public function commit(ImportPreview $preview, ImportCommit $commit): ImportPreview {
+		$this->assertCommittable(preview: $preview, sourceHash: $commit->sourceHash);
+		return $this->applyDecisions(run: $this->commitRun(preview: $preview, currentUser: $commit->currentUser));
 	}//end commit()
 
 	/**
@@ -455,10 +462,11 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		try {
 			$result = $this->targets->objectService->saveObjects(
 				objects: $objects,
-				register: $destination->register,
-				schema: $destination->schema,
-				validation: false,
-				events: false
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: $destination->register, schema: $destination->schema),
+					validation: false,
+					events: false
+				)
 			);
 
 			$refused = $this->refusalsIn(batch: $batch, invalid: ($result['invalid'] ?? []));
@@ -525,10 +533,11 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 		try {
 			$this->targets->objectService->saveObject(
 				object: ($row->getPayload() ?? []),
-				register: $run->destination->register,
-				schema: $run->destination->schema,
-				_validation: false,
-				currentUser: $run->currentUser
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $run->destination->register, schema: $run->destination->schema),
+					policy: new SavePolicy(validation: false),
+					actor: new SaveActor(currentUser: $run->currentUser)
+				)
 			);
 
 			$this->stampApplied(preview: $run->preview, rows: [$row]);
@@ -635,11 +644,9 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 	private function decideMappedRow(array $data, ImportRun $run): array {
 		$destination = $run->destination;
 		try {
-			$object = $this->matching->importService->transformCsvRowToObject(
+			$object = $this->matching->importService->transformCsvRow(
 				rowData: $data,
-				register: $destination->register,
-				schema: $destination->schema,
-				currentUser: null
+				target: new RowImportTarget(table: new RegisterSchema(register: $destination->register, schema: $destination->schema))
 			);
 		} catch (Throwable $exception) {
 			return ImportRowPayload::refusal(reason: 'The row could not be mapped onto the schema: '.$exception->getMessage());
@@ -736,7 +743,7 @@ class ImportPreviewService implements ImportPreviewServiceInterface {
 
 		foreach ($this->store->rowMapper->findByPreview(
 			previewId: (int)$preview->getId(),
-			decision: ImportPreviewRow::DECISION_REFUSE
+			query: ListQuery::unbounded(filters: ['decision' => ImportPreviewRow::DECISION_REFUSE])
 		) as $row) {
 			$refusals[] = [
 				'row' => $row->getSourceRow(),

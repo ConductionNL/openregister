@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Db;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
 
 use OCA\OpenRegister\Notifications\Db\TextBlockMapper;
+use OCA\OpenRegister\Notifications\Db\TextBlockScope;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -63,7 +64,7 @@ final class TextBlockMapperTest extends TestCase {
 		$this->queuedRows = [[]];
 		$mapper = new TextBlockMapper($this->database());
 
-		$this->assertSame([], $mapper->findInScope());
+		$this->assertSame([], $mapper->findInScope(new TextBlockScope()));
 		$log = $this->log();
 		$this->assertStringContainsString('orderBy(title, ASC)', $log);
 		$this->assertStringContainsString('andWhere(isNull(group_id))', $log);
@@ -76,7 +77,7 @@ final class TextBlockMapperTest extends TestCase {
 		$this->queuedRows = [[['id' => 1, 'slug' => 'a'], ['id' => 2, 'slug' => 'b']]];
 		$mapper = new TextBlockMapper($this->database());
 
-		$rows = $mapper->findInScope('reg', 'sch', ['admin', 'staff']);
+		$rows = $mapper->findInScope(new TextBlockScope('reg', 'sch', ['admin', 'staff']));
 
 		$this->assertCount(2, $rows);
 		$log = $this->log();

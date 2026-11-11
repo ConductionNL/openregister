@@ -14,6 +14,7 @@ namespace OCA\OpenRegister\Tests\Unit\Mcp\BuiltIn;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\AuditedObject;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\ToolScanSubject;
@@ -52,11 +53,13 @@ class ToolInvocationAuditGoldenTest extends TestCase
 
         unset($entry);
 
-        $audit->expects($this->once())->method('createToolInvocationEntry')->with(
-            'pipelinq.createLead',
-            hash('sha256', '{"company":"Ü/co","email":"a@example.com","score":3}'),
-            ['isError' => false, 'id' => 'lead-1'],
-            new AuditedObject(null, null, null, 'lead-1')
+        $audit->expects($this->once())->method('recordToolInvocation')->with(
+            new ToolInvocation(
+                'pipelinq.createLead',
+                hash('sha256', '{"company":"Ü/co","email":"a@example.com","score":3}'),
+                ['isError' => false, 'id' => 'lead-1'],
+                new AuditedObject(null, null, null, 'lead-1')
+            )
         )->willReturn($this->createMock(AuditTrail::class));
 
         $provider = new AttributeToolProvider(appId: 'pipelinq', entries: $entries, auditTrailMapper: $audit, logger: $logger);
@@ -82,11 +85,13 @@ class ToolInvocationAuditGoldenTest extends TestCase
         $objects->method('count')->willReturn(0);
 
         $audit = $this->createMock(AuditTrailMapper::class);
-        $audit->expects($this->once())->method('createToolInvocationEntry')->with(
-            'pipelinq.lead.search',
-            hash('sha256', '{"filters":{"assignee":"é/x","status":"open"}}'),
-            $this->callback(static fn (array $summary): bool => $summary['isError'] === false && $summary['count'] === 0),
-            new AuditedObject(null, 1, null, null)
+        $audit->expects($this->once())->method('recordToolInvocation')->with(
+            $this->callback(
+                static fn (ToolInvocation $invocation): bool => $invocation->toolId === 'pipelinq.lead.search'
+                    && $invocation->paramsDigest === hash('sha256', '{"filters":{"assignee":"é/x","status":"open"}}')
+                    && $invocation->resultSummary['isError'] === false && $invocation->resultSummary['count'] === 0
+                    && $invocation->about == new AuditedObject(null, 1, null, null)
+            )
         )->willReturn($this->createMock(AuditTrail::class));
 
         $provider = new SchemaDerivedToolProvider(

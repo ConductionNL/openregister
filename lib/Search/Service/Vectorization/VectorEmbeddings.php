@@ -145,11 +145,33 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @psalm-return array<float>
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex config validation logic
-	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
 	public function generateEmbeddingWithCustomConfig(string $text, array $config): array {
+		$this->logCustomConfigStart(text: $text, config: $config);
+
+		try {
+			$normalizedConfig = $this->normalizeCustomConfig(config: $config);
+			$this->assertUsableCustomConfig(normalizedConfig: $normalizedConfig);
+
+			return $this->embedWithCustomConfig(text: $text, normalizedConfig: $normalizedConfig);
+		} catch (Exception $e) {
+			throw $this->customConfigFailure(
+				error: $e->getMessage(),
+				attempt: ['provider' => $config['provider'] ?? 'unknown', 'text_length' => strlen($text)]
+			);
+		}
+	}//end generateEmbeddingWithCustomConfig()
+
+	/**
+	 * Log the start of a custom-config embedding.
+	 *
+	 * @param string $text   Text to embed
+	 * @param array  $config Custom configuration array
+	 *
+	 * @return void
+	 */
+	private function logCustomConfigStart(string $text, array $config): void {
 		$this->logger->debug(
 			message: '[VectorEmbeddings] Generating embedding with custom config',
 			context: [
@@ -160,136 +182,190 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 				'model' => $config['model'] ?? 'unknown',
 			]
 		);
+	}//end logCustomConfigStart()
 
-		try {
-			// Normalize config format.
-			$normalizedConfig = [
-				'provider' => $config['provider'],
-				'model' => $config['model'] ?? null,
-				'api_key' => $config['apiKey'] ?? null,
-				'base_url' => $config['baseUrl'] ?? $config['url'] ?? null,
-			];
+	/**
+	 * The custom configuration in the generator's format.
+	 *
+	 * @param array $config Custom configuration array
+	 *
+	 * @return array{provider: mixed, model: mixed, api_key: mixed, base_url: mixed} The normalised config.
+	 */
+	private function normalizeCustomConfig(array $config): array {
+		return [
+			'provider' => $config['provider'],
+			'model' => $config['model'] ?? null,
+			'api_key' => $config['apiKey'] ?? null,
+			'base_url' => $config['baseUrl'] ?? $config['url'] ?? null,
+		];
+	}//end normalizeCustomConfig()
 
-			// Validate required fields.
-			if (empty($normalizedConfig['provider']) === true) {
-				throw new Exception('Provider is required');
-			}
+	/**
+	 * Refuse a normalised config without a provider, a model, or the API key its provider needs.
+	 *
+	 * @param array $normalizedConfig The normalised config.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When a required field is missing.
+	 */
+	private function assertUsableCustomConfig(array $normalizedConfig): void {
+		if (empty($normalizedConfig['provider']) === true) {
+			throw new Exception('Provider is required');
+		}
 
-			if (empty($normalizedConfig['model']) === true) {
-				throw new Exception('Model is required');
-			}
+		if (empty($normalizedConfig['model']) === true) {
+			throw new Exception('Model is required');
+		}
 
-			// Validate API keys for providers that need them.
-			if (in_array($normalizedConfig['provider'], ['openai', 'fireworks'], true) === true
-				&& empty($normalizedConfig['api_key']) === true
-			) {
-				throw new Exception("API key is required for {$normalizedConfig['provider']}");
-			}
+		// Validate API keys for providers that need them.
+		if (in_array($normalizedConfig['provider'], ['openai', 'fireworks'], true) === true
+			&& empty($normalizedConfig['api_key']) === true
+		) {
+			throw new Exception("API key is required for {$normalizedConfig['provider']}");
+		}
+	}//end assertUsableCustomConfig()
 
-			// Create embedding generator and generate.
-			$generator = $this->handlers->generator->getGenerator($normalizedConfig);
-			$embedding = $generator->embedText($text);
+	/**
+	 * Create the embedding generator for a normalised config and embed the text.
+	 *
+	 * @param string $text             Text to embed
+	 * @param array  $normalizedConfig The normalised config.
+	 *
+	 * @return float[] Embedding vector (array of floats)
+	 */
+	private function embedWithCustomConfig(string $text, array $normalizedConfig): array {
+		$generator = $this->handlers->generator->getGenerator($normalizedConfig);
+		$embedding = $generator->embedText($text);
 
-			$this->logger->debug(
-				message: '[VectorEmbeddings] Embedding generated successfully with custom config',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'dimensions' => count($embedding),
-					'model' => $normalizedConfig['model'],
-				]
-			);
+		$this->logger->debug(
+			message: '[VectorEmbeddings] Embedding generated successfully with custom config',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'dimensions' => count($embedding),
+				'model' => $normalizedConfig['model'],
+			]
+		);
 
-			return $embedding;
-		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[VectorEmbeddings] Failed to generate embedding with custom config',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-					'provider' => $config['provider'] ?? 'unknown',
-					'text_length' => strlen($text),
-				]
-			);
-			throw new Exception('Embedding generation failed: ' . $e->getMessage());
-		}//end try
-	}//end generateEmbeddingWithCustomConfig()
+		return $embedding;
+	}//end embedWithCustomConfig()
+
+	/**
+	 * Log a failed custom-config embedding and build the exception that reports it.
+	 *
+	 * @param string $error   The failure message.
+	 * @param array  $attempt The provider and text length of the attempt, as logged.
+	 *
+	 * @return Exception The exception to throw.
+	 */
+	private function customConfigFailure(string $error, array $attempt): Exception {
+		$this->logger->error(
+			message: '[VectorEmbeddings] Failed to generate embedding with custom config',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $error] + $attempt
+		);
+
+		return new Exception('Embedding generation failed: ' . $error);
+	}//end customConfigFailure()
 
 	/**
 	 * Test embedding generation with custom configuration
 	 *
-	 * @param string $provider Provider name ('openai', 'fireworks', 'ollama')
-	 * @param array $config Provider-specific configuration
-	 * @param string $testText Optional test text to embed
+	 * @param EmbeddingProbe $probe The provider ('openai', 'fireworks', 'ollama'), its configuration and the text to embed.
 	 *
 	 * @return array
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function testEmbedding(string $provider, array $config, string $testText = 'Test.'): array {
+	public function testEmbedding(EmbeddingProbe $probe): array {
+		return $this->probe(probe: $probe);
+	}//end testEmbedding()
+
+	/**
+	 * Generate one embedding for a probe's text with its provider and config, and report the outcome.
+	 *
+	 * @param EmbeddingProbe $probe The provider, the config and the test text.
+	 *
+	 * @return array{success: bool, message: string, data?: array, error?: string}
+	 */
+	private function probe(EmbeddingProbe $probe): array {
 		$this->logger->info(
 			message: '[VectorEmbeddings] Testing embedding generation',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
-				'provider' => $provider,
-				'model' => $config['model'] ?? 'unknown',
-				'testTextLength' => strlen($testText),
+				'provider' => $probe->provider,
+				'model' => $probe->model(),
+				'testTextLength' => strlen($probe->testText),
 			]
 		);
 
 		try {
-			$embedding = $this->generateEmbeddingWithCustomConfig(
-				text: $testText,
-				config: [
-					'provider' => $provider,
-					'model' => $config['model'] ?? null,
-					'apiKey' => $config['apiKey'] ?? null,
-					'baseUrl' => $config['baseUrl'] ?? $config['url'] ?? null,
-				]
-			);
-
-			$this->logger->info(
-				message: '[VectorEmbeddings] Embedding test successful',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'provider' => $provider,
-					'model' => $config['model'] ?? 'unknown',
-					'dimensions' => count($embedding),
-				]
-			);
-
-			return [
-				'success' => true,
-				'message' => 'Embedding test successful',
-				'data' => [
-					'provider' => $provider,
-					'model' => $config['model'] ?? 'unknown',
-					'vectorLength' => count($embedding),
-					'sampleValues' => array_slice($embedding, 0, 5),
-					'testText' => $testText,
-				],
-			];
+			$embedding = $this->generateEmbeddingWithCustomConfig(text: $probe->testText, config: $probe->customConfig());
+			return $this->probeSucceeded(probe: $probe, embedding: $embedding);
 		} catch (Exception $e) {
-			$this->logger->error(
-				message: '[VectorEmbeddings] Embedding test failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'provider' => $provider,
-					'error' => $e->getMessage(),
-				]
-			);
+			return $this->probeFailed(probe: $probe, error: $e);
+		}
+	}//end probe()
 
-			return [
-				'success' => false,
-				'error' => $e->getMessage(),
-				'message' => 'Failed to generate embedding: ' . $e->getMessage(),
-			];
-		}//end try
-	}//end testEmbedding()
+	/**
+	 * Log and report a probe that produced an embedding.
+	 *
+	 * @param EmbeddingProbe $probe     The probe.
+	 * @param array          $embedding The embedding it produced.
+	 *
+	 * @return array{success: true, message: string, data: array}
+	 */
+	private function probeSucceeded(EmbeddingProbe $probe, array $embedding): array {
+		$this->logger->info(
+			message: '[VectorEmbeddings] Embedding test successful',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'provider' => $probe->provider,
+				'model' => $probe->model(),
+				'dimensions' => count($embedding),
+			]
+		);
+
+		return [
+			'success' => true,
+			'message' => 'Embedding test successful',
+			'data' => [
+				'provider' => $probe->provider,
+				'model' => $probe->model(),
+				'vectorLength' => count($embedding),
+				'sampleValues' => array_slice($embedding, 0, 5),
+				'testText' => $probe->testText,
+			],
+		];
+	}//end probeSucceeded()
+
+	/**
+	 * Log and report a probe that failed.
+	 *
+	 * @param EmbeddingProbe $probe The probe.
+	 * @param Exception      $error Why it failed.
+	 *
+	 * @return array{success: false, error: string, message: string}
+	 */
+	private function probeFailed(EmbeddingProbe $probe, Exception $error): array {
+		$this->logger->error(
+			message: '[VectorEmbeddings] Embedding test failed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'provider' => $probe->provider,
+				'error' => $error->getMessage(),
+			]
+		);
+
+		return [
+			'success' => false,
+			'error' => $error->getMessage(),
+			'message' => 'Failed to generate embedding: ' . $error->getMessage(),
+		];
+	}//end probeFailed()
 
 	/**
 	 * Generate embeddings for multiple texts in batch
@@ -406,10 +482,7 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	/**
 	 * Perform semantic similarity search
 	 *
-	 * @param string $query Query text to search for
-	 * @param int $limit Maximum number of results
-	 * @param array $filters Additional filters (entity_type, etc.)
-	 * @param string|null $provider Embedding provider
+	 * @param SemanticSearchRequest $request The query text, the maximum results, the filters and the embedding provider.
 	 *
 	 * @return array<int,array<string,mixed>> Search results
 	 *
@@ -417,19 +490,9 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function semanticSearch(
-		string $query,
-		int $limit = 10,
-		array $filters = [],
-		?string $provider = null,
-	): array {
-		// Generate query embedding.
-		$queryEmbeddingData = $this->generateEmbedding(text: $query, provider: $provider);
-		$queryEmbedding = $queryEmbeddingData['embedding'];
-
-		return $this->handlers->search->semanticSearch(
-			query: new VectorQuery(embedding: $queryEmbedding, limit: $limit, filters: $filters)
-		);
+	public function semanticSearch(SemanticSearchRequest $request): array {
+		$embedding = $this->generateEmbedding(text: $request->query, provider: $request->provider)['embedding'];
+		return $this->handlers->search->semanticSearch(query: new VectorQuery(embedding: $embedding, limit: $request->limit, filters: $request->filters));
 	}//end semanticSearch()
 
 	/**
@@ -438,10 +501,8 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 * Caller supplies keyword search results; vector search runs against the database.
 	 * Results are fused using Reciprocal Rank Fusion (RRF).
 	 *
-	 * @param string $query Query text
-	 * @param array $keywordResults Pre-fetched keyword search results to fuse with vector results
-	 * @param int $limit Maximum results
-	 * @param array $weights Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
+	 * @param HybridSearchRequest $request The query text, the pre-fetched keyword results to fuse, the maximum
+	 *                                     results and the weight per search type.
 	 *
 	 * @return array Hybrid search results with combined scores and source breakdown
 	 *
@@ -449,20 +510,11 @@ class VectorEmbeddings implements VectorEmbeddingsInterface, EmbeddingGeneratorI
 	 *
 	 * @spec openspec/specs/vector-embeddings/spec.md
 	 */
-	public function hybridSearch(
-		string $query,
-		array $keywordResults = [],
-		int $limit = 20,
-		array $weights = ['keyword' => 0.5, 'vector' => 0.5],
-	): array {
-		// Generate query embedding with the configured provider.
-		$queryEmbeddingData = $this->generateEmbedding(text: $query);
-		$queryEmbedding = $queryEmbeddingData['embedding'];
-
-		return $this->handlers->search->hybridSearch(
-			query: new VectorQuery(embedding: $queryEmbedding, limit: $limit),
-			keyword: new KeywordFusion(results: $keywordResults, weights: $weights)
-		);
+	public function hybridSearch(HybridSearchRequest $request): array {
+		// The query embedding comes from the configured provider.
+		$vectorQuery = new VectorQuery(embedding: $this->generateEmbedding(text: $request->query)['embedding'], limit: $request->limit);
+		$keyword     = new KeywordFusion(results: $request->keywordResults, weights: $request->weights);
+		return $this->handlers->search->hybridSearch(query: $vectorQuery, keyword: $keyword);
 	}//end hybridSearch()
 
 	// =============================================================================

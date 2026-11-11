@@ -106,12 +106,14 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 	 * A role the schema does not assign is reported, not silently skipped.
 	 */
 	public function testAnUnassignedRoleIsReported(): void {
-		$resolved = $this->resolver->resolveWithDiagnostics(
+		$resolved = $this->resolver->resolveFromSource(
 			recipientsSpec: [['kind' => 'role', 'role' => 'toezichthouder']],
-			data: [],
-			object: null,
-			context: [],
-			roleGroups: ['behandelaar' => ['behandelaars']]
+			source: new RecipientSource(
+				data: [],
+				object: null,
+				context: [],
+				roleGroups: ['behandelaar' => ['behandelaars']]
+			)
 		);
 
 		$this->assertSame([], $resolved['uids']);
@@ -127,9 +129,9 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 	public function testAVanishedGroupIsReported(): void {
 		$this->groupManager->method('get')->willReturn(null);
 
-		$resolved = $this->resolver->resolveWithDiagnostics(
+		$resolved = $this->resolver->resolveFromSource(
 			recipientsSpec: [['kind' => 'groups', 'groups' => ['opgeheven-team']]],
-			data: []
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: [])
 		);
 
 		$this->assertSame([], $resolved['uids']);
@@ -145,9 +147,9 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 	public function testAnEmptyGroupIsNotAFault(): void {
 		$this->groupManager->method('get')->willReturn($this->groupWith([]));
 
-		$resolved = $this->resolver->resolveWithDiagnostics(
+		$resolved = $this->resolver->resolveFromSource(
 			recipientsSpec: [['kind' => 'groups', 'groups' => ['stil-team']]],
-			data: []
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: [])
 		);
 
 		$this->assertSame([], $resolved['uids']);
@@ -161,9 +163,9 @@ class NotificationRecipientResolverRoleTest extends TestCase {
 	public function testAFailingGroupLookupIsReportedSeparately(): void {
 		$this->groupManager->method('get')->willThrowException(new \RuntimeException('LDAP is down'));
 
-		$resolved = $this->resolver->resolveWithDiagnostics(
+		$resolved = $this->resolver->resolveFromSource(
 			recipientsSpec: [['kind' => 'groups', 'groups' => ['behandelaars']]],
-			data: []
+			source: new RecipientSource(data: [], object: null, context: [], roleGroups: [])
 		);
 
 		$this->assertSame('group-lookup-failed', $resolved['unresolved'][0]['reason']);

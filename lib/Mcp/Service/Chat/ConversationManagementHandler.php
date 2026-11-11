@@ -38,6 +38,7 @@ use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
 /**
  * ConversationManagementHandler
@@ -81,41 +82,6 @@ class ConversationManagementHandler {
 	];
 
 	/**
-	 * Conversation mapper
-	 *
-	 * @var ConversationMapper
-	 */
-	private ConversationMapper $conversationMapper;
-
-	/**
-	 * Message mapper
-	 *
-	 * @var MessageMapperInterface
-	 */
-	private MessageMapperInterface $messageMapper;
-
-	/**
-	 * Settings service
-	 *
-	 * @var SettingsServiceInterface
-	 */
-	private SettingsServiceInterface $settingsService;
-
-	/**
-	 * Response generation handler
-	 *
-	 * @var ResponseGenerationHandler
-	 */
-	private ResponseGenerationHandler $responseHandler;
-
-	/**
-	 * Logger
-	 *
-	 * @var LoggerInterface
-	 */
-	private LoggerInterface $logger;
-
-	/**
 	 * Constructor
 	 *
 	 * @param ConversationStores        $stores          Conversation and message rows.
@@ -128,16 +94,11 @@ class ConversationManagementHandler {
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	public function __construct(
-		ConversationStores $stores,
-		SettingsServiceInterface $settingsService,
-		ResponseGenerationHandler $responseHandler,
-		LoggerInterface $logger,
+		private readonly ConversationStores $stores,
+		private readonly SettingsServiceInterface $settingsService,
+		private readonly ResponseGenerationHandler $responseHandler,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->conversationMapper = $stores->conversationMapper;
-		$this->messageMapper = $stores->messageMapper;
-		$this->settingsService = $settingsService;
-		$this->responseHandler = $responseHandler;
-		$this->logger = $logger;
 	}//end __construct()
 
 	/**
@@ -209,7 +170,7 @@ class ConversationManagementHandler {
 			$chat->generateText($prompt);
 		}
 
-		$title = trim($this->runPrompt(chatProvider: $chatProvider, config: $config, prompt: $prompt), '"\'');
+		$title = trim($this->runPrompt(target: new PromptTarget(chatProvider: $chatProvider, config: $config), prompt: $prompt), '"\'');
 
 		// Ensure title isn't too long.
 		if (strlen($title) > 60) {
@@ -328,12 +289,7 @@ class ConversationManagementHandler {
 		$config = new OpenAIConfig();
 		$config->apiKey = $fireworksConfig['apiKey'];
 		$config->model = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
-		$baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-		if (str_ends_with($baseUrl, '/v1') === false) {
-			$baseUrl .= '/v1';
-		}
-
-		$config->url = $baseUrl;
+		$config->url = FireworksBaseUrl::of(fireworksConfig: $fireworksConfig);
 
 		return $config;
 	}//end buildFireworksConfig()
@@ -341,15 +297,16 @@ class ConversationManagementHandler {
 	/**
 	 * Run a prompt against the provider and return the generated text.
 	 *
-	 * @param mixed                     $chatProvider Configured chat provider.
-	 * @param OllamaConfig|OpenAIConfig $config       Provider configuration.
-	 * @param string                    $prompt       Prompt text.
+	 * @param PromptTarget $target The configured chat provider and its configuration.
+	 * @param string       $prompt Prompt text.
 	 *
 	 * @return string Generated text
 	 *
 	 * @throws Exception When the call fails
 	 */
-	private function runPrompt(mixed $chatProvider, OllamaConfig|OpenAIConfig $config, string $prompt): string {
+	private function runPrompt(PromptTarget $target, string $prompt): string {
+		$chatProvider = $target->chatProvider;
+		$config = $target->config;
 		if ($chatProvider === 'fireworks') {
 			// Use ResponseGenerationHandler's Fireworks method via reflection.
 			$reflectionClass = new ReflectionClass($this->responseHandler);
@@ -412,57 +369,65 @@ class ConversationManagementHandler {
 	 * If a conversation with the same title already exists for this user and agent,
 	 * appends a number (e.g., "Title (2)", "Title (3)") to make it unique.
 	 *
-	 * @param string $baseTitle Base title to check.
-	 * @param string $userId User ID.
-	 * @param int $agentId Agent ID.
+	 * @param TitleClaim $claim The wanted title and the user and agent it must be unique for.
 	 *
 	 * @return string Unique title with number suffix if needed
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
-	public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string {
-		$this->logger->info(
+	public function ensureUniqueTitle(TitleClaim $claim): string {
+		$baseTitle = $claim->baseTitle;
+		$this->logTitleStep(
 			message: '[ConversationManagementHandler] Ensuring unique title',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'baseTitle' => $baseTitle,
-				'userId' => $userId,
-				'agentId' => $agentId,
-			]
+			details: ['baseTitle' => $baseTitle, 'userId' => $claim->userId, 'agentId' => $claim->agentId]
 		);
 
 		// Find all existing titles that match this pattern.
 		// Using LIKE with % to catch both exact matches and numbered variants.
-		$pattern = $baseTitle . '%';
-		$existingTitles = $this->conversationMapper->findTitlesByUserAgent(
-			userId: $userId,
-			agentId: $agentId,
-			titlePattern: $pattern
-		);
+		$existingTitles = $this->stores->conversationMapper->findTitlesByUserAgent(claim: $claim);
 
 		// If no matches, or the base title itself is not taken, it is unique.
 		if (empty($existingTitles) === true || in_array($baseTitle, $existingTitles, true) === false) {
 			return $baseTitle;
 		}
 
-		// Generate new title with next number.
+		return $this->numberedTitle(baseTitle: $baseTitle, existingTitles: $existingTitles);
+	}//end ensureUniqueTitle()
+
+	/**
+	 * The base title with the next free "(N)" suffix, logged.
+	 *
+	 * @param string $baseTitle      Base title.
+	 * @param array  $existingTitles Titles that already match the base title.
+	 *
+	 * @return string The numbered title.
+	 */
+	private function numberedTitle(string $baseTitle, array $existingTitles): string {
 		$maxNumber = $this->highestTitleSuffix(baseTitle: $baseTitle, existingTitles: $existingTitles);
 		$uniqueTitle = $baseTitle . ' (' . ($maxNumber + 1) . ')';
 
-		$this->logger->info(
+		$this->logTitleStep(
 			message: '[ConversationManagementHandler] Generated unique title',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'baseTitle' => $baseTitle,
-				'uniqueTitle' => $uniqueTitle,
-				'foundTitles' => count($existingTitles),
-			]
+			details: ['baseTitle' => $baseTitle, 'uniqueTitle' => $uniqueTitle, 'foundTitles' => count($existingTitles)]
 		);
 
 		return $uniqueTitle;
-	}//end ensureUniqueTitle()
+	}//end numberedTitle()
+
+	/**
+	 * Log one step of making a title unique.
+	 *
+	 * @param string $message The log message.
+	 * @param array  $details The step's details.
+	 *
+	 * @return void
+	 */
+	private function logTitleStep(string $message, array $details): void {
+		$this->logger->info(
+			message: $message,
+			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $details)
+		);
+	}//end logTitleStep()
 
 	/**
 	 * Find the highest "Title (N)" suffix among existing titles (at least 1).
@@ -570,7 +535,7 @@ class ConversationManagementHandler {
 	 */
 	private function summarizeConversation(Conversation $conversation, array $metadata): void {
 		// Get all messages except recent ones.
-		$allMessages = $this->messageMapper->findByConversation($conversation->getId());
+		$allMessages = $this->stores->messageMapper->findByConversation($conversation->getId());
 		$messagesToSummarize = array_slice($allMessages, 0, -self::RECENT_MESSAGES_COUNT);
 
 		if (empty($messagesToSummarize) === true) {
@@ -587,7 +552,7 @@ class ConversationManagementHandler {
 
 		$conversation->setMetadata($metadata);
 		$conversation->setUpdated(new DateTime());
-		$this->conversationMapper->update($conversation);
+		$this->stores->conversationMapper->update($conversation);
 
 		$this->logger->info(
 			message: '[ConversationManagementHandler] Conversation summarized',
@@ -633,7 +598,7 @@ class ConversationManagementHandler {
 		$prompt .= $conversationText;
 		$prompt .= "\n\nSummary:";
 
-		return $this->runPrompt(chatProvider: $chatProvider, config: $config, prompt: $prompt);
+		return $this->runPrompt(target: new PromptTarget(chatProvider: $chatProvider, config: $config), prompt: $prompt);
 	}//end generateSummary()
 
 	/**

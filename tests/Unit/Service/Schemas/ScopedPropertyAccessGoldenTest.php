@@ -166,15 +166,15 @@ class ScopedPropertyAccessGoldenTest extends TestCase {
 
 		$this->assertSame(2, $governance->countAtScope(schema: $schema, field: new ScopedField(property: '', scope: 'team-a')));
 		$this->assertSame(1, $governance->countAtScope(schema: $schema, field: new ScopedField(property: 'b', scope: 'team-a')));
-		$governance->assertBelowCeiling(schema: $schema, scope: 'team-a', property: 'b');
-		$governance->assertBelowCeiling(schema: $schema, scope: 'team-b', property: 'new');
+		$governance->assertBelowCeiling(schema: $schema, field: new ScopedField(property: 'b', scope: 'team-a'));
+		$governance->assertBelowCeiling(schema: $schema, field: new ScopedField(property: 'new', scope: 'team-b'));
 
 		$this->expectException(ScopedPropertyException::class);
 		$this->expectExceptionMessage(
 			"Scope 'team-a' already holds 2 scoped properties, which is its ceiling of 2, so 'new' is refused. "
 			. 'Raise the ceiling or retire a field the scope no longer uses.'
 		);
-		$governance->assertBelowCeiling(schema: $schema, scope: 'team-a', property: 'new');
+		$governance->assertBelowCeiling(schema: $schema, field: new ScopedField(property: 'new', scope: 'team-a'));
 	}//end testTheCeilingAdmitsBelowAndRefusesAt()
 
 	/**
