@@ -135,7 +135,7 @@ class OAuth2RelayGuard implements OAuth2RelayGuardInterface {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
 	 */
 	public function allowedOrigins(): array {
-		$raw = $this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, '');
+		$raw     = $this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, '');
 		$entries = preg_split('/[\s,]+/', $raw, -1, PREG_SPLIT_NO_EMPTY);
 		if ($entries === false) {
 			return [];
@@ -143,24 +143,38 @@ class OAuth2RelayGuard implements OAuth2RelayGuardInterface {
 
 		$origins = [];
 		foreach ($entries as $entry) {
-			$parts = parse_url(rtrim(strtolower(trim($entry)), '/'));
-			if (is_array($parts) === false || strtolower((string)($parts['scheme'] ?? '')) !== 'https') {
-				continue;
+			$origin = $this->originOf(entry: $entry);
+			if ($origin !== null) {
+				$origins[] = $origin;
 			}
-
-			$host = (string)($parts['host'] ?? '');
-			if ($host === '') {
-				continue;
-			}
-
-			$origin = 'https://' . $host;
-			if (isset($parts['port']) === true) {
-				$origin .= ':' . (int)$parts['port'];
-			}
-
-			$origins[] = $origin;
 		}
 
 		return $origins;
 	}//end allowedOrigins()
+
+	/**
+	 * The https origin an allow-list entry names (host, and port when given), or null when it names none.
+	 *
+	 * @param string $entry One allow-list entry.
+	 *
+	 * @return string|null The origin.
+	 */
+	private function originOf(string $entry): ?string {
+		$parts = parse_url(rtrim(strtolower(trim($entry)), '/'));
+		if (is_array($parts) === false || strtolower((string)($parts['scheme'] ?? '')) !== 'https') {
+			return null;
+		}
+
+		$host = (string)($parts['host'] ?? '');
+		if ($host === '') {
+			return null;
+		}
+
+		$origin = 'https://' . $host;
+		if (isset($parts['port']) === true) {
+			$origin .= ':' . (int)$parts['port'];
+		}
+
+		return $origin;
+	}//end originOf()
 }//end class
