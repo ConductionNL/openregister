@@ -143,6 +143,20 @@ import {
 import { refusalMessage } from './refusalMessage.js'
 
 /**
+ * The link form the panel starts with: a read link, no expiry yet.
+ *
+ * @return {object} The form
+ */
+function blankLinkForm() {
+	return {
+		label: '',
+		capabilities: ['read'],
+		expiresOn: '',
+		password: '',
+	}
+}
+
+/**
  * Share one object by link with someone who has no account: create a link,
  * see the links already made to this object, switch one off or revoke it.
  *
@@ -170,12 +184,7 @@ export default {
 	data() {
 		return {
 			capabilities: CAPABILITIES,
-			form: {
-				label: '',
-				capabilities: ['read'],
-				expiresOn: '',
-				password: '',
-			},
+			form: blankLinkForm(),
 
 			allLinks: [],
 			created: null,
@@ -250,21 +259,39 @@ export default {
 			this.busy = true
 			this.error = ''
 			try {
-				this.created = await mintAccessLink(
-					mintPayload({
-						subjectType: 'object',
-						subjectId: this.objectId,
-						...this.form,
-					}),
-				)
-				this.form.password = ''
-				this.form.label = ''
-				await this.load()
+				this.created = await this.mintObjectLink()
+				await this.clearFormAndReload()
 			} catch (e) {
 				this.error = refusalMessage(e)
 			} finally {
 				this.busy = false
 			}
+		},
+
+		/**
+		 * Mint a link to this object from what the form holds.
+		 *
+		 * @return {Promise<object>} The minted link, with `url` and `pageUrl`
+		 */
+		mintObjectLink() {
+			return mintAccessLink(
+				mintPayload({
+					subjectType: 'object',
+					subjectId: this.objectId,
+					...this.form,
+				}),
+			)
+		},
+
+		/**
+		 * Forget the password and label just used, and reload the links.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async clearFormAndReload() {
+			this.form.password = ''
+			this.form.label = ''
+			await this.load()
 		},
 
 		/**

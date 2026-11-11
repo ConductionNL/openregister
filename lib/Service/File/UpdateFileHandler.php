@@ -618,6 +618,7 @@ class UpdateFileHandler {
 	 */
 	private function contentMd5(mixed $content): string {
 		if (is_resource($content) === false) {
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- Md5 is the checksum Nextcloud stores for the file, compared to skip an unchanged write.
 			return md5(string: $content);
 		}
 

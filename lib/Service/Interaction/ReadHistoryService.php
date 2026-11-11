@@ -280,21 +280,60 @@ class ReadHistoryService {
 			return $row;
 		}
 
+		$self = $this->selfBlockOf(row: $row);
+		if ($this->isAttributable(self: $self) === false) {
+			return null;
+		}
+
+		return $this->objectFromRendered(row: $row, self: $self);
+	}//end listedObject()
+
+	/**
+	 * The `@self` block of a rendered row, or an empty block.
+	 *
+	 * @param mixed $row A listed row.
+	 *
+	 * @return array<string, mixed> The block.
+	 */
+	private function selfBlockOf(mixed $row): array {
 		$self = [];
 		if (is_array($row) === true && is_array($row['@self'] ?? null) === true) {
 			$self = $row['@self'];
 		}
 
+		return $self;
+	}//end selfBlockOf()
+
+	/**
+	 * Whether a `@self` block names a uuid (or id), a register and a schema.
+	 *
+	 * @param array<string, mixed> $self The `@self` block.
+	 *
+	 * @return bool
+	 */
+	private function isAttributable(array $self): bool {
 		$uuid = ($self['uuid'] ?? $self['id'] ?? null);
 		if (is_scalar($uuid) === false || is_scalar($self['register'] ?? null) === false || is_scalar($self['schema'] ?? null) === false) {
-			return null;
+			return false;
 		}
 
+		return true;
+	}//end isAttributable()
+
+	/**
+	 * A rendered row as an ObjectEntity: its `@self` identity and organisation, and its data.
+	 *
+	 * @param array<string, mixed> $row  The rendered row.
+	 * @param array<string, mixed> $self Its attributable `@self` block.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function objectFromRendered(array $row, array $self): ObjectEntity {
 		$data = $row;
 		unset($data['@self']);
 
 		$object = new ObjectEntity();
-		$object->setUuid((string)$uuid);
+		$object->setUuid((string)($self['uuid'] ?? $self['id'] ?? null));
 		$object->setRegister((string)$self['register']);
 		$object->setSchema((string)$self['schema']);
 		if (is_scalar($self['organisation'] ?? null) === true) {
@@ -303,7 +342,7 @@ class ReadHistoryService {
 
 		$object->setObject($data);
 		return $object;
-	}//end listedObject()
+	}//end objectFromRendered()
 
 	/**
 	 * Resolve the `_recent` lens for one caller.
@@ -328,6 +367,17 @@ class ReadHistoryService {
 			return ['available' => false, 'reason' => self::REASON_AUDIT_TRAIL_DISABLED, 'views' => []];
 		}
 
+		return $this->recentViewsOf(userId: $userId);
+	}//end resolveRecentLens()
+
+	/**
+	 * The caller's read history from the audit trail, as a lens.
+	 *
+	 * @param string $userId The caller's uid.
+	 *
+	 * @return array{available: bool, reason: string|null, views: array<string, string>}
+	 */
+	private function recentViewsOf(string $userId): array {
 		// Distinct objects, each with the moment of its latest audited read,
 		// newest first. A row tombstoned by retention has an empty `user`, so
 		// it drops out of every history on its own.
@@ -343,5 +393,5 @@ class ReadHistoryService {
 
 		return ['available' => true, 'reason' => null, 'views' => $views];
 
-	}//end resolveRecentLens()
+	}//end recentViewsOf()
 }//end class

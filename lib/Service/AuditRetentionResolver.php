@@ -159,14 +159,42 @@ class AuditRetentionResolver implements AuditRetentionResolverInterface {
 	 *                                                                 machine-readable token explaining which branch produced it.
 	 */
 	public function resolve(ObjectEntity $object, DateTimeInterface $createdAt): array {
-		// Defensive: the column is JSON, so a malformed row can yield a
-		// non-array. Absent or unreadable retention must mean "no policy"
-		// (indefinite), never a short default.
+		$retention = self::objectRetention(object: $object);
+
+		// 6 + 7. Schema-level configuration, when the object itself decides nothing.
+		return $this->fromObjectRetention(retention: $retention, createdAt: $createdAt)
+			?? $this->fromSchema(object: $object, createdAt: $createdAt);
+	}//end resolve()
+
+	/**
+	 * The retention block of an object.
+	 *
+	 * Defensive: the column is JSON, so a malformed row can yield a
+	 * non-array. Absent or unreadable retention must mean "no policy"
+	 * (indefinite), never a short default.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function objectRetention(ObjectEntity $object): array {
 		$retention = $object->getRetention();
 		if (is_array($retention) === false) {
 			$retention = [];
 		}
 
+		return $retention;
+	}//end objectRetention()
+
+	/**
+	 * What the object's own retention block decides, in order.
+	 *
+	 * @param array<string, mixed> $retention The object's retention block.
+	 * @param DateTimeInterface    $createdAt When the audit entry was written.
+	 *
+	 * @return array{expires: ?DateTimeImmutable, source: string}|null Null when the object decides nothing.
+	 */
+	private function fromObjectRetention(array $retention, DateTimeInterface $createdAt): ?array {
 		// 1, 2 + 3. A legal hold, or a nomination that forbids destruction.
 		$indefinite = $this->indefiniteSource(retention: $retention);
 		if ($indefinite !== null) {
@@ -176,24 +204,13 @@ class AuditRetentionResolver implements AuditRetentionResolverInterface {
 			];
 		}
 
-		// 4. The object's own destruction date.
-		$resolved = $this->fromActiedatum(actiedatum: ($retention['archiefactiedatum'] ?? null), createdAt: $createdAt);
-		if ($resolved !== null) {
-			return $resolved;
-		}
-
-		// 5. An ISO-8601 duration on the object.
-		$resolved = $this->fromDuration(
-			candidate: ['duration' => ($retention['bewaartermijn'] ?? null), 'source' => 'object.bewaartermijn'],
-			createdAt: $createdAt
-		);
-		if ($resolved !== null) {
-			return $resolved;
-		}
-
-		// 6 + 7. Schema-level configuration.
-		return $this->fromSchema(object: $object, createdAt: $createdAt);
-	}//end resolve()
+		// 4. The object's own destruction date, else 5. an ISO-8601 duration on the object.
+		return $this->fromActiedatum(actiedatum: ($retention['archiefactiedatum'] ?? null), createdAt: $createdAt)
+			?? $this->fromDuration(
+				candidate: ['duration' => ($retention['bewaartermijn'] ?? null), 'source' => 'object.bewaartermijn'],
+				createdAt: $createdAt
+			);
+	}//end fromObjectRetention()
 
 	/**
 	 * The source token of a retention that keeps the row indefinitely, or null.
@@ -253,13 +270,22 @@ class AuditRetentionResolver implements AuditRetentionResolverInterface {
 	private function fromSchema(ObjectEntity $object, DateTimeInterface $createdAt): array {
 		$schema = $this->loadSchema(schemaId: $object->getSchema());
 		if ($schema === null) {
-			return [
-				'expires' => null,
-				'source' => self::SOURCE_NO_POLICY,
-			];
+			return self::noPolicy();
 		}
 
-		// 6 + 7, in order: the first parseable duration wins.
+		// 8. No policy anywhere: retain indefinitely. See the class docblock.
+		return $this->firstSchemaDuration(schema: $schema, createdAt: $createdAt) ?? self::noPolicy();
+	}//end fromSchema()
+
+	/**
+	 * 6 + 7, in order: the first parseable schema duration wins.
+	 *
+	 * @param mixed             $schema    The object's schema.
+	 * @param DateTimeInterface $createdAt When the audit entry was written.
+	 *
+	 * @return array{expires: ?DateTimeImmutable, source: string}|null Null when the schema gives no parseable duration.
+	 */
+	private function firstSchemaDuration($schema, DateTimeInterface $createdAt): ?array {
 		foreach ($this->schemaCandidates(schema: $schema) as $candidate) {
 			$resolved = $this->fromDuration(candidate: $candidate, createdAt: $createdAt);
 			if ($resolved !== null) {
@@ -267,13 +293,20 @@ class AuditRetentionResolver implements AuditRetentionResolverInterface {
 			}
 		}
 
-		// 8. No policy anywhere: retain indefinitely. See the class docblock.
+		return null;
+	}//end firstSchemaDuration()
+
+	/**
+	 * The resolution when no policy applies: retain indefinitely.
+	 *
+	 * @return array{expires: null, source: string}
+	 */
+	private static function noPolicy(): array {
 		return [
 			'expires' => null,
 			'source' => self::SOURCE_NO_POLICY,
 		];
-
-	}//end fromSchema()
+	}//end noPolicy()
 
 	/**
 	 * The schema's retention durations, most specific first, each with its source token.
@@ -287,23 +320,49 @@ class AuditRetentionResolver implements AuditRetentionResolverInterface {
 	 * @return array<int, array{duration: mixed, source: string}>
 	 */
 	private function schemaCandidates($schema): array {
-		$candidates = [];
-		$archive = $schema->getArchive();
-		if (is_array($archive) === true) {
-			$candidates[] = ['duration' => ($archive['bewaartermijnOverride'] ?? null), 'source' => 'schema.archive.bewaartermijnOverride'];
-			$candidates[] = ['duration' => ($archive['defaultBewaartermijn'] ?? null), 'source' => 'schema.archive.defaultBewaartermijn'];
+		return array_merge(
+			self::archiveCandidates(archive: $schema->getArchive()),
+			self::configurationCandidates(configuration: $schema->getConfiguration())
+		);
+	}//end schemaCandidates()
+
+	/**
+	 * 6. The schema archive block's override, then its default.
+	 *
+	 * @param mixed $archive The schema's archive block.
+	 *
+	 * @return array<int, array{duration: mixed, source: string}>
+	 */
+	private static function archiveCandidates(mixed $archive): array {
+		if (is_array($archive) === false) {
+			return [];
 		}
 
-		$configuration = $schema->getConfiguration();
-		if (is_array($configuration) === true) {
-			$candidates[] = [
+		return [
+			['duration' => ($archive['bewaartermijnOverride'] ?? null), 'source' => 'schema.archive.bewaartermijnOverride'],
+			['duration' => ($archive['defaultBewaartermijn'] ?? null), 'source' => 'schema.archive.defaultBewaartermijn'],
+		];
+	}//end archiveCandidates()
+
+	/**
+	 * 7. The schema configuration's archival retention default.
+	 *
+	 * @param mixed $configuration The schema's configuration.
+	 *
+	 * @return array<int, array{duration: mixed, source: string}>
+	 */
+	private static function configurationCandidates(mixed $configuration): array {
+		if (is_array($configuration) === false) {
+			return [];
+		}
+
+		return [
+			[
 				'duration' => ($configuration['x-openregister-archival']['retention']['default'] ?? null),
 				'source' => 'schema.x-openregister-archival.retention.default',
-			];
-		}
-
-		return $candidates;
-	}//end schemaCandidates()
+			],
+		];
+	}//end configurationCandidates()
 
 	/**
 	 * Build a floored expiry from an ISO-8601 duration, or null when the value
@@ -320,8 +379,28 @@ class AuditRetentionResolver implements AuditRetentionResolverInterface {
 			return null;
 		}
 
+		$interval = $this->intervalOf(candidate: $candidate);
+		if ($interval === null) {
+			return null;
+		}
+
+		$expires = DateTimeImmutable::createFromInterface($createdAt)->add($interval);
+
+		return $this->withFloor(resolved: ['expires' => $expires, 'source' => $candidate['source']], createdAt: $createdAt);
+	}//end fromDuration()
+
+	/**
+	 * The interval a candidate's duration names; an unparseable one is logged.
+	 *
+	 * @param array{duration: string, source: string} $candidate The duration and where it came from.
+	 *
+	 * @return DateInterval|null Null when the duration does not parse.
+	 */
+	private function intervalOf(array $candidate): ?DateInterval {
+		$duration = $candidate['duration'];
+
 		try {
-			$interval = new DateInterval($duration);
+			return new DateInterval($duration);
 		} catch (Throwable $error) {
 			$this->logger->warning(
 				'[AuditRetentionResolver] Unparseable retention duration "' . $duration . '" from ' . $candidate['source']
@@ -330,11 +409,7 @@ class AuditRetentionResolver implements AuditRetentionResolverInterface {
 			);
 			return null;
 		}
-
-		$expires = DateTimeImmutable::createFromInterface($createdAt)->add($interval);
-
-		return $this->withFloor(resolved: ['expires' => $expires, 'source' => $candidate['source']], createdAt: $createdAt);
-	}//end fromDuration()
+	}//end intervalOf()
 
 	/**
 	 * Apply {@see self::MINIMUM_LIFETIME} as a floor to a resolved expiry.

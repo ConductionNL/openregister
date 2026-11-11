@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\ConsumerMapper;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -45,7 +45,7 @@ use ReflectionNamedType;
  * @covers \OCA\OpenRegister\Db\SchemaMapper
  * @covers \OCA\OpenRegister\Db\SourceMapper
  * @covers \OCA\OpenRegister\Db\WebhookMapper
- * @uses   \OCA\OpenRegister\Db\ListQuery
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses   \OCA\OpenRegister\Db\QueryPage
  * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
  */

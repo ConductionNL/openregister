@@ -374,9 +374,9 @@ abstract class ExampleSetEngineRows {
 	public function installFragment(ExampleSetFragmentWrite $write, RecordLedger $ledger): bool {
 		$fragment = $write->fragment;
 		$install  = new ExampleSetRowInstall(rows: $this, refusal: $this->refusalIn(...), fill: $this->fillContext(...), values: $write->values);
-		$changed  = $install->fragment(fragment: $fragment, context: $write->context, report: $ledger->report, record: $ledger->record);
+		$changed  = $install->fragment(write: $write, ledger: $ledger);
 		$part     = new ExampleSetRecordPart(part: $this->part(), noun: $this->noun());
-		if (ExampleSetRecord::letGoUndeclared(part: $part, fragment: $fragment, report: $ledger->report, record: $ledger->record) === true) {
+		if (ExampleSetRecord::letGoUndeclared(declaring: new FragmentPart(fragment: $fragment, part: $part), ledger: $ledger) === true) {
 			$changed = true;
 		}
 

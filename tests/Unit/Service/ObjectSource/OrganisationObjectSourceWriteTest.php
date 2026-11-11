@@ -161,7 +161,7 @@ class OrganisationObjectSourceWriteTest extends TestCase {
 
 		$this->organisationService->expects($this->once())
 			->method('createOrganisation')
-			->with('Gemeente Utrecht', 'The one in the middle')
+			->with(new \OCA\OpenRegister\Service\Organisation\NewOrganisation(name: 'Gemeente Utrecht', description: 'The one in the middle'))
 			->willReturn($created);
 
 		// No further identity fields, so nothing to persist on top.

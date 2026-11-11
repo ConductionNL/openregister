@@ -84,17 +84,38 @@ class DestroyRightService {
 	public function refusalFor(ObjectEntity $object, ?Schema $schema): ?DestructionRefusedException {
 		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
-			return new DestructionRefusedException(
-				rule: 'not-authenticated',
-				reason: 'Destroying an object requires an authenticated caller.',
-				statusCode: 401
-			);
+			return self::unauthenticatedRefusal();
 		}
 
 		if ($this->caller->groupManager->isAdmin($user->getUID()) === true) {
 			return null;
 		}
 
+		return $this->schemaRefusal(run: new DestroyRightRun(object: $object, caller: $user), schema: $schema);
+	}//end refusalFor()
+
+	/**
+	 * The refusal for a caller without a session.
+	 *
+	 * @return DestructionRefusedException
+	 */
+	private static function unauthenticatedRefusal(): DestructionRefusedException {
+		return new DestructionRefusedException(
+			rule: 'not-authenticated',
+			reason: 'Destroying an object requires an authenticated caller.',
+			statusCode: 401
+		);
+	}//end unauthenticatedRefusal()
+
+	/**
+	 * The refusal a signed-in, non-administrator caller gets from the schema, or null when allowed.
+	 *
+	 * @param DestroyRightRun $run    The object and the caller.
+	 * @param Schema|null     $schema The object's schema, when it resolves.
+	 *
+	 * @return DestructionRefusedException|null The refusal, or null when allowed.
+	 */
+	private function schemaRefusal(DestroyRightRun $run, ?Schema $schema): ?DestructionRefusedException {
 		if ($schema === null) {
 			return new DestructionRefusedException(
 				rule: 'schema-unresolvable',
@@ -104,33 +125,82 @@ class DestroyRightService {
 			);
 		}
 
-		$declared = $this->declaredGroups(schema: $schema, object: $object);
+		return $this->grantRefusal(run: $run, schema: $schema);
+	}//end schemaRefusal()
+
+	/**
+	 * The refusal when the schema declares the right to nobody, or the caller does not hold it.
+	 *
+	 * @param DestroyRightRun $run    The object and the caller.
+	 * @param Schema          $schema The object's schema.
+	 *
+	 * @return DestructionRefusedException|null The refusal, or null when the caller holds the right.
+	 */
+	private function grantRefusal(DestroyRightRun $run, Schema $schema): ?DestructionRefusedException {
+		$declared = $this->declaredGroups(schema: $schema, object: $run->object);
 		if ($declared === []) {
-			return new DestructionRefusedException(
-				rule: 'destroy-right-undeclared',
-				reason: 'No group holds the destroy right on schema '
-					. ($schema->getSlug() ?? (string)$schema->getId())
-					. '. Declare it in the schema authorization block before anything can be destroyed.',
-				statusCode: 403,
-				context: ['right' => self::ACTION]
-			);
+			return self::undeclaredRightRefusal(schema: $schema);
 		}
 
-		if ($this->holdsRight(schema: $schema, object: $object) === false) {
-			return new DestructionRefusedException(
-				rule: 'destroy-right-missing',
-				reason: 'User ' . $user->getUID() . ' does not hold the destroy right on schema '
-					. ($schema->getSlug() ?? (string)$schema->getId()) . '.',
-				statusCode: 403,
-				context: [
-					'right' => self::ACTION,
-					'grantedTo' => $declared,
-				]
+		if ($this->holdsRight(schema: $schema, object: $run->object) === false) {
+			return self::missingRightRefusal(
+				reason: 'User ' . $run->caller->getUID() . ' does not hold the destroy right on schema '
+					. self::schemaLabel(schema: $schema) . '.',
+				declared: $declared
 			);
 		}
 
 		return null;
-	}//end refusalFor()
+	}//end grantRefusal()
+
+	/**
+	 * The schema as a refusal names it: its slug, or its id without one.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return string
+	 */
+	private static function schemaLabel(Schema $schema): string {
+		return ($schema->getSlug() ?? (string)$schema->getId());
+	}//end schemaLabel()
+
+	/**
+	 * The refusal when no group holds the destroy right on the schema.
+	 *
+	 * @param Schema $schema The object's schema.
+	 *
+	 * @return DestructionRefusedException
+	 */
+	private static function undeclaredRightRefusal(Schema $schema): DestructionRefusedException {
+		return new DestructionRefusedException(
+			rule: 'destroy-right-undeclared',
+			reason: 'No group holds the destroy right on schema '
+				. self::schemaLabel(schema: $schema)
+				. '. Declare it in the schema authorization block before anything can be destroyed.',
+			statusCode: 403,
+			context: ['right' => self::ACTION]
+		);
+	}//end undeclaredRightRefusal()
+
+	/**
+	 * The refusal when the caller does not hold the declared destroy right.
+	 *
+	 * @param string             $reason   Why the caller is refused.
+	 * @param array<int, string> $declared The groups that hold the right.
+	 *
+	 * @return DestructionRefusedException
+	 */
+	private static function missingRightRefusal(string $reason, array $declared): DestructionRefusedException {
+		return new DestructionRefusedException(
+			rule: 'destroy-right-missing',
+			reason: $reason,
+			statusCode: 403,
+			context: [
+				'right' => self::ACTION,
+				'grantedTo' => $declared,
+			]
+		);
+	}//end missingRightRefusal()
 
 	/**
 	 * The groups the schema declares the destroy right for.

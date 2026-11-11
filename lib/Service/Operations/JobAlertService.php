@@ -191,6 +191,7 @@ class JobAlertService implements JobAlertServiceInterface {
 
 		$this->config->setAppValue(
 			self::APP_ID,
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 			(self::MARKER_PREFIX.md5($jobClass)),
 			(string)$breach['firstFailure']
 		);
@@ -279,6 +280,7 @@ class JobAlertService implements JobAlertServiceInterface {
 	 * @return bool True when this breach has already been announced.
 	 */
 	private function alreadyRaised(string $jobClass, int $firstFailure): bool {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only builds a cache, lock or settings key, not a security value.
 		$raised = $this->config->getAppValue(self::APP_ID, (self::MARKER_PREFIX.md5($jobClass)), '');
 
 		if ($raised === '') {

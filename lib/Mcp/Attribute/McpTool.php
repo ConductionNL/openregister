@@ -128,15 +128,15 @@ final class McpTool {
 	 *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
 	 */
 	public function __construct(
-		public readonly ?string $name = null,
-		public readonly ?string $description = null,
-		public readonly ?bool $readOnlyHint = null,
-		public readonly ?bool $destructiveHint = null,
-		public readonly ?bool $idempotentHint = null,
-		public readonly ?string $scope = null,
-		public readonly ?string $subject = null,
-		public readonly ?string $action = null,
-		public readonly ?string $reach = null,
+		public readonly string|null $name = null,
+		public readonly string|null $description = null,
+		public readonly bool|null $readOnlyHint = null,
+		public readonly bool|null $destructiveHint = null,
+		public readonly bool|null $idempotentHint = null,
+		public readonly string|null $scope = null,
+		public readonly string|null $subject = null,
+		public readonly string|null $action = null,
+		public readonly string|null $reach = null,
 		public readonly array $annotations = [],
 	) {
 	}//end __construct()

@@ -768,20 +768,13 @@ export default {
 			this.previewing = true
 			this.previewError = null
 			try {
-				const response = await axios.post(
-					generateUrl('/apps/openregister/api/webhooks/preview'),
-					{
-						mapping: this.webhookItem.mapping ?? null,
-						configuration: this.webhookItem.configuration || {},
-						event: this.selectedEvent || undefined,
-					},
+				const response = await requestPreview(
+					this.webhookItem,
+					this.selectedEvent,
 				)
 				this.preview = response.data
 			} catch {
-				this.previewError = t(
-					'openregister',
-					'Could not preview the payload',
-				)
+				this.previewError = previewFailedText()
 			} finally {
 				this.previewing = false
 			}
@@ -955,21 +948,7 @@ export default {
 			this.error = null
 
 			try {
-				const payload = webhookPayload(this.webhookItem, this.selectedEvent)
-				const isUpdate = Boolean(payload.id)
-
-				// The store refreshes webhookStore.webhookList after persisting, so
-				// every mounted view picks the change up reactively — no page reload.
-				const { data } = await webhookStore.saveWebhook(payload)
-
-				if (data) {
-					showSuccess(
-						isUpdate
-							? t('openregister', 'Webhook updated successfully')
-							: t('openregister', 'Webhook created successfully'),
-					)
-					this.closeModal()
-				}
+				await this.storeWebhook()
 			} catch (error) {
 				console.error('Failed to save webhook:', error)
 				this.error =
@@ -979,7 +958,64 @@ export default {
 				this.loading = false
 			}
 		},
+
+		/**
+		 * Send the form to the store, say whether the webhook was created or
+		 * updated, and close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async storeWebhook() {
+			const payload = webhookPayload(this.webhookItem, this.selectedEvent)
+			const isUpdate = Boolean(payload.id)
+
+			// The store refreshes webhookStore.webhookList after persisting, so
+			// every mounted view picks the change up reactively — no page reload.
+			const { data } = await webhookStore.saveWebhook(payload)
+
+			if (data) {
+				showSuccess(savedText(isUpdate))
+				this.closeModal()
+			}
+		},
 	},
+}
+
+/**
+ * The notice for a saved webhook.
+ *
+ * @param {boolean} isUpdate Whether an existing webhook was updated
+ * @return {string} The notice
+ */
+function savedText(isUpdate) {
+	return isUpdate
+		? t('openregister', 'Webhook updated successfully')
+		: t('openregister', 'Webhook created successfully')
+}
+
+/**
+ * What the form says when the payload cannot be previewed.
+ *
+ * @return {string} The message
+ */
+function previewFailedText() {
+	return t('openregister', 'Could not preview the payload')
+}
+
+/**
+ * Ask the server what the webhook would send for its mapping, configuration
+ * and event.
+ *
+ * @param {object} webhookItem The webhook being edited
+ * @param {string|null} selectedEvent The chosen event
+ * @return {Promise<object>} The axios response
+ */
+function requestPreview(webhookItem, selectedEvent) {
+	return axios.post(generateUrl('/apps/openregister/api/webhooks/preview'), {
+		mapping: webhookItem.mapping ?? null,
+		configuration: webhookItem.configuration || {},
+		event: selectedEvent || undefined,
+	})
 }
 </script>
 

@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -62,6 +63,9 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Tasks 4.2 and 6.3: the tree of depth five, and the tree of 100,000.
@@ -137,19 +141,25 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 		$appConfig->method('getValueString')->willReturn($mode);
 
 		return new MagicRbacHandler(
-			$this->session(),
-			$this->groupManager(),
-			$this->createMock(originalClassName: IUserManager::class),
-			$appConfig,
-			$this->createMock(originalClassName: ConditionMatcher::class),
-			$this->createMock(originalClassName: ContainerInterface::class),
-			new NullLogger(),
-			new RbacResolvers(
+			identity: new MagicMapperIdentity(
+				userSession: $this->session(),
+				groupManager: $this->groupManager(),
+				userManager: $this->createMock(originalClassName: IUserManager::class)
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig,
+				denyEnforcementMode: new DenyEnforcementMode($appConfig, new NullLogger())
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->createMock(originalClassName: ConditionMatcher::class),
+				container: $this->createMock(originalClassName: ContainerInterface::class),
+				logger: new NullLogger()
+			),
+			resolvers: new RbacResolvers(
 				objectScopeResolver: null,
 				objectGrantResolver: null,
 				denyResolver: new DenyResolver(new DenyEntryMatcher())
-			),
-			new DenyEnforcementMode($appConfig, new NullLogger())
+			)
 		);
 	}//end listHandler()
 
@@ -295,11 +305,7 @@ class MagicRbacHandlerDepthAndScaleTest extends TestCase {
 
 			// What the list term excludes, read through the same resolver the
 			// emitter built it from.
-			$listExcludes = ($resolver->unconditionalDenial(
-				authorization: ($node->getAuthorization() ?? []),
-				action: 'read',
-				principals: $principals
-			) !== null);
+			$listExcludes = ($resolver->unconditionalDenial(authorization: ($node->getAuthorization() ?? []), question: new DenyQuestion(action: 'read', principals: $principals)) !== null);
 
 			$this->assertSame(
 				$objectVerdict,

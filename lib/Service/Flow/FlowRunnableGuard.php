@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -89,13 +90,12 @@ class FlowRunnableGuard implements FlowRunnableGuardInterface {
 		if ($this->flows === null) {
 			// Fail CLOSED. Without the collaborator there is no way to decide,
 			// and an unguarded run is what this method exists to prevent.
-			return new JSONResponse(['error' => 'No such flow: ' . $flowId], Http::STATUS_NOT_FOUND);
+			return self::noSuchFlow(flowId: $flowId);
 		}
 
-		try {
-			$flow = $this->flows->find(uuid: $flowId);
-		} catch (Throwable $e) {
-			return new JSONResponse(['error' => 'No such flow: ' . $flowId], Http::STATUS_NOT_FOUND);
+		$flow = $this->findFlow(flowId: $flowId);
+		if ($flow === null) {
+			return self::noSuchFlow(flowId: $flowId);
 		}
 
 		// 🔴 EXISTENCE AND ORGANISATION WERE THE WHOLE CHECK. On the
@@ -107,19 +107,56 @@ class FlowRunnableGuard implements FlowRunnableGuardInterface {
 		try {
 			$this->flows->assertRunnable(flow: $flow);
 		} catch (FlowRunRefused $refused) {
-			$status = Http::STATUS_FORBIDDEN;
-			if ($refused->getVerdict() === FlowRunAuthorization::NO_SESSION) {
-				$status = Http::STATUS_UNAUTHORIZED;
-			}
-
-			return new JSONResponse(
-				['error' => $refused->getMessage(), 'verdict' => $refused->getVerdict()],
-				$status
-			);
+			return self::refusedRun(refused: $refused);
 		}
 
 		return null;
 	}//end refusalUnlessRunnable()
+
+	/**
+	 * The flow, or null when it cannot be found under the caller's scope.
+	 *
+	 * @param string $flowId The flow uuid.
+	 *
+	 * @return Flow|null The flow.
+	 */
+	private function findFlow(string $flowId): ?Flow {
+		try {
+			return $this->flows->find(uuid: $flowId);
+		} catch (Throwable $e) {
+			return null;
+		}
+	}//end findFlow()
+
+	/**
+	 * The answer for a flow that does not exist for the caller.
+	 *
+	 * @param string $flowId The flow uuid.
+	 *
+	 * @return JSONResponse The 404.
+	 */
+	private static function noSuchFlow(string $flowId): JSONResponse {
+		return new JSONResponse(['error' => 'No such flow: ' . $flowId], Http::STATUS_NOT_FOUND);
+	}//end noSuchFlow()
+
+	/**
+	 * The answer for a run the per-flow decision refused: 401 without a session, else 403.
+	 *
+	 * @param FlowRunRefused $refused The refusal.
+	 *
+	 * @return JSONResponse The refusal, carrying its verdict.
+	 */
+	private static function refusedRun(FlowRunRefused $refused): JSONResponse {
+		$status = Http::STATUS_FORBIDDEN;
+		if ($refused->getVerdict() === FlowRunAuthorization::NO_SESSION) {
+			$status = Http::STATUS_UNAUTHORIZED;
+		}
+
+		return new JSONResponse(
+			['error' => $refused->getMessage(), 'verdict' => $refused->getVerdict()],
+			$status
+		);
+	}//end refusedRun()
 
 	/**
 	 * Refuse the test run unless the caller may EDIT the flow being tested.

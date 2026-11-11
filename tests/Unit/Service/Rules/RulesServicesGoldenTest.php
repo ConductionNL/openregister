@@ -68,6 +68,7 @@ use OCA\OpenRegister\Service\Rules\RuleRunRecorder;
 use OCA\OpenRegister\Service\Rules\RuleRunStores;
 use OCA\OpenRegister\Service\Rules\RuleTargets;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
+use OCA\OpenRegister\Service\Rules\RuleSwitch;
 use OCA\OpenRegister\Service\Rules\RuleInventoryOptions;
 use OCA\OpenRegister\Service\Rules\RuleTrialService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
@@ -350,12 +351,12 @@ class RulesServicesGoldenTest extends TestCase {
 		];
 		foreach ($cases as $name => [$ruleId, $enabled]) {
 			$this->calls = [];
-			$actual[$name] = ['outcome' => $this->enablement()->setEnabled($schema, $ruleId, $enabled), 'calls' => $this->calls];
+			$actual[$name] = ['outcome' => $this->enablement()->setEnabled(new RuleSwitch($schema, $ruleId, $enabled)), 'calls' => $this->calls];
 		}
 
 		$this->calls = [];
 		$actual['write fails'] = [
-			'outcome' => $this->enablement(failWrite: true)->setEnabled($schema, 'calculation:bezwaar:kapot', true),
+			'outcome' => $this->enablement(failWrite: true)->setEnabled(new RuleSwitch($schema, 'calculation:bezwaar:kapot', true)),
 			'calls' => $this->calls,
 		];
 		$this->assertGolden('enablement', $actual);

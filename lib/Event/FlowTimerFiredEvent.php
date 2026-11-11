@@ -30,6 +30,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Service\Flow\Timer\EscalationNotice;
+use OCA\OpenRegister\Service\Flow\Timer\TimerFiring;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -47,29 +49,26 @@ class FlowTimerFiredEvent extends Event {
 	public const KIND_EXPIRY = 'expiry';
 
 	/**
+	 * The fire's addressees and message; empty when none was given.
+	 *
+	 * @var EscalationNotice
+	 */
+	private readonly EscalationNotice $notice;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimer $timer The timer that fired.
-	 * @param string $kind `rung` or `expiry`.
-	 * @param string $transition The named transition raised.
-	 * @param string|null $rungKey The rung's stable key, for a rung fire.
-	 * @param array<int, array{type: string, id: string, role: string}> $recipients The resolved addressees.
-	 * @param string|null $priority The rung's priority.
-	 * @param string|null $message The message identity, resolved downstream.
-	 * @param string|null $consequence What the party is told will happen, for a postBreach rung.
+	 * @param FlowTimer             $timer  The timer that fired.
+	 * @param TimerFiring           $firing The kind, the named transition raised and the rung key.
+	 * @param EscalationNotice|null $notice Recipients, priority, message and consequence; null for none.
 	 */
 	public function __construct(
 		private readonly FlowTimer $timer,
-		private readonly string $kind,
-		private readonly string $transition,
-		private readonly ?string $rungKey,
-		private readonly array $recipients,
-		private readonly ?string $priority,
-		private readonly ?string $message,
-		private readonly ?string $consequence = null,
+		private readonly TimerFiring $firing,
+		?EscalationNotice $notice = null,
 	) {
 		parent::__construct();
-
+		$this->notice = $notice ?? new EscalationNotice();
 	}//end __construct()
 
 	/**
@@ -91,7 +90,7 @@ class FlowTimerFiredEvent extends Event {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getKind(): string {
-		return $this->kind;
+		return $this->firing->kind;
 	}//end getKind()
 
 	/**
@@ -102,7 +101,7 @@ class FlowTimerFiredEvent extends Event {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getTransition(): string {
-		return $this->transition;
+		return $this->firing->transition;
 	}//end getTransition()
 
 	/**
@@ -113,7 +112,7 @@ class FlowTimerFiredEvent extends Event {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getRungKey(): ?string {
-		return $this->rungKey;
+		return $this->firing->rungKey;
 	}//end getRungKey()
 
 	/**
@@ -124,7 +123,7 @@ class FlowTimerFiredEvent extends Event {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getRecipients(): array {
-		return $this->recipients;
+		return $this->notice->recipients;
 	}//end getRecipients()
 
 	/**
@@ -135,7 +134,7 @@ class FlowTimerFiredEvent extends Event {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getPriority(): ?string {
-		return $this->priority;
+		return $this->notice->priority;
 	}//end getPriority()
 
 	/**
@@ -146,7 +145,7 @@ class FlowTimerFiredEvent extends Event {
 	 * @spec openspec/changes/flow-business-timers/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
 	public function getMessage(): ?string {
-		return $this->message;
+		return $this->notice->message;
 	}//end getMessage()
 
 	/**
@@ -157,6 +156,6 @@ class FlowTimerFiredEvent extends Event {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-overdue-path-is-consumed-from-flow-business-timers-never-rebuilt
 	 */
 	public function getConsequence(): ?string {
-		return $this->consequence;
+		return $this->notice->consequence;
 	}//end getConsequence()
 }//end class

@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerAct;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
@@ -159,7 +160,7 @@ class UserTaskNodeTest extends TestCase {
 		$this->timers->expects($this->once())
 			->method('arm')
 			->willReturnCallback(
-				function (array $config, ?string $actor = null, $now = null) use (&$armed) {
+				function (array $config, FlowTimerAct $act) use (&$armed) {
 					$armed = $config;
 
 					return $this->createMock(FlowTimer::class);
@@ -209,7 +210,7 @@ class UserTaskNodeTest extends TestCase {
 		$this->timers->expects($this->once())
 			->method('arm')
 			->willReturnCallback(
-				function (array $config, ?string $actor = null, $now = null) use (&$armed) {
+				function (array $config, FlowTimerAct $act) use (&$armed) {
 					$armed = $config;
 
 					return $this->createMock(FlowTimer::class);

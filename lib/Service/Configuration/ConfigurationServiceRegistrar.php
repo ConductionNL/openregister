@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\ConfigurationValueMapper;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
@@ -39,7 +40,9 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationExplainer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationKeyRegistry;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentPreviewService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRecords;
 use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentValues;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -252,16 +255,23 @@ final class ConfigurationServiceRegistrar {
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
 	 */
 	private static function newImportHandler(ImportHandlerBuildRun $run): ConfigurationImportHandler {
+		$shippedGuard      = self::resolveShippedGuard(run: $run);
+		$importJobRecorder = self::resolveImportJobRecorder(run: $run);
+		$schemaInstaller   = self::resolveSchemaInstaller(run: $run);
+
 		return new ConfigurationImportHandler(
-			shippedGuard: self::resolveShippedGuard(run: $run),
-			importJobRecorder: self::resolveImportJobRecorder(run: $run),
-			schemaInstaller: self::resolveSchemaInstaller(run: $run),
-			schemaMapper: $run->container->get(SchemaMapperInterface::class),
-			registerMapper: $run->container->get(RegisterMapperInterface::class),
-			objectEntityMapper: $run->container->get(MagicMapperInterface::class),
-			configurationMapper: $run->container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
-			mappingMapper: $run->container->get(MappingMapper::class),
-			appConfig: $run->container->get('OCP\IAppConfig'),
+			catalog: new SchemaCatalog(
+				schemas: $run->container->get(SchemaMapperInterface::class),
+				registers: $run->container->get(RegisterMapperInterface::class),
+				tables: $run->container->get(MagicMapperInterface::class)
+			),
+			records: new ConfigurationImportRecords(
+				configurations: $run->container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+				mappings: $run->container->get(MappingMapper::class),
+				appConfig: $run->container->get('OCP\IAppConfig'),
+				importJobs: $importJobRecorder
+			),
+			schemaSteps: new SchemaImportSteps(shippedGuard: $shippedGuard, installer: $schemaInstaller),
 			logger: $run->logger,
 			appDataPath: $run->appDataPath,
 			objectService: $run->container->get(ObjectOperationsInterface::class)
@@ -678,12 +688,16 @@ final class ConfigurationServiceRegistrar {
 	 */
 	private static function buildDeploymentService(ContainerInterface $container): DeploymentService {
 		return new DeploymentService(
-			drafts: $container->get(ConfigurationDraftService::class),
-			previews: $container->get(DeploymentPreviewService::class),
-			store: $container->get(ConfigurationValueStore::class),
-			deployments: $container->get(ConfigurationDeploymentMapperInterface::class),
-			sets: $container->get(ConfigurationDraftSetMapperInterface::class),
-			db: $container->get('OCP\IDBConnection'),
+			values: new DeploymentValues(
+				drafts: $container->get(ConfigurationDraftService::class),
+				previews: $container->get(DeploymentPreviewService::class),
+				store: $container->get(ConfigurationValueStore::class)
+			),
+			records: new DeploymentRecords(
+				deployments: $container->get(ConfigurationDeploymentMapperInterface::class),
+				sets: $container->get(ConfigurationDraftSetMapperInterface::class),
+				db: $container->get('OCP\IDBConnection')
+			),
 			session: $container->get('OCP\IUserSession'),
 			logger: $container->get('Psr\Log\LoggerInterface')
 		);

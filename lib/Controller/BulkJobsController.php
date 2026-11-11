@@ -38,7 +38,7 @@ use OCA\OpenRegister\Controller\Support\BulkJobsControllerServices;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapperInterface;
 use OCA\OpenRegister\Db\BulkJobMember;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\BulkJob\BulkJobRequest;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Service\BulkActionRegistryInterface;

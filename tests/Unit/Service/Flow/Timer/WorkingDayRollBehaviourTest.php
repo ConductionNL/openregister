@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use DateTimeImmutable;
+use OCA\OpenRegister\Service\Flow\Timer\RollRule;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingDayRoll;
 use PHPUnit\Framework\TestCase;
@@ -59,11 +60,11 @@ class WorkingDayRollBehaviourTest extends TestCase {
 		$saturday = new DateTimeImmutable('2026-03-07T17:00:00+00:00');
 		$roll = new WorkingDayRoll();
 
-		$this->assertSame(['2026-03-07 17:00', null, null], self::shown($roll->apply($saturday, 'none', self::calendar())));
-		$this->assertSame(['2026-03-07 17:00', null, null], self::shown($roll->apply($saturday, 'next', null)));
+		$this->assertSame(['2026-03-07 17:00', null, null], self::shown($roll->apply($saturday, new RollRule(roll: 'none', calendar: self::calendar()))));
+		$this->assertSame(['2026-03-07 17:00', null, null], self::shown($roll->apply($saturday, new RollRule(roll: 'next', calendar: null))));
 		$this->assertSame(
 			['2026-03-06 17:00', null, null],
-			self::shown($roll->apply(new DateTimeImmutable('2026-03-06T17:00:00+00:00'), 'next', self::calendar()))
+			self::shown($roll->apply(new DateTimeImmutable('2026-03-06T17:00:00+00:00'), new RollRule(roll: 'next', calendar: self::calendar())))
 		);
 	}//end testNoRollNoCalendarOrAWorkingDayLeaveTheMoment()
 
@@ -71,8 +72,8 @@ class WorkingDayRollBehaviourTest extends TestCase {
 		$saturday = new DateTimeImmutable('2026-03-07T17:00:00+00:00');
 		$roll = new WorkingDayRoll();
 
-		$this->assertSame(['2026-03-09 17:00', '2026-03-07 17:00', 'weekend'], self::shown($roll->apply($saturday, 'next', self::calendar())));
-		$this->assertSame(['2026-03-06 17:00', '2026-03-07 17:00', 'weekend'], self::shown($roll->apply($saturday, 'previous', self::calendar())));
+		$this->assertSame(['2026-03-09 17:00', '2026-03-07 17:00', 'weekend'], self::shown($roll->apply($saturday, new RollRule(roll: 'next', calendar: self::calendar()))));
+		$this->assertSame(['2026-03-06 17:00', '2026-03-07 17:00', 'weekend'], self::shown($roll->apply($saturday, new RollRule(roll: 'previous', calendar: self::calendar()))));
 	}//end testAWeekendDeadlineRollsForwardOrBack()
 
 	public function testAHolidayDeadlineNamesTheHolidayItRolledOff(): void {
@@ -80,7 +81,7 @@ class WorkingDayRollBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			['2026-01-02 12:00', '2026-01-01 12:00', 'Nieuwjaarsdag'],
-			self::shown((new WorkingDayRoll())->apply($newYear, 'next', self::calendar()))
+			self::shown((new WorkingDayRoll())->apply($newYear, new RollRule(roll: 'next', calendar: self::calendar())))
 		);
 	}//end testAHolidayDeadlineNamesTheHolidayItRolledOff()
 }//end class

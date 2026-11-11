@@ -138,16 +138,26 @@ export default {
 				refreshObjectLists()
 			}
 			if (failed > 0) {
-				this.error = n(
-					'openregister',
-					'{count} object could not be validated',
-					'{count} objects could not be validated',
-					failed,
-					{ count: failed },
-				)
+				this.error = this.notValidatedText(failed)
 				return
 			}
 			this.closeModalTimeout = setTimeout(() => this.closeDialog(), 2000)
+		},
+
+		/**
+		 * Why some objects are not validated: how many failed.
+		 *
+		 * @param {number} failed The objects that could not be validated
+		 * @return {string} The message
+		 */
+		notValidatedText(failed) {
+			return n(
+				'openregister',
+				'{count} object could not be validated',
+				'{count} objects could not be validated',
+				failed,
+				{ count: failed },
+			)
 		},
 
 		/**

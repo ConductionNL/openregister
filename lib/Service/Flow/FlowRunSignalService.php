@@ -115,28 +115,6 @@ class FlowRunSignalService implements FlowRunSignalInterface {
 	}//end answerByUuid()
 
 	/**
-	 * Answer an already-resolved run, as a named actor, guarded.
-	 *
-	 * For callers that resolved the run themselves — the HTTP endpoints, whose
-	 * 404 wording is their own. The guard and the delivery are identical to
-	 * {@see answerByUuid()}; a refusal touches nothing.
-	 *
-	 * @param FlowRun $run The run to answer.
-	 * @param array $payload What the signaller wants the run to know.
-	 * @param string|null $actorUid Who is answering; null or '' means anonymous.
-	 * @param string|null $nodeId The node the answer addresses, when known.
-	 *
-	 * @return FlowRun The parked run, due for the worker's next pass.
-	 *
-	 * @throws FlowSignalRefused With reason NOT_ASSIGNEE or NOT_SUSPENDED.
-	 *
-	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
-	 */
-	public function signalRunAs(FlowRun $run, array $payload, ?string $actorUid, ?string $nodeId = null): FlowRun {
-		return $this->answer(run: $run, signal: new RunSignal(payload: $payload, actorUid: $actorUid, nodeId: $nodeId));
-	}//end signalRunAs()
-
-	/**
 	 * Answer an already-resolved run, guarded; a refusal touches nothing.
 	 *
 	 * @param FlowRun   $run    The run to answer.

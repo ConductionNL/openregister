@@ -323,7 +323,8 @@ class MappingService implements MappingServiceInterface {
 	 *
 	 * A rule whose value is a path in the input takes the value found there; an
 	 * array value is used as it is; any other value is rendered as a Twig
-	 * template against the input.
+	 * template against the input. The root rule (`#`) is the exception: a
+	 * value without Twig tags is a path, and a path not in the input gives null.
 	 *
 	 * @param Mapping $mapping The mapping recipe.
 	 * @param array   $input   The input of the mapping.
@@ -339,6 +340,11 @@ class MappingService implements MappingServiceInterface {
 		foreach ($mapping->getMapping() as $key => $value) {
 			if ($dotInput->has($value) === true) {
 				$values[$key] = $dotInput->get($value);
+				continue;
+			}
+
+			if ($key === '#' && is_string($value) === true && preg_match('/{{|{%/', $value) !== 1) {
+				$values[$key] = null;
 				continue;
 			}
 

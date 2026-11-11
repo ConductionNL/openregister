@@ -231,6 +231,22 @@ class TimelineVisibilityServiceTest extends TestCase {
 		$this->assertSame([1, 3], array_column($internal, 'id'));
 	}
 
+	public function testFilterRowsReadsAnUndeclaredOrOddRowAsInternal(): void {
+		$rows = [
+			'not a row',
+			['id' => 1, 'visibility' => ['public']],
+			['id' => 2, 'visibility' => 'PUBLIC'],
+			['id' => 3, 'visibility' => null],
+			['id' => 4, 'visibility' => 7],
+		];
+
+		$this->assertSame([['id' => 2, 'visibility' => 'PUBLIC']], $this->service->filterRows($rows, 'Public'));
+		$this->assertSame(
+			['not a row', ['id' => 1, 'visibility' => ['public']], ['id' => 3, 'visibility' => null], ['id' => 4, 'visibility' => 7]],
+			$this->service->filterRows($rows, 'internal')
+		);
+	}
+
 	public function testFilterRowsWithoutAFilterReturnsEverything(): void {
 		$rows = [['id' => 1], ['id' => 2, 'visibility' => 'public']];
 

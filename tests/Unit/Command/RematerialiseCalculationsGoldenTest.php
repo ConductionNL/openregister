@@ -29,7 +29,7 @@ use DateTime;
 use OCA\OpenRegister\Command\RematerialiseCalculationsCommand;
 use OCA\OpenRegister\Command\Support\RematerialiseEvaluation;
 use OCA\OpenRegister\Command\Support\RematerialiseStorage;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
+use OCA\OpenRegister\Service\Calculation\ReferringObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -253,8 +254,9 @@ class RematerialiseCalculationsGoldenTest extends TestCase {
 		);
 
 		$aggregates = $this->createMock(AggregateReferenceResolver::class);
-		$aggregates->method('resolveAllWithOutcome')->willReturnCallback(
-			function (array $payload, array $aggregates, $registerRef): array {
+		$aggregates->method('resolveOutcome')->willReturnCallback(
+			function (ReferringObject $referrer, array $aggregates): array {
+				[$payload, $registerRef] = [$referrer->payload, $referrer->register];
 				$this->calls[] = ['aggregates', $aggregates, $registerRef];
 				if (($payload['aggFail'] ?? false) === true) {
 					return ['values' => [], 'failed' => ['n' => 'boom']];

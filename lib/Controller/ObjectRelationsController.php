@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\Relation\ExternalLink;
 use OCA\OpenRegister\Service\Relation\ObjectRelationServiceInterface;
 use OCA\OpenRegister\Service\Relation\ObjectTreeQuery;
 use OCA\OpenRegister\Service\Relation\ObjectTreeServiceInterface;
+use OCA\OpenRegister\Service\Relation\ParentInheritance;
 use OCA\OpenRegister\Service\Relation\ProseMention;
 use OCA\OpenRegister\Service\Relation\ProvenanceLink;
 use OCA\OpenRegister\Service\Relation\RelationEndpoint;
@@ -568,7 +569,9 @@ class ObjectRelationsController extends Controller {
 	private function deriveFrom(ObjectDerivation $derivation, array $data): JSONResponse {
 		$source = $derivation->source;
 		$link = $this->declaredLink(source: $source);
-		$applied = $this->relations->applyInheritance(parent: $source, childData: $data, inherits: $link['inherits']);
+		$applied = $this->relations->inherit(
+			inheritance: new ParentInheritance(parent: $source, childData: $data, inherits: $link['inherits'])
+		);
 		$created = $this->saveDerived(data: $applied['data'], derivation: $derivation);
 		if ($created instanceof JSONResponse) {
 			return $created;
@@ -674,7 +677,7 @@ class ObjectRelationsController extends Controller {
 	 * derivation and a split are the same act seen twice and a sub-case
 	 * started from a timeline entry is both. Writing the split row and then
 	 * mutating it into a derivation was two writes for one act, and left
-	 * recordDerivation() with no caller at all: a write capability nobody
+	 * recordDerived() with no caller at all: a write capability nobody
 	 * reaches is a capability nobody can exercise, which is the shape
 	 * gate-orphaned-write-capability exists to catch.
 	 *

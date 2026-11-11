@@ -25,9 +25,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use Symfony\Component\Uid\Uuid;
 
 /**
  * Reads and writes administered purposes.
@@ -37,6 +35,8 @@ use Symfony\Component\Uid\Uuid;
  * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 class ProcessingPurposeMapper extends QBMapper implements ProcessingPurposeMapperInterface {
+	use SelectByColumnTrait;
+
 	/**
 	 * Constructor.
 	 *
@@ -62,12 +62,7 @@ class ProcessingPurposeMapper extends QBMapper implements ProcessingPurposeMappe
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function find(int $id): ProcessingPurpose {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
 
 	/**
@@ -80,20 +75,12 @@ class ProcessingPurposeMapper extends QBMapper implements ProcessingPurposeMappe
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function findByCode(string $code): ?ProcessingPurpose {
-		if ($code === '') {
-			return null;
+		$found = $this->findOneByFilledColumn(name: 'code', value: $code);
+		if ($found instanceof ProcessingPurpose) {
+			return $found;
 		}
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('code', $qb->createNamedParameter($code)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
+		return null;
 	}//end findByCode()
 
 	/**
@@ -106,20 +93,12 @@ class ProcessingPurposeMapper extends QBMapper implements ProcessingPurposeMappe
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function findByUuid(string $uuid): ?ProcessingPurpose {
-		if ($uuid === '') {
-			return null;
+		$found = $this->findOneByFilledColumn(name: 'uuid', value: $uuid);
+		if ($found instanceof ProcessingPurpose) {
+			return $found;
 		}
 
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
-		}
+		return null;
 	}//end findByUuid()
 
 	/**
@@ -181,21 +160,10 @@ class ProcessingPurposeMapper extends QBMapper implements ProcessingPurposeMappe
 	 *
 	 * @return ProcessingPurpose The persisted purpose.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
-	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
 	public function insert($entity): ProcessingPurpose {
-		if ($entity->getUuid() === null || $entity->getUuid() === '') {
-			$entity->setUuid((string)Uuid::v4());
-		}
-
-		$now = new DateTime();
-		if ($entity->getCreated() === null) {
-			$entity->setCreated($now);
-		}
-
-		$entity->setUpdated($now);
+		(new NewRowStamps())->onInsert(entity: $entity);
 
 		return parent::insert(entity: $entity);
 	}//end insert()

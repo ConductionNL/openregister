@@ -17,6 +17,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Unit tests for MagicRbacHandler::hasPermission().
@@ -55,13 +58,19 @@ class MagicRbacHandlerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->handler = new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$this->userManager,
-			$this->appConfig,
-			$this->conditionMatcher,
-			$this->container,
-			$this->logger
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $this->userManager
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $this->appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $this->conditionMatcher,
+				container: $this->container,
+				logger: $this->logger
+			)
 		);
 	}
 

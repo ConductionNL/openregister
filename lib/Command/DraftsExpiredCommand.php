@@ -97,12 +97,7 @@ class DraftsExpiredCommand extends Command {
 		$counts = $this->container->get(DraftExpiryInterface::class)->preview(now: new DateTimeImmutable());
 
 		if ($input->getOption('json') === true) {
-			$rows = [];
-			foreach ($counts['perSchema'] as $row) {
-				$rows[] = ['register' => $row['register'], 'schema' => $row['schema'], 'lifetimeDays' => $row['lifetimeDays'], 'expired' => $row['expired']];
-			}
-
-			$output->writeln((string)json_encode(['schemas' => $counts['schemas'], 'expired' => $counts['expired'], 'perSchema' => $rows]));
+			$output->writeln(self::json(counts: $counts));
 
 			return 0;
 		}
@@ -114,6 +109,40 @@ class DraftsExpiredCommand extends Command {
 			return 0;
 		}
 
+		$this->printExpired(counts: $counts, output: $output);
+
+		return 0;
+	}//end execute()
+
+	/**
+	 * The preview as JSON, each row cut down to the fields an administrator needs.
+	 *
+	 * @param array<string, mixed> $counts The sweep's preview.
+	 *
+	 * @return string The JSON line.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-an-administrator-must-be-able-to-see-what-the-draft-cleanup-would-remove
+	 */
+	private static function json(array $counts): string {
+		$rows = [];
+		foreach ($counts['perSchema'] as $row) {
+			$rows[] = ['register' => $row['register'], 'schema' => $row['schema'], 'lifetimeDays' => $row['lifetimeDays'], 'expired' => $row['expired']];
+		}
+
+		return (string)json_encode(['schemas' => $counts['schemas'], 'expired' => $counts['expired'], 'perSchema' => $rows]);
+	}//end json()
+
+	/**
+	 * Print the expired drafts per schema, what the next cleanup run removes, and how to keep them.
+	 *
+	 * @param array<string, mixed> $counts The sweep's preview.
+	 * @param OutputInterface      $output The console output.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-an-administrator-must-be-able-to-see-what-the-draft-cleanup-would-remove
+	 */
+	private function printExpired(array $counts, OutputInterface $output): void {
 		foreach ($counts['perSchema'] as $row) {
 			$output->writeln(
 				sprintf('  %s / %s: %d drafts unchanged for more than %d days', $row['register'], $row['schema'], $row['expired'], $row['lifetimeDays'])
@@ -128,7 +157,5 @@ class DraftsExpiredCommand extends Command {
 			)
 		);
 		$output->writeln('To keep the drafts of a schema, set "draftLifetimeDays": false in its configuration. A number sets another lifetime in days.');
-
-		return 0;
-	}//end execute()
+	}//end printExpired()
 }//end class

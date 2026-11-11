@@ -9,6 +9,8 @@ use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
 use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution;
+use OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic;
 use OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -66,11 +68,12 @@ class NotificationOptInChannelsTest extends TestCase {
 	 * Nobody gets an opt-in channel by default.
 	 */
 	public function testAnOptInChannelIsOffByDefault(): void {
-		$effective = $this->service->resolveEffective(
-			schemaDefault: ['enabled' => true, 'channels' => ['nc-notification'], 'optInChannels' => ['email']],
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'toegewezen'
+		$effective = $this->service->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: ['enabled' => true, 'channels' => ['nc-notification'], 'optInChannels' => ['email']],
+				userId: 'anna',
+				topic: new PreferenceTopic(schemaSlug: 'zaak', notificationKey: 'toegewezen')
+			)
 		);
 
 		$this->assertSame(['nc-notification'], $effective['channels']);
@@ -80,11 +83,12 @@ class NotificationOptInChannelsTest extends TestCase {
 	 * A rule that leaves `channels` out still defaults to Nextcloud only.
 	 */
 	public function testAnOptInChannelWithoutChannelsDefaultsToNextcloud(): void {
-		$effective = $this->service->resolveEffective(
-			schemaDefault: ['optInChannels' => ['email']],
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'toegewezen'
+		$effective = $this->service->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: ['optInChannels' => ['email']],
+				userId: 'anna',
+				topic: new PreferenceTopic(schemaSlug: 'zaak', notificationKey: 'toegewezen')
+			)
 		);
 
 		$this->assertSame(['nc-notification'], $effective['channels']);
@@ -97,11 +101,12 @@ class NotificationOptInChannelsTest extends TestCase {
 		$this->service->storeOverride(write: new PreferenceWrite(party: 'anna', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'toegewezen'), value: ['enabled' => true, 'channels' => ['nc-notification', 'email']]));
 
 		$spec = ['enabled' => true, 'channels' => ['nc-notification'], 'optInChannels' => ['email']];
-		$effective = $this->service->resolveEffective(
-			schemaDefault: $spec,
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'toegewezen'
+		$effective = $this->service->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: $spec,
+				userId: 'anna',
+				topic: new PreferenceTopic(schemaSlug: 'zaak', notificationKey: 'toegewezen')
+			)
 		);
 
 		$this->assertSame(['nc-notification', 'email'], $effective['channels']);
@@ -114,11 +119,12 @@ class NotificationOptInChannelsTest extends TestCase {
 	public function testAnUndeclaredChannelCannotBeSwitchedOn(): void {
 		$this->service->storeOverride(write: new PreferenceWrite(party: 'anna', address: new PreferenceAddress(schemaSlug: 'zaak', notificationKey: 'toegewezen'), value: ['enabled' => true, 'channels' => ['nc-notification', 'email']]));
 
-		$effective = $this->service->resolveEffective(
-			schemaDefault: ['enabled' => true, 'channels' => ['nc-notification']],
-			userId: 'anna',
-			schemaSlug: 'zaak',
-			notificationKey: 'toegewezen'
+		$effective = $this->service->resolve(
+			resolution: new PreferenceResolution(
+				schemaDefault: ['enabled' => true, 'channels' => ['nc-notification']],
+				userId: 'anna',
+				topic: new PreferenceTopic(schemaSlug: 'zaak', notificationKey: 'toegewezen')
+			)
 		);
 
 		$this->assertSame(['nc-notification'], $effective['channels']);

@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Configuration;
 
+use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\FileWriterInterface;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
@@ -367,7 +369,10 @@ final class SeedRelatedItems
 
 		try {
 			$data = $this->taskData(spec: $spec);
-			$this->taskService->createTask($target->registerId, $target->schemaId, (string) $target->object->getUuid(), $target->title, $data);
+			$this->taskService->createObjectTask(
+				ref: new ObjectRef(register: $target->registerId, schema: $target->schemaId, id: (string) $target->object->getUuid()),
+				draft: new LinkedTaskDraft(objectTitle: $target->title, data: $data)
+			);
 			return 1;
 		} catch (Throwable $e) {
 			$this->failed(target: $target, detail: ['kind' => 'task', 'summary' => $summary, 'error' => $e->getMessage()]);

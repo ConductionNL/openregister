@@ -60,6 +60,9 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use PDO;
 use RuntimeException;
+use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
 
 /**
  * Tests that the register cascade admits org-less rows only, and that hasPermission() reads it.
@@ -138,13 +141,19 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 		);
 
 		$this->handler = new MagicRbacHandler(
-			$this->userSession,
-			$this->groupManager,
-			$userManager,
-			$appConfig,
-			$conditionMatcher,
-			$container,
-			$logger
+			identity: new MagicMapperIdentity(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				userManager: $userManager
+			),
+			settings: new MagicRbacSettings(
+				appConfig: $appConfig
+			),
+			support: new MagicRbacSupport(
+				conditionMatcher: $conditionMatcher,
+				container: $container,
+				logger: $logger
+			)
 		);
 
 	}//end setUp()

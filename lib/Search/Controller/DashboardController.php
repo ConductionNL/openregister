@@ -124,21 +124,7 @@ class DashboardController extends Controller {
 	 */
 	public function page(): TemplateResponse {
 		try {
-			// Create template response for dashboard page.
-			$response = new TemplateResponse(
-				appName: $this->appName,
-				templateName: 'index',
-				params: []
-			);
-
-			// Configure Content Security Policy to allow API connections.
-			// This is necessary for the frontend to make API calls.
-			$csp = new ContentSecurityPolicy();
-			$csp->addAllowedConnectDomain('*');
-			$response->setContentSecurityPolicy($csp);
-
-			// Return successful template response.
-			return $response;
+			return $this->dashboardTemplate();
 		} catch (\Exception $e) {
 			// Return error template if rendering fails.
 			return new TemplateResponse(
@@ -149,6 +135,29 @@ class DashboardController extends Controller {
 			);
 		}//end try
 	}//end page()
+
+	/**
+	 * The dashboard page template, allowed to call the API from the browser.
+	 *
+	 * @return TemplateResponse
+	 */
+	private function dashboardTemplate(): TemplateResponse {
+		// Create template response for dashboard page.
+		$response = new TemplateResponse(
+			appName: $this->appName,
+			templateName: 'index',
+			params: []
+		);
+
+		// Configure Content Security Policy to allow API connections.
+		// This is necessary for the frontend to make API calls.
+		$csp = new ContentSecurityPolicy();
+		$csp->addAllowedConnectDomain('*');
+		$response->setContentSecurityPolicy($csp);
+
+		// Return successful template response.
+		return $response;
+	}//end dashboardTemplate()
 
 	/**
 	 * Serve the SPA for deep links (Vue history mode). Delegates to {@see page()}.
@@ -626,27 +635,51 @@ class DashboardController extends Controller {
 			$data = $this->dashboardService->auditReads()->getMostActiveObjects(window: $window);
 			return new JSONResponse(data: $data);
 		} catch (\Exception $e) {
-			$this->session->logger->error(
-				message: '[DashboardController] Error retrieving most active objects: ' . $e->getMessage(),
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'register_id' => $window->scope->registerId,
-					'schema_id' => $window->scope->schemaId,
-					'limit' => $window->limit,
-					'hours' => $window->hours,
-					'trace' => $e->getTraceAsString(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to retrieve most active objects: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->mostActiveFailure(window: $window, error: $e);
 		}//end try
 	}//end mostActive()
+
+	/**
+	 * Log a failed most-active read with its window and answer 500 with the message.
+	 *
+	 * @param ActivityWindow $window The register/schema scope, the limit and the look-back hours.
+	 * @param \Exception     $error  Why the read failed.
+	 *
+	 * @return JSONResponse The 500.
+	 */
+	private function mostActiveFailure(ActivityWindow $window, \Exception $error): JSONResponse {
+		$this->logMostActiveFailure(window: $window, error: $error);
+
+		return new JSONResponse(
+			data: [
+				'error' => 'Failed to retrieve most active objects: ' . $error->getMessage(),
+			],
+			statusCode: 500
+		);
+	}//end mostActiveFailure()
+
+	/**
+	 * Log a failed most-active read with its window and trace.
+	 *
+	 * @param ActivityWindow $window The register/schema scope, the limit and the look-back hours.
+	 * @param \Exception     $error  Why the read failed.
+	 *
+	 * @return void
+	 */
+	private function logMostActiveFailure(ActivityWindow $window, \Exception $error): void {
+		$this->session->logger->error(
+			message: '[DashboardController] Error retrieving most active objects: ' . $error->getMessage(),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'register_id' => $window->scope->registerId,
+				'schema_id' => $window->scope->schemaId,
+				'limit' => $window->limit,
+				'hours' => $window->hours,
+				'trace' => $error->getTraceAsString(),
+			]
+		);
+	}//end logMostActiveFailure()
 
 	/**
 	 * Answer an analytics read for an administrator: 403 for anyone else, 500 with the message when it fails.

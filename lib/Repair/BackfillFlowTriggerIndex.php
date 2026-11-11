@@ -55,7 +55,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowMapperInterface;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Repair\Support\EveryFlow;
 use OCA\OpenRegister\Service\Flow\FlowTriggerIndexInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -119,18 +120,7 @@ class BackfillFlowTriggerIndex implements IRepairStep {
 			// derived only the first page's trigger rows and reported success —
 			// every flow past 100 was left unsubscribed, which on the trigger
 			// path is silent: the flow simply never fires.
-			$flows = [];
-			$page = 500;
-			$offset = 0;
-			while (true) {
-				$batch = $mapper->findAllFlows(query: new ListQuery(limit: $page, offset: $offset));
-				$flows = array_merge($flows, $batch);
-				if (count($batch) < $page) {
-					break;
-				}
-
-				$offset += $page;
-			}
+			$flows = (new EveryFlow(flows: $mapper))->read();
 		} catch (Throwable $e) {
 			$output->info('Flow trigger index backfill skipped: ' . $e->getMessage());
 			return;

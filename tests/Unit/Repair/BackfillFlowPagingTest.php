@@ -49,7 +49,7 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\FlowVersion;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Db\Flow\FlowSelection;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Repair\BackfillFlowTriggerIndex;
 use OCA\OpenRegister\Repair\BackfillFlowVersions;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface;

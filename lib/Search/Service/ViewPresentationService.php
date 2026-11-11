@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\AggregateVisibilityInterface;
@@ -101,6 +102,34 @@ class ViewPresentationService {
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
 	 */
 	public function getKanbanBoard(View $view, array $requestParams = []): array {
+		$board = new KanbanBoardRun(kanbanConfig: $this->kanbanConfig(view: $view), requestParams: $requestParams);
+		$query = $view->getQuery() ?? [];
+		$enum = $this->openKanbanGrouping(groupByField: $board->groupByField, query: $query);
+		$baseQuery = $this->buildBaseObjectQuery(query: $query);
+
+		$columnValues = $this->declaredColumnValues(columnOrder: $board->columnOrder, enum: $enum)
+			?? $this->discoverDistinctValues(groupByField: $board->groupByField, baseQuery: $baseQuery);
+
+		return [
+			'viewType' => 'kanban',
+			'groupByField' => $board->groupByField,
+			'columns' => $this->kanbanColumns(
+				board: $board,
+				columnQueries: $board->columnQueries(baseQuery: $baseQuery, columnValues: $columnValues)
+			),
+		];
+	}//end getKanbanBoard()
+
+	/**
+	 * Read a kanban view's config, refusing a view that is not a usable kanban board.
+	 *
+	 * @param View $view The view.
+	 *
+	 * @return array<string, mixed> The kanban config, with a non-empty string groupByField.
+	 *
+	 * @throws InvalidArgumentException If the view is not a kanban view or has no groupByField.
+	 */
+	private function kanbanConfig(View $view): array {
 		$presentation = $view->getPresentation();
 		$viewType = $presentation['viewType'] ?? 'table';
 		if ($viewType !== 'kanban') {
@@ -113,7 +142,21 @@ class ViewPresentationService {
 			throw new InvalidArgumentException('Kanban view is missing kanban.groupByField');
 		}
 
-		$query = $view->getQuery() ?? [];
+		return $kanbanConfig;
+	}//end kanbanConfig()
+
+	/**
+	 * Refuse a grouping the caller may not read, then scope the object service
+	 * to the board's register and schema.
+	 *
+	 * @param string               $groupByField The grouping property.
+	 * @param array<string, mixed> $query        The view's stored query.
+	 *
+	 * @return mixed The grouped property's `enum`, if any.
+	 *
+	 * @throws InvalidArgumentException If the query names no register or schema, or the grouping is not readable.
+	 */
+	private function openKanbanGrouping(string $groupByField, array $query): mixed {
 		$registerRef = $query['registers'][0] ?? null;
 		$schemaRef = $query['schemas'][0] ?? null;
 		if ($registerRef === null || $schemaRef === null) {
@@ -121,7 +164,29 @@ class ViewPresentationService {
 		}
 
 		$schema = $this->schemaMapper->find($schemaRef);
+		$this->assertMayGroupOn(schema: $schema, groupByField: $groupByField);
 
+		// Set register/schema context BEFORE any object-query call (including
+		// the enum/columnOrder-less fallback, which discovers distinct values
+		// via the existing facet machinery and therefore needs the same
+		// register/schema scoping as the per-column card queries).
+		$this->objectService->setRegister(register: $registerRef);
+		$this->objectService->setSchema(schema: $schemaRef);
+
+		return $schema->getProperties()[$groupByField]['enum'] ?? null;
+	}//end openKanbanGrouping()
+
+	/**
+	 * Refuse a board that groups on a property the caller may not read.
+	 *
+	 * @param Schema $schema       The board's schema.
+	 * @param string $groupByField The grouping property.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException If the caller may not see the property's values.
+	 */
+	private function assertMayGroupOn(Schema $schema, string $groupByField): void {
 		// 🔴 A COLUMN HEADING IS A VALUE. This board is one column per DISTINCT
 		// VALUE of `groupByField`, so a governed grouping property becomes a row
 		// of headings naming every value it holds, to anybody who may open the
@@ -136,55 +201,32 @@ class ViewPresentationService {
 				)
 			);
 		}
+	}//end assertMayGroupOn()
 
-		$properties = $schema->getProperties();
-
-		$columnOrder = $kanbanConfig['columnOrder'] ?? null;
-		if (is_array($columnOrder) === false) {
-			$columnOrder = null;
-		}
-
-		// Set register/schema context BEFORE any object-query call (including
-		// the enum/columnOrder-less fallback, which discovers distinct values
-		// via the existing facet machinery and therefore needs the same
-		// register/schema scoping as the per-column card queries below).
-		$this->objectService->setRegister(register: $registerRef);
-		$this->objectService->setSchema(schema: $schemaRef);
-
-		$baseQuery = $this->buildBaseObjectQuery(query: $query);
-
-		$columnValues = $this->declaredColumnValues(
-			columnOrder: $columnOrder,
-			enum: ($properties[$groupByField]['enum'] ?? null)
-		) ?? $this->discoverDistinctValues(groupByField: $groupByField, baseQuery: $baseQuery);
-
-		$limit = (int)($requestParams['_limit'] ?? 20);
-		$offset = (int)($requestParams['_offset'] ?? 0);
-
+	/**
+	 * Fetch one page of cards per column.
+	 *
+	 * @param KanbanBoardRun                   $board         The board being built.
+	 * @param array<int, array<string, mixed>> $columnQueries The paginated object query of each column.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function kanbanColumns(KanbanBoardRun $board, array $columnQueries): array {
 		$columns = [];
-		foreach ($columnValues as $columnValue) {
-			$columnQuery = $baseQuery;
-			$columnQuery[$groupByField] = $columnValue;
-			$columnQuery['_limit'] = $limit;
-			$columnQuery['_offset'] = $offset;
-
+		foreach ($columnQueries as $columnQuery) {
 			$result = $this->objectService->searchObjectsPaginated(query: $columnQuery);
 
 			$columns[] = [
-				'value' => $columnValue,
+				'value' => $columnQuery[$board->groupByField],
 				'cards' => $result['results'] ?? [],
 				'total' => $result['total'] ?? count($result['results'] ?? []),
-				'limit' => $limit,
-				'offset' => $offset,
+				'limit' => $board->limit,
+				'offset' => $board->offset,
 			];
-		}//end foreach
+		}
 
-		return [
-			'viewType' => 'kanban',
-			'groupByField' => $groupByField,
-			'columns' => $columns,
-		];
-	}//end getKanbanBoard()
+		return $columns;
+	}//end kanbanColumns()
 
 	/**
 	 * Return objects for a calendar view whose `dateField` falls within the

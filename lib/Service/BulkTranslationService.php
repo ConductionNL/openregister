@@ -173,19 +173,22 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 			return ['translated' => false, 'text' => 'target-slot-already-filled'];
 		}
 
+		return $this->providerTranslation(translation: new PropertyTranslation(request: $request, property: $property), sourceValue: $sourceValue);
+	}//end translateProperty()
+
+	/**
+	 * Ask the provider to translate a property's source value, and mirror a usable answer into the sidecar.
+	 *
+	 * @param PropertyTranslation $translation The object, the languages and the property.
+	 * @param string              $sourceValue The text in the source language.
+	 *
+	 * @return array{translated: bool, text: string}
+	 */
+	private function providerTranslation(PropertyTranslation $translation, string $sourceValue): array {
 		try {
-			$translatedValue = $this->provider->translate($sourceValue, new LanguagePair(fromLong: $request->fromLong, toLong: $request->toLong));
+			$translatedValue = $this->provider->translate($sourceValue, $translation->languages());
 		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf(
-					'[BulkTranslationService] provider %s failed for %s/%s -> %s: %s',
-					$this->provider->getIdentifier(),
-					$request->object->getUuid(),
-					$property,
-					$request->toLong,
-					$e->getMessage()
-				)
-			);
+			$this->logProviderFailure(translation: $translation, error: $e);
 			return ['translated' => false, 'text' => 'provider-error: ' . $e->getMessage()];
 		}
 
@@ -193,9 +196,30 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 			return ['translated' => false, 'text' => 'provider-returned-empty'];
 		}
 
-		$this->mirrorTranslation(request: $request, translation: ['property' => $property, 'value' => $translatedValue]);
+		$this->mirrorTranslation(translation: $translation, value: $translatedValue);
 		return ['translated' => true, 'text' => $translatedValue];
-	}//end translateProperty()
+	}//end providerTranslation()
+
+	/**
+	 * Log a provider that failed to translate a property.
+	 *
+	 * @param PropertyTranslation $translation The object, the languages and the property.
+	 * @param \Throwable          $error       The provider's failure.
+	 *
+	 * @return void
+	 */
+	private function logProviderFailure(PropertyTranslation $translation, \Throwable $error): void {
+		$this->logger->warning(
+			sprintf(
+				'[BulkTranslationService] provider %s failed for %s/%s -> %s: %s',
+				$this->provider->getIdentifier(),
+				$translation->request->object->getUuid(),
+				$translation->property,
+				$translation->request->toLong,
+				$error->getMessage()
+			)
+		);
+	}//end logProviderFailure()
 
 	/**
 	 * Whether a value is a non-empty string.
@@ -248,33 +272,45 @@ class BulkTranslationService implements BulkTranslationServiceInterface {
 	 * Write a machine translation into the sidecar, so search and completeness queries see it
 	 * before the caller persists the object. A failure is logged, not thrown.
 	 *
-	 * @param ObjectTranslationRequest $request     The object and languages.
-	 * @param array                    $translation The property and its translated value.
+	 * @param PropertyTranslation $translation The object, the languages and the property.
+	 * @param string              $value       The translated value.
 	 *
 	 * @return void
 	 */
-	private function mirrorTranslation(ObjectTranslationRequest $request, array $translation): void {
+	private function mirrorTranslation(PropertyTranslation $translation, string $value): void {
 		try {
 			$this->stores->translationMapper->upsert(
-				slot: new TranslationSlot(objectUuid: (string)$request->object->getUuid(), property: $translation['property'], language: $request->toLong),
+				slot: $translation->targetSlot(),
 				edit: new TranslationEdit(
-					value: $translation['value'],
+					value: $value,
 					status: Translation::STATUS_MACHINE_TRANSLATED,
 					translator: 'provider:' . $this->provider->getIdentifier()
 				)
 			);
 		} catch (\Throwable $e) {
-			$this->logger->warning(
-				sprintf(
-					'[BulkTranslationService] sidecar upsert failed for %s/%s/%s: %s',
-					$request->object->getUuid(),
-					$translation['property'],
-					$request->toLong,
-					$e->getMessage()
-				)
-			);
+			$this->logMirrorFailure(translation: $translation, error: $e);
 		}
 	}//end mirrorTranslation()
+
+	/**
+	 * Log a sidecar write that failed; the translation itself still counts.
+	 *
+	 * @param PropertyTranslation $translation The object, the languages and the property.
+	 * @param \Throwable          $error       The write's failure.
+	 *
+	 * @return void
+	 */
+	private function logMirrorFailure(PropertyTranslation $translation, \Throwable $error): void {
+		$this->logger->warning(
+			sprintf(
+				'[BulkTranslationService] sidecar upsert failed for %s/%s/%s: %s',
+				$translation->request->object->getUuid(),
+				$translation->property,
+				$translation->request->toLong,
+				$error->getMessage()
+			)
+		);
+	}//end logMirrorFailure()
 
 	/**
 	 * Resolve a schema entity from an object's schema reference.
