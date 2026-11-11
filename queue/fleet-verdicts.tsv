@@ -2733,6 +2733,31 @@ buildiq	1374	2a14b85f08f207da8ef4f24e5d009f70a3c62f25	GREEN	FV9-06:2	unit + vite
 buildiq	1375	db1c17d06fd4879da83964e498a83005dc2c4390	GREEN	FV9-06:2	unit + vitest green against baseline; floor holds
 buildiq	1376	18e35d203d20d50028dadf09a7e6b18aa86ad960	GREEN	FV9-06:2	unit + vitest green against baseline; floor holds
 buildiq	1377	3df881a9bbcfbf9added181f9c2df19e0a1e3983	GREEN	FV9-06:2	unit + vitest green against baseline; floor holds
+dossiq	5936	835a7bac51c61538e3454ef71c806d44c0a50264	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5937	567eb488d7e3425a65c1e2b1e06679dc4e00d9ea	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5938	cda36b9fe4f2f6e74678becaec571ebf57207368	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5939	714a79146aceea5153fed3db33d1611da6da3059	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5940	0d57ade134a26c2501daaffe3f3d9b6212cbd70f	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5941	6b6aebde59ca48a2c3095291742b9621e88f86c4	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5942	586fb51c50d925301a81739c1b863f15de3375d9	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5943	eb87866a264d2a6703fde0160e0fc68c65bfac7f	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5944	c403d1a541ce1f5234695b919ad00db1d1489a4f	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5945	d076faf40b59b658c8d5af182050e5508611667d	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5946	32abb81b2b575f03be7bf4f728bc338a22f21834	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5947	744d371858af0d8733ddbeb54abd263c9fef125c	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5948	d7a1a69cd50c02632b922b0d3b4e9ebedfcaa616	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5949	d830a156995368b5586be3c7154542fff6ac22b9	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5950	2716e2e06196918c710de06e5563403cfbde69dd	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5951	f9bcef4e985d1b002750477431d502b284ce2096	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5952	207ab7cdc3a0cd4d142f00360c42b01c67ba8978	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5954	08d297ca3a16898cc98c2ca7a92535969f31e345	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5955	994c2be114717b95f34f9692cf903e8884a08200	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5956	39dbefcb6894b8a8f435e5b457e3cd521d1ada98	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5957	29c422c60dcb6d2e595fb37ea070c5e1d4ded4e6	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5958	3276cd3f0d522bd5cd67714c08eb09ab26fd4d48	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5959	6b5c2b1e29a3461de7f623376837328d99a39e37	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5960	51b456140063e174939f651d7d6e05c305ecc388	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
+dossiq	5961	510be51856f744d20051d6a862e1ef917570fa72	GREEN	FV9-05:2	tree of 25 green on php+js unit suites (48 inherited php failures), floor held
 pipelinq	3451	e02848edc7fcbdb006ab72057e9a14b6ec3ac631	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
 pipelinq	3452	bf9444af0a97e0b470caba1949c8f47666906b63	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
 pipelinq	3453	82d3edaba8e8ef34e9dd8a0454df142a739ecf0e	GREEN	FV9-08:1	tree of 22 green: phpunit 5659 ok, vitest 2692 ok (0 inherited failures), floor held
