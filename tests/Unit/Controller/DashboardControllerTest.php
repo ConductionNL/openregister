@@ -95,6 +95,10 @@ class DashboardControllerTest extends TestCase {
 		$this->assertInstanceOf(TemplateResponse::class, $result);
 		$this->assertSame('index', $result->getTemplateName());
 		$this->assertSame('openregister', $result->getApp());
+		$this->assertSame(
+			"'self'",
+			\OCA\OpenRegister\Tests\Unit\Controller\UiControllerTest::connectSources(policy: $result->getContentSecurityPolicy()->buildPolicy())
+		);
 	}
 
 	/**

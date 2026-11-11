@@ -18,7 +18,6 @@
 namespace OCA\OpenRegister\Controller;
 
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 
@@ -86,10 +85,6 @@ class UiController extends Controller {
 	private function makeSpaResponse(): TemplateResponse {
 		try {
 			$response = new TemplateResponse(appName: $this->appName, templateName: 'index', params: []);
-			// Permissive connect-src is necessary for the frontend to make API calls.
-			$csp = new ContentSecurityPolicy();
-			$csp->addAllowedConnectDomain('*');
-			$response->setContentSecurityPolicy($csp);
 
 			return $response;
 		} catch (\Exception $e) {
