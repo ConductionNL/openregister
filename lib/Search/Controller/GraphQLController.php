@@ -170,11 +170,7 @@ HTML;
 	 * @return JSONResponse
 	 */
 	private function resultResponse(array $result): JSONResponse {
-		// Determine HTTP status: 200 for data (even with partial errors), 400 for query errors only.
-		$status = 200;
-		if (isset($result['data']) === false && isset($result['errors']) === true) {
-			$status = $this->errorStatus(result: $result);
-		}
+		$status = $this->statusOf(result: $result);
 
 		$response = new JSONResponse($result, $status);
 		if ($status === 429) {
@@ -186,20 +182,31 @@ HTML;
 	}//end resultResponse()
 
 	/**
-	 * The status of a result that carries errors and no data: 429 when rate limited, else 400.
+	 * The HTTP status of a GraphQL result.
+	 *
+	 * 200 for data, even with partial errors. 400 for errors without data, or for a
+	 * request the first error refuses. 429 when that error is a rate limit.
 	 *
 	 * @param array<string, mixed> $result The GraphQL result.
 	 *
-	 * @return int
+	 * @return int The status.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md
 	 */
-	private function errorStatus(array $result): int {
+	private function statusOf(array $result): int {
 		$firstCode = ($result['errors'][0]['extensions']['code'] ?? null);
+		if (isset($result['errors']) === false
+			|| (isset($result['data']) === true && $firstCode !== 'BAD_REQUEST')
+		) {
+			return 200;
+		}
+
 		if ($firstCode === 'RATE_LIMITED') {
 			return 429;
 		}
 
 		return 400;
-	}//end errorStatus()
+	}//end statusOf()
 
 	/**
 	 * Serve the GraphiQL interactive explorer.
