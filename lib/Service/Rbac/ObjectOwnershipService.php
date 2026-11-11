@@ -56,6 +56,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\PartialObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
@@ -582,8 +583,9 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 
 		$cascade = new OwnershipCascade(parent: $parent, handover: $handover);
 		$outcomes = [];
-		foreach ($this->childCandidates(uuid: $uuid) as $child) {
-			if ($handover->carries(child: $child, previousOwner: $previousOwner) === false) {
+		foreach ($this->childCandidates(uuid: $uuid) as $candidate) {
+			$child = $this->wholeChild(child: $candidate);
+			if ($child === null || $handover->carries(child: $child, previousOwner: $previousOwner) === false) {
 				continue;
 			}
 
@@ -626,6 +628,40 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			return [];
 		}
 	}//end childCandidates()
+
+	/**
+	 * The child as stored, read again when the relation lookup returned only some of its columns.
+	 *
+	 * The relation lookup answers partial rows without an owner, so the shared-owner
+	 * test would never hold for them. The read applies the caller's access rules: a
+	 * child the caller may not read is skipped.
+	 *
+	 * @param ObjectEntity $child The candidate from the relation lookup.
+	 *
+	 * @return ObjectEntity|null The whole child, or null when it cannot be read (logged).
+	 */
+	private function wholeChild(ObjectEntity $child): ?ObjectEntity {
+		if (($child instanceof PartialObjectEntity) === false) {
+			return $child;
+		}
+
+		try {
+			$found = $this->sources->lookup->magicMapper->findAcrossAllSources(identifier: (string)$child->getUuid());
+		} catch (Throwable $e) {
+			$this->log->logger->warning(
+				message: '[ObjectOwnershipService] Could not read a child record',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $child->getUuid(), 'exception' => get_class($e)]
+			);
+			return null;
+		}
+
+		$object = ($found['object'] ?? null);
+		if (($object instanceof ObjectEntity) === false || ($object instanceof PartialObjectEntity) === true) {
+			return null;
+		}
+
+		return $object;
+	}//end wholeChild()
 
 	/**
 	 * Carry a handover to one child, or null when that failed (logged).

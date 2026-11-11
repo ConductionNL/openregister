@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\PartialObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -543,6 +544,83 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->assertCount(1, $outcome['children']);
 		$this->assertSame(['uuid-1' => 'carol', 'uuid-child' => 'carol'], $written);
 	}//end testTheChangeCarriesToAChildThatSharedTheOwner()
+
+	/**
+	 * A child the relation lookup answers as a partial row is read whole, so the shared owner is seen.
+	 *
+	 * @return void
+	 */
+	public function testAPartialChildIsReadWholeBeforeTheOwnerIsCompared(): void {
+		$this->signIn('root', ['admin']);
+		$this->expectNotification();
+		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+
+		$slim = new PartialObjectEntity();
+		$slim->setUuid('uuid-child');
+		$this->magicMapper->method('findByRelationUsingRelationsColumn')->willReturnCallback(
+			static function (string $uuid) use ($slim): array {
+				if ($uuid === 'uuid-1') {
+					return [$slim];
+				}
+
+				return [];
+			}
+		);
+		$this->magicMapper->method('findAcrossAllSources')->willReturnCallback(
+			fn (string|int $identifier): array => [
+				'object' => $this->record((string)$identifier, 'alice'),
+				'register' => new Register(),
+				'schema' => new Schema(),
+			]
+		);
+		$this->registerMapper->method('find')->willReturn(new Register());
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+
+		$written = [];
+		$this->ownerWriter->method('writeOwner')->willReturnCallback(
+			static function ($table, OwnerAssignment $assignment) use (&$written): void {
+				$written[$assignment->objectUuid] = $assignment->owner;
+			}
+		);
+
+		$this->service->assign(
+			record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')),
+			handover: new OwnershipHandover(newOwner: 'carol', cascade: true)
+		);
+
+		$this->assertSame(['uuid-1' => 'carol', 'uuid-child' => 'carol'], $written);
+	}//end testAPartialChildIsReadWholeBeforeTheOwnerIsCompared()
+
+	/**
+	 * A partial child the caller cannot read whole is skipped.
+	 *
+	 * @return void
+	 */
+	public function testAPartialChildThatCannotBeReadIsSkipped(): void {
+		$this->signIn('root', ['admin']);
+		$this->expectNotification();
+		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+
+		$slim = new PartialObjectEntity();
+		$slim->setUuid('uuid-child');
+		$slim->setOwner('alice');
+		$this->magicMapper->method('findByRelationUsingRelationsColumn')->willReturn([$slim]);
+		$this->magicMapper->method('findAcrossAllSources')->willThrowException(new \RuntimeException('not readable'));
+
+		$written = [];
+		$this->ownerWriter->method('writeOwner')->willReturnCallback(
+			static function ($table, OwnerAssignment $assignment) use (&$written): void {
+				$written[$assignment->objectUuid] = $assignment->owner;
+			}
+		);
+
+		$this->service->assign(
+			record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')),
+			handover: new OwnershipHandover(newOwner: 'carol', cascade: true)
+		);
+
+		$this->assertSame(['uuid-1' => 'carol'], $written);
+	}//end testAPartialChildThatCannotBeReadIsSkipped()
 
 	/**
 	 * A child somebody else owns is left alone.
