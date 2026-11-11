@@ -26,6 +26,7 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\SaveObjectRelatedUpdateGuardInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCP\IURLGenerator;
 
@@ -43,16 +44,18 @@ use OCP\IURLGenerator;
 final class InverseWriteBack {
 
 	/**
-	 * @param MagicObjectFinderInterface $objects Reads the targets.
-	 * @param SaveObjectWriterInterface  $saver   Saves the targets.
-	 * @param SaveLookups          $lookups Resolves the target schema.
-	 * @param IURLGenerator        $urls    Builds the schema object.
+	 * @param MagicObjectFinderInterface            $objects Reads the targets.
+	 * @param SaveObjectWriterInterface             $saver   Saves the targets.
+	 * @param SaveLookups                           $lookups Resolves the target schema.
+	 * @param IURLGenerator                         $urls    Builds the schema object.
+	 * @param SaveObjectRelatedUpdateGuardInterface $guard   Refuses a target the caller may not update.
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objects,
 		private readonly SaveObjectWriterInterface $saver,
 		private readonly SaveLookups $lookups,
 		private readonly IURLGenerator $urls,
+		private readonly SaveObjectRelatedUpdateGuardInterface $guard,
 	) {
 	}//end __construct()
 
@@ -302,7 +305,7 @@ final class InverseWriteBack {
 				return;
 			}
 
-			$this->saver->assertMayUpdateRelated(target: $target);
+			$this->guard->assertMayUpdateRelated(target: $target);
 			$this->saveTarget(target: $target, link: $link);
 		} catch (Exception $e) {
 			return;

@@ -26,6 +26,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
 use OCA\OpenRegister\Service\Object\SaveObject\InverseWriteBack;
 use OCA\OpenRegister\Service\Object\SaveObject\SaveLookups;
+use OCA\OpenRegister\Service\Object\SaveObjectRelatedUpdateGuardInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
@@ -58,6 +59,13 @@ class InverseWriteBackBehaviourTest extends TestCase {
 	private SaveObjectWriterInterface&MockObject $saver;
 
 	/**
+	 * The related-update check, mocked.
+	 *
+	 * @var SaveObjectRelatedUpdateGuardInterface&MockObject
+	 */
+	private SaveObjectRelatedUpdateGuardInterface&MockObject $guard;
+
+	/**
 	 * Build the shared mocks.
 	 *
 	 * @return void
@@ -65,6 +73,7 @@ class InverseWriteBackBehaviourTest extends TestCase {
 	protected function setUp(): void {
 		$this->objects = $this->createMock(MagicObjectFinderInterface::class);
 		$this->saver   = $this->createMock(SaveObjectWriterInterface::class);
+		$this->guard   = $this->createMock(SaveObjectRelatedUpdateGuardInterface::class);
 
 	}//end setUp()
 
@@ -106,7 +115,8 @@ class InverseWriteBackBehaviourTest extends TestCase {
 			$this->objects,
 			$this->saver,
 			new SaveLookups($schemas, $this->createMock(RegisterMapperInterface::class)),
-			$this->createMock(IURLGenerator::class)
+			$this->createMock(IURLGenerator::class),
+			$this->guard
 		))->write($run, $source);
 
 	}//end writeBack()
@@ -192,7 +202,7 @@ class InverseWriteBackBehaviourTest extends TestCase {
 	public function testATargetTheCallerMayNotUpdateIsNotWritten(): void {
 		$target = $this->target(self::TARGET_1, ['cases' => []]);
 		$this->objects->method('find')->willReturn($target);
-		$this->saver->expects($this->once())
+		$this->guard->expects($this->once())
 			->method('assertMayUpdateRelated')
 			->with($this->identicalTo($target))
 			->willThrowException(new NotAuthorizedException('no update right'));

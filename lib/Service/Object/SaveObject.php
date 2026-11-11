@@ -862,7 +862,13 @@ class SaveObject implements SaveObjectInterface {
 	 * @return InverseWriteBack
 	 */
 	private function inverseWriteBack(): InverseWriteBack {
-		return new InverseWriteBack(objects: $this->objectEntityMapper, saver: $this, lookups: $this->lookups(), urls: $this->urlGenerator);
+		return new InverseWriteBack(
+			objects: $this->objectEntityMapper,
+			saver: $this,
+			lookups: $this->lookups(),
+			urls: $this->urlGenerator,
+			guard: $this
+		);
 	}//end inverseWriteBack()
 
 	/**
