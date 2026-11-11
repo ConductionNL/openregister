@@ -540,12 +540,7 @@ class GenericStoreService {
 		$options = $this->transportOptions(descriptor: $descriptor, options: $call->options);
 
 		try {
-			$client = $this->registry->clientService->newClient();
-			if ($call->method === 'POST') {
-				return $client->post($url, $options);
-			}
-
-			return $client->get($url, $options);
+			return $this->dispatch(url: $url, call: new RegistryCall(method: $call->method, options: $options));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'AppHost store (' . $descriptor->appId . '): registry ' . $call->method . ' failed: ' . $e->getMessage()
@@ -553,6 +548,25 @@ class GenericStoreService {
 			return null;
 		}
 	}//end send()
+
+	/**
+	 * Make the HTTP request of a registry call.
+	 *
+	 * @param string       $url  The checked registry URL.
+	 * @param RegistryCall $call The method and the transport options.
+	 *
+	 * @return IResponse
+	 *
+	 * @throws Throwable When the request cannot be made.
+	 */
+	private function dispatch(string $url, RegistryCall $call): IResponse {
+		$client = $this->registry->clientService->newClient();
+		if ($call->method === 'POST') {
+			return $client->post($url, $call->options);
+		}
+
+		return $client->get($url, $call->options);
+	}//end dispatch()
 
 	/**
 	 * The registry URL once the SSRF guard has passed it, or null.
