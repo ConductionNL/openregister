@@ -857,6 +857,13 @@ logged-in user, independent of the flag. If you want "any logged-in user,
 no group filtering, regardless of `inheritFromPublic`", use
 `{ "read": ["authenticated"] }` rather than relying on public-inheritance.
 
+`authenticated` keeps the organisation filter on. A non-admin reading a schema
+whose own rule is `{ "read": ["authenticated"] }` sees the rows of their active
+organisation only, and never rows that have no organisation: those are visible to
+admins alone. If such rows should be visible to members, give them an
+organisation (rows written by seeders, repair steps or example loaders often lack
+one); do not widen the rule.
+
 ### Property-Level Authorization
 
 In addition to the schema- and object-level rules above, individual properties can carry their own `authorization` block with conditional rules. This is covered in depth in [Property Authorization](./property-authorization.md); this section is a short map into that feature.
