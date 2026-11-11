@@ -6487,7 +6487,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with batch vectorization results
 	 *
-	 * @NoAdminRequired
+	 * @auth admin-only batch vectorization is an instance-wide maintenance job, so only an administrator starts it
 	 *
 	 * @NoCSRFRequired
 	 *
@@ -6517,7 +6517,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return JSONResponse Vectorization statistics
 	 *
-	 * @NoAdminRequired
+	 * @auth admin-only vectorization statistics count objects across every register, so only an administrator reads them
 	 *
 	 * @NoCSRFRequired
 	 *
