@@ -68,6 +68,8 @@ use React\Async\PromiseInterface;
 use React\EventLoop\Loop;
 use React\Promise\Promise;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -1390,13 +1392,13 @@ class ImportService implements ObjectImporterInterface {
 		try {
 			$saveResult = $this->stores->objectService->saveObjects(
 				objects: $objects,
-				register: $import['register'],
-				schema: $import['schema'],
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: $import['register'], schema: $import['schema']),
+					validation: $import['validation'],
+					events: $import['events']
+				),
 				_rbac: $import['_rbac'],
-				_multitenancy: $import['_multitenancy'],
-				validation: $import['validation'],
-				events: $import['events'],
-				enrich: $import['enrich']
+				_multitenancy: $import['_multitenancy']
 			);
 		} finally {
 			// Null result = save threw; partial saves may have landed, so hint conservatively.
