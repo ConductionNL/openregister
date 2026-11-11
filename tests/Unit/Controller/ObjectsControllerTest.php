@@ -36,6 +36,8 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Unit tests for ObjectsController
@@ -6638,7 +6640,9 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testDestroyPassesTheRouteScope(): void {
 		$this->setupAdminUser();
-		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', false, false)->willReturn(true);
+		$this->objectService->expects($this->once())->method('deleteObject')
+			->with(new ObjectDeletion(uuid: 'id', target: new ObjectFindTarget(register: 'r', schema: 's')), false, false)
+			->willReturn(true);
 
 		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
 	}
@@ -6650,7 +6654,9 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testDestroyScopesANonAdmin(): void {
 		$this->userSession->method('getUser')->willReturn($this->createMock(\OCP\IUser::class));
-		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', true, true)->willReturn(true);
+		$this->objectService->expects($this->once())->method('deleteObject')
+			->with(new ObjectDeletion(uuid: 'id', target: new ObjectFindTarget(register: 'r', schema: 's')), true, true)
+			->willReturn(true);
 
 		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
 	}

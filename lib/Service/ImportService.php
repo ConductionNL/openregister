@@ -68,8 +68,9 @@ use React\Async\PromiseInterface;
 use React\EventLoop\Loop;
 use React\Promise\Promise;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
@@ -211,7 +212,7 @@ class ImportService implements ObjectImporterInterface {
 			}
 
 			try {
-				$this->stores->objectService->deleteObject(uuid: $objectUuid);
+				$this->stores->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $objectUuid));
 				$report['softDeleted'][] = $objectUuid;
 			} catch (\Throwable $e) {
 				$report['errors'][] = [

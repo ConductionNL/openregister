@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
@@ -142,9 +143,10 @@ class CaseObjectAccessor implements CaseObjectAccessorInterface {
 	 */
 	public function deleteForSweep(string $caseUuid): bool {
 		return $this->objectService->deleteObject(
-			uuid: $caseUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::SCHEMA_SLUG,
+			deletion: new ObjectDeletion(
+				uuid: $caseUuid,
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG)
+			),
 			_rbac: true,
 			_multitenancy: true,
 			_retentionSweep: true

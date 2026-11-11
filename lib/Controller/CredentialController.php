@@ -66,6 +66,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
@@ -822,9 +823,10 @@ class CredentialController extends Controller {
 
 		try {
 			$this->objectService->deleteObject(
-				uuid: $uuid,
-				register: CredentialBrokerService::REGISTER,
-				schema: CredentialBrokerService::SCHEMA
+				deletion: new ObjectDeletion(
+					uuid: $uuid,
+					target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA)
+				)
 			);
 		} catch (Throwable $e) {
 			return new JSONResponse(['message' => 'Unable to delete credential'], Http::STATUS_INTERNAL_SERVER_ERROR);

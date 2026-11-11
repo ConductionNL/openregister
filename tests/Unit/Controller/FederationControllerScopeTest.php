@@ -42,6 +42,7 @@ use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
@@ -257,7 +258,7 @@ class FederationControllerScopeTest extends TestCase {
 	 */
 	public function testADeleteRemovesTheGuardedObjectByItsUuid(): void {
 		$this->writableObjectBySlug(storedUuid: 'stored-uuid');
-		$this->objectService->expects($this->once())->method('deleteObject')->with('stored-uuid')->willReturn(true);
+		$this->objectService->expects($this->once())->method('deleteObject')->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'stored-uuid'))->willReturn(true);
 
 		$this->assertSame(200, $this->controller->deleteObject(shareToken: 'tok', id: 'slug-1')->getStatus());
 	}//end testADeleteRemovesTheGuardedObjectByItsUuid()

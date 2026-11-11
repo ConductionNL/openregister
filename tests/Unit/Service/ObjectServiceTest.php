@@ -83,6 +83,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -809,7 +810,7 @@ class ObjectServiceTest extends TestCase {
 			->method('deleteObject')
 			->willReturn(true);
 
-		$result = $this->service->deleteObject(uuid: '550e8400-e29b-41d4-a716-446655440000');
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: '550e8400-e29b-41d4-a716-446655440000'));
 
 		$this->assertTrue($result);
 	}
@@ -832,7 +833,7 @@ class ObjectServiceTest extends TestCase {
 			->method('deleteObject')
 			->willReturn(true);
 
-		$result = $this->service->deleteObject(uuid: 'nonexistent');
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'nonexistent'));
 
 		$this->assertTrue($result);
 	}
