@@ -98,6 +98,7 @@ final class A07InterfaceBindingsTest extends TestCase {
 			'resolveAuthorization',
 			'resolveDeclaredAuthorization',
 			'resolveInheritFromPublic',
+			'updateCrossesOrganisations',
 		],
 		ValidateObjectInterface::class => [
 			'generateErrorMessage',
