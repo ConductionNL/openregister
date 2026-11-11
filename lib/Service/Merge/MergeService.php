@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Merge;
 use DateInterval;
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\MergeInstruction;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
@@ -66,6 +67,8 @@ use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Server-authoritative, reversible merge engine driven by
@@ -416,9 +419,10 @@ class MergeService implements ObjectMergerInterface {
 		$fromObject->setObject($run->fromData);
 		$this->objectService->saveObject(
 			object: $fromObject,
-			register: $fromObject->getRegister(),
-			schema: $fromObject->getSchema(),
-			uuid: $fromObject->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $fromObject->getRegister(), schema: $fromObject->getSchema()),
+				uuid: $fromObject->getUuid()
+			)
 		);
 	}//end markMerged()
 
@@ -436,9 +440,10 @@ class MergeService implements ObjectMergerInterface {
 		$intoObject->setObject($this->survivorPayload(run: $run));
 		$run->survivor = $this->objectService->saveObject(
 			object: $intoObject,
-			register: $intoObject->getRegister(),
-			schema: $intoObject->getSchema(),
-			uuid: $intoObject->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $intoObject->getRegister(), schema: $intoObject->getSchema()),
+				uuid: $intoObject->getUuid()
+			)
 		);
 	}//end saveSurvivor()
 
@@ -502,7 +507,12 @@ class MergeService implements ObjectMergerInterface {
 			$mergeOperation['fieldDecisions'] = $decisions;
 		}
 
-		return $this->objectService->saveObject(object: $mergeOperation, register: self::MERGE_REGISTER, schema: self::MERGE_SCHEMA);
+		return $this->objectService->saveObject(
+			object: $mergeOperation,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::MERGE_REGISTER, schema: self::MERGE_SCHEMA)
+			)
+		);
 	}//end persistOperation()
 
 	/**
@@ -589,7 +599,10 @@ class MergeService implements ObjectMergerInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function reverseMerge(string $mergeOperationId, string $reversedBy): array {
-		$operationEntity = WriteCause::asLookup(fn () => $this->objectService->find(id: $mergeOperationId, schema: self::MERGE_SCHEMA));
+		$operationEntity = WriteCause::asLookup(fn () => $this->objectService->find(
+			id: $mergeOperationId,
+			options: new ObjectFindOptions(schema: self::MERGE_SCHEMA)
+		));
 		if ($operationEntity === null) {
 			throw new RuntimeException('Merge operation not found.');
 		}
@@ -631,9 +644,10 @@ class MergeService implements ObjectMergerInterface {
 		$operationEntity->setObject($operation);
 		$savedOperation = $this->objectService->saveObject(
 			object: $operationEntity,
-			register: self::MERGE_REGISTER,
-			schema: self::MERGE_SCHEMA,
-			uuid: $operationEntity->getUuid()
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::MERGE_REGISTER, schema: self::MERGE_SCHEMA),
+				uuid: $operationEntity->getUuid()
+			)
 		);
 
 		$this->logger->info(
@@ -875,9 +889,10 @@ class MergeService implements ObjectMergerInterface {
 			try {
 				$this->objectService->saveObject(
 					object: $object,
-					register: $object->getRegister(),
-					schema: $object->getSchema(),
-					uuid: $object->getUuid()
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: $object->getRegister(), schema: $object->getSchema()),
+						uuid: $object->getUuid()
+					)
 				);
 				$moves[] = [
 					'sourceUuid' => (string)$object->getUuid(),
@@ -1030,9 +1045,10 @@ class MergeService implements ObjectMergerInterface {
 			$entity->setObject($state);
 			$this->objectService->saveObject(
 				object: $entity,
-				register: $entity->getRegister(),
-				schema: $entity->getSchema(),
-				uuid: $entity->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $entity->getRegister(), schema: $entity->getSchema()),
+					uuid: $entity->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -1104,9 +1120,10 @@ class MergeService implements ObjectMergerInterface {
 			$entity->setObject($data);
 			$this->objectService->saveObject(
 				object: $entity,
-				register: $entity->getRegister(),
-				schema: $entity->getSchema(),
-				uuid: $entity->getUuid()
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $entity->getRegister(), schema: $entity->getSchema()),
+					uuid: $entity->getUuid()
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -1248,9 +1265,9 @@ class MergeService implements ObjectMergerInterface {
 		try {
 			return WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
+				options: new ObjectFindOptions(render: false),
 				_rbac: true,
-				_multitenancy: true,
-				_render: false
+				_multitenancy: true
 			));
 		} catch (Throwable $e) {
 			$this->logger->warning('[MergeService] unrendered read failed: ' . $e->getMessage());

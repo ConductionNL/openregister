@@ -34,7 +34,11 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Unit tests for ObjectsController
@@ -2288,10 +2292,7 @@ class ObjectsControllerTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
+				$this->callback(static fn (ObjectSaveOptions $options): bool => true),
 				true,
 				true
 			)
@@ -6424,13 +6425,13 @@ class ObjectsControllerTest extends TestCase {
 		$this->schemaMapper->method('find')->willReturnCallback(static fn ($id) => $schemas[$id]);
 
 		$mover = $this->createMock(\OCA\OpenRegister\Service\Object\MoveObject::class);
-		$mover->expects($this->once())->method('move')->with(
-			$object,
-			$registers['a'],
-			$schemas['b'],
-			$registers['r'],
-			$schemas['s'],
-			'alice'
+		$mover->expects($this->once())->method('perform')->with(
+			new \OCA\OpenRegister\Service\Object\ObjectMove(
+				object: $object,
+				source: new \OCA\OpenRegister\Service\Object\MoveAddress(register: $registers['a'], schema: $schemas['b']),
+				target: new \OCA\OpenRegister\Service\Object\MoveAddress(register: $registers['r'], schema: $schemas['s']),
+				actor: 'alice'
+			)
 		)->willReturn(['moved' => $moved]);
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$permissions->expects($this->exactly(2))->method('hasPermission')->willReturnCallback(
@@ -6460,7 +6461,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->registerMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Register());
 		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
 		$mover = $this->createMock(\OCA\OpenRegister\Service\Object\MoveObject::class);
-		$mover->expects($this->never())->method('move');
+		$mover->expects($this->never())->method('perform');
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturn(false);
 		$this->moveServices(mover: $mover, permissions: $permissions);
@@ -6590,7 +6591,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testLockAnswersWhetherItIsHeld(): void {
 		$this->request->method('getParams')->willReturn(['process' => 'edit', 'duration' => '60']);
-		$this->objectService->expects($this->once())->method('lockObject')->with('id', 'edit', 60)
+		$this->objectService->expects($this->once())->method('lockObject')->with(new LockRequest(identifier: 'id', process: 'edit', duration: 60))
 			->willReturn(['uuid' => 'id', 'held' => false]);
 
 		$result = $this->controller->lock('r', 's', 'id');
@@ -6605,7 +6606,7 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testLockWithoutAHoldReport(): void {
 		$this->request->method('getParams')->willReturn([]);
-		$this->objectService->expects($this->once())->method('lockObject')->with('id', null, null)->willReturn(['uuid' => 'id']);
+		$this->objectService->expects($this->once())->method('lockObject')->with(new LockRequest(identifier: 'id'))->willReturn(['uuid' => 'id']);
 
 		$this->assertSame(['uuid' => 'id', 'locked' => true], $this->controller->lock('r', 's', 'id')->getData());
 	}
@@ -6640,7 +6641,9 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testDestroyPassesTheRouteScope(): void {
 		$this->setupAdminUser();
-		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', false, false)->willReturn(true);
+		$this->objectService->expects($this->once())->method('deleteObject')
+			->with(new ObjectDeletion(uuid: 'id', target: new ObjectFindTarget(register: 'r', schema: 's')), false, false)
+			->willReturn(true);
 
 		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
 	}
@@ -6652,7 +6655,9 @@ class ObjectsControllerTest extends TestCase {
 	 */
 	public function testDestroyScopesANonAdmin(): void {
 		$this->userSession->method('getUser')->willReturn($this->createMock(\OCP\IUser::class));
-		$this->objectService->expects($this->once())->method('deleteObject')->with('id', 'r', 's', true, true)->willReturn(true);
+		$this->objectService->expects($this->once())->method('deleteObject')
+			->with(new ObjectDeletion(uuid: 'id', target: new ObjectFindTarget(register: 'r', schema: 's')), true, true)
+			->willReturn(true);
 
 		$this->assertSame(204, $this->controller->destroy('id', 'r', 's', $this->objectService)->getStatus());
 	}
@@ -7798,10 +7803,7 @@ class ObjectsControllerTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
-				$this->anything(),
+				$this->callback(static fn (ObjectSaveOptions $options): bool => true),
 				true,
 				true
 			)

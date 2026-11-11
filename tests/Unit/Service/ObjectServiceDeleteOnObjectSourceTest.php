@@ -90,6 +90,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -273,7 +275,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 		$this->registry->addProvider($this->recordingProvider($removed));
 		[$register, $schema] = $this->scope(['provider' => 'dbal-source', 'readOnly' => false, 'config' => ['table' => 'permits']]);
 
-		$result = $this->service->deleteObject(uuid: '2', register: $register, schema: $schema);
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: '2', target: new ObjectFindTarget(register: $register, schema: $schema)));
 
 		$this->assertTrue($result);
 		$this->assertCount(1, $removed, 'the writable provider was never asked to remove the row');
@@ -303,7 +305,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessageMatches('/cannot be deleted through the object API/');
 
-		$this->service->deleteObject(uuid: 'org-uuid-1', register: $register, schema: $schema);
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'org-uuid-1', target: new ObjectFindTarget(register: $register, schema: $schema)));
 	}//end testTheOrganisationProjectionAnswersWithItsOwnRefusal()
 
 	/**
@@ -317,7 +319,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 		[$register, $schema] = $this->scope(['provider' => 'dbal-source', 'config' => ['table' => 'permits']]);
 
 		try {
-			$this->service->deleteObject(uuid: '2', register: $register, schema: $schema);
+			$this->service->deleteObject(deletion: new ObjectDeletion(uuid: '2', target: new ObjectFindTarget(register: $register, schema: $schema)));
 			$this->fail('a delete on a read-only source went through');
 		} catch (RuntimeException $e) {
 			$this->assertStringContainsString('read-only projection', $e->getMessage());
@@ -342,7 +344,7 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 			->willThrowException(new \Exception('User does not have permission to delete'));
 
 		try {
-			$this->service->deleteObject(uuid: '2', register: $register, schema: $schema);
+			$this->service->deleteObject(deletion: new ObjectDeletion(uuid: '2', target: new ObjectFindTarget(register: $register, schema: $schema)));
 			$this->fail('a refused caller reached the delete');
 		} catch (\Exception $e) {
 			$this->assertSame('User does not have permission to delete', $e->getMessage());
@@ -361,6 +363,6 @@ class ObjectServiceDeleteOnObjectSourceTest extends TestCase {
 
 		$this->expectException(DoesNotExistException::class);
 
-		$this->service->deleteObject(uuid: 'missing-uuid', register: $register, schema: $schema);
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'missing-uuid', target: new ObjectFindTarget(register: $register, schema: $schema)));
 	}//end testAnAbsentNativeObjectIsStillNotFound()
 }//end class

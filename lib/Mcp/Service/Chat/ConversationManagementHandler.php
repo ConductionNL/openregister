@@ -38,6 +38,7 @@ use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
 /**
  * ConversationManagementHandler
@@ -383,11 +384,7 @@ class ConversationManagementHandler {
 
 		// Find all existing titles that match this pattern.
 		// Using LIKE with % to catch both exact matches and numbered variants.
-		$existingTitles = $this->stores->conversationMapper->findTitlesByUserAgent(
-			userId: $claim->userId,
-			agentId: $claim->agentId,
-			titlePattern: $baseTitle . '%'
-		);
+		$existingTitles = $this->stores->conversationMapper->findTitlesByUserAgent(claim: $claim);
 
 		// If no matches, or the base title itself is not taken, it is unique.
 		if (empty($existingTitles) === true || in_array($baseTitle, $existingTitles, true) === false) {

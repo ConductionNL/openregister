@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Service\Reference;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\MdiIconRenderer;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -270,8 +271,7 @@ final class ObjectPreviewFormatter implements ObjectPreviewFormatterInterface {
 			// Fetch the object using ObjectService.
 			$object = WriteCause::asLookup(fn () => $this->sources->objectService->find(
 				id: $parsed['uuid'],
-				register: $parsed['registerId'],
-				schema: $parsed['schemaId']
+				options: new ObjectFindOptions(register: $parsed['registerId'], schema: $parsed['schemaId'])
 			));
 
 			if ($object === null) {

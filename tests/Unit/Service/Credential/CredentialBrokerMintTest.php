@@ -51,6 +51,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
@@ -255,7 +257,7 @@ class CredentialBrokerMintTest extends TestCase {
 
 		// The metadata object must not survive a vault write it has no secret for.
 		$this->objectService->expects($this->once())->method('deleteObject')
-			->with('doomed-uuid', CredentialBrokerService::REGISTER, CredentialBrokerService::SCHEMA)
+			->with($this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'doomed-uuid' && $deletion->target->register == CredentialBrokerService::REGISTER && $deletion->target->schema == CredentialBrokerService::SCHEMA))
 			->willReturn(true);
 
 		$this->expectException(RuntimeException::class);
@@ -368,15 +370,9 @@ class CredentialBrokerMintTest extends TestCase {
 	 */
 	private function stubSaveObject(string $uuid): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				$register = null,
-				$schema = null,
-				?string $incomingUuid = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-			) use ($uuid): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($uuid): ObjectEntity {
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$this->savedObject = $object;
 				$this->savedScope = [
 					'register' => $register,
