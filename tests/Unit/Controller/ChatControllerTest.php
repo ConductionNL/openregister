@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ChatControllerFactory;
 use OCA\OpenRegister\Controller\ChatController;
 use OCA\OpenRegister\Mcp\Db\Agent;

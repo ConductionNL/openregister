@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Mcp\Service\Chat\ChatProbe;
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatProbe;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 
 /**
  * Every public method of ChatService. Callers depend on this interface, not on the class.

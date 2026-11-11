@@ -28,8 +28,8 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 use Exception;
 use OCA\OpenRegister\Controller\Support\ChatControllerServices;
 use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;

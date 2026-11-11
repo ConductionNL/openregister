@@ -26,17 +26,17 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
 use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
 /**
  * Records every collaborator call processMessage() makes, in order, and its result,
  * against fixtures/chat-process-message-golden.json. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Mcp\Service\ChatService
- * @uses   \OCA\OpenRegister\Mcp\Service\ChatMessageRequest
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest
  * @uses   \OCA\OpenRegister\Mcp\Db\Conversation
  * @uses   \OCA\OpenRegister\Notifications\Db\Message
  * @uses   \OCA\OpenRegister\Mcp\Db\Agent

@@ -34,7 +34,7 @@ use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Mcp\Db\Conversation;
 use OCA\OpenRegister\Mcp\Db\ConversationMapper;
 use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
-use OCA\OpenRegister\Mcp\Service\Chat\ChatProbe;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatProbe;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
@@ -43,9 +43,10 @@ use OCA\OpenRegister\Mcp\Service\Chat\ConversationManagementHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
 use OCA\OpenRegister\Mcp\Service\Chat\ResponseGenerationHandler;
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 use OCA\OpenRegister\Mcp\Service\Chat\ToolManagementHandler;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 
 /**
  * ChatService

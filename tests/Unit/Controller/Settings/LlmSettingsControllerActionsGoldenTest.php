@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
-use OCA\OpenRegister\Mcp\Service\Chat\ChatProbe;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatProbe;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\ChatServiceInterface;
 use OCA\OpenRegister\Search\Service\VectorizationService;

@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 use Exception;
 use OCA\OpenRegister\Controller\ConversationController;
 use OCA\OpenRegister\Db\FeedbackMapper;

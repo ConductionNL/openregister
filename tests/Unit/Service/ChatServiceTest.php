@@ -2,7 +2,7 @@
 
 namespace Unit\Service;
 
-use OCA\OpenRegister\Mcp\Service\Chat\ChatProbe;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatProbe;
 use Exception;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
@@ -21,9 +21,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
 class ChatServiceTest extends TestCase {
 

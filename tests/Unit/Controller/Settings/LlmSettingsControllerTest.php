@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
-use OCA\OpenRegister\Mcp\Service\Chat\ChatProbe;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatProbe;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Service\SettingsService;

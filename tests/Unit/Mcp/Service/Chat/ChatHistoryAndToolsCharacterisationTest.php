@@ -20,7 +20,7 @@ use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatMessageRequest;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
 
 /**
