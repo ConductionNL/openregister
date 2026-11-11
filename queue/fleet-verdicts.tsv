@@ -835,3 +835,4 @@ integriq	3109	ab4695b8aac4c9b95c813a6da6eb4c787e096d1c	GREEN	FV09:2	unit suite g
 integriq	3110	cc5a7434b3743224a5e2ffdb0321a574c75451ac	GREEN	FV09:2	unit suite green on the verify tree
 integriq	3111	68ce668fdee628710d6b1bd5d8cff7608b674c33	GREEN	FV09:2	unit suite green on the verify tree
 integriq	3113	e81b37c0a62506162cbec23714ef55f90859cba6	GREEN	FV09:2	unit suite green on the verify tree
+integriq	3117	266e1678fee1d85a8e24b3713fc5f90492ffe568	RED	FV09:3	phpunit AppOwnedInterfaceBindingTest::testEveryBareAppOwnedInterfaceIsBound (SignedEnvelopeRefusals injected by SignedEnvelopeDelivery.php is not bound)
