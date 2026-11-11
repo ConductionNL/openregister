@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\Object
+ * @package  OCA\OpenRegister\Kernel\Contracts\Value
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
  * The object, the kind of lock and who releases it.
@@ -41,9 +41,9 @@ final class UnlockRequest {
 	 */
 	public function __construct(
 		public readonly string $identifier,
-		public readonly bool $advisory,
-		public readonly ?string $runUuid,
-		public readonly bool $break,
+		public readonly bool $advisory=false,
+		public readonly ?string $runUuid=null,
+		public readonly bool $break=false,
 	) {
 	}//end __construct()
 }//end class

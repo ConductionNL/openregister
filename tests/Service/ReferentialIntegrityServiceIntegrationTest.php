@@ -28,6 +28,8 @@ use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Integration tests for ReferentialIntegrityService
@@ -174,13 +176,13 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 		];
 
 		$saved = $this->objectService->saveObject(
-			$objectData,
-			null,
-			$this->testRegister,
-			$this->testSchema,
-			null,
-			false,
-			false
+			object: $objectData,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->testRegister, schema: $this->testSchema),
+				extend: null
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->createdObjectUuids[] = $saved->getUuid();

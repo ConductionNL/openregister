@@ -24,12 +24,14 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\CorrectionService;
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\AbstractLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * What a correction checks, in which order, what it saves and how it records the act.
@@ -84,7 +86,7 @@ class CorrectionServiceGoldenTest extends TestCase {
 		$objects->method('setSchema')->willReturnCallback(fn ($s) => $this->note(['setSchema', $s], $objects));
 		$objects->method('findSilent')->willReturnCallback(
 			function (...$args) use ($o): ObjectEntity {
-				$this->trace[] = ['findSilent', $args];
+				$this->trace[] = ['findSilent', FindCallShape::findSilent(args: $args)];
 				$existing = new ObjectEntity();
 				$existing->setUuid('u-1');
 				$existing->setObject(['name' => 'old', 'age' => 3]);
@@ -92,7 +94,8 @@ class CorrectionServiceGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('saveObject')->willReturnCallback(
-			function (...$args) use ($o): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($o): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->trace[] = ['saveObject', $args];
 				$saved = new ObjectEntity();
 				$saved->setUuid('u-1');
