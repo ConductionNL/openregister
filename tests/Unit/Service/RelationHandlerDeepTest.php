@@ -325,11 +325,11 @@ class RelationHandlerDeepTest extends TestCase {
 	}//end testFilterByRbacNonObjectEntity()
 
 	/**
-	 * Test filterByRbac passes objects with null schema
+	 * Test filterByRbac drops objects without a schema for a non-admin
 	 *
 	 * @return void
 	 */
-	public function testFilterByRbacNullSchema(): void {
+	public function testFilterByRbacDropsNullSchema(): void {
 		$filter = new RelatedReadFilter(rbac: $this->rbacHandler, schemas: $this->schemaMapper);
 
 		$this->rbacHandler->method('isAdmin')->willReturn(false);
@@ -338,9 +338,9 @@ class RelationHandlerDeepTest extends TestCase {
 		// Schema is null by default.
 
 		$result = $filter->admitted(objects: [$obj]);
-		$this->assertCount(1, $result);
+		$this->assertCount(0, $result);
 
-	}//end testFilterByRbacNullSchema()
+	}//end testFilterByRbacDropsNullSchema()
 
 	/**
 	 * Test filterByRbac skips objects when schema not found
