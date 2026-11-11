@@ -234,23 +234,10 @@ class RelatedRowAccess {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	public function assertReadable(RelatedRowFilter $filter, Schema $schema): void {
-		$fields = array_column($filter->conditions, 'field');
-		if ($filter->direction !== RelatedRowFilter::DIRECTION_FORWARD) {
-			$fields[] = $filter->foreignKey;
-		}
-
 		$properties = $schema->getProperties();
 		$explicit = ExplicitReveal::explicitProperties(schema: $schema);
-		foreach ($fields as $field) {
-			$field = (string)$field;
-			// A value shown only through the logged reveal cannot be matched on
-			// through a related row either: that would read it without the reveal.
-			if (in_array($field, $explicit, true) === true) {
-				throw new ExplicitRevealQueryException(
-					message: sprintf('\'%s\' is shown only on request, so a related-row filter cannot match on it.', $field)
-				);
-			}
-
+		foreach (self::fieldsRead(filter: $filter) as $field) {
+			self::assertNotRevealOnly(field: $field, explicit: $explicit);
 			if (array_key_exists($field, $properties) === false
 				|| $this->guard->mayRead(schema: $schema, property: $field) === false
 			) {
@@ -260,4 +247,41 @@ class RelatedRowAccess {
 			}
 		}
 	}//end assertReadable()
+
+	/**
+	 * The related schema's properties the filter's SQL reads: each condition field, then the `_related` foreign key.
+	 *
+	 * @param RelatedRowFilter $filter The parsed block.
+	 *
+	 * @return array<int, string> The property names, in that order.
+	 */
+	private static function fieldsRead(RelatedRowFilter $filter): array {
+		$fields = array_column($filter->conditions, 'field');
+		if ($filter->direction !== RelatedRowFilter::DIRECTION_FORWARD) {
+			$fields[] = $filter->foreignKey;
+		}
+
+		return array_map('strval', $fields);
+	}//end fieldsRead()
+
+	/**
+	 * Refuse a field whose value is shown only through the logged reveal.
+	 *
+	 * A value shown only through the logged reveal cannot be matched on
+	 * through a related row either: that would read it without the reveal.
+	 *
+	 * @param string             $field    The property the filter reads.
+	 * @param array<int, string> $explicit The schema's reveal-only properties.
+	 *
+	 * @return void
+	 *
+	 * @throws ExplicitRevealQueryException When the field is reveal-only.
+	 */
+	private static function assertNotRevealOnly(string $field, array $explicit): void {
+		if (in_array($field, $explicit, true) === true) {
+			throw new ExplicitRevealQueryException(
+				message: sprintf('\'%s\' is shown only on request, so a related-row filter cannot match on it.', $field)
+			);
+		}
+	}//end assertNotRevealOnly()
 }//end class
