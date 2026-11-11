@@ -2980,3 +2980,28 @@ dossiq	5985	a5dcd9a03e81183bf41c37970bdf5906be4587a4	GREEN	FV9-05:3	tree green o
 dossiq	5986	b4dda28de9169393da6c3773003c98f517c51a68	GREEN	FV9-05:3	tree green on php+js unit suites (48 inherited php failures), floor held
 dossiq	5987	8b034ae29fd378c5f0173058347acde64fdd5355	GREEN	FV9-05:3	tree green on php+js unit suites (48 inherited php failures), floor held
 stackiq	1667	a1bf89fbd90f15b8bc21e3d3c8dfa9d8ec86c674	RED	FV9-01:4	unit tests fail beyond development: OCA\Stackiq\Tests\Unit\Service\CmdbExportImportServiceTest::testAnUnresolvableOwnerIsSkippedWithAWarning (added test errors: OpenRegister PackDefinitionValidator is not available)
+hermiq	1478	7e102764e6e78aa55ba97e45c2688ebc8b469a0d	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1479	48a5ceaa422cce34235ab765ea9e2db1abed4d5c	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1480	333d0f135a3a96f473146f468cad5b96552f75ce	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1481	a975c8be13f94b5ec19d43b77992919508d80f7c	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1482	a24f552b4351bf5eff5ffbbee583751577637955	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1483	cc98ff3876d3a4de46b74b5d14569029dc84deb2	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1484	e76deff4badb86fe354864498d33945ea585520b	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1485	e9f3613e0e94780a719d1d1a5ce0460b441fbf8d	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1486	079aef25964088dd4ffb224e59da3cb8a55f1791	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1488	6de3484ff67b529d246f23b68c83d097228b85e4	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1490	93f8c0f633044e5320e9e9c4da00486be9a41057	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1491	4f45d6f3e56c466eebaf842e965747d50dafca8e	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1493	a9b6a1461209de6f715eb2b622deeaea1c4cabf4	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1494	322b994ce37ad8e51549e1049bb798c358113f42	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1496	5ec772b2001831b8bf61ac81855d3aae3a18eca2	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1497	2834ceaa4cb1e008a63132ad2abdf57f3964a846	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1500	33afafc73ba3518a943f7331e643f4e5fd753803	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1502	09c2bf7e0966ccbabf1599e04355b4fd745c4961	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1503	fa262d79da1186573753eb6b6153a8ff964ad8a9	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1504	562f279bcee91d79442e5d62ffae459c78eeb25a	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1506	e5bfdc082269bc8c6dbbb3c1f0d983afe252dd4c	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1509	8b076f0952de771a0627a92da58f1730402479a5	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1510	dd7716f4ba7cf6f788f5004bf90d2866bdceb161	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1511	8df98ad88f60d2649f8f53b4d80d027492e182f7	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
+hermiq	1513	4453f9a2d43cebdf219f66ed0463b1c480520766	GREEN	vm1:25334	tree of 25 green on 2244877ae6; unit failures only inherited (166); floor held
