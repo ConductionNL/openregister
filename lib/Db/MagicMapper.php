@@ -10163,19 +10163,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
 	public function searchBy(MagicSearchRequest $search, bool $_rbac=true, bool $_multitenancy=true): array|int {
-		$query = $search->query;
-		$ids   = $search->ids;
-		$uses  = $search->uses;
-
-		$query = $this->narrowedToIds(query: $query, ids: $ids);
-		if ($this->selectsNothing(query: $query, ids: $ids) === true) {
+		$query = $this->preparedQuery(search: $search);
+		if ($query === null) {
 			return [];
 		}
 
-		$query = $this->narrowedToUses(query: $query, uses: $uses);
-
-		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
-		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+		$registerRaw = $this->namedInQuery(query: $query, key: 'register');
+		$schemaRaw = $this->namedInQuery(query: $query, key: 'schema');
 
 		// A view-scoped search reaches this entry point with `@self.register` and
 		// `@self.schema` as ARRAYS - ViewScopeApplier merges a view's registers
@@ -10186,16 +10180,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// searchObjectsPaginated() has branched on the array form since the
 		// unified-search work; this entry point never did.
 		if ($this->namesSeveral(registerRaw: $registerRaw, schemaRaw: $schemaRaw) === true) {
-			$result = $this->searchObjectsPaginatedMultiSchema(
-				search: (new MultiSchemaSearch(
-					searchQuery: $query,
-					countQuery: $query,
-					registerIds: $this->identifierList(value: $registerRaw),
-					schemaIds: $this->identifierList(value: $schemaRaw)
-				))->securedBy(rbac: $_rbac, multitenancy: $_multitenancy)
-			);
-
-			return ($result['results'] ?? []);
+			return ($this->severalTablesPage(query: $query, _rbac: $_rbac, _multitenancy: $_multitenancy)['results'] ?? []);
 		}
 
 		$registerId = $this->soleIdentifier(value: $registerRaw);
@@ -10234,6 +10219,54 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		);
 		return [];
 	}//end searchBy()
+
+	/**
+	 * A search's query narrowed to its ids and its relation, or null when the ids select nothing.
+	 *
+	 * @param MagicSearchRequest $search The search.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function preparedQuery(MagicSearchRequest $search): ?array {
+		$query = $this->narrowedToIds(query: $search->query, ids: $search->ids);
+		if ($this->selectsNothing(query: $query, ids: $search->ids) === true) {
+			return null;
+		}
+
+		return $this->narrowedToUses(query: $query, uses: $search->uses);
+	}//end preparedQuery()
+
+	/**
+	 * The register or schema a query names: `@self.<key>`, else `_<key>`, else `<key>`.
+	 *
+	 * @param array<string,mixed> $query The search query.
+	 * @param string              $key   'register' or 'schema'.
+	 *
+	 * @return mixed One identifier, a list of them, or null.
+	 */
+	private function namedInQuery(array $query, string $key): mixed {
+		return $query['@self'][$key] ?? $query['_'.$key] ?? $query[$key] ?? null;
+	}//end namedInQuery()
+
+	/**
+	 * The paginated multi-table answer for a query that names several registers or schemas.
+	 *
+	 * @param array<string,mixed> $query         The search query.
+	 * @param bool                $_rbac         Whether RBAC applies.
+	 * @param bool                $_multitenancy Whether multitenancy applies.
+	 *
+	 * @return array<string,mixed> The page, with `results` and `total`.
+	 */
+	private function severalTablesPage(array $query, bool $_rbac, bool $_multitenancy): array {
+		return $this->searchObjectsPaginatedMultiSchema(
+			search: (new MultiSchemaSearch(
+				searchQuery: $query,
+				countQuery: $query,
+				registerIds: $this->identifierList(value: $this->namedInQuery(query: $query, key: 'register')),
+				schemaIds: $this->identifierList(value: $this->namedInQuery(query: $query, key: 'schema'))
+			))->securedBy(rbac: $_rbac, multitenancy: $_multitenancy)
+		);
+	}//end severalTablesPage()
 
 	/**
 	 * The query narrowed to the given ids, within any `_ids` it already carries.
@@ -10338,33 +10371,18 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
 	public function countBy(MagicSearchRequest $search, bool $_rbac=true, bool $_multitenancy=true): int {
-		$query = $search->query;
-		$ids   = $search->ids;
-		$uses  = $search->uses;
-
-		$query = $this->narrowedToIds(query: $query, ids: $ids);
-		if ($this->selectsNothing(query: $query, ids: $ids) === true) {
+		$query = $this->preparedQuery(search: $search);
+		if ($query === null) {
 			return 0;
 		}
 
-		$query = $this->narrowedToUses(query: $query, uses: $uses);
-
-		$registerRaw = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
-		$schemaRaw = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+		$registerRaw = $this->namedInQuery(query: $query, key: 'register');
+		$schemaRaw = $this->namedInQuery(query: $query, key: 'schema');
 
 		// Same array collapse as searchObjects(): a count that silently answered
 		// for register 1 is the same defect wearing a different return type.
 		if ($this->namesSeveral(registerRaw: $registerRaw, schemaRaw: $schemaRaw) === true) {
-			$result = $this->searchObjectsPaginatedMultiSchema(
-				search: (new MultiSchemaSearch(
-					searchQuery: $query,
-					countQuery: $query,
-					registerIds: $this->identifierList(value: $registerRaw),
-					schemaIds: $this->identifierList(value: $schemaRaw)
-				))->securedBy(rbac: $_rbac, multitenancy: $_multitenancy)
-			);
-
-			return (int)($result['total'] ?? 0);
+			return (int)($this->severalTablesPage(query: $query, _rbac: $_rbac, _multitenancy: $_multitenancy)['total'] ?? 0);
 		}
 
 		$registerId = $this->soleIdentifier(value: $registerRaw);
