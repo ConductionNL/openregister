@@ -3033,3 +3033,4 @@
 2026-11-11T02:09:38Z precheck-20261110T221051-5c5d419b GREEN tree f6baeea270 on dev ac95508b33 prs 1 front=skip: Tests: 56395, Assertions: 186557, Errors: 6, Failures: 11, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Risky: 7, Skipped: 24.
 2026-11-11T05:54:57Z session-20261110T215753-0dbfec38 fixer slot 0 done 05:54Z: merged main into 8900 9044 9062 9070 9086 9096 9108 9116 9358 9746 9764 9794 9798 9804 9820 9822 9824; all pushed; 10 since landed, 7 open and mergeable (blocked on review/checks only). Unit tests not run: composer dist downloads from GitHub are 403 through the session proxy.
 2026-11-11T06:41:32Z integrator-20261111T063803-a8ca0451 BUILD-LINT #8257 e749f6e3 does not compile on this tree: tests/Unit/BackgroundJob/RelatedRetentionRecalculationJobTest.php
+2026-11-11T06:41:37Z integrator-20261111T063803-a8ca0451 BUILD-LINT #8495 1b6d1c73 does not compile on this tree: lib/Db/MagicMapper.php
