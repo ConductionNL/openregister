@@ -406,6 +406,29 @@ class MagicMetadataColumnHealerTest extends TestCase {
 	}//end testATableThatCannotBeHealedWarnsOnceAndStillLists()
 
 	/**
+	 * A column added out of band after a failure was cached is used on the next
+	 * request: the cached failure does not keep its predicate off.
+	 */
+	public function testAColumnAddedAfterACachedFailureKeepsItsPredicate(): void {
+		$this->alterFailure = 'permission denied for table oc_'.self::TABLE;
+		$this->healer()->ensure(tableName: self::TABLE);
+		$this->assertSame(self::DRIFTED, $this->healer()->missingFor(tableName: self::TABLE));
+
+		foreach (self::DRIFTED as $column) {
+			$this->pdo->exec('ALTER TABLE "oc_'.self::TABLE.'" ADD COLUMN "'.$column.'" TEXT');
+		}
+
+		// A new request: the process memo is gone, the cached failure is not.
+		MagicMetadataColumnHealer::reset();
+		$healer = $this->healer();
+		$this->assertSame([], $healer->ensure(tableName: self::TABLE));
+		$this->assertSame([], $healer->missingFor(tableName: self::TABLE));
+
+		$conditions = $this->searchHandler(healer: $healer)->buildWhereClause(request: new WhereClauseRequest(query: ['_rbac' => false, '_multitenancy' => false], table: new MagicReadTable(schema: new Schema(), registerId: 5, tableName: self::TABLE)));
+		$this->assertContains('_archived IS NULL', $conditions);
+	}//end testAColumnAddedAfterACachedFailureKeepsItsPredicate()
+
+	/**
 	 * A complete table keeps every lifecycle predicate.
 	 */
 	public function testACompleteTableKeepsTheArchivePredicate(): void {
