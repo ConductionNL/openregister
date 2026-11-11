@@ -22,6 +22,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Notifications\Service\NoteVisibilityMove;
 
 /**
  * Unit tests for NotesController
@@ -57,7 +58,6 @@ class NotesControllerTest extends TestCase {
 		$this->timeline = $this->createMock(TimelineWriteService::class);
 
 		$this->controller = NotesControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->noteService,
 			$this->objectService,
@@ -319,8 +319,8 @@ class NotesControllerTest extends TestCase {
 			->willReturn(['id' => 5, 'visibility' => 'public']);
 
 		$this->visibility->expects($this->once())
-			->method('auditVisibilityChange')
-			->with($object, 5, 'internal', 'public')
+			->method('auditNoteMove')
+			->with($object, new NoteVisibilityMove(noteId: 5, from: 'internal', to: 'public'))
 			->willReturn(true);
 
 		$result = $this->controller->update('reg', 'schema', 'obj-id', '5');

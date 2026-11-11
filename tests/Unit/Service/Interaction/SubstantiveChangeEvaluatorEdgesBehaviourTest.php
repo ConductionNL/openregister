@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Interaction;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
@@ -49,7 +50,7 @@ class SubstantiveChangeEvaluatorEdgesBehaviourTest extends TestCase {
 	}//end setUp()
 
 	private function evaluator(): SubstantiveChangeEvaluator {
-		return new SubstantiveChangeEvaluator($this->schemas, $this->logger);
+		return new SubstantiveChangeEvaluator(new SchemaReading($this->schemas, $this->logger));
 	}//end evaluator()
 
 	private static function object(?string $schema, ?array $body): ObjectEntity {

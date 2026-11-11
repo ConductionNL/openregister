@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
+use OCA\OpenRegister\Notifications\Service\Notification\CoalesceBucket;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationCoalescer;
 use OCP\IAppConfig;
 use OCP\ICache;
@@ -39,7 +40,7 @@ class NotificationCoalescerTest extends TestCase {
 		$coalescer = $this->makeCoalescer();
 		$coalesce = ['windowSeconds' => 60];
 
-		$this->assertTrue($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));
+		$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));
 	}
 
 	public function testSubsequentEventsInWindowAreSilenced(): void {
@@ -48,12 +49,12 @@ class NotificationCoalescerTest extends TestCase {
 		$coalesce = ['windowSeconds' => 60];
 
 		// First event opens the window + fires.
-		$this->assertTrue($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));
+		$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));
 
 		// Subsequent events in the same window are silenced.
-		$this->assertFalse($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));
-		$this->assertFalse($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));
-		$this->assertFalse($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));
+		$this->assertFalse($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));
+		$this->assertFalse($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));
+		$this->assertFalse($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));
 	}
 
 	public function testNextEventAfterWindowOpensFreshWindow(): void {
@@ -61,12 +62,12 @@ class NotificationCoalescerTest extends TestCase {
 		$coalescer = $this->makeCoalescer();
 		$coalesce = ['windowSeconds' => 60];
 
-		$this->assertTrue($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));
-		$this->assertFalse($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));
+		$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));
+		$this->assertFalse($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));
 
 		// Advance past the window — next event opens a fresh one.
 		$this->now += 61;
-		$this->assertTrue($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));
+		$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));
 	}
 
 	public function testMaxEventsForcesEarlyFlush(): void {
@@ -75,9 +76,9 @@ class NotificationCoalescerTest extends TestCase {
 		// Window is wide; maxEvents=3 forces a flush after 3 silenced events.
 		$coalesce = ['windowSeconds' => 3600, 'maxEvents' => 3];
 
-		$this->assertTrue($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));
-		$this->assertFalse($coalescer->shouldDispatch('rule-a', 'alice', $coalesce)); // count=2
-		$this->assertTrue($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));  // count would be 3 — flush.
+		$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));
+		$this->assertFalse($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce)); // count=2
+		$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));  // count would be 3 — flush.
 	}
 
 	public function testIsolatesPerRuleAndPerRecipient(): void {
@@ -85,13 +86,13 @@ class NotificationCoalescerTest extends TestCase {
 		$coalescer = $this->makeCoalescer();
 		$coalesce = ['windowSeconds' => 60];
 
-		$this->assertTrue($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));
-		$this->assertFalse($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));
+		$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));
+		$this->assertFalse($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));
 
 		// Bob on the same rule still has a fresh window.
-		$this->assertTrue($coalescer->shouldDispatch('rule-a', 'bob', $coalesce));
+		$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'bob'), $coalesce));
 		// Alice on a different rule still has a fresh window.
-		$this->assertTrue($coalescer->shouldDispatch('rule-b', 'alice', $coalesce));
+		$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule-b', 'alice'), $coalesce));
 	}
 
 	public function testNoConfigBlockMeansNoCoalescing(): void {
@@ -100,7 +101,7 @@ class NotificationCoalescerTest extends TestCase {
 
 		// Null config = the rule didn't opt into coalescing.
 		for ($i = 0; $i < 5; $i++) {
-			$this->assertTrue($coalescer->shouldDispatch('rule', 'alice', null));
+			$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule', 'alice'), null));
 		}
 	}
 
@@ -112,7 +113,7 @@ class NotificationCoalescerTest extends TestCase {
 
 		// With the kill switch on, every event fires regardless.
 		for ($i = 0; $i < 5; $i++) {
-			$this->assertTrue($coalescer->shouldDispatch('rule-a', 'alice', $coalesce));
+			$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce));
 		}
 	}
 
@@ -122,8 +123,8 @@ class NotificationCoalescerTest extends TestCase {
 		$coalesce = ['windowSeconds' => 60];
 
 		for ($i = 0; $i < 5; $i++) {
-			$this->assertTrue($coalescer->shouldDispatch('', 'alice', $coalesce));
-			$this->assertTrue($coalescer->shouldDispatch('rule', '', $coalesce));
+			$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('', 'alice'), $coalesce));
+			$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule', ''), $coalesce));
 		}
 	}
 
@@ -132,9 +133,9 @@ class NotificationCoalescerTest extends TestCase {
 		$coalescer = $this->makeCoalescer();
 		$coalesce = ['windowSeconds' => 60];
 
-		$coalescer->shouldDispatch('rule-a', 'alice', $coalesce);
-		$coalescer->shouldDispatch('rule-a', 'alice', $coalesce);
-		$coalescer->shouldDispatch('rule-a', 'alice', $coalesce);
+		$coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce);
+		$coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce);
+		$coalescer->shouldDispatch(new CoalesceBucket('rule-a', 'alice'), $coalesce);
 
 		$state = $coalescer->inspect('rule-a', 'alice');
 		$this->assertIsArray($state);
@@ -164,8 +165,8 @@ class NotificationCoalescerTest extends TestCase {
 		);
 
 		$coalesce = ['windowSeconds' => 60];
-		$this->assertTrue($coalescer->shouldDispatch('rule', 'alice', $coalesce));
-		$this->assertTrue($coalescer->shouldDispatch('rule', 'alice', $coalesce));
+		$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule', 'alice'), $coalesce));
+		$this->assertTrue($coalescer->shouldDispatch(new CoalesceBucket('rule', 'alice'), $coalesce));
 	}
 
 	public function testSilencedDispatchEmitsInfoNotWarning(): void {
@@ -175,8 +176,8 @@ class NotificationCoalescerTest extends TestCase {
 
 		$coalescer = $this->makeCoalescer();
 		$coalesce = ['windowSeconds' => 60];
-		$coalescer->shouldDispatch('rule', 'alice', $coalesce); // first
-		$coalescer->shouldDispatch('rule', 'alice', $coalesce); // silenced
+		$coalescer->shouldDispatch(new CoalesceBucket('rule', 'alice'), $coalesce); // first
+		$coalescer->shouldDispatch(new CoalesceBucket('rule', 'alice'), $coalesce); // silenced
 	}
 
 	private function appConfigDefaults(): void {

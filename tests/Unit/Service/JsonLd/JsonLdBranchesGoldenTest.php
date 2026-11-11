@@ -23,6 +23,7 @@ namespace Unit\Service\JsonLd;
 
 use DateTime;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdSerializer;
@@ -275,15 +276,14 @@ class JsonLdBranchesGoldenTest extends TestCase {
 
 	public function testSerializeNodeShape(): void {
 		$schema = $this->schema([], ['jsonld' => ['type' => 'https://schema.org/Person']]);
-		$doc = $this->serializer->serialize(
-			[
-				'name' => 'A',
-				'@self' => ['id' => 'u1', 'uri' => '', 'empty' => '', 'nil' => null, 'list' => [], 'zero' => 0, 'owner' => 'me'],
-				'@odd' => 1,
-				3 => 'num',
-			],
-			$schema,
-			$this->register
+		$doc = $this->serializer->serializeIn(
+			renderedObject: [
+					'name' => 'A',
+					'@self' => ['id' => 'u1', 'uri' => '', 'empty' => '', 'nil' => null, 'list' => [], 'zero' => 0, 'owner' => 'me'],
+					'@odd' => 1,
+					3 => 'num',
+				],
+			table: new RegisterSchema(register: $this->register, schema: $schema)
 		);
 
 		$this->assertSame(
@@ -304,7 +304,10 @@ class JsonLdBranchesGoldenTest extends TestCase {
 	}
 
 	public function testSerializeWithoutSelf(): void {
-		$doc = $this->serializer->serialize(['@self' => 'bad', 'x' => 1], $this->schema(), $this->register);
+		$doc = $this->serializer->serializeIn(
+			renderedObject: ['@self' => 'bad', 'x' => 1],
+			table: new RegisterSchema(register: $this->register, schema: $this->schema())
+		);
 		$this->assertSame(
 			['@context' => self::CTX, '@id' => 'https://nc.test/obj/reg/sch/', '@type' => 'sch', 'x' => 1],
 			$doc
@@ -312,17 +315,16 @@ class JsonLdBranchesGoldenTest extends TestCase {
 	}
 
 	public function testSerializeCollectionFullMetadata(): void {
-		$doc = $this->serializer->serializeCollection(
-			[
-				'results' => [['@self' => ['uri' => 'https://o.test/1']], 'skip', ['@self' => ['uri' => 'https://o.test/2']]],
-				'limit' => 5,
-				'pages' => null,
-				'page' => 2,
-				'total' => 0,
-				'next' => 'https://next.test',
-			],
-			$this->schema(),
-			$this->register
+		$doc = $this->serializer->serializeCollectionIn(
+			paginatedResult: [
+					'results' => [['@self' => ['uri' => 'https://o.test/1']], 'skip', ['@self' => ['uri' => 'https://o.test/2']]],
+					'limit' => 5,
+					'pages' => null,
+					'page' => 2,
+					'total' => 0,
+					'next' => 'https://next.test',
+				],
+			table: new RegisterSchema(register: $this->register, schema: $this->schema())
 		);
 
 		$this->assertSame(
@@ -345,7 +347,10 @@ class JsonLdBranchesGoldenTest extends TestCase {
 	public function testSerializeCollectionNonArrayResultsAndNoMetadata(): void {
 		$this->assertSame(
 			['@context' => self::CTX, '@graph' => []],
-			$this->serializer->serializeCollection(['results' => 'x'], $this->schema(), $this->register)
+			$this->serializer->serializeCollectionIn(
+				paginatedResult: ['results' => 'x'],
+				table: new RegisterSchema(register: $this->register, schema: $this->schema())
+			)
 		);
 	}
 
@@ -371,7 +376,10 @@ class JsonLdBranchesGoldenTest extends TestCase {
 	 * @dataProvider nextLinkCases
 	 */
 	public function testNextLink(array $result, ?string $expected): void {
-		$doc = $this->serializer->serializeCollection($result + ['results' => []], $this->schema(), $this->register);
+		$doc = $this->serializer->serializeCollectionIn(
+			paginatedResult: $result + ['results' => []],
+			table: new RegisterSchema(register: $this->register, schema: $this->schema())
+		);
 		$this->assertSame($expected, ($doc['or:next'] ?? null));
 	}
 }

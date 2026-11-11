@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\EvaluationException;
 use OCA\OpenRegister\Service\Calculation\SequenceContext;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -89,7 +90,7 @@ class SequenceEvaluatorTest extends TestCase {
 	public function testConsumesAndPads(): void {
 		$this->sequences->expects($this->once())
 			->method('reserveNext')
-			->with($this->equalTo(1), $this->equalTo(2), $this->equalTo(date('Y')))
+			->with(new SequenceScope(1, 2, date('Y')))
 			->willReturn(1);
 
 		$result = $this->eval->evaluate([], ['sequence' => ['scope' => 'yearly', 'pad' => 4]], $this->context());
@@ -118,7 +119,7 @@ class SequenceEvaluatorTest extends TestCase {
 	public function testYearlyScopeKey(): void {
 		$this->sequences->expects($this->once())
 			->method('reserveNext')
-			->with(1, 2, date('Y'))
+			->with(new SequenceScope(1, 2, date('Y')))
 			->willReturn(5);
 
 		$this->eval->evaluate([], ['sequence' => ['scope' => 'yearly']], $this->context());
@@ -133,7 +134,7 @@ class SequenceEvaluatorTest extends TestCase {
 	public function testMonthlyScopeKey(): void {
 		$this->sequences->expects($this->once())
 			->method('reserveNext')
-			->with(1, 2, date('Y-m'))
+			->with(new SequenceScope(1, 2, date('Y-m')))
 			->willReturn(5);
 
 		$this->eval->evaluate([], ['sequence' => ['scope' => 'monthly']], $this->context());
@@ -148,7 +149,7 @@ class SequenceEvaluatorTest extends TestCase {
 	public function testGlobalScopeKey(): void {
 		$this->sequences->expects($this->once())
 			->method('reserveNext')
-			->with(1, 2, '')
+			->with(new SequenceScope(1, 2, ''))
 			->willReturn(42);
 
 		$result = $this->eval->evaluate([], ['sequence' => ['scope' => 'global', 'pad' => 2]], $this->context());

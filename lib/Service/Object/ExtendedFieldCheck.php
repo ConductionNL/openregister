@@ -18,6 +18,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Formats\FormattedProperty;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Formats\FormatFactory;
 
@@ -102,7 +103,10 @@ final class ExtendedFieldCheck {
 		}
 
 		return match ($declared['type'] ?? null) {
-			'color' => FormatFactory::extendedFieldTypes()->validateColor(value: $value, format: ($declared['format'] ?? null), propertyName: $name),
+			'color' => FormatFactory::extendedFieldTypes()->validateColorProperty(
+				value: $value,
+				property: new FormattedProperty(name: $name, format: ($declared['format'] ?? null))
+			),
 			'recurrence' => FormatFactory::extendedFieldTypes()->validateRecurrence(value: $value, propertyName: $name),
 			default => null,
 		};

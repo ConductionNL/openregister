@@ -28,12 +28,15 @@ use Exception;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
+use OCA\OpenRegister\Db\ConfigurationSyncResult;
 use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
+use OCA\OpenRegister\Service\Config\ConfigurationRecords;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
 
 /**
  * Class SyncConfigurationsJob
@@ -54,28 +57,42 @@ class SyncConfigurationsJob extends TimedJob {
 	private const SYNC_CHECK_INTERVAL = 3600;
 
 	/**
+	 * Configuration mapper.
+	 *
+	 * @var ConfigurationMapperInterface
+	 */
+	private readonly ConfigurationMapperInterface $configurationMapper;
+
+	/**
+	 * Imports the fetched configurations.
+	 *
+	 * @var AppConfigurationImporterInterface
+	 */
+	private readonly AppConfigurationImporterInterface $configurationService;
+
+	/**
 	 * Constructor
 	 *
-	 * @param ITimeFactory                  $time                 Time factory for job scheduling
-	 * @param ConfigurationMapperInterface           $configurationMapper  Configuration mapper
-	 * @param AppConfigurationImporterInterface $configurationService Configuration service
-	 * @param GitHubClientInterface         $githubService        GitHub service
-	 * @param GitLabHandlerInterface        $gitlabService        GitLab service
-	 * @param Client                        $httpClient           HTTP client
-	 * @param LoggerInterface               $logger               Logger
+	 * @param ITimeFactory           $time          Time factory for job scheduling
+	 * @param ConfigurationRecords   $records       Configuration mapper and the service that imports them
+	 * @param GitHubClientInterface  $githubService GitHub service
+	 * @param GitLabHandlerInterface $gitlabService GitLab service
+	 * @param Client                 $httpClient    HTTP client
+	 * @param LoggerInterface        $logger        Logger
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private readonly ConfigurationMapperInterface $configurationMapper,
-		private readonly AppConfigurationImporterInterface $configurationService,
+		ConfigurationRecords $records,
 		private readonly GitHubClientInterface $githubService,
 		private readonly GitLabHandlerInterface $gitlabService,
 		private readonly Client $httpClient,
 		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(time: $time);
+		$this->configurationMapper  = $records->configurationMapper;
+		$this->configurationService = $records->configurationService;
 		$this->setInterval(seconds: self::SYNC_CHECK_INTERVAL);
 	}//end __construct()
 
@@ -159,9 +176,7 @@ class SyncConfigurationsJob extends TimedJob {
 		try {
 			$this->configurationMapper->updateSyncStatus(
 				id: $configuration->getId(),
-				status: 'failed',
-				syncDate: new DateTime(),
-				_message: $error->getMessage()
+				result: new ConfigurationSyncResult(status: 'failed', syncDate: new DateTime(), message: $error->getMessage())
 			);
 		} catch (Exception $statusError) {
 			$this->logError(message: 'Failed to update sync status: ' . $statusError->getMessage());
@@ -236,10 +251,7 @@ class SyncConfigurationsJob extends TimedJob {
 		// The repository is stored as owner/repo.
 		[$owner, $repo] = explode('/', $githubRepo);
 		$configData = $this->githubService->getFileContent(
-			owner: $owner,
-			repo: $repo,
-			path: $githubPath,
-			branch: $configuration->getGithubBranch() ?? 'main'
+			location: new GitHubFileLocation(owner: $owner, repo: $repo, path: $githubPath, branch: $configuration->getGithubBranch() ?? 'main')
 		);
 
 		$this->importFetched(configuration: $configuration, configData: $configData);
@@ -382,8 +394,7 @@ class SyncConfigurationsJob extends TimedJob {
 	private function markSynced(Configuration $configuration): void {
 		$this->configurationMapper->updateSyncStatus(
 			id: $configuration->getId(),
-			status: 'success',
-			syncDate: new DateTime()
+			result: new ConfigurationSyncResult(status: 'success', syncDate: new DateTime())
 		);
 	}//end markSynced()
 

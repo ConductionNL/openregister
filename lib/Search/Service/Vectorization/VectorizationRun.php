@@ -22,7 +22,7 @@
 
 namespace OCA\OpenRegister\Search\Service\Vectorization;
 
-use OCA\OpenRegister\Search\Service\Vectorization\Strategies\VectorizationStrategyInterface;
+use OCA\OpenRegister\Service\Vectorization\Strategies\VectorizationStrategyInterface;
 
 /**
  * The strategy, processing options and entity type of one vectorization batch.

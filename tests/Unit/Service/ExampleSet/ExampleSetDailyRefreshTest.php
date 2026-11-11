@@ -15,6 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\ExampleSetDailyRefreshJob;
 use OCA\OpenRegister\Command\ExampleSetInstallCommand;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh;
@@ -22,6 +23,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Tester\CommandTester;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetDailyRefresh
@@ -122,14 +124,14 @@ class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 		$id    = $this->store->ids(register: 'cases', schema: 'case')[0];
 
 		$this->assertSame([], $daily->run(today: $this->today()->modify('+1 day')), 'nothing is marked');
-		$this->assertSame('2026-10-13', $this->store->get(register: 'cases', schema: 'case', id: $id)['scheduledAt']);
+		$this->assertSame('2026-10-13', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id))['scheduledAt']);
 
 		$daily->mark(set: 'demo', daily: true);
 		$this->assertSame(['demo'], $daily->sets());
 		$report = $daily->run(today: $this->today()->modify('+1 day'));
 
 		$this->assertTrue($report['demo']['ok'], (string) json_encode($report));
-		$this->assertSame('2026-10-14', $this->store->get(register: 'cases', schema: 'case', id: $id)['scheduledAt']);
+		$this->assertSame('2026-10-14', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id))['scheduledAt']);
 
 		$daily->mark(set: 'demo', daily: false);
 		$this->assertSame([], $daily->sets());
@@ -183,7 +185,7 @@ class ExampleSetDailyRefreshTest extends ExampleSetTestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('info');
 		$logger->expects($this->once())->method('warning');
-		$job = new ExampleSetDailyRefreshJob(time: $this->createMock(ITimeFactory::class), daily: $daily, logger: $logger);
+		$job = new ExampleSetDailyRefreshJob(runtime: new JobRuntime(time: $this->createMock(ITimeFactory::class), logger: $logger), daily: $daily);
 
 		$method = new \ReflectionMethod($job, 'run');
 		$method->invoke($job, null);

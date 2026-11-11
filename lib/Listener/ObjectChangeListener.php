@@ -64,6 +64,16 @@ class ObjectChangeListener implements IEventListener {
 	];
 
 	/**
+	 * Log messages of a failed extraction or queueing, by the mode that failed.
+	 *
+	 * @var array<string, string>
+	 */
+	private const FAILURE_MESSAGES = [
+		'immediate'  => '[ObjectChangeListener] Immediate extraction failed',
+		'background' => '[ObjectChangeListener] Failed to queue background job',
+	];
+
+	/**
 	 * Constructor
 	 *
 	 * @param TextExtractionServiceInterface $textExtractSvc Text extraction service
@@ -169,7 +179,11 @@ class ObjectChangeListener implements IEventListener {
 			return;
 		}
 
-		$this->processExtractionMode(mode: $extractionMode, objectId: $objectId, objectUuid: $object->getUuid());
+		$run = new ObjectExtractionRun();
+		$run->mode = $extractionMode;
+		$run->objectId = $objectId;
+		$run->objectUuid = $object->getUuid();
+		$this->processExtractionMode(run: $run);
 	}//end extract()
 
 	/**
@@ -177,122 +191,116 @@ class ObjectChangeListener implements IEventListener {
 	 *
 	 * Cron and manual mode skip the object; an unknown mode falls back to background.
 	 *
-	 * @param string $mode Extraction mode (immediate, background, cron, manual).
-	 * @param int $objectId Object ID to process.
-	 * @param string $objectUuid Object UUID for logging.
+	 * @param ObjectExtractionRun $run The mode, object ID and object UUID.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	private function processExtractionMode(string $mode, int $objectId, string $objectUuid): void {
-		if (isset(self::SKIP_MESSAGES[$mode]) === true) {
-			$this->logger->debug(message: self::SKIP_MESSAGES[$mode], context: self::context(line: __LINE__, fields: ['object_id' => $objectId]));
+	private function processExtractionMode(ObjectExtractionRun $run): void {
+		if (isset(self::SKIP_MESSAGES[$run->mode]) === true) {
+			$this->logger->debug(message: self::SKIP_MESSAGES[$run->mode], context: self::context(line: __LINE__, fields: ['object_id' => $run->objectId]));
 			return;
 		}
 
-		if ($mode === 'immediate') {
-			$this->processImmediateExtraction(objectId: $objectId, objectUuid: $objectUuid);
+		if ($run->mode === 'immediate') {
+			$this->processImmediateExtraction(run: $run);
 			return;
 		}
 
-		if ($mode === 'background') {
-			$this->processBackgroundExtraction(objectId: $objectId, objectUuid: $objectUuid);
+		if ($run->mode === 'background') {
+			$this->processBackgroundExtraction(run: $run);
 			return;
 		}
 
-		$this->processUnknownMode(mode: $mode, objectId: $objectId);
+		$this->processUnknownMode(run: $run);
 	}//end processExtractionMode()
 
 	/**
 	 * Process immediate synchronous extraction
 	 *
-	 * @param int $objectId Object ID to extract.
-	 * @param string $objectUuid Object UUID for logging.
+	 * @param ObjectExtractionRun $run The object ID to extract and its UUID for logging.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	private function processImmediateExtraction(int $objectId, string $objectUuid): void {
+	private function processImmediateExtraction(ObjectExtractionRun $run): void {
 		$this->logger->info(
 			message: '[ObjectChangeListener] Immediate mode - processing synchronously',
-			context: self::context(line: __LINE__, fields: ['object_id' => $objectId, 'object_uuid' => $objectUuid])
+			context: self::context(line: __LINE__, fields: ['object_id' => $run->objectId, 'object_uuid' => $run->objectUuid])
 		);
 
 		try {
-			$this->textExtractSvc->extractObject(objectId: $objectId, forceReExtract: false);
+			$this->textExtractSvc->extractObject(objectId: $run->objectId, forceReExtract: false);
 			$this->logger->info(
 				message: '[ObjectChangeListener] Immediate extraction completed',
-				context: self::context(line: __LINE__, fields: ['object_id' => $objectId])
+				context: self::context(line: __LINE__, fields: ['object_id' => $run->objectId])
 			);
 		} catch (\Exception $e) {
-			$this->logFailure(message: '[ObjectChangeListener] Immediate extraction failed', objectId: $objectId, error: $e);
+			$this->logFailure(run: $run, error: $e);
 		}
 	}//end processImmediateExtraction()
 
 	/**
 	 * Queue background job for extraction
 	 *
-	 * @param int $objectId Object ID to extract.
-	 * @param string $objectUuid Object UUID for logging.
+	 * @param ObjectExtractionRun $run The object ID to extract and its UUID for logging.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	private function processBackgroundExtraction(int $objectId, string $objectUuid): void {
+	private function processBackgroundExtraction(ObjectExtractionRun $run): void {
 		$this->logger->info(
 			message: '[ObjectChangeListener] Background mode - queueing extraction job',
-			context: self::context(line: __LINE__, fields: ['object_id' => $objectId, 'object_uuid' => $objectUuid])
+			context: self::context(line: __LINE__, fields: ['object_id' => $run->objectId, 'object_uuid' => $run->objectUuid])
 		);
 
 		try {
-			$this->jobList->add(job: JobHandles::OBJECT_TEXT_EXTRACTION, argument: ['object_id' => $objectId]);
+			$this->jobList->add(job: JobHandles::OBJECT_TEXT_EXTRACTION, argument: ['object_id' => $run->objectId]);
 			$this->logger->debug(
 				message: '[ObjectChangeListener] Background extraction job queued',
-				context: self::context(line: __LINE__, fields: ['object_id' => $objectId])
+				context: self::context(line: __LINE__, fields: ['object_id' => $run->objectId])
 			);
 		} catch (\Exception $e) {
-			$this->logFailure(message: '[ObjectChangeListener] Failed to queue background job', objectId: $objectId, error: $e);
+			$this->logFailure(run: $run, error: $e);
 		}
 	}//end processBackgroundExtraction()
 
 	/**
-	 * Log a failed extraction or queueing of one object.
+	 * Log a failed extraction or queueing of one object, in the words of its mode.
 	 *
-	 * @param string     $message  The log message.
-	 * @param int        $objectId The object.
-	 * @param \Exception $error    What went wrong.
+	 * @param ObjectExtractionRun $run   The mode that failed and the object.
+	 * @param \Exception          $error What went wrong.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	private function logFailure(string $message, int $objectId, \Exception $error): void {
+	private function logFailure(ObjectExtractionRun $run, \Exception $error): void {
 		$this->logger->error(
-			message: $message,
-			context: self::context(line: __LINE__, fields: ['object_id' => $objectId, 'error' => $error->getMessage()])
+			message: self::FAILURE_MESSAGES[$run->mode],
+			context: self::context(line: __LINE__, fields: ['object_id' => $run->objectId, 'error' => $error->getMessage()])
 		);
 	}//end logFailure()
 
 	/**
 	 * Handle unknown extraction mode (fallback to background)
 	 *
-	 * @param string $mode Unknown mode name.
-	 * @param int $objectId Object ID.
+	 * @param ObjectExtractionRun $run The unknown mode and the object ID.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
-	private function processUnknownMode(string $mode, int $objectId): void {
+	private function processUnknownMode(ObjectExtractionRun $run): void {
 		$this->logger->warning(
 			message: '[ObjectChangeListener] Unknown extraction mode, defaulting to background',
-			context: self::context(line: __LINE__, fields: ['object_id' => $objectId, 'extraction_mode' => $mode])
+			context: self::context(line: __LINE__, fields: ['object_id' => $run->objectId, 'extraction_mode' => $run->mode])
 		);
 
-		$this->jobList->add(job: JobHandles::OBJECT_TEXT_EXTRACTION, argument: ['object_id' => $objectId]);
+		$this->jobList->add(job: JobHandles::OBJECT_TEXT_EXTRACTION, argument: ['object_id' => $run->objectId]);
 	}//end processUnknownMode()
 
 	/**

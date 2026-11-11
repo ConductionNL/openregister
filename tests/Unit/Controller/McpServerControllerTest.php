@@ -101,10 +101,9 @@ class McpServerControllerTest extends TestCase {
 
 		// A session without an agent: the scope passes every listing through.
 		$this->agentScope = $this->createMock(\OCA\OpenRegister\Service\Mcp\McpAgentScope::class);
-		$this->agentScope->method('filterListing')->willReturnArgument(2);
+		$this->agentScope->method('filterListing')->willReturnArgument(1);
 
 		$this->controller = McpServerControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->protocolService,
 			$this->toolsService,
@@ -161,10 +160,6 @@ class McpServerControllerTest extends TestCase {
 	// Instantiation
 	// ---------------------------------------------------------------
 
-	public function testControllerInstantiation(): void {
-		$this->assertInstanceOf(McpServerController::class, $this->controller);
-	}
-
 	// ---------------------------------------------------------------
 	// handle() — Unauthenticated requests (#4284)
 	// ---------------------------------------------------------------
@@ -175,7 +170,6 @@ class McpServerControllerTest extends TestCase {
 	 */
 	private function unauthenticatedController(): McpServerController {
 		return McpServerControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->protocolService,
 			$this->toolsService,
@@ -240,7 +234,6 @@ class McpServerControllerTest extends TestCase {
 
 		// Built while nobody is logged in: must not throw.
 		$controller = McpServerControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->protocolService,
 			$this->toolsService,

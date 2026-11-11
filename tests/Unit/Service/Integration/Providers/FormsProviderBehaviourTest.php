@@ -26,10 +26,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\FormLink;
 use OCA\OpenRegister\Db\FormLinkMapperInterface;
 use OCA\OpenRegister\Service\Integration\Providers\FormsProvider;
-use OCA\OpenRegister\Service\Integration\Providers\LeafProviderPlatform;
+use OCA\OpenRegister\Service\Integration\Providers\LeafMarkerScanning;
 use OCP\App\IAppManager;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -90,7 +91,7 @@ class FormsProviderBehaviourTest extends TestCase {
 			$mapper->method('findByObjectUuid')->with('obj-1')->willReturn($links);
 		}
 
-		return new FormsProvider(new LeafProviderPlatform($this->db(), $apps, $l10n), $mapper, $this->createMock(LoggerInterface::class));
+		return new FormsProvider(new LeafMarkerScanning($this->db(), $apps, $l10n, $this->createMock(LoggerInterface::class)), $mapper);
 	}//end provider()
 
 	private function db(): IDBConnection {
@@ -181,7 +182,7 @@ class FormsProviderBehaviourTest extends TestCase {
 	}//end testItDescribesItselfAndItsHealthFollowsTheFormsApp()
 
 	public function testWithoutTheFormsAppNothingIsListedOrQueried(): void {
-		$this->assertSame([], $this->provider(false, [$this->link(1)])->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider(false, [$this->link(1)])->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 		$this->assertSame([], $this->queries);
 	}//end testWithoutTheFormsAppNothingIsListedOrQueried()
 
@@ -195,7 +196,7 @@ class FormsProviderBehaviourTest extends TestCase {
 			$this->link(1, 12, '2026-01-15T00:00:00+00:00'),
 		];
 
-		$rows = $this->provider(true, $links)->list('r', 's', 'obj-1');
+		$rows = $this->provider(true, $links)->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertCount(1, $rows);
 		$this->assertSame('1', $rows[0]['id']);
@@ -214,7 +215,7 @@ class FormsProviderBehaviourTest extends TestCase {
 		$this->forms[1] = ['id' => 1, 'hash' => 'h', 'title' => 'T', 'description' => null, 'expires' => 0, 'state' => 0];
 		$this->counts[1] = 7;
 
-		$rows = $this->provider(true, [$this->link(1), $this->link(1, 10)])->list('r', 's', 'obj-1');
+		$rows = $this->provider(true, [$this->link(1), $this->link(1, 10)])->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame(7, $rows[0]['submissionCount']);
 		$this->assertNull($rows[0]['expiresAt']);
@@ -224,7 +225,7 @@ class FormsProviderBehaviourTest extends TestCase {
 	public function testAFormWithoutSubmissionLinksHasNoLastUpdated(): void {
 		$this->forms[1] = ['id' => 1, 'hash' => 'h', 'title' => 'T', 'description' => 'D', 'expires' => 0, 'state' => 0];
 
-		$rows = $this->provider(true, [$this->link(1)])->list('r', 's', 'obj-1');
+		$rows = $this->provider(true, [$this->link(1)])->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertArrayNotHasKey('lastUpdated', $rows[0]);
 		$this->assertSame(0, $rows[0]['submissionCount']);
@@ -238,7 +239,7 @@ class FormsProviderBehaviourTest extends TestCase {
 		$orphan->setExpiresAt(new DateTime('@'.self::FAR_FUTURE));
 		$this->forms[3] = ['id' => 3, 'hash' => 'h3', 'title' => 'Three', 'description' => 'D', 'expires' => 0, 'state' => 0];
 
-		$rows = $this->provider(true, [$this->link(3), $orphan])->list('r', 's', 'obj-1');
+		$rows = $this->provider(true, [$this->link(3), $orphan])->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame(['3', '2'], array_column($rows, 'id'));
 		$this->assertSame('Linked 2', $rows[1]['title']);
@@ -255,7 +256,7 @@ class FormsProviderBehaviourTest extends TestCase {
 		$open = $this->link(5);
 		$open->setStatus('published');
 
-		$rows = $this->provider(true, [$draft, $open])->list('r', 's', 'obj-1');
+		$rows = $this->provider(true, [$draft, $open])->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame(['draft', 'open'], array_column($rows, 'status'));
 		$this->assertSame([true, true], array_column($rows, 'accessible'));
@@ -265,7 +266,7 @@ class FormsProviderBehaviourTest extends TestCase {
 	public function testAnExpiredFormIsClosed(): void {
 		$this->forms[1] = ['id' => 1, 'hash' => 'h', 'title' => 'T', 'description' => 'D', 'expires' => self::FAR_PAST, 'state' => 0];
 
-		$rows = $this->provider(true, [$this->link(1)])->list('r', 's', 'obj-1');
+		$rows = $this->provider(true, [$this->link(1)])->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame('closed', $rows[0]['status']);
 		$this->assertFalse($rows[0]['accessible']);
@@ -278,7 +279,7 @@ class FormsProviderBehaviourTest extends TestCase {
 		];
 		$this->counts[9] = 4;
 
-		$rows = $this->provider(true, [])->list('r', 's', 'obj-1');
+		$rows = $this->provider(true, [])->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1'));
 
 		$this->assertSame(['9', '0'], array_column($rows, 'id'));
 		$this->assertSame('draft', $rows[0]['status']);
@@ -292,6 +293,6 @@ class FormsProviderBehaviourTest extends TestCase {
 	public function testAFailingLinkTableAndAFailingMarkerScanListNothing(): void {
 		$this->markerRows = new RuntimeException('no forms table');
 
-		$this->assertSame([], $this->provider(true, new RuntimeException('no link table'))->list('r', 's', 'obj-1'));
+		$this->assertSame([], $this->provider(true, new RuntimeException('no link table'))->list(new ObjectRef(register: 'r', schema: 's', id: 'obj-1')));
 	}//end testAFailingLinkTableAndAFailingMarkerScanListNothing()
 }//end class

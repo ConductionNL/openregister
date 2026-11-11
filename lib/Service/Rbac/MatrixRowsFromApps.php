@@ -99,7 +99,7 @@ class MatrixRowsFromApps {
 
 		$matrix['rows'] = array_merge(
 			array_values($declared),
-			$this->rowsFor(schema: $schema, provider: trim($provider), field: trim((string)($matrix['field'] ?? '')))
+			$this->rowsFor(run: new AppRowsRun(schema: $schema, provider: trim($provider), field: trim((string)($matrix['field'] ?? ''))))
 		);
 
 		return $matrix;
@@ -108,24 +108,15 @@ class MatrixRowsFromApps {
 	/**
 	 * The rows one provider contributes for one schema, read once per request.
 	 *
-	 * @param Schema $schema   The schema.
-	 * @param string $provider The provider id.
-	 * @param string $field    The matrix field.
+	 * @param AppRowsRun $run The schema, the provider id and the matrix field.
 	 *
 	 * @return array<int, array<string, mixed>> The rows that read.
 	 */
-	private function rowsFor(Schema $schema, string $provider, string $field): array {
-		$key = (string)$schema->getId() . '|' . $provider;
-		if (array_key_exists($key, $this->cache) === true) {
-			return $this->cache[$key];
+	private function rowsFor(AppRowsRun $run): array {
+		$key = (string)$run->schema->getId() . '|' . $run->provider;
+		if (array_key_exists($key, $this->cache) === false) {
+			$this->cache[$key] = $this->readable(rows: $this->ask(schema: $run->schema, provider: $run->provider), run: $run);
 		}
-
-		$this->cache[$key] = $this->readable(
-			rows: $this->ask(schema: $schema, provider: $provider),
-			schema: $schema,
-			field: $field,
-			provider: $provider
-		);
 
 		return $this->cache[$key];
 	}//end rowsFor()
@@ -145,25 +136,50 @@ class MatrixRowsFromApps {
 		}
 
 		$event = new MatrixRowsRequestedEvent(schema: $schema, provider: $provider);
+		if ($this->dispatched(event: $event, provider: $provider) === false) {
+			return [];
+		}
+
+		return $this->ownedRows(event: $event, provider: $provider);
+	}//end ask()
+
+	/**
+	 * Dispatch the request; a failing listener is logged and means no rows.
+	 *
+	 * @param MatrixRowsRequestedEvent $event    The request.
+	 * @param string                   $provider The provider id, for the log.
+	 *
+	 * @return bool False when the dispatch failed.
+	 */
+	private function dispatched(MatrixRowsRequestedEvent $event, string $provider): bool {
 		try {
-			$this->dispatcher->dispatchTyped($event);
+			$this->dispatcher?->dispatchTyped($event);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[MatrixRowsFromApps] A matrix row provider failed; it contributes no rows',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'provider' => $provider, 'error' => $e->getMessage()]
 			);
-			return [];
+			return false;
 		}
 
+		return true;
+	}//end dispatched()
+
+	/**
+	 * The rows added by the app that owns the provider id; every other row is dropped and logged.
+	 *
+	 * @param MatrixRowsRequestedEvent $event    The answered request.
+	 * @param string                   $provider The provider id.
+	 *
+	 * @return array<int, array<string, mixed>> The rows the owning app added.
+	 */
+	private function ownedRows(MatrixRowsRequestedEvent $event, string $provider): array {
 		$owner = self::owningApp(provider: $provider);
 		$kept  = [];
 		foreach ($event->getRows() as $index => $row) {
 			$appId = $event->answeredBy(index: $index);
 			if ($appId === '' || $appId !== $owner) {
-				$this->logger->warning(
-					message: '[MatrixRowsFromApps] A provider row from an app that does not own the provider was dropped',
-					context: ['provider' => $provider, 'answeredBy' => $appId]
-				);
+				$this->logForeignRow(provider: $provider, appId: $appId);
 				continue;
 			}
 
@@ -171,7 +187,22 @@ class MatrixRowsFromApps {
 		}
 
 		return $kept;
-	}//end ask()
+	}//end ownedRows()
+
+	/**
+	 * Say that a provider row from an app that does not own the provider was dropped.
+	 *
+	 * @param string $provider The provider id.
+	 * @param string $appId    The app that answered, '' when unknown.
+	 *
+	 * @return void
+	 */
+	private function logForeignRow(string $provider, string $appId): void {
+		$this->logger->warning(
+			message: '[MatrixRowsFromApps] A provider row from an app that does not own the provider was dropped',
+			context: ['provider' => $provider, 'answeredBy' => $appId]
+		);
+	}//end logForeignRow()
 
 	/**
 	 * The app that owns a provider id: the part before the first dot (`dossiq`
@@ -193,43 +224,70 @@ class MatrixRowsFromApps {
 	/**
 	 * The rows that read, each one that does not logged with its findings.
 	 *
-	 * @param array<int, array<string, mixed>> $rows     The rows.
-	 * @param Schema                           $schema   The schema, for its properties and declared actions.
-	 * @param string                           $field    The matrix field.
-	 * @param string                           $provider The provider id, for the log.
+	 * @param array<int, array<string, mixed>> $rows The rows.
+	 * @param AppRowsRun                       $run  The schema (properties, declared actions), the matrix field and the provider id, for the log.
 	 *
 	 * @return array<int, array<string, mixed>> The rows that read.
 	 */
-	private function readable(array $rows, Schema $schema, string $field, string $provider): array {
-		$properties = ($schema->getProperties() ?? []);
-		$validator = $this->validator->withDeclaredActions(declaredActions: $schema->declaredActionNames());
+	private function readable(array $rows, AppRowsRun $run): array {
+		$shape = new MatrixShape(properties: ($run->schema->getProperties() ?? []), field: $run->field);
+		$validator = $this->validator->withDeclaredActions(declaredActions: $run->schema->declaredActionNames());
 		$kept = [];
 		foreach ($rows as $row) {
-			$group = '';
-			if (is_string($row['group'] ?? null) === true) {
-				$group = strtolower(trim($row['group']));
+			if ($this->grantsAReservedGroup(row: $row, run: $run) === false
+				&& $this->readsCleanly(findings: $validator->findingsForRow(row: $row, shape: $shape), run: $run) === true
+			) {
+				$kept[] = $row;
 			}
-
-			if (in_array($group, self::RESERVED_GROUPS, true) === true) {
-				$this->logger->warning(
-					message: '[MatrixRowsFromApps] A provider row granting a reserved group was dropped',
-					context: ['provider' => $provider, 'group' => $group]
-				);
-				continue;
-			}
-
-			$findings = $validator->findingsForRow(row: $row, properties: $properties, field: $field);
-			if ($findings !== []) {
-				$this->logger->warning(
-					message: '[MatrixRowsFromApps] A provider row does not read and was dropped',
-					context: ['provider' => $provider, 'findings' => array_column($findings, 'message')]
-				);
-				continue;
-			}
-
-			$kept[] = $row;
 		}
 
 		return $kept;
 	}//end readable()
+
+	/**
+	 * Whether a provider row validated without findings; a row that did not is logged as dropped.
+	 *
+	 * @param array<int, array{message: string}> $findings The row's validation findings.
+	 * @param AppRowsRun                         $run      The provider being read, for the log.
+	 *
+	 * @return bool True when the row has no findings.
+	 */
+	private function readsCleanly(array $findings, AppRowsRun $run): bool {
+		if ($findings === []) {
+			return true;
+		}
+
+		$this->logger->warning(
+			message: '[MatrixRowsFromApps] A provider row does not read and was dropped',
+			context: ['provider' => $run->provider, 'findings' => array_column($findings, 'message')]
+		);
+
+		return false;
+	}//end readsCleanly()
+
+	/**
+	 * Whether a provider row grants a reserved group; such a row is logged and dropped.
+	 *
+	 * @param array<string, mixed> $row The row.
+	 * @param AppRowsRun           $run The request, for the provider id in the log.
+	 *
+	 * @return bool True when the row names a reserved group.
+	 */
+	private function grantsAReservedGroup(array $row, AppRowsRun $run): bool {
+		$group = '';
+		if (is_string($row['group'] ?? null) === true) {
+			$group = strtolower(trim($row['group']));
+		}
+
+		if (in_array($group, self::RESERVED_GROUPS, true) === false) {
+			return false;
+		}
+
+		$this->logger->warning(
+			message: '[MatrixRowsFromApps] A provider row granting a reserved group was dropped',
+			context: ['provider' => $run->provider, 'group' => $group]
+		);
+
+		return true;
+	}//end grantsAReservedGroup()
 }//end class

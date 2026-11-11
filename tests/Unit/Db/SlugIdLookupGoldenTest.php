@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -34,6 +35,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * @covers \OCA\OpenRegister\Db\RegisterMapper
@@ -114,28 +117,32 @@ class SlugIdLookupGoldenTest extends TestCase {
 
 	private function registerMapper(): RegisterMapper {
 		return new RegisterMapper(
-			$this->connection(),
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(ContainerInterface::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $this->connection(),
+			tenancy: new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new RegisterMapperServices(
+				schemaMapper: $this->createMock(SchemaMapper::class),
+				container: $this->createMock(ContainerInterface::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end registerMapper()
 
 	private function schemaMapper(): SchemaMapper {
 		return new SchemaMapper(
-			$this->connection(),
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			db: $this->connection(),
+			tenancy: new TenancyServices(
+				organisationMapper: $this->createMock(OrganisationMapper::class),
+				userSession: $this->createMock(IUserSession::class),
+				groupManager: $this->createMock(IGroupManager::class)
+			),
+			appConfig: $this->createMock(IAppConfig::class),
+			services: new SchemaMapperServices(
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				validator: $this->createMock(PropertyValidatorHandler::class),
+				logger: $this->createMock(LoggerInterface::class)
+			)
 		);
 	}//end schemaMapper()
 }//end class

@@ -18,7 +18,6 @@ final class CalculationsControllerFactory {
 	/**
 	 * The constructor arguments of CalculationsController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param OperatorCatalogue $catalogue Constructor argument.
 	 * @param CalculationTrialService $trials Constructor argument.
@@ -29,7 +28,6 @@ final class CalculationsControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\Calculation\OperatorCatalogue $catalogue,
 		\OCA\OpenRegister\Service\Calculation\CalculationTrialService $trials,
@@ -38,15 +36,13 @@ final class CalculationsControllerFactory {
 		\OCA\OpenRegister\Db\MagicMapper $objectMapper,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\CalculationsControllerServices(
 				catalogue: $catalogue,
 				trials: $trials,
-				registerMapper: $registerMapper,
-				schemaMapper: $schemaMapper,
+				schemaCatalog: new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $objectMapper),
+				objectMapper: $objectMapper,
 			),
-			$objectMapper,
 		];
 	}
 

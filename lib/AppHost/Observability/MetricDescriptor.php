@@ -149,7 +149,7 @@ final class MetricDescriptor {
 		if (is_string($type) === false || in_array($type, self::METRIC_TYPES, true) === false) {
 			$allowed = implode(', ', self::METRIC_TYPES);
 			throw new ObservabilityValidationException(
-				sprintf('Invalid metric type "%s" (allowed: %s).', self::describe(value: $type), $allowed)
+				sprintf('Invalid metric type "%s" (allowed: %s).', DescriptorValue::describe(value: $type), $allowed)
 			);
 		}
 
@@ -251,7 +251,7 @@ final class MetricDescriptor {
 		if (is_string($kind) === false || in_array($kind, self::KINDS, true) === false) {
 			$allowed = implode(', ', self::KINDS);
 			throw new ObservabilityValidationException(
-				sprintf('Unknown metric source kind "%s" (allowed: %s).', self::describe(value: $kind), $allowed)
+				sprintf('Unknown metric source kind "%s" (allowed: %s).', DescriptorValue::describe(value: $kind), $allowed)
 			);
 		}
 
@@ -311,7 +311,7 @@ final class MetricDescriptor {
 	private static function validateTableSource(string $name, array $source): void {
 		$table = $source['table'] ?? null;
 		if (is_string($table) === false || preg_match(self::TABLE_REGEX, $table) !== 1) {
-			$shown = self::describe(value: $table);
+			$shown = DescriptorValue::describe(value: $table);
 			throw new ObservabilityValidationException(
 				sprintf('Metric "%s" tableCount "table" must match %s (got "%s").', $name, self::TABLE_REGEX, $shown)
 			);
@@ -410,7 +410,7 @@ final class MetricDescriptor {
 	private static function validateFilterOperators(string $name, array $ops): void {
 		foreach (array_keys($ops) as $operator) {
 			if (in_array($operator, self::FILTER_OPERATORS, true) === false) {
-				$shown = self::describe(value: $operator);
+				$shown = DescriptorValue::describe(value: $operator);
 				$allowed = implode(', ', self::FILTER_OPERATORS);
 				throw new ObservabilityValidationException(
 					sprintf('Metric "%s" filter operator "%s" is not allowed (allowed: %s).', $name, $shown, $allowed)
@@ -431,7 +431,7 @@ final class MetricDescriptor {
 	 */
 	private static function validateFieldName(string $label, mixed $field): void {
 		if (is_string($field) === false || preg_match('/^[a-zA-Z0-9_.]+$/', $field) !== 1) {
-			$shown = self::describe(value: $field);
+			$shown = DescriptorValue::describe(value: $field);
 			throw new ObservabilityValidationException(sprintf('%s field "%s" is invalid.', $label, $shown));
 		}
 	}//end validateFieldName()
@@ -449,7 +449,7 @@ final class MetricDescriptor {
 	private static function validateColumnMap(string $label, mixed $map): void {
 		foreach (self::optionalArray(value: $map, error: sprintf('%s must be an object.', $label)) as $column => $value) {
 			if (is_string($column) === false || preg_match('/^[a-zA-Z0-9_]+$/', $column) !== 1) {
-				$shown = self::describe(value: $column);
+				$shown = DescriptorValue::describe(value: $column);
 				throw new ObservabilityValidationException(sprintf('%s column "%s" is invalid.', $label, $shown));
 			}
 
@@ -491,20 +491,4 @@ final class MetricDescriptor {
 	private static function isNonEmptyString(mixed $value): bool {
 		return is_string($value) === true && $value !== '';
 	}//end isNonEmptyString()
-
-	/**
-	 * Render a raw (possibly non-scalar) value as a short string for an
-	 * error message, without leaking object internals.
-	 *
-	 * @param mixed $value Raw value.
-	 *
-	 * @return string
-	 */
-	private static function describe(mixed $value): string {
-		if (is_scalar($value) === true) {
-			return (string)$value;
-		}
-
-		return gettype($value);
-	}//end describe()
 }//end class

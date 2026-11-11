@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProof;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRewriter
@@ -116,7 +117,7 @@ class ExampleSetRefreshWritesTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+3 days'));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$incident = $this->store->get(register: 'pub', schema: 'incident', id: $this->store->ids(register: 'pub', schema: 'incident')[0]);
+		$incident = $this->store->row(ref: new ObjectRef(register: 'pub', schema: 'incident', id: $this->store->ids(register: 'pub', schema: 'incident')[0]));
 		$this->assertSame('2026-10-14', $incident['history'][0]['at']);
 		$set = $this->record->read(set: 'demo')['changes']['alpha/incident-1#references']['set'];
 		$this->assertSame('2026-10-14', array_column($set, 'new', 'path')['history'][0]['at']);

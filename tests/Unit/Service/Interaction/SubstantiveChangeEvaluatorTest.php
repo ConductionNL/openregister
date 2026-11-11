@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace Unit\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Interaction\SubstantiveChangeEvaluator;
@@ -75,10 +76,7 @@ class SubstantiveChangeEvaluatorTest extends TestCase {
 		$schema->setConfiguration($configuration);
 		$this->schemaMapper->method('find')->willReturn($schema);
 
-		return new SubstantiveChangeEvaluator(
-			schemaMapper: $this->schemaMapper,
-			logger: $this->createMock(originalClassName: LoggerInterface::class)
-		);
+		return new SubstantiveChangeEvaluator(schemas: new SchemaReading(schemaMapper: $this->schemaMapper, logger: $this->createMock(originalClassName: LoggerInterface::class)));
 
 	}//end evaluatorFor()
 

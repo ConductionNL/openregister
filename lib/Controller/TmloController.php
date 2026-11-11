@@ -27,12 +27,14 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TmloControllerServices;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
@@ -122,18 +124,16 @@ class TmloController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name
 	 * @param IRequest $request The request object
 	 * @param TmloControllerServices $services The tmlo controller services.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-tmlo-metadata/tasks.md#task-1
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		TmloControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
 		$records = $services->records;
 		$this->tmloService = $records->tmloService;
 		$this->objectService = $records->objectService;
@@ -161,7 +161,7 @@ class TmloController extends Controller {
 	#[NoCSRFRequired]
 	public function exportSingle(string $register, string $schema, string $id): Response {
 		try {
-			$scope = $this->exportScope(register: $register, schema: $schema, profile: 'tmlo-single');
+			$scope = $this->exportScope(table: new RegisterSchemaRef(register: $register, schema: $schema), profile: 'tmlo-single');
 			if ($scope instanceof Response) {
 				return $scope;
 			}
@@ -214,7 +214,7 @@ class TmloController extends Controller {
 	 * @return Response The XML or the export refusal.
 	 */
 	private function batchExport(string $register, string $schema): Response {
-		$scope = $this->exportScope(register: $register, schema: $schema, profile: 'tmlo-batch');
+		$scope = $this->exportScope(table: new RegisterSchemaRef(register: $register, schema: $schema), profile: 'tmlo-batch');
 		if ($scope instanceof Response) {
 			return $scope;
 		}
@@ -271,15 +271,14 @@ class TmloController extends Controller {
 	 * export verb like every other export path. Asked after the register and
 	 * schema resolve, because the rule lives on the schema.
 	 *
-	 * @param string $register The register ID or slug
-	 * @param string $schema The schema ID or slug
-	 * @param string $profile The export profile the gate is asked about.
+	 * @param RegisterSchemaRef $table   The register and schema the route names.
+	 * @param string            $profile The export profile the gate is asked about.
 	 *
 	 * @return array{0: Register, 1: Schema}|Response The register and schema, or the refusal.
 	 */
-	private function exportScope(string $register, string $schema, string $profile): array|Response {
-		$registerEntity = $this->registerMapper->find($register);
-		$schemaEntity = $this->scopedSchemaResolver->resolveSchemaWithin(register: $registerEntity, schemaRef: $schema);
+	private function exportScope(RegisterSchemaRef $table, string $profile): array|Response {
+		$registerEntity = $this->registerMapper->find($table->register);
+		$schemaEntity = $this->scopedSchemaResolver->resolveSchemaWithin(register: $registerEntity, schemaRef: $table->schema);
 
 		$refusal = $this->exportGate->refusalFor(schema: $schemaEntity, profile: $profile, registerId: $registerEntity->getId());
 		if ($refusal !== null) {

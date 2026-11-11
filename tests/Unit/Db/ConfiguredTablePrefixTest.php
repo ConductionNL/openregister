@@ -20,6 +20,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OCA\OpenRegister\BackgroundJob\BlobMigrationJob;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -135,7 +139,7 @@ class ConfiguredTablePrefixTest extends TestCase {
 		$registers->method('findAll')->willReturn([$first]);
 
 		$service = new ReferentialIntegrityService(
-			index: new IntegrityRelationIndex(schemaMapper: $this->createMock(SchemaMapper::class), registerMapper: $registers, cacheFactory: $this->createMock(ICacheFactory::class)),
+			index: new IntegrityRelationIndex(catalog: new SchemaCatalog(registers: $registers, schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)), cacheFactory: $this->createMock(ICacheFactory::class)),
 			storage: new IntegrityStorage(objectEntityMapper: $this->createMock(MagicMapper::class), db: $this->connection(rows: self::catalogue())),
 			controls: new IntegrityCascadeControls(auditTrailMapper: $this->createMock(AuditTrailMapper::class), archivalGuard: (new ReflectionClass(ArchivalRetentionGuard::class))->newInstanceWithoutConstructor()),
 			logger: $this->createMock(LoggerInterface::class)
@@ -149,10 +153,8 @@ class ConfiguredTablePrefixTest extends TestCase {
 	public function testTheTableStatisticsFindTablesUnderAnotherPrefix(): void {
 		$logger = $this->createMock(LoggerInterface::class);
 		$handler = new MagicStatisticsHandler(
-			db: $this->connection(rows: self::catalogue()),
-			logger: $logger,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			sql: new MagicTableSql(db: $this->connection(rows: self::catalogue()), config: $this->createMock(IConfig::class), logger: $logger),
+			catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)),
 			dateTimeNormalizer: new DateTimeNormalizer($logger),
 			schemaTypeConverter: new SchemaTypeConverter()
 		);
@@ -213,9 +215,10 @@ class ConfiguredTablePrefixTest extends TestCase {
 			)
 		);
 
-		$results = [];
+		$run = new \OCA\OpenRegister\Service\Object\MagicNameLoadRun(uuidList: ['u1']);
 		$method = new ReflectionMethod($handler, 'batchLoadNamesFromRegisters');
-		$method->invokeArgs($handler, [['u1'], &$results]);
+		$method->invoke($handler, $run);
+		$results = $run->results;
 
 		$this->assertSame('Found', $results['u1']['name']);
 	}

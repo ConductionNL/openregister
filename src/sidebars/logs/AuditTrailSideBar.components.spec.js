@@ -59,7 +59,11 @@ function templateComponents(source) {
 describe('AuditTrailSideBar components', () => {
 	it('registers every component its template uses', () => {
 		const source = readFileSync(join(__dirname, 'AuditTrailSideBar.vue'), 'utf8')
-		const registered = Object.keys(AuditTrailSideBar.components)
+		const registered = [
+			...(AuditTrailSideBar.mixins || []).flatMap((mixin) =>
+				Object.keys(mixin.components || {})),
+			...Object.keys(AuditTrailSideBar.components),
+		]
 		const missing = templateComponents(source).filter(
 			(name) => !registered.includes(name),
 		)

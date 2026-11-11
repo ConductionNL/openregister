@@ -73,7 +73,6 @@ class NotesControllerBehaviourTest extends TestCase {
 		$notes->expects($this->once())->method('getNotesForObject')->with('uuid-1', 50, 0, 'public')->willReturn([['id' => 1]]);
 
 		$controller = new NotesController(
-			'openregister',
 			$request,
 			new NotesControllerServices($notes, $objects, $visibility, $this->createMock(TimelineWriteService::class))
 		);

@@ -150,7 +150,7 @@ class ObjectRelationsControllerRouteAddressTest extends TestCase {
 		$row = new ObjectRelation();
 		$row->setUuid('out');
 		$this->relations->expects($this->once())->method('recordProseReference')
-			->with($this->callback(static fn ($end): bool => $end->uuid === 'a'), $this->callback(static fn ($end): bool => $end->uuid === 'b'), 'p1', null)
+			->with($this->callback(static fn ($mention): bool => $mention->source->uuid === 'a' && $mention->target->uuid === 'b' && $mention->anchor === 'p1' && $mention->relationType === null))
 			->willReturn([$row]);
 
 		$response = $controller->addLink('r', 's', 'a');
@@ -226,7 +226,7 @@ class ObjectRelationsControllerRouteAddressTest extends TestCase {
 	 */
 	public function testADeriveSavesIntoTheRouteRegisterAndSchema(): void {
 		$controller = $this->controller(params: ['object' => ['t' => 1]], readable: ['r/s/a']);
-		$this->relations->method('applyInheritance')->willReturn(['data' => ['t' => 1], 'inherited' => []]);
+		$this->relations->method('inherit')->willReturn(['data' => ['t' => 1], 'inherited' => []]);
 		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1], [], 'r', 's')
 			->willThrowException(new \Exception('refused'));
 

@@ -26,6 +26,7 @@ use OCP\App\IAppManager;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 
 /**
  * Each manifest-declared deep link reaches the registry; anything missing,
@@ -77,9 +78,9 @@ class GenericDeepLinkRegistrationListenerBehaviourTest extends TestCase {
 
 		$registry = $this->createMock(DeepLinkRegistryServiceInterface::class);
 		$calls = [];
-		$registry->expects($this->exactly(2))->method('register')
-			->willReturnCallback(function (...$args) use (&$calls): void {
-				$calls[] = $args;
+		$registry->expects($this->exactly(2))->method('add')
+			->willReturnCallback(function (DeepLinkRegistration $link) use (&$calls): void {
+				$calls[] = [$link->appId, $link->registerSlug, $link->schemaSlug, $link->urlTemplate, $link->icon, $link->displayName];
 			});
 
 		$this->listener()->handle(new DeepLinkRegistrationEvent($registry));
@@ -107,7 +108,7 @@ class GenericDeepLinkRegistrationListenerBehaviourTest extends TestCase {
 		$logger->expects($this->never())->method('warning');
 
 		$registry = $this->createMock(DeepLinkRegistryServiceInterface::class);
-		$registry->expects($this->never())->method('register');
+		$registry->expects($this->never())->method('add');
 
 		$this->listener($appManager, $logger)->handle(new DeepLinkRegistrationEvent($registry));
 	}
@@ -117,7 +118,7 @@ class GenericDeepLinkRegistrationListenerBehaviourTest extends TestCase {
 		$logger->expects($this->once())->method('warning')->with($this->stringContains('[AppHost:leafapp] no src/manifest.json'));
 
 		$registry = $this->createMock(DeepLinkRegistryServiceInterface::class);
-		$registry->expects($this->never())->method('register');
+		$registry->expects($this->never())->method('add');
 
 		$this->listener(null, $logger)->handle(new DeepLinkRegistrationEvent($registry));
 	}
@@ -128,7 +129,7 @@ class GenericDeepLinkRegistrationListenerBehaviourTest extends TestCase {
 		$logger->expects($this->once())->method('warning')->with($this->stringContains('manifest.json is invalid JSON'));
 
 		$registry = $this->createMock(DeepLinkRegistryServiceInterface::class);
-		$registry->expects($this->never())->method('register');
+		$registry->expects($this->never())->method('add');
 
 		$this->listener(null, $logger)->handle(new DeepLinkRegistrationEvent($registry));
 	}
@@ -139,7 +140,7 @@ class GenericDeepLinkRegistrationListenerBehaviourTest extends TestCase {
 		$logger->expects($this->once())->method('warning')->with($this->stringContains('invalid JSON'));
 
 		$registry = $this->createMock(DeepLinkRegistryServiceInterface::class);
-		$registry->expects($this->never())->method('register');
+		$registry->expects($this->never())->method('add');
 
 		$this->listener(null, $logger)->handle(new DeepLinkRegistrationEvent($registry));
 	}
@@ -150,7 +151,7 @@ class GenericDeepLinkRegistrationListenerBehaviourTest extends TestCase {
 		$logger->expects($this->never())->method('warning');
 
 		$registry = $this->createMock(DeepLinkRegistryServiceInterface::class);
-		$registry->expects($this->never())->method('register');
+		$registry->expects($this->never())->method('add');
 
 		$this->listener(null, $logger)->handle(new DeepLinkRegistrationEvent($registry));
 	}
@@ -161,7 +162,7 @@ class GenericDeepLinkRegistrationListenerBehaviourTest extends TestCase {
 		$logger->expects($this->never())->method('warning');
 
 		$registry = $this->createMock(DeepLinkRegistryServiceInterface::class);
-		$registry->expects($this->never())->method('register');
+		$registry->expects($this->never())->method('add');
 
 		$this->listener(null, $logger)->handle(new DeepLinkRegistrationEvent($registry));
 	}

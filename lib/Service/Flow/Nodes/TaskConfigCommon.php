@@ -103,6 +103,34 @@ final class TaskConfigCommon {
 	}//end renderedTitle()
 
 	/**
+	 * A templated string, or null when it is absent or renders to nothing.
+	 *
+	 * @param mixed                $value The configured value.
+	 * @param array<string, mixed> $json  The representative record.
+	 *
+	 * @return string|null The rendered string, or null.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 */
+	public function renderedOrNull(mixed $value, array $json): ?string {
+		if ($value === null) {
+			return null;
+		}
+
+		$rendered = FlowValueTemplate::render(value: $value, json: $json);
+		if (is_scalar($rendered) === false) {
+			return null;
+		}
+
+		$rendered = trim((string)$rendered);
+		if ($rendered === '') {
+			return null;
+		}
+
+		return $rendered;
+	}//end renderedOrNull()
+
+	/**
 	 * When to wake up and re-ask, absent a wake. Never null.
 	 *
 	 * @param array<string, mixed> $config The step configuration.
@@ -154,16 +182,8 @@ final class TaskConfigCommon {
 	 * @return array<int, string> Trimmed, non-empty entries.
 	 */
 	public function listOf(mixed $value): array {
-		if (is_string($value) === true) {
-			$value = explode(',', $value);
-		}
-
-		if (is_array($value) === false) {
-			return [];
-		}
-
 		$list = [];
-		foreach ($value as $entry) {
+		foreach (self::entriesOf(value: $value) as $entry) {
 			if (is_scalar($entry) === false) {
 				continue;
 			}
@@ -176,6 +196,26 @@ final class TaskConfigCommon {
 
 		return $list;
 	}//end listOf()
+
+	/**
+	 * The raw entries of a configured list: a string split on commas, an array
+	 * as given, nothing for anything else.
+	 *
+	 * @param mixed $value The configured value.
+	 *
+	 * @return array<mixed> The untrimmed entries.
+	 */
+	private static function entriesOf(mixed $value): array {
+		if (is_string($value) === true) {
+			return explode(',', $value);
+		}
+
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return $value;
+	}//end entriesOf()
 
 	/**
 	 * The record of the representative item: the first array item's json.

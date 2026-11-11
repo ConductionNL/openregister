@@ -40,6 +40,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Unit tests for the one anonymous timeline reader.
@@ -110,7 +111,7 @@ class PublicTimelineTest extends TestCase {
 	public function testBothSourcesAreAskedForThePublicHalf(): void {
 		$this->entries->expects($this->once())
 			->method('listForObject')
-			->with($this->anything(), TimelineVisibilityService::PUBLIC_ENTRY, 50)
+			->with($this->anything(), $this->callback(static fn (ListQuery $q): bool => [$q->filters['visibility'] ?? null, $q->limit, $q->offset ?? 0] === [TimelineVisibilityService::PUBLIC_ENTRY, 50, 0]))
 			->willReturn([]);
 
 		$this->notes->expects($this->once())

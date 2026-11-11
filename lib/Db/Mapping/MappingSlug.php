@@ -133,6 +133,7 @@ final class MappingSlug {
 		try {
 			return 'mapping-' . bin2hex(random_bytes(4));
 		} catch (\Exception $e) {
+			// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 			return 'mapping-' . substr(md5($name), 0, 8);
 		}
 	}//end fallback()

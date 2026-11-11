@@ -179,6 +179,6 @@ class MagicFacetHandlerUnionFacetsGoldenTest extends TestCase {
 			);
 		}
 
-		return new MagicFacetHandler($db, $logger, null, null, null, $container, null);
+		return new MagicFacetHandler($db, $logger, null, $container);
 	}//end handler()
 }//end class

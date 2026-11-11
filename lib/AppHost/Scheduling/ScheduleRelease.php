@@ -106,6 +106,7 @@ final class ScheduleRelease {
 	 * @spec openspec/changes/apphost-schedule-flow-action/specs/apphost-scheduling/spec.md
 	 */
 	public function flowUuid(string $scheduleId): string {
+		// NOSEMGREP: php.lang.security.weak-crypto.weak-crypto -- The hash only derives a stable identifier, not a security value.
 		$hash = md5('apphost-schedule:' . $this->applicationUuid() . ':' . $scheduleId);
 		$variant = dechex((hexdec($hash[16]) & 0x3) | 0x8);
 

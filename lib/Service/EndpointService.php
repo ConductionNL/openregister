@@ -121,22 +121,20 @@ class EndpointService implements EndpointServiceInterface {
 	 * at lines 402/410/457 and the audit-log write at 487. Same defect as
 	 * NotificationService and UploadService in this repo.
 	 *
-	 * @param EndpointMappers $mappers Endpoint execution log and agent mappers.
-	 * @param LoggerInterface   $logger            Logger.
-	 * @param IUserSession      $userSession       Current user context.
-	 * @param IGroupManager     $groupManager      Group membership lookups.
+	 * @param EndpointMappers $mappers   Endpoint execution log and agent mappers.
+	 * @param LoggerInterface $logger    Logger.
+	 * @param UserDirectory   $directory Current user context and group membership lookups.
 	 */
 	public function __construct(
 		EndpointMappers $mappers,
 		LoggerInterface $logger,
-		IUserSession $userSession,
-		IGroupManager $groupManager,
+		UserDirectory $directory,
 	) {
 		$this->agentMapper = $mappers->agentMapper;
 		$this->endpointLogMapper = $mappers->endpointLogMapper;
 		$this->logger = $logger;
-		$this->userSession = $userSession;
-		$this->groupManager = $groupManager;
+		$this->userSession = $directory->session;
+		$this->groupManager = $directory->groups;
 	}//end __construct()
 
 	/**

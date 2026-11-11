@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Unit\Service\File;
 
+use OCP\IGroupManager;
+use OCA\OpenRegister\Service\File\FileSession;
 use DateTime;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
 use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
@@ -61,8 +63,7 @@ class FileFormattingHandlerTest extends TestCase {
 
 		$this->handler = new FileFormattingHandler(
 			$this->lockManager,
-			$this->userSession,
-			$this->logger
+			new FileSession($this->userSession, $this->createMock(IGroupManager::class), $this->logger)
 		);
 		$this->handler->setFileService($this->fileService);
 

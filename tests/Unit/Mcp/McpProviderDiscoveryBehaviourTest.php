@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
+use OCA\OpenRegister\Mcp\McpDiscoveryRun;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -155,9 +156,11 @@ class McpProviderDiscoveryBehaviourTest extends TestCase {
 	 * @return list<IMcpToolProvider> Providers after collection.
 	 */
 	private function collect(array $providers): array {
-		$this->invoke('collectSchemaDerivedMcpProviders', [$this->container(), $this->logger, &$providers]);
+		$run = new McpDiscoveryRun($this->container(), $this->logger);
+		$run->addAll($providers);
+		$this->invoke('collectSchemaDerivedMcpProviders', [$run]);
 
-		return $providers;
+		return $run->providers();
 	}//end collect()
 
 	/**
@@ -290,9 +293,11 @@ class McpProviderDiscoveryBehaviourTest extends TestCase {
 		$this->logger->expects($this->once())->method('warning')
 			->with('[Application] Attributed-tool provider enumeration failed: No binding for OCP\App\IAppManager');
 
-		$this->invoke('collectAttributeMcpProviders', [$this->container(), $this->logger, &$providers]);
+		$run = new McpDiscoveryRun($this->container(), $this->logger);
+		$run->addAll($providers);
+		$this->invoke('collectAttributeMcpProviders', [$run]);
 
-		$this->assertSame([$existing], $providers);
+		$this->assertSame([$existing], $run->providers());
 	}//end testAttributeEnumerationFailureIsLogged()
 
 	/**
@@ -304,10 +309,9 @@ class McpProviderDiscoveryBehaviourTest extends TestCase {
 		$descriptors = [['id' => 'pipelinq.ping'], ['id' => 'pipelinq.pong']];
 		$this->logger->expects($this->never())->method('error');
 
-		$kept = $this->invoke(
-			'withoutCollidingDescriptors',
-			[$this->logger, 'pipelinq', $descriptors, [$this->provider('other', [['id' => 'pipelinq.ping']]), $this->provider('pipelinq', [['id' => 'pipelinq.pong']])]]
-		);
+		$run = new McpDiscoveryRun($this->container(), $this->logger);
+		$run->addAll([$this->provider('other', [['id' => 'pipelinq.ping']]), $this->provider('pipelinq', [['id' => 'pipelinq.pong']])]);
+		$kept = $run->withoutCollidingDescriptors('pipelinq', $descriptors);
 
 		$this->assertSame([['id' => 'pipelinq.ping']], $kept);
 	}//end testCollisionCheckIgnoresOtherApps()

@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Form;
 
+use OCA\OpenRegister\Service\Form\FormDestination;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Service\File\FilePropertyRules;
@@ -28,6 +29,7 @@ use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
 use OCA\OpenRegister\Service\Form\FormUploadClaim;
 use OCA\OpenRegister\Service\Form\FormUploadClaims;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
+use OCA\OpenRegister\Service\Form\IdempotentRequest;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryLockingProvider;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -139,54 +141,54 @@ class FormUploadAccessGoldenTest extends TestCase {
 
 	public function testWhoMayRedeemAToken(): void {
 		$token = $this->store->issue(formId: 'f', property: 'p', rule: ['type' => 'file'], file: $this->upload('%PDF'))['token'];
-		$file = $this->store->redeem(formId: 'f', property: 'p', token: $token);
+		$file = $this->store->redeem(claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: null), token: $token);
 
 		$this->assertSame(['name' => 'bewijs.pdf', 'type' => 'application/pdf', 'error' => UPLOAD_ERR_OK, 'size' => 4], array_diff_key($file, ['tmp_name' => true]));
 		$this->assertSame('%PDF', file_get_contents($file['tmp_name']));
-		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(formId: 'other', property: 'p', token: $token)));
-		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(formId: 'f', property: 'q', token: $token)));
-		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(formId: 'f', property: 'p', token: 'not-a-token')));
-		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(formId: 'f', property: 'p', token: str_repeat('a', 32))));
+		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(claim: new FormUploadClaim(formId: 'other', property: 'p', draftId: null), token: $token)));
+		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(claim: new FormUploadClaim(formId: 'f', property: 'q', draftId: null), token: $token)));
+		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: null), token: 'not-a-token')));
+		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: null), token: str_repeat('a', 32))));
 		$this->now += FormUploadStore::TTL;
-		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(formId: 'f', property: 'p', token: $token)));
+		$this->assertSame('422:upload-token-unknown', $this->outcome(fn () => $this->store->redeem(claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: null), token: $token)));
 	}//end testWhoMayRedeemAToken()
 
 	public function testWhoAClaimRecordSatisfies(): void {
 		$token = $this->store->issue(formId: 'f', property: 'p', rule: ['type' => 'file'], file: $this->upload('%PDF'))['token'];
 		$this->store->claim(tokens: [$token], draftId: 'd');
 		$folder = $this->appData->getFolder('form-uploads');
-		$claims = new FormUploadClaims(time: $this->time);
+		$claims = new FormUploadClaims(time: $this->time, folder: $folder);
 
-		$this->assertTrue($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'g', property: 'p', draftId: 'd')));
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'q', draftId: 'd')));
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'e')));
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: null)));
-		$this->assertFalse($claims->isClaimedBy(folder: null, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: strtoupper($token), claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: str_repeat('b', 32), claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertTrue($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'g', property: 'p', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'q', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'e')));
+		$this->assertFalse($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: null)));
+		$this->assertFalse((new FormUploadClaims(time: $this->time))->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: strtoupper($token), claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: str_repeat('b', 32), claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
 		$folder->newFile(str_repeat('c', 32) . FormUploadClaims::SUFFIX, 'not json');
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: str_repeat('c', 32), claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: str_repeat('c', 32), claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
 		$this->now += FormUploadStore::TTL - 1;
-		$this->assertTrue($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertTrue($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
 		$this->now += 1;
-		$this->assertFalse($claims->isClaimedBy(folder: $folder, token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
+		$this->assertFalse($claims->isClaimedBy(token: $token, claim: new FormUploadClaim(formId: 'f', property: 'p', draftId: 'd')));
 	}//end testWhoAClaimRecordSatisfies()
 
 	public function testWhoGetsARememberedAnswer(): void {
 		$binding = $this->keys->bindingFor(subject: 'user:alice', payload: ['a' => 1]);
-		$this->assertNull($this->keys->find(scope: 'f', key: 'k', binding: $binding));
-		$this->keys->remember(scope: 'f', key: 'k', response: ['id' => 'x'], binding: $binding);
+		$this->assertNull($this->keys->answerFor(new IdempotentRequest(scope: 'f', key: 'k', binding: $binding)));
+		$this->keys->keep(new IdempotentRequest(scope: 'f', key: 'k', binding: $binding), ['id' => 'x']);
 
-		$this->assertSame(['id' => 'x'], $this->keys->find(scope: 'f', key: 'k', binding: $binding));
-		$this->assertNull($this->keys->find(scope: 'g', key: 'k', binding: $binding));
+		$this->assertSame(['id' => 'x'], $this->keys->answerFor(new IdempotentRequest(scope: 'f', key: 'k', binding: $binding)));
+		$this->assertNull($this->keys->answerFor(new IdempotentRequest(scope: 'g', key: 'k', binding: $binding)));
 		$other = $this->keys->bindingFor(subject: 'user:bob', payload: ['a' => 1]);
-		$this->assertSame('409:', $this->outcome(fn () => $this->keys->find(scope: 'f', key: 'k', binding: $other)));
+		$this->assertSame('409:', $this->outcome(fn () => $this->keys->answerFor(new IdempotentRequest(scope: 'f', key: 'k', binding: $other))));
 		$changed = $this->keys->bindingFor(subject: 'user:alice', payload: ['a' => 2]);
-		$this->assertSame('409:', $this->outcome(fn () => $this->keys->find(scope: 'f', key: 'k', binding: $changed)));
+		$this->assertSame('409:', $this->outcome(fn () => $this->keys->answerFor(new IdempotentRequest(scope: 'f', key: 'k', binding: $changed))));
 		$this->now += 86_400;
-		$this->assertNull($this->keys->find(scope: 'f', key: 'k', binding: $binding));
-		$this->assertNull($this->keys->find(scope: 'f', key: 'k', binding: $other));
+		$this->assertNull($this->keys->answerFor(new IdempotentRequest(scope: 'f', key: 'k', binding: $binding)));
+		$this->assertNull($this->keys->answerFor(new IdempotentRequest(scope: 'f', key: 'k', binding: $other)));
 	}//end testWhoGetsARememberedAnswer()
 
 	public function testWhichCreateGrantOpensADestinationToAnAudience(): void {
@@ -200,7 +202,7 @@ class FormUploadAccessGoldenTest extends TestCase {
 			$schema->setRequired([]);
 			$schema->setAuthorization($authorization);
 
-			return $validator->validate(mapping: ['fields' => []], schema: $schema, options: ['audience' => $audience]) === [];
+			return $validator->validate(mapping: ['fields' => []], destination: new FormDestination(schema: $schema, audience: $audience)) === [];
 		};
 
 		$this->assertTrue($open([], 'public'));

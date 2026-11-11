@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -46,14 +47,12 @@ interface ImportPreviewMapperInterface {
 	/**
 	 * List the previews of one actor, newest first.
 	 *
-	 * @param string $createdBy The actor's uid.
-	 * @param string|null $state Optional state filter.
-	 * @param int|null $limit Optional page size.
-	 * @param int|null $offset Optional page offset.
+	 * @param string    $createdBy The actor's uid.
+	 * @param ListQuery $query     The page (unbounded for every preview) and the optional `state` filter.
 	 *
 	 * @return ImportPreview[] The actor's previews.
 	 */
-	public function findByActor(string $createdBy, ?string $state = null, ?int $limit = null, ?int $offset = null): array;
+	public function findByActor(string $createdBy, ListQuery $query=new ListQuery(limit: ListQuery::UNBOUNDED)): array;
 
 	/**
 	 * Persist a preview, moving its updated timestamp.

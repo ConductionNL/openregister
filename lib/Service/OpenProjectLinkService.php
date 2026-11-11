@@ -10,9 +10,8 @@
  *
  *   - linkWorkPackage(uuid, registerId, schemaId, workPackageId)
  *       — link an existing OpenProject work package
- *   - createAndLinkWorkPackage(uuid, registerId, schemaId, projectId,
- *       subject, type) — create a new work package in OpenProject and
- *       link it
+ *   - createAndLinkDraft(target, draft) — create a new work package in
+ *       OpenProject and link it
  *   - unlink(uuid, workPackageId)
  *       — remove a link (the work package itself stays in OpenProject)
  *   - getLinkedWorkPackages(uuid)
@@ -53,10 +52,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use Exception;
 use OCA\OpenRegister\Db\OpenProjectLink;
 use OCA\OpenRegister\Db\OpenProjectLinkMapperInterface;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCA\OpenRegister\Support\FleetAppId;
@@ -151,7 +152,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
 	public function linkWorkPackage(LinkTarget $target, int $workPackageId): OpenProjectLink {
-		$uid = $this->requireUid();
+		$this->requireUid();
 
 		if ($workPackageId === 0) {
 			throw new Exception('workPackageId is required', 400);
@@ -163,15 +164,13 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 		// down we still persist the link with the id so the row survives,
 		// then refresh later (wave-5.2 graceful degradation).
 		$info = $this->fetchWorkPackage(
-			register: (string)$target->registerId,
-			schema: (string)$target->schemaId(),
-			objectUuid: $target->objectUuid,
+			ref: new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
 			workPackageId: $workPackageId
 		);
 
 		$link = $this->hydrateLink(workPackageId: $workPackageId, info: ($info ?? ['subject' => '#' . $workPackageId]));
 
-		return $this->insertLink(target: $target, link: $link, uid: $uid);
+		return $this->insertLink(target: $target, link: $link);
 	}//end linkWorkPackage()
 
 	/**
@@ -191,16 +190,17 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	}//end assertNotLinked()
 
 	/**
-	 * Stamp a link row with its object and linking user, and persist it.
+	 * Stamp a link row with its object and the session user, and persist it.
+	 *
+	 * Callers have already required a session user (401) before any other work.
 	 *
 	 * @param LinkTarget      $target The object to link to.
 	 * @param OpenProjectLink $link   The hydrated link row.
-	 * @param string          $uid    The user linking it.
 	 *
 	 * @return OpenProjectLink The persisted link row.
 	 */
-	private function insertLink(LinkTarget $target, OpenProjectLink $link, string $uid): OpenProjectLink {
-		$target->stamp(link: $link, linkedBy: $uid);
+	private function insertLink(LinkTarget $target, OpenProjectLink $link): OpenProjectLink {
+		$target->stamp(link: $link, linkedBy: $this->requireUid());
 
 		return $this->openProjectLinkMapper->insert($link);
 	}//end insertLink()
@@ -208,10 +208,8 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	/**
 	 * Create a new OpenProject work package and link it to an OR object.
 	 *
-	 * @param LinkTarget $target The object to link to.
-	 * @param string $projectId Target OpenProject project id.
-	 * @param string $subject New work-package subject.
-	 * @param string $type Optional work-package type (id or label).
+	 * @param LinkTarget       $target The object to link to.
+	 * @param WorkPackageDraft $draft  The project, subject and type of the new work package.
 	 *
 	 * @return OpenProjectLink The persisted link row.
 	 *
@@ -220,34 +218,26 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
 	 */
-	public function createAndLinkWorkPackage(
-		LinkTarget $target,
-		string $projectId,
-		string $subject,
-		string $type = '',
-	): OpenProjectLink {
-		$uid = $this->requireUid();
+	public function createAndLinkDraft(LinkTarget $target, WorkPackageDraft $draft): OpenProjectLink {
+		$this->requireUid();
 
-		$payload = $this->createPayload(projectId: $projectId, subject: $subject, type: $type);
-		$created = $this->createWorkPackage(target: $target, payload: $payload);
+		$created = $this->createWorkPackage(target: $target, payload: $this->createPayload(draft: $draft));
 		$link = $this->hydrateLink(workPackageId: $this->createdId(created: $created), info: $this->normaliseRow(row: $created));
 
-		return $this->insertLink(target: $target, link: $link, uid: $uid);
-	}//end createAndLinkWorkPackage()
+		return $this->insertLink(target: $target, link: $link);
+	}//end createAndLinkDraft()
 
 	/**
 	 * The create payload: trimmed subject and project, and the type when given.
 	 *
-	 * @param string $projectId Target OpenProject project id.
-	 * @param string $subject   New work-package subject.
-	 * @param string $type      Optional work-package type (id or label).
+	 * @param WorkPackageDraft $draft The project, subject and type of the new work package.
 	 *
 	 * @return array<string,string>
 	 *
 	 * @throws Exception On an empty subject or project (400).
 	 */
-	private function createPayload(string $projectId, string $subject, string $type): array {
-		$payload = ['subject' => trim($subject), 'project' => trim($projectId)];
+	private function createPayload(WorkPackageDraft $draft): array {
+		$payload = ['subject' => trim($draft->subject), 'project' => trim($draft->projectId)];
 		if ($payload['subject'] === '') {
 			throw new Exception('Subject is required', 400);
 		}
@@ -256,8 +246,8 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 			throw new Exception('Project id is required', 400);
 		}
 
-		if ($type !== '') {
-			$payload['type'] = $type;
+		if ($draft->type !== '') {
+			$payload['type'] = $draft->type;
 		}
 
 		return $payload;
@@ -276,15 +266,13 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	private function createWorkPackage(LinkTarget $target, array $payload): array {
 		try {
 			return $this->provider->create(
-				register: (string)$target->registerId,
-				schema: (string)$target->schemaId(),
-				objectId: $target->objectUuid,
+				ref: new ObjectRef(register: (string)$target->registerId, schema: (string)$target->schemaId(), id: $target->objectUuid),
 				payload: $payload
 			);
 		} catch (ProviderUnavailableException $e) {
 			throw $this->unavailable(exception: $e);
 		} catch (Throwable $e) {
-			$this->runtime->logger()->warning('OpenProjectLinkService::createAndLinkWorkPackage failed: ' . $e->getMessage());
+			$this->runtime->logger()->warning('OpenProjectLinkService::createAndLinkDraft failed: ' . $e->getMessage());
 			throw new Exception('Failed to create OpenProject work package', 500);
 		}
 	}//end createWorkPackage()
@@ -315,13 +303,11 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 *
 	 * @return OpenProjectLink
 	 */
-	private function hydrateLink(
-		int $workPackageId,
-		array $info,
-	): OpenProjectLink {
+	private function hydrateLink(int $workPackageId, array $info): OpenProjectLink {
 		$link = new OpenProjectLink();
 		$link->setWorkPackageId($workPackageId);
-		$this->applyInfo(link: $link, info: $info, fallback: ['subject' => '#' . $workPackageId, 'url' => null]);
+		$link->setSubject('#' . $workPackageId);
+		$this->applyInfo(link: $link, info: $info);
 
 		return $link;
 	}//end hydrateLink()
@@ -329,20 +315,21 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	/**
 	 * Copy normalised work-package info onto a link row's cached columns and stamp the cache time.
 	 *
-	 * @param OpenProjectLink                            $link     The link row.
-	 * @param array<string,mixed>                        $info     Normalised work-package info.
-	 * @param array{subject: ?string, url: ?string}      $fallback Subject and url used when the info has none.
+	 * The link's own subject and url stay when the info has none.
+	 *
+	 * @param OpenProjectLink     $link The link row.
+	 * @param array<string,mixed> $info Normalised work-package info.
 	 *
 	 * @return void
 	 */
-	private function applyInfo(OpenProjectLink $link, array $info, array $fallback): void {
-		$link->setSubject((string)($info['subject'] ?? $fallback['subject']));
+	private function applyInfo(OpenProjectLink $link, array $info): void {
+		$link->setSubject((string)($info['subject'] ?? $link->getSubject()));
 		$link->setType($this->stringOrNull(value: ($info['type'] ?? null)));
 		$link->setStatus($this->stringOrNull(value: ($info['status'] ?? null)));
 		$link->setPriority($this->stringOrNull(value: ($info['priority'] ?? null)));
 		$link->setAssignee($this->stringOrNull(value: ($info['assignee'] ?? null)));
 		$link->setProject($this->stringOrNull(value: ($info['project'] ?? null)));
-		$link->setUrl($this->stringOrNull(value: ($info['url'] ?? $fallback['url'])));
+		$link->setUrl($this->stringOrNull(value: ($info['url'] ?? $link->getUrl())));
 		$link->setCachedAt(new DateTime());
 	}//end applyInfo()
 
@@ -444,7 +431,7 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 */
 	private function callPicker(array $options): array {
 		try {
-			return $this->router->call(provider: $this->provider, method: 'GET', path: '', options: $options);
+			return $this->router->call(provider: $this->provider, request: new UpstreamRequest(method: 'GET', path: '', options: $options));
 		} catch (ProviderUnavailableException $e) {
 			throw $this->unavailable(exception: $e);
 		} catch (Throwable $e) {
@@ -481,16 +468,14 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 */
 	private function refreshLink(OpenProjectLink $link): OpenProjectLink {
 		$info = $this->fetchWorkPackage(
-			register: (string)$link->getRegisterId(),
-			schema: (string)($link->getSchemaId() ?? 0),
-			objectUuid: (string)$link->getObjectUuid(),
+			ref: new ObjectRef(register: (string)$link->getRegisterId(), schema: (string)($link->getSchemaId() ?? 0), id: (string)$link->getObjectUuid()),
 			workPackageId: (int)$link->getWorkPackageId()
 		);
 		if ($info === null) {
 			return $link;
 		}
 
-		$this->applyInfo(link: $link, info: $info, fallback: ['subject' => $link->getSubject(), 'url' => $link->getUrl()]);
+		$this->applyInfo(link: $link, info: $info);
 
 		return $this->saveRefreshed(link: $link);
 	}//end refreshLink()
@@ -517,20 +502,21 @@ class OpenProjectLinkService implements OpenProjectLinkServiceInterface {
 	 * Returns null when the source is unconfigured / unreachable or the
 	 * package cannot be resolved, so callers degrade gracefully.
 	 *
-	 * @param string $register OR register id (context).
-	 * @param string $schema OR schema id (context).
-	 * @param string $objectUuid Parent OR object uuid (context).
-	 * @param int $workPackageId OpenProject work-package id.
+	 * @param ObjectRef $ref           The OR register, schema and object uuid (context).
+	 * @param int       $workPackageId OpenProject work-package id.
 	 *
 	 * @return array<string,mixed>|null
 	 */
-	private function fetchWorkPackage(string $register, string $schema, string $objectUuid, int $workPackageId): ?array {
+	private function fetchWorkPackage(ObjectRef $ref, int $workPackageId): ?array {
 		if ($this->isOpenConnectorAvailable() === false) {
 			return null;
 		}
 
 		try {
-			$row = $this->provider->get(register: $register, schema: $schema, objectId: $objectUuid, entityId: (string)$workPackageId);
+			$row = $this->provider->get(
+				ref: new ObjectRef(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id),
+				entityId: (string)$workPackageId
+			);
 		} catch (Throwable $e) {
 			$this->runtime->logger()->debug('OpenProjectLinkService::fetchWorkPackage failed: ' . $e->getMessage());
 			return null;

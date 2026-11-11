@@ -37,6 +37,7 @@ use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Golden outcomes of the shared credential lookups.
@@ -104,7 +105,10 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 			}
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid, $register = null, $schema = null, bool $_rbac = true, bool $_multitenancy = true) use (&$calls): bool {
+			function (ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false) use (&$calls): bool {
+				$uuid = $deletion->uuid;
+				$register = $deletion->target->register;
+				$schema = $deletion->target->schema;
 				$calls[] = ['delete', $uuid, $register, $schema, $_rbac, $_multitenancy];
 				return true;
 			}
@@ -115,8 +119,8 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 			credentialStore: $store,
 			organisationService: $this->createMock(OrganisationServiceInterface::class)
 		);
-		$repository->disable(credentialId: 'cred-1', data: ['scope' => 'organisation', 'status' => 'active', 'name' => 'n'], lastError: 'revoke_failed');
-		$repository->disable(credentialId: 'cred-2', data: [], lastError: '');
+		$repository->disable(connection: new \OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord(credentialId: 'cred-1', data: ['scope' => 'organisation', 'status' => 'active', 'name' => 'n']), lastError: 'revoke_failed');
+		$repository->disable(connection: new \OCA\OpenRegister\Service\Credential\OAuth2ConnectionRecord(credentialId: 'cred-2', data: []), lastError: '');
 		$repository->discard(credentialId: 'cred-3', scope: 'personal');
 
 		$this->assertSame(
@@ -134,7 +138,7 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 
 	public function testAReconnectReusesThePinnedClient(): void {
 		$claims = $this->instanceClient(stored: ['clientId' => ' CID ', 'clientCredentialRef' => ' REF '], registers: false)
-			->ensure(provider: $this->mastodon(), claims: ['cid' => ' cred-1 ', 'h' => 'https://m.example'], redirectUri: 'R');
+			->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(provider: $this->mastodon(), claims: ['cid' => ' cred-1 ', 'h' => 'https://m.example'], redirectUri: 'R'));
 
 		$this->assertSame(['cid' => ' cred-1 ', 'h' => 'https://m.example', 'cl' => 'CID', 'cr' => 'REF'], $claims);
 		$this->assertSame('cred-1', $this->finds[0]['id']);
@@ -158,7 +162,7 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 	 */
 	public function testAReconnectWithNothingPinnedRegistersAnew(array|null|\Throwable $stored): void {
 		$claims = $this->instanceClient(stored: $stored, registers: true)
-			->ensure(provider: $this->mastodon(), claims: ['cid' => 'cred-1', 'h' => 'https://m.example', 'u' => 'alice'], redirectUri: 'R');
+			->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(provider: $this->mastodon(), claims: ['cid' => 'cred-1', 'h' => 'https://m.example', 'u' => 'alice'], redirectUri: 'R'));
 
 		$this->assertSame('NEW', $claims['cl']);
 		$this->assertSame('minted', $claims[OAuth2InstanceClient::MINTED_KEY]);
@@ -166,7 +170,7 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 
 	public function testAFirstConnectDoesNotLookAnythingUp(): void {
 		$this->instanceClient(stored: null, registers: true)
-			->ensure(provider: $this->mastodon(), claims: ['h' => 'https://m.example'], redirectUri: 'R');
+			->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(provider: $this->mastodon(), claims: ['h' => 'https://m.example'], redirectUri: 'R'));
 
 		$this->assertSame([], $this->finds);
 	}
@@ -188,7 +192,7 @@ class OAuth2ConnectionLookupGoldenTest extends TestCase {
 		$service = new OAuth2InstanceClient(broker: $broker, objectService: $this->objects(stored: null), clientService: $http);
 
 		try {
-			$service->ensure(provider: $this->mastodon(), claims: ['h' => 'https://m.example', 'sc' => ['read', 'write']], redirectUri: 'R');
+			$service->ensure(registration: new \OCA\OpenRegister\Service\Credential\OAuth2ClientRegistration(provider: $this->mastodon(), claims: ['h' => 'https://m.example', 'sc' => ['read', 'write']], redirectUri: 'R'));
 			$this->fail('registration without client id accepted');
 		} catch (OAuth2RegistrationFailedException $refused) {
 			$this->assertSame('application registration returned no client id', $refused->getMessage());

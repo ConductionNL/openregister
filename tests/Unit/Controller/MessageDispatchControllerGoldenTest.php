@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\MessageDispatchController;
+use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -49,7 +50,7 @@ class MessageDispatchControllerGoldenTest extends TestCase {
 		parent::setUp();
 		$this->request = $this->createMock(IRequest::class);
 		$this->provider = $this->createMock(MessageDispatchProvider::class);
-		$this->controller = new MessageDispatchController('openregister', $this->request, $this->provider);
+		$this->controller = new MessageDispatchController($this->request, $this->provider);
 	}
 
 	private function withParams(array $params): void {
@@ -72,7 +73,7 @@ class MessageDispatchControllerGoldenTest extends TestCase {
 		$result = ['status' => 'sent', 'source' => 'twilio-sms', 'response' => ['sid' => 'S1']];
 		$this->provider->expects($this->once())
 			->method('dispatch')
-			->with('twilio-sms', [], '/2010-04-01/Messages.json', ['7' => '42', 'X-Flag' => '1', 'X-Off' => '', 'X-F' => '1.5'])
+			->with('twilio-sms', new OutboundMessage(path: '/2010-04-01/Messages.json', body: [], headers: ['7' => '42', 'X-Flag' => '1', 'X-Off' => '', 'X-F' => '1.5']))
 			->willReturn($result);
 
 		$response = $this->controller->smsSend();
@@ -85,7 +86,7 @@ class MessageDispatchControllerGoldenTest extends TestCase {
 		$this->withParams(['source' => 'whatsapp-bsp', 'path' => '/send', 'body' => ['a' => 1], 'headers' => 'x']);
 		$this->provider->expects($this->once())
 			->method('dispatch')
-			->with('whatsapp-bsp', ['a' => 1], '/send', [])
+			->with('whatsapp-bsp', new OutboundMessage(path: '/send', body: ['a' => 1], headers: []))
 			->willReturn(['status' => 'sent']);
 
 		$this->assertSame(['status' => 'sent'], $this->controller->whatsappSend()->getData());

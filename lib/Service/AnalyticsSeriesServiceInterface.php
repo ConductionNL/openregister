@@ -71,14 +71,7 @@ interface AnalyticsSeriesServiceInterface {
 	 * accumulating duplicates. Also (re)declares the matching page widget
 	 * on the IntegrationRegistry so the render layer can discover it.
 	 *
-	 * @param string $seriesKey Stable series key.
-	 * @param array<int,mixed> $labels X-axis labels.
-	 * @param array<int,array<string,mixed>> $datasets Named datasets.
-	 * @param string|null $title Chart title.
-	 * @param string $chartType Chart type hint.
-	 * @param string $visibility 'private'|'group'|'public'.
-	 * @param int|null $registerId Optional register scope.
-	 * @param int|null $schemaId Optional schema scope.
+	 * @param AnalyticsSeriesDraft $draft The series to register.
 	 *
 	 * @return array<string,mixed> The stored series render contract.
 	 *
@@ -86,14 +79,5 @@ interface AnalyticsSeriesServiceInterface {
 	 *
 	 * @spec openspec/specs/integration-leaf-foundation/spec.md
 	 */
-	public function register(
-		string $seriesKey,
-		array $labels,
-		array $datasets,
-		?string $title = null,
-		string $chartType = 'line',
-		string $visibility = 'private',
-		?int $registerId = null,
-		?int $schemaId = null,
-	): array;
+	public function registerSeries(AnalyticsSeriesDraft $draft): array;
 }//end interface

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Search\BackgroundJob\Support;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -33,18 +34,36 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
  */
 final class ReportRenderSources {
 	/**
-	 * Bundle the services.
+	 * Register lookup.
 	 *
-	 * @param RegisterMapperInterface $registerMapper Register lookup.
-	 * @param SchemaMapperInterface   $schemaMapper   Schema lookup for the register's schemas.
-	 * @param MagicMapperInterface    $objectMapper   Object loader.
+	 * @var RegisterMapperInterface
+	 */
+	public readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Schema lookup for the register's schemas.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	public readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Object loader.
+	 *
+	 * @var MagicMapperInterface
+	 */
+	public readonly MagicMapperInterface $objectMapper;
+
+	/**
+	 * Take the mappers from the schema catalog.
+	 *
+	 * @param SchemaCatalogInterface $catalog The register, schema and magic-table mappers.
 	 *
 	 * @spec openspec/specs/rapportage-bi-export/spec.md
 	 */
-	public function __construct(
-		public readonly RegisterMapperInterface $registerMapper,
-		public readonly SchemaMapperInterface $schemaMapper,
-		public readonly MagicMapperInterface $objectMapper,
-	) {
+	public function __construct(SchemaCatalogInterface $catalog) {
+		$this->registerMapper = $catalog->registers();
+		$this->schemaMapper = $catalog->schemas();
+		$this->objectMapper = $catalog->tables();
 	}//end __construct()
 }//end class

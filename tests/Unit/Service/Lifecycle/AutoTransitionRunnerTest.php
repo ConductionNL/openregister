@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace Unit\Service\Lifecycle;
 
 use DateTime;
+use OCA\OpenRegister\Service\Lifecycle\SchemaReading;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\BackgroundJob\AutoTransitionJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -126,20 +128,10 @@ class AutoTransitionRunnerTest extends TestCase {
 		$l10n->method('getLanguageCode')->willReturn('en');
 
 		$this->runner = new AutoTransitionRunner(
-			new AutoTransitionDecider(
-				$this->container,
-				$this->schemaMapper,
-				new AutoTransitionSelector(
-					new LifecycleConditionEvaluator(
-						$this->createMock(IUserSession::class),
-						$groupManager,
-						new LifecycleConditionReporting($l10n, $this->logger),
-						$this->realConditionDialect()
-					),
+			new AutoTransitionDecider($this->container, new SchemaReading($this->schemaMapper, $this->logger), new AutoTransitionSelector(
+					new LifecycleConditionEvaluator(new LifecycleConditionReporting($l10n, $this->logger), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCheck($this->realConditionDialect(), new \OCA\OpenRegister\Service\Lifecycle\LifecycleRuleCaller($this->createMock(IUserSession::class), $groupManager))),
 					$this->logger
-				),
-				$this->logger
-			),
+				)),
 			$this->container,
 			// A REAL queue around the mocked deferral service, not a mocked queue:
 			// the dedupe key, the entry shape and the kill-switch rule are the
@@ -220,7 +212,7 @@ class AutoTransitionRunnerTest extends TestCase {
 	public function testAnUnresolvableObjectDecidesNothing(): void {
 		$this->resolver->method('resolve')->willReturn(null);
 
-		$this->assertNull($this->runner->decide(uuid: 'obj-1', register: '1', schema: '2', previous: []));
+		$this->assertNull($this->runner->decide(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []));
 	}//end testAnUnresolvableObjectDecidesNothing()
 
 	/**
@@ -230,7 +222,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->storedObject(['status' => 'open', 'motivering' => 'ja']);
 		$this->schemaMapper->method('find')->willReturn(new Schema());
 
-		$this->assertNull($this->runner->decide(uuid: 'obj-1', register: '1', schema: '2', previous: []));
+		$this->assertNull($this->runner->decide(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []));
 	}//end testASchemaWithoutALifecycleDecidesNothing()
 
 	/**
@@ -242,7 +234,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->storedObject(['status' => 'open', 'motivering' => 'Ongegrond.']);
 		$this->schemaWithAutoWhen();
 
-		$decision = $this->runner->decide(uuid: 'obj-1', register: '1', schema: '2', previous: []);
+		$decision = $this->runner->decide(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []);
 
 		$this->assertNotNull($decision);
 		$this->assertSame('beslissen', $decision->candidate->action);
@@ -260,7 +252,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->storedObject(['status' => 'open', 'motivering' => '']);
 		$this->schemaWithAutoWhen();
 
-		$this->assertNull($this->runner->decide(uuid: 'obj-1', register: '1', schema: '2', previous: []));
+		$this->assertNull($this->runner->decide(ref: new ObjectRef(register: '1', schema: '2', id: 'obj-1'), previous: []));
 	}//end testTheDecisionIsMadeAgainstTheObjectAsStored()
 
 	/**
@@ -278,7 +270,7 @@ class AutoTransitionRunnerTest extends TestCase {
 
 		$this->assertSame(
 			$moved,
-			$this->runner->fire(decision: $this->decision(), lineage: [], queueOnly: false)
+			$this->runner->fire(decision: $this->decision(), lineage: [])
 		);
 	}//end testASyncMoveIsAppliedThroughTheEngine()
 
@@ -305,7 +297,7 @@ class AutoTransitionRunnerTest extends TestCase {
 				)
 			);
 
-		$this->assertNull($this->runner->fire(decision: $this->decision(), lineage: [], queueOnly: false));
+		$this->assertNull($this->runner->fire(decision: $this->decision(), lineage: []));
 	}//end testARefusalIsLoggedWithItsCodeAndDoesNotPropagate()
 
 	/**
@@ -314,7 +306,7 @@ class AutoTransitionRunnerTest extends TestCase {
 	public function testAnArbitraryThrowableDoesNotPropagateEither(): void {
 		$this->engine->method('transition')->willThrowException(new RuntimeException('anything at all'));
 
-		$this->assertNull($this->runner->fire(decision: $this->decision(), lineage: [], queueOnly: false));
+		$this->assertNull($this->runner->fire(decision: $this->decision(), lineage: []));
 	}//end testAnArbitraryThrowableDoesNotPropagateEither()
 
 	/**
@@ -348,8 +340,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->assertNull(
 			$this->runner->fire(
 				decision: $this->decision(mode: 'async'),
-				lineage: ['moves' => 2, 'visited' => ['open' => true, 'besloten' => true], 'applied' => []],
-				queueOnly: false
+				lineage: ['moves' => 2, 'visited' => ['open' => true, 'besloten' => true], 'applied' => []]
 			)
 		);
 	}//end testAnAsyncMoveIsQueuedWithItsLineageAndDedupeKey()
@@ -366,7 +357,7 @@ class AutoTransitionRunnerTest extends TestCase {
 
 		$this->assertSame(
 			$moved,
-			$this->runner->fire(decision: $this->decision(mode: 'async'), lineage: [], queueOnly: false)
+			$this->runner->fire(decision: $this->decision(mode: 'async'), lineage: [])
 		);
 	}//end testTheKillSwitchAppliesAnAsyncMoveInline()
 
@@ -379,9 +370,7 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->engine->expects($this->never())->method('transition');
 		$this->deferral->expects($this->once())->method('defer');
 
-		$this->assertNull(
-			$this->runner->fire(decision: $this->decision(mode: 'sync'), lineage: [], queueOnly: true)
-		);
+		$this->runner->queueOutsideBoundary(decision: $this->decision(mode: 'sync'), lineage: []);
 	}//end testAMoveDecidedOutsideABoundaryIsQueuedEvenWhenSync()
 
 	/**
@@ -392,8 +381,6 @@ class AutoTransitionRunnerTest extends TestCase {
 		$this->engine->expects($this->never())->method('transition');
 		$this->deferral->expects($this->once())->method('defer');
 
-		$this->assertNull(
-			$this->runner->fire(decision: $this->decision(mode: 'async'), lineage: [], queueOnly: true)
-		);
+		$this->runner->queueOutsideBoundary(decision: $this->decision(mode: 'async'), lineage: []);
 	}//end testTheKillSwitchDoesNotPullAnOutsideMoveInline()
 }//end class

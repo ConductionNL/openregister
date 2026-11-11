@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\FreezeTerms;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -101,10 +102,8 @@ class SaveObjectArchiveGuardTest extends TestCase {
 			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
 				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
 					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
-						objectEntityMapper: $this->mapper,
-						unifiedObjectMapper: $this->createMock(MagicMapper::class),
-						schemaMapper: $this->createMock(SchemaMapper::class),
-						registerMapper: $this->createMock(RegisterMapper::class)
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->mapper),
+						unifiedObjectMapper: $this->createMock(MagicMapper::class)
 					),
 					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
 						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
@@ -251,10 +250,9 @@ class SaveObjectArchiveGuardTest extends TestCase {
 	 */
 	public function testWriteToAFrozenObjectIsRefusedAndNamesTheState(): void {
 		$object = $this->storedObject();
-		$object->freeze(
+		$object->freezeWith(
 			userSession: $this->sessionFor(uid: 'bert'),
-			reason: 'fase afgesloten',
-			state: 'in_bezwaar'
+			terms: new FreezeTerms(reason: 'fase afgesloten', state: 'in_bezwaar')
 		);
 
 		[$schema, $register] = $this->context();

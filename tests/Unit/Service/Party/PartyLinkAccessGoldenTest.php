@@ -124,7 +124,7 @@ class PartyLinkAccessGoldenTest extends TestCase {
 
 		$audit = $this->getMockBuilder(AuditTrailMapper::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['createAuditTrailEntry'])
+			->onlyMethods(['recordObjectEvent'])
 			->getMock();
 
 		return new PartyRoleService(

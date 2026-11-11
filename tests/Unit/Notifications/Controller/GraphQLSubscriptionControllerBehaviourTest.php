@@ -43,11 +43,11 @@ class GraphQLSubscriptionControllerBehaviourTest extends TestCase {
 		$request->method('getParam')->willReturn(null);
 		$request->method('getHeader')->willReturn('');
 		$service = $this->createMock(SubscriptionService::class);
-		$service->expects($this->exactly(2))->method('getEventsSince')
+		$service->expects($this->exactly(2))->method('eventsMatching')
 			->willReturnOnConsecutiveCalls([], [['id' => 'evt-9']]);
 		$service->method('formatAsSSE')->willReturnCallback(static fn (array $event): string => 'id: ' . $event['id'] . "\n\n");
 
-		$controller = new GraphQLSubscriptionController('openregister', $request, $service);
+		$controller = new GraphQLSubscriptionController($request, $service);
 		ob_start();
 		ob_start();
 		try {

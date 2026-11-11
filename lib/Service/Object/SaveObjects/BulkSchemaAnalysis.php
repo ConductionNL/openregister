@@ -110,7 +110,7 @@ final class BulkSchemaAnalysis {
 			return null;
 		}
 
-		$relation['isArray'] = $definition['type'] === 'array';
+		$relation['isArray'] = ($definition['type'] ?? null) === 'array';
 		return $relation;
 	}//end inverseProperty()
 

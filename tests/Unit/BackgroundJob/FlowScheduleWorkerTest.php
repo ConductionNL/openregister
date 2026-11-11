@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
+use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use DateTime;
 use OCA\OpenRegister\BackgroundJob\FlowScheduleWorker;
 use OCA\OpenRegister\Service\Flow\FlowScheduleServiceInterface;
@@ -51,7 +52,7 @@ class FlowScheduleWorkerTest extends TestCase {
 		$this->now      = new DateTime('2026-01-15T10:05:00+00:00');
 		$time           = $this->createMock(ITimeFactory::class);
 		$time->method('getDateTime')->willReturn($this->now);
-		$this->job = new FlowScheduleWorker($time, $this->schedule, $this->logger);
+		$this->job = new FlowScheduleWorker(new JobRuntime($time, $this->logger), $this->schedule);
 	}
 
 	private function runJob(): void {

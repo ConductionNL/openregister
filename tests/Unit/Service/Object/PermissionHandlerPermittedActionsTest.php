@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\VerbListing;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -182,14 +183,16 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'ana', groups: ['behandelaars']);
 
 		$actions = $handler->permittedActionsFor(
-			schema: $this->schemaGranting(
-				[
-					'read' => ['behandelaars'],
-					'update' => ['behandelaars'],
-				]
-			),
-			object: $this->row(),
-			userId: 'ana'
+			listing: new VerbListing(
+				schema: $this->schemaGranting(
+					[
+						'read' => ['behandelaars'],
+						'update' => ['behandelaars'],
+					]
+				),
+				object: $this->row(),
+				userId: 'ana'
+			)
 		);
 
 		$this->assertSame(['read', 'update'], $actions);
@@ -204,14 +207,16 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'ana', groups: ['behandelaars']);
 
 		$actions = $handler->permittedActionsFor(
-			schema: $this->schemaGranting(
-				[
-					'read' => ['behandelaars'],
-					'update' => ['behandelaars'],
-				]
-			),
-			object: $this->row(['deny' => ['update' => ['behandelaars']]]),
-			userId: 'ana'
+			listing: new VerbListing(
+				schema: $this->schemaGranting(
+					[
+						'read' => ['behandelaars'],
+						'update' => ['behandelaars'],
+					]
+				),
+				object: $this->row(['deny' => ['update' => ['behandelaars']]]),
+				userId: 'ana'
+			)
 		);
 
 		$this->assertSame(['read'], $actions);
@@ -229,16 +234,18 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$handler = $this->handlerFor(userId: 'ana', groups: ['behandelaars']);
 
 		$actions = $handler->permittedActionsFor(
-			schema: $this->schemaGranting(
-				[
-					'read' => ['behandelaars'],
-					'create' => ['behandelaars'],
-					'list' => ['behandelaars'],
-					'manage' => ['behandelaars'],
-				]
-			),
-			object: $this->row(),
-			userId: 'ana'
+			listing: new VerbListing(
+				schema: $this->schemaGranting(
+					[
+						'read' => ['behandelaars'],
+						'create' => ['behandelaars'],
+						'list' => ['behandelaars'],
+						'manage' => ['behandelaars'],
+					]
+				),
+				object: $this->row(),
+				userId: 'ana'
+			)
 		);
 
 		$this->assertSame(['read'], $actions);
@@ -258,9 +265,11 @@ class PermissionHandlerPermittedActionsTest extends TestCase {
 		$this->assertSame(
 			[],
 			$handler->permittedActionsFor(
-				schema: $this->schemaGranting([]),
-				object: $this->row(),
-				userId: 'ana'
+				listing: new VerbListing(
+					schema: $this->schemaGranting([]),
+					object: $this->row(),
+					userId: 'ana'
+				)
 			)
 		);
 	}//end testACallerWithNoRightsGetsAnEmptyList()
