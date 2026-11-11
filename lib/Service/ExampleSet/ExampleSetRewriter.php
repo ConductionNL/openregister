@@ -44,18 +44,17 @@ class ExampleSetRewriter {
 	 * Rewrite one kept object on `--refresh` (the plan's `refresh`) to today's declared values; the object as stored
 	 * afterwards, or the row as it was when it could not be written.
 	 *
-	 * @param array<string, mixed>                $run      The `store`, the `fragment`, the declared `object` and the stored `row`.
-	 * @param array<string, mixed>                $resolved The declaration resolved today: `refusal`, `data`, `sent`, and maybe `owner`.
-	 * @param array<string, mixed>                $report   The report; `types` counts it as refreshed, `dropped` names a failure.
-	 * @param array<string, array<string, mixed>> $written  Collects what this run sent, by record key, for the proof.
+	 * @param KeptObjectRewrite $rewrite The kept object (`store`, `fragment`, declared `object`, stored `row`) and its
+	 *                                   declaration resolved today: `refusal`, `data`, `sent`, and maybe `owner`.
+	 * @param RewriteTally      $tally   The report (`types` counts it as refreshed, `dropped` names a failure) and what
+	 *                                   this run sent, by record key, for the proof.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
 	 */
-	public function rewrite(array $run, array $resolved, array &$report, array &$written): array {
-		$tally = new RewriteTally(report: $report, written: $written);
-		return $this->rewriteDeclared(rewrite: new RewriteRun(run: $run, resolved: $resolved, tally: $tally));
+	public function rewrite(KeptObjectRewrite $rewrite, RewriteTally $tally): array {
+		return $this->rewriteDeclared(rewrite: new RewriteRun(run: $rewrite->kept, resolved: $rewrite->resolved, tally: $tally));
 	}//end rewrite()
 
 	/**
@@ -270,35 +269,19 @@ class ExampleSetRewriter {
 	 * proof and a later run compare against what is on the instance. What a
 	 * field held before the set first changed it (`had`, `old`) stays.
 	 *
-	 * @param array<string, mixed>                 $record  The record; updated.
-	 * @param string                               $name    The record key of the object, `<app>/<key>`.
-	 * @param array<string, array<string, mixed>>  $written What this run wrote, by record key.
-	 * @param callable(array<string, mixed>): void $save    Keeps the record when it changed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
-	 */
-	public function follow(array &$record, string $name, array $written, callable $save): void {
-		if (isset($written[$name]) === true && $this->followed(record: $record, object: new RewrittenObject(name: $name, data: $written[$name])) === true) {
-			$save($record);
-		}
-	}//end follow()
-
-	/**
-	 * Move the record's reference values and `#references` change of a rewritten object to what the rewrite wrote.
-	 *
 	 * @param array<string, mixed> $record The record; updated.
 	 * @param RewrittenObject      $object The record key of the object and what this run wrote for it.
 	 *
-	 * @return bool Whether the record changed.
+	 * @return bool Whether the record changed and is to be kept.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-refresh-keeps-the-record-of-what-it-wrote
 	 */
-	private function followed(array &$record, RewrittenObject $object): bool {
+	public function follow(array &$record, RewrittenObject $object): bool {
 		$refs       = $this->followRefs(record: $record, object: $object);
 		$references = $this->followReferences(record: $record, object: $object);
 
 		return $refs === true || $references === true;
-	}//end followed()
+	}//end follow()
 
 	/**
 	 * Move the record's reference values of an object to what the rewrite wrote.

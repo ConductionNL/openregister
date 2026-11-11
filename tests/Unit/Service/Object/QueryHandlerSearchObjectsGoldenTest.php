@@ -32,6 +32,9 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\QueryHandlers;
+use OCA\OpenRegister\Service\Object\QueryPlatform;
+use OCA\OpenRegister\Service\Object\QueryRefinements;
 
 /**
  * Golden record of searchObjects() over every branch: reference normalisation, view application and
@@ -261,14 +264,20 @@ class QueryHandlerSearchObjectsGoldenTest extends TestCase {
 		}
 
 		return new QueryHandler(
-			objectMapper: $mapper,
-			renderHandler: $render,
-			searchQueryHandler: $searchQuery,
-			facetHandler: $this->createMock(FacetHandler::class),
-			performanceHandler: $performance,
-			contentSearchHandler: $this->createMock(ContentSearchHandler::class),
-			container: $container,
-			referenceResolver: $resolver
+			platform: new QueryPlatform(
+				objectMapper: $mapper,
+				renderHandler: $render,
+				container: $container
+			),
+			handlers: new QueryHandlers(
+				searchQueryHandler: $searchQuery,
+				facetHandler: $this->createMock(FacetHandler::class),
+				performanceHandler: $performance,
+				contentSearchHandler: $this->createMock(ContentSearchHandler::class)
+			),
+			refinements: new QueryRefinements(
+				referenceResolver: $resolver
+			)
 		);
 	}//end handler()
 }//end class

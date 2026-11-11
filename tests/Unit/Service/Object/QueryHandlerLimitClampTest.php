@@ -16,6 +16,8 @@ use OCP\AppFramework\IAppContainer;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\QueryHandlers;
+use OCA\OpenRegister\Service\Object\QueryPlatform;
 
 /**
  * Verifies the DoS-guard clamp on list/search page size (QueryHandler::MAX_PAGE_SIZE).
@@ -49,13 +51,18 @@ class QueryHandlerLimitClampTest extends TestCase {
 			});
 
 		$this->handler = new QueryHandler(
-			$this->objectMapper,
-			$this->createMock(RenderObject::class),
-			$this->createMock(SearchQueryHandler::class),
-			$this->createMock(FacetHandler::class),
-			$this->createMock(PerformanceOptimizationHandler::class),
-			$this->createMock(ContentSearchHandler::class),
-			$this->createMock(IAppContainer::class));
+			platform: new QueryPlatform(
+				objectMapper: $this->objectMapper,
+				renderHandler: $this->createMock(RenderObject::class),
+				container: $this->createMock(IAppContainer::class)
+			),
+			handlers: new QueryHandlers(
+				searchQueryHandler: $this->createMock(SearchQueryHandler::class),
+				facetHandler: $this->createMock(FacetHandler::class),
+				performanceHandler: $this->createMock(PerformanceOptimizationHandler::class),
+				contentSearchHandler: $this->createMock(ContentSearchHandler::class)
+			)
+		);
 	}
 
 	private function runWithLimit(int $limit): void {

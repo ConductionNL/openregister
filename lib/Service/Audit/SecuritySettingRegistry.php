@@ -209,19 +209,33 @@ class SecuritySettingRegistry {
 			}
 
 			[$blob, $field] = explode('.', $path, 2);
-			if (array_key_exists($blob, $blobs) === false) {
-				$decoded = json_decode($this->appConfig->getValueString(self::APP, $blob, ''), true);
-				$blobs[$blob] = [];
-				if (is_array($decoded) === true) {
-					$blobs[$blob] = $decoded;
-				}
-			}
+			$this->loadBlob(blob: $blob, blobs: $blobs);
 
 			return ($blobs[$blob][$field] ?? $default);
 		} catch (Throwable $unreadable) {
 			return $default;
 		}
 	}//end read()
+
+	/**
+	 * Decode one JSON settings blob into the per-call cache, once.
+	 *
+	 * @param string                              $blob  The app-config key holding the blob.
+	 * @param array<string, array<mixed>> $blobs The decoded blobs read so far; a blob that is no JSON object caches as [].
+	 *
+	 * @return void
+	 */
+	private function loadBlob(string $blob, array &$blobs): void {
+		if (array_key_exists($blob, $blobs) === true) {
+			return;
+		}
+
+		$decoded = json_decode($this->appConfig->getValueString(self::APP, $blob, ''), true);
+		$blobs[$blob] = [];
+		if (is_array($decoded) === true) {
+			$blobs[$blob] = $decoded;
+		}
+	}//end loadBlob()
 
 	/**
 	 * Read a setting stored under its own key.

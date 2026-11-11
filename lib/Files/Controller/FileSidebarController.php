@@ -123,34 +123,18 @@ class FileSidebarController extends Controller {
 		// IDOR guard: only reveal object links for files the caller can access.
 		// 404 (not 403) so a non-owner cannot probe which file IDs exist.
 		if ($this->hasFileAccess(fileId: $fileId) === false) {
-			return new JSONResponse(
-				data: ['success' => false, 'error' => 'File not found or access denied'],
-				statusCode: 404
-			);
+			return $this->fileNotFound();
 		}
 
 		try {
-			$objects = $this->fileSidebarService->getObjectsForFile($fileId);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'data' => $objects,
-				]
-			);
+			return $this->found(data: $this->fileSidebarService->getObjectsForFile($fileId));
 		} catch (\Exception $e) {
 			$this->logger->error(
 				'[FileSidebarController] Error fetching objects for file ' . $fileId . ': ' . $e->getMessage()
 			);
 
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Failed to retrieve objects for file.',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->failed(error: 'Failed to retrieve objects for file.');
+		}
 	}//end getObjectsForFile()
 
 	/**
@@ -170,33 +154,63 @@ class FileSidebarController extends Controller {
 		// PII risk level. Only expose it for files the caller can access; 404
 		// (not 403) so a non-owner cannot probe which file IDs exist.
 		if ($this->hasFileAccess(fileId: $fileId) === false) {
-			return new JSONResponse(
-				data: ['success' => false, 'error' => 'File not found or access denied'],
-				statusCode: 404
-			);
+			return $this->fileNotFound();
 		}
 
 		try {
-			$status = $this->fileSidebarService->getExtractionStatus($fileId);
-
-			return new JSONResponse(
-				data: [
-					'success' => true,
-					'data' => $status,
-				]
-			);
+			return $this->found(data: $this->fileSidebarService->getExtractionStatus($fileId));
 		} catch (\Exception $e) {
 			$this->logger->error(
 				'[FileSidebarController] Error fetching extraction status for file ' . $fileId . ': ' . $e->getMessage()
 			);
 
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Failed to retrieve extraction status.',
-				],
-				statusCode: 500
-			);
-		}//end try
+			return $this->failed(error: 'Failed to retrieve extraction status.');
+		}
 	}//end getExtractionStatus()
+
+	/**
+	 * The refusal of a file the caller cannot reach: 404, not 403, so a non-owner
+	 * cannot probe which file IDs exist.
+	 *
+	 * @return JSONResponse
+	 */
+	private function fileNotFound(): JSONResponse {
+		return new JSONResponse(
+			data: ['success' => false, 'error' => 'File not found or access denied'],
+			statusCode: 404
+		);
+	}//end fileNotFound()
+
+	/**
+	 * A successful answer carrying the sidebar data.
+	 *
+	 * @param mixed $data The sidebar data.
+	 *
+	 * @return JSONResponse
+	 */
+	private function found(mixed $data): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'data' => $data,
+			]
+		);
+	}//end found()
+
+	/**
+	 * A 500 answer with a fixed message; the cause is logged, not served.
+	 *
+	 * @param string $error The message.
+	 *
+	 * @return JSONResponse
+	 */
+	private function failed(string $error): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'success' => false,
+				'error' => $error,
+			],
+			statusCode: 500
+		);
+	}//end failed()
 }//end class

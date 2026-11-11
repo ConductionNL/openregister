@@ -165,31 +165,9 @@ class ViewService {
 	}//end findAllFor()
 
 	/**
-	 * Create a new view
-	 *
-	 * Creates a new view entity with specified properties. If view is set as default,
-	 * clears any existing default view for the user. Validates and stores view in database.
-	 *
-	 * @param ViewDefinition $definition The name, description, query and presentation of the view
-	 * @param ViewAudience   $audience   The owner, public and default flags and the group shares of the view
-	 * @param array|null     $alert      The declared count alert; null or `[]` = none
-	 *
-	 * @return View The created view entity
-	 *
-	 * @throws Exception If view creation fails (database error, validation error, etc.)
-	 * @throws InvalidArgumentException If the presentation config cannot render (REQ-VIEW-PRES-01)
-	 *
-	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
-	 */
-	public function create(ViewDefinition $definition, ViewAudience $audience, ?array $alert = null): View {
-		return $this->createView(edit: new ViewEdit(definition: $definition, audience: $audience, alert: $alert));
-	}//end create()
-
-	/**
 	 * Create a new view from one edit.
 	 *
-	 * If the view is set as default, clears any existing default view for the owner first.
+	 * Validates and stores the view. If the view is set as default, clears any existing default view for the owner first.
 	 * Nobody favours a new view, whatever the edit says.
 	 *
 	 * @param ViewEdit $edit The definition, audience and count alert of the new view
@@ -201,7 +179,7 @@ class ViewService {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
 	 */
-	public function createView(ViewEdit $edit): View {
+	public function create(ViewEdit $edit): View {
 		try {
 			return $this->viewMapper->insert($this->newViewFor(edit: $edit));
 		} catch (Exception $e) {
@@ -212,7 +190,7 @@ class ViewService {
 			);
 			throw $e;
 		}
-	}//end createView()
+	}//end create()
 
 	/**
 	 * Validate an edit and build the unsaved view it creates, clearing the owner's old default when it is one.

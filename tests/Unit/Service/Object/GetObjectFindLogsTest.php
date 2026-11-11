@@ -12,6 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 
@@ -50,12 +51,12 @@ class GetObjectFindLogsTest extends TestCase {
 	public function testHistoryIsTheWholePageNewestFirst(): void {
 		$seen = null;
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('findAll')->willReturnCallback(
+		$audit->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			static function (?int $limit, ?int $offset, ?array $filters, ?array $sort, ?string $search) use (&$seen): array {
 				$seen = [$limit, $offset, $sort, $search];
 				return [];
 			}
-		);
+		));
 
 		$handler = (new ReflectionClass(GetObject::class))->newInstanceWithoutConstructor();
 		$property = (new ReflectionClass(GetObject::class))->getProperty('auditTrailMapper');
@@ -78,12 +79,12 @@ class GetObjectFindLogsTest extends TestCase {
 	private function filtersFor(array $filters): array {
 		$seen = null;
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('findAll')->willReturnCallback(
+		$audit->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			static function (?int $limit, ?int $offset, array $asked) use (&$seen): array {
 				$seen = $asked;
 				return [];
 			}
-		);
+		));
 
 		$handler = (new ReflectionClass(GetObject::class))->newInstanceWithoutConstructor();
 		$property = (new ReflectionClass(GetObject::class))->getProperty('auditTrailMapper');

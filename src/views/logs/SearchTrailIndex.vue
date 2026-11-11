@@ -220,6 +220,37 @@ import { refreshAction } from '../../services/menuActions.js'
 import { storePaging } from '../storePaging.js'
 import { recountOnChange } from './recountOnChange.js'
 
+/**
+ * The details lines of a search trail up to its result count, 'N/A' where
+ * a field is unknown.
+ *
+ * @param {object} searchTrail The search trail entry
+ * @return {Array<string>} The lines
+ */
+function searchSummaryLines(searchTrail) {
+	return [
+		`Search Term: ${searchTrail.searchTerm || 'N/A'}`,
+		`Timestamp: ${new Date(searchTrail.created).toLocaleString()}`,
+		`Register: ${searchTrail.registerName || searchTrail.register || 'N/A'}`,
+		`Schema: ${searchTrail.schemaName || searchTrail.schema || 'N/A'}`,
+		`User: ${searchTrail.userName || searchTrail.user || 'N/A'}`,
+		`Results: ${searchTrail.totalResults || 0}`,
+	]
+}
+
+/**
+ * The parameters line of a search trail's details, when it has parameters.
+ *
+ * @param {unknown} parameters The search parameters
+ * @return {Array<string>} The line, or none
+ */
+function parameterLines(parameters) {
+	if (parameters && typeof parameters === 'object') {
+		return [`Parameters: ${JSON.stringify(parameters, null, 2)}`]
+	}
+	return []
+}
+
 export default {
 	name: 'SearchTrailIndex',
 	components: {
@@ -435,33 +466,11 @@ export default {
 		 */
 		viewDetails(searchTrail) {
 			// Create a formatted details message
-			const details = []
-			details.push(`Search Term: ${searchTrail.searchTerm || 'N/A'}`)
-			details.push(
-				`Timestamp: ${new Date(searchTrail.created).toLocaleString()}`,
-			)
-			details.push(
-				`Register: ${searchTrail.registerName || searchTrail.register || 'N/A'}`,
-			)
-			details.push(
-				`Schema: ${searchTrail.schemaName || searchTrail.schema || 'N/A'}`,
-			)
-			details.push(
-				`User: ${searchTrail.userName || searchTrail.user || 'N/A'}`,
-			)
-			details.push(`Results: ${searchTrail.totalResults || 0}`)
-			details.push(
+			const details = [
+				...searchSummaryLines(searchTrail),
 				`Execution Time: ${this.formatExecutionTime(searchTrail.responseTime)}`,
-			)
-
-			if (
-				searchTrail.parameters
-				&& typeof searchTrail.parameters === 'object'
-			) {
-				details.push(
-					`Parameters: ${JSON.stringify(searchTrail.parameters, null, 2)}`,
-				)
-			}
+				...parameterLines(searchTrail.parameters),
+			]
 
 			// Show details in a dialog
 			OC.dialogs.info(

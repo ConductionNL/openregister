@@ -19,9 +19,11 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use Closure;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\RelatedRowRbacInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
@@ -481,9 +483,8 @@ class RelationHandler {
 
 		try {
 			return $this->stores->objects->findAllInRegisterSchemaTable(
-				register: $pair['register'],
-				schema: $pair['schema'],
-				filters: ['_ids' => $table['uuids'], '_limit' => 200]
+				table: new RegisterSchema(register: $pair['register'], schema: $pair['schema']),
+				listing: ListQuery::unbounded(filters: ['_ids' => $table['uuids'], '_limit' => 200])
 			);
 		} catch (\Exception $e) {
 			return [];
@@ -777,12 +778,13 @@ class RelationHandler {
 	 */
 	private function referrerSearch(array $pair, ReferrerPage $page): array {
 		return $this->stores->objects->findAllInRegisterSchemaTable(
-			register: $pair['register'],
-			schema: $pair['schema'],
-			limit: $page->remaining(),
-			offset: $page->nextOffset(),
-			filters: ['_relations_contains' => $page->targetUuid],
-			sort: ['_updated' => 'DESC']
+			table: new RegisterSchema(register: $pair['register'], schema: $pair['schema']),
+			listing: new ListQuery(
+				limit: $page->remaining(),
+				offset: $page->nextOffset(),
+				filters: ['_relations_contains' => $page->targetUuid],
+				sort: ['_updated' => 'DESC']
+			)
 		);
 	}//end referrerSearch()
 

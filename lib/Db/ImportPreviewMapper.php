@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -116,6 +117,27 @@ class ImportPreviewMapper extends QBMapper implements ImportPreviewFinderInterfa
 	 * @return ImportPreview The persisted preview.
 	 */
 	public function createFromArray(array $data): ImportPreview {
+		$preview = $this->previewFrom(data: $data);
+
+		if ($preview->getUuid() === null) {
+			$preview->setUuid(Uuid::v4()->toRfc4122());
+		}
+
+		$now = new DateTime();
+		$preview->setCreated($now);
+		$preview->setUpdated($now);
+
+		return $this->insert(entity: $preview);
+	}//end createFromArray()
+
+	/**
+	 * A new preview with every known field of the data set through its setter.
+	 *
+	 * @param array<string, mixed> $data The fields.
+	 *
+	 * @return ImportPreview The preview, not yet stored.
+	 */
+	private function previewFrom(array $data): ImportPreview {
 		$preview = new ImportPreview();
 
 		foreach ($data as $key => $value) {
@@ -131,16 +153,8 @@ class ImportPreviewMapper extends QBMapper implements ImportPreviewFinderInterfa
 			}
 		}
 
-		if ($preview->getUuid() === null) {
-			$preview->setUuid(Uuid::v4()->toRfc4122());
-		}
-
-		$now = new DateTime();
-		$preview->setCreated($now);
-		$preview->setUpdated($now);
-
-		return $this->insert(entity: $preview);
-	}//end createFromArray()
+		return $preview;
+	}//end previewFrom()
 
 	/**
 	 * Persist a preview, moving its updated timestamp.

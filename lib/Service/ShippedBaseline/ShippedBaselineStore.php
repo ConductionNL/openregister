@@ -40,6 +40,7 @@ use DateTime;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationWrite;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
+use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -113,6 +114,17 @@ class ShippedBaselineStore {
 			return null;
 		}
 
+		return self::baselineIn(snapshot: $snapshot);
+	}//end read()
+
+	/**
+	 * The baseline a snapshot holds, or null when it holds none or a malformed one.
+	 *
+	 * @param ConfigurationSnapshot $snapshot What the subject address holds.
+	 *
+	 * @return array{definition: array<string, mixed>, app: string, appVersion: string, recordedAt: string}|null The baseline.
+	 */
+	private static function baselineIn(ConfigurationSnapshot $snapshot): ?array {
 		if ($snapshot->present === false) {
 			return null;
 		}
@@ -128,7 +140,7 @@ class ShippedBaselineStore {
 			'appVersion' => (string)($stored['appVersion'] ?? ''),
 			'recordedAt' => (string)($stored['recordedAt'] ?? ''),
 		];
-	}//end read()
+	}//end baselineIn()
 
 	/**
 	 * Record what an app shipped for one subject.

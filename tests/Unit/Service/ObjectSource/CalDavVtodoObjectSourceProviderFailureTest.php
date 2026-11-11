@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectSource;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
 use OCA\OpenRegister\Service\UserTaskListInterface;
@@ -42,7 +43,7 @@ class CalDavVtodoObjectSourceProviderFailureTest extends TestCase {
 	 */
 	public function testAFailingTaskListReadsAsNoTasks(): void {
 		$tasks = $this->createMock(UserTaskListInterface::class);
-		$tasks->method('getAllUserTasks')->willThrowException(new RuntimeException('caldav down'));
+		$tasks->method('listUserTasks')->willThrowException(new RuntimeException('caldav down'));
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->exactly(2))->method('warning')->with('[ObjectSource:caldav-vtodo] could not read VTODOs: caldav down');
 		$provider = new CalDavVtodoObjectSourceProvider(taskService: $tasks, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->createMock(IAppManager::class), container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: $logger));
@@ -58,7 +59,7 @@ class CalDavVtodoObjectSourceProviderFailureTest extends TestCase {
 	 */
 	public function testFindMatchesIdOrUidOnly(): void {
 		$tasks = $this->createMock(UserTaskListInterface::class);
-		$tasks->method('getAllUserTasks')->with(null, 1000, 0)->willReturn(['results' => [['id' => '7', 'uid' => 'u-7', 'summary' => 'Call back']]]);
+		$tasks->method('listUserTasks')->with(null, new ListQuery(limit: 1000, offset: 0))->willReturn(['results' => [['id' => '7', 'uid' => 'u-7', 'summary' => 'Call back']]]);
 		$provider = new CalDavVtodoObjectSourceProvider(taskService: $tasks, app: new \OCA\OpenRegister\Service\ObjectSource\OptionalAppBridge(appManager: $this->createMock(IAppManager::class), container: $this->createMock(\Psr\Container\ContainerInterface::class), logger: $this->createMock(LoggerInterface::class)));
 
 		$this->assertSame('Call back', $provider->find(source: new SourcedTable(new RegisterSchema(new Register(), new Schema())), id: '7')?->getObject()['title']);

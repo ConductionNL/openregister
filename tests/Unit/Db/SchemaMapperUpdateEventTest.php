@@ -35,6 +35,8 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
+use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 
 /**
  * Drives the real SchemaMapper::update() and checks which saves dispatch a
@@ -141,13 +143,17 @@ class SchemaMapperUpdateEventTest extends TestCase {
 
 		return new class(
 			$db,
-			$dispatcher,
-			$this->createMock(PropertyValidatorHandler::class),
-			$this->createMock(OrganisationMapper::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
+			new TenancyServices(
+				$this->createMock(OrganisationMapper::class),
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class)
+			),
 			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class)
+			new SchemaMapperServices(
+				$dispatcher,
+				$this->createMock(PropertyValidatorHandler::class),
+				$this->createMock(LoggerInterface::class)
+			)
 		) extends SchemaMapper {
 			/**
 			 * Return the stored row mapped through the real entity.

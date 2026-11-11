@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\Serializer\RegisterSerializer;
+use OCA\OpenRegister\Tests\Support\AuditStatisticsCalls;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\RegistersControllerFactory;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -163,10 +164,10 @@ class RegistersControllerShowGoldenTest extends TestCase {
 		});
 
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('getStatistics')->willReturnCallback(function (...$args): array {
+		$audit->method('statisticsTotals')->willReturnCallback(AuditStatisticsCalls::positional(function (...$args): array {
 			$this->calls[] = ['auditStatistics', array_slice($args, 0, 2)];
 			return ['total' => 8, 'size' => 80];
-		});
+		}));
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->method('error')->willReturnCallback(function (string $message, array $context): void {

@@ -23,7 +23,9 @@ namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\WhereClauseRequest;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -109,7 +111,7 @@ final class MagicSearchHandlerIdsSqlTest extends TestCase {
 	private function sqlFor(MagicSearchHandler $handler, array $query = []): string {
 		return implode(
 			' AND ',
-			$handler->buildWhereConditionsSql(query: $query, schema: new Schema())
+			$handler->buildWhereClause(request: new WhereClauseRequest(query: $query, table: new MagicReadTable(schema: new Schema())))
 		);
 	}//end sqlFor()
 

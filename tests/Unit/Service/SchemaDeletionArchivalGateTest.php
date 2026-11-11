@@ -214,7 +214,7 @@ class SchemaDeletionArchivalGateTest extends TestCase {
 		$this->stubOnePopulatedTable($this->makeSchema(archival: true));
 
 		$this->magicMapper->expects($this->never())->method('deleteObjectsBySchema');
-		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
 
 		$this->expectException(ArchivalImmutableException::class);
 

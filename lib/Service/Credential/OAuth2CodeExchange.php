@@ -91,14 +91,9 @@ class OAuth2CodeExchange {
 	private function options(OAuth2ProviderConfig $config, OAuth2CodeRedemption $redemption): array {
 		$client = $redemption->client;
 		$secret = $client['clientSecret'];
-		$basic = ($secret !== null && $config->usesBasicClientAuth() === true);
+		$basic  = ($secret !== null && $config->usesBasicClientAuth() === true);
 
-		$form = ['grant_type' => 'authorization_code', 'code' => $redemption->grant->code, 'redirect_uri' => $redemption->grant->redirectUri];
-		$form['client_id'] = $client['clientId'];
-		if ($config->usesPkce() === true) {
-			$form['code_verifier'] = $redemption->grant->verifier;
-		}
-
+		$form = $this->codeForm(config: $config, redemption: $redemption);
 		if ($secret !== null && $basic === false) {
 			$form['client_secret'] = $secret;
 		}
@@ -110,6 +105,24 @@ class OAuth2CodeExchange {
 
 		return $options;
 	}//end options()
+
+	/**
+	 * The authorization-code grant form: the code, the redirect URI, the client id and, with PKCE, the verifier.
+	 *
+	 * @param OAuth2ProviderConfig $config     The provider's OAuth2 behaviour.
+	 * @param OAuth2CodeRedemption $redemption The grant and the client redeeming it.
+	 *
+	 * @return array<string, mixed> The form, without the client secret.
+	 */
+	private function codeForm(OAuth2ProviderConfig $config, OAuth2CodeRedemption $redemption): array {
+		$form = ['grant_type' => 'authorization_code', 'code' => $redemption->grant->code, 'redirect_uri' => $redemption->grant->redirectUri];
+		$form['client_id'] = $redemption->client['clientId'];
+		if ($config->usesPkce() === true) {
+			$form['code_verifier'] = $redemption->grant->verifier;
+		}
+
+		return $form;
+	}//end codeForm()
 
 	/**
 	 * Refuse a token response that is not JSON or names an error.

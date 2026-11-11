@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroup;
 use OCP\IGroupManager;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -196,33 +197,54 @@ class GroupObjectSourceProvider implements ObjectSourceProvider {
 			return [];
 		}
 
-		$search = (string)($query['filters']['search'] ?? $query['_search'] ?? $query['search'] ?? '');
-		$limit = (int)($query['limit'] ?? 200);
-		$offset = (int)($query['offset'] ?? 0);
+		$page = new DirectoryPage(query: $query);
 
 		try {
-			if ($this->groupManager->isAdmin($acting->getUID()) === true) {
-				return array_values($this->groupManager->search($search, $limit, $offset));
-			}
-
-			// A plain user only sees the groups they belong to.
-			$groups = array_values($this->groupManager->getUserGroups($acting));
-			if ($search === '') {
-				return $groups;
-			}
-
-			return array_values(
-				array_filter(
-					$groups,
-					static fn (IGroup $group) => str_contains(strtolower($group->getGID()), strtolower($search)) === true
-						|| str_contains(strtolower($group->getDisplayName()), strtolower($search)) === true
-				)
-			);
+			return $this->visibleGroups(acting: $acting, page: $page);
 		} catch (Throwable $e) {
 			$this->logger->warning('[ObjectSource:group-source] could not list groups: ' . $e->getMessage());
 			return [];
 		}//end try
 	}//end readGroups()
+
+	/**
+	 * The groups an acting user sees: every group for an admin, their own groups otherwise.
+	 *
+	 * @param IUser         $acting The acting user.
+	 * @param DirectoryPage $page   The search term and page.
+	 *
+	 * @return array<int, IGroup> The visible groups.
+	 */
+	private function visibleGroups(IUser $acting, DirectoryPage $page): array {
+		if ($this->groupManager->isAdmin($acting->getUID()) === true) {
+			return array_values($this->groupManager->search($page->search, $page->limit, $page->offset));
+		}
+
+		// A plain user only sees the groups they belong to.
+		return $this->groupsMatching(groups: array_values($this->groupManager->getUserGroups($acting)), search: $page->search);
+	}//end visibleGroups()
+
+	/**
+	 * The groups whose id or display name contains the search term, case-insensitively.
+	 *
+	 * @param array<int, IGroup> $groups The acting user's own groups.
+	 * @param string             $search The search term, '' for all.
+	 *
+	 * @return array<int, IGroup> The matching groups.
+	 */
+	private function groupsMatching(array $groups, string $search): array {
+		if ($search === '') {
+			return $groups;
+		}
+
+		return array_values(
+			array_filter(
+				$groups,
+				static fn (IGroup $group) => str_contains(strtolower($group->getGID()), strtolower($search)) === true
+					|| str_contains(strtolower($group->getDisplayName()), strtolower($search)) === true
+			)
+		);
+	}//end groupsMatching()
 
 	/**
 	 * Whether the acting user may read the given group's projection.

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
+use OCA\OpenRegister\Service\CalendarEventKey;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\TaskEventsControllerFactory;
@@ -253,8 +254,8 @@ class TaskEventsControllerA24GoldenTest extends TestCase {
 	public function testLink(): void {
 		$this->givenReadable();
 		$link = new CalendarLink();
-		$this->links->method('linkEvent')
-			->with('real-uuid', 4, 9, 'cal', 'uid-1')
+		$this->links->method('linkLocatedEvent')
+			->with((new LinkTarget(objectUuid: 'real-uuid', registerId: 4))->inSchema(schemaId: 9), new CalendarEventKey(calendarUri: 'cal', eventUid: 'uid-1'))
 			->willReturnOnConsecutiveCalls($link, $this->throwException(new Exception('dup')));
 
 		$missing = $this->controller(params: ['calendarUri' => 'cal', 'eventUid' => ' '])->link('t-1');
@@ -368,7 +369,7 @@ class TaskEventsControllerA24GoldenTest extends TestCase {
 	 * @return void
 	 */
 	private function expectNothingTouched(): void {
-		foreach (['getLinkedEvents', 'createLinkedEvent', 'linkEvent', 'unlinkEvent'] as $method) {
+		foreach (['getLinkedEvents', 'createLinkedEvent', 'linkLocatedEvent', 'unlinkEvent'] as $method) {
 			$this->links->expects($this->never())->method($method);
 		}
 

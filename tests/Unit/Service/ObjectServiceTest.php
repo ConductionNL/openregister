@@ -21,8 +21,9 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
-use OCA\OpenRegister\Service\ObjectMigration;
+use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -32,6 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -79,6 +81,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Comprehensive unit tests for ObjectService.
@@ -189,7 +192,7 @@ class ObjectServiceTest extends TestCase {
 		$this->schema->setId(2);
 
 		// Instantiate ObjectService with all constructor params (positional).
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->getHandler,
@@ -228,7 +231,7 @@ class ObjectServiceTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 	}
@@ -1524,13 +1527,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with(
-				schema: $this->schema,
-				action: 'create',
-				userId: null,
-				objectOwner: null,
-				rbac: true
-			);
+			->with($this->schema, 'create');
 
 		$this->invokePrivate('checkSavePermissions', [null, true]);
 	}
@@ -1552,14 +1549,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with(
-				schema: $this->schema,
-				action: 'update',
-				userId: null,
-				objectOwner: 'user1',
-				rbac: true,
-				object: $entity
-			);
+			->with($this->schema, 'update', new PermissionCheckOptions(objectOwner: 'user1', object: $entity), true);
 
 		$this->invokePrivate('checkSavePermissions', ['existing-uuid', true]);
 	}
@@ -1577,13 +1567,7 @@ class ObjectServiceTest extends TestCase {
 		$this->permissionHandler
 			->expects($this->once())
 			->method('checkPermission')
-			->with(
-				schema: $this->schema,
-				action: 'create',
-				userId: null,
-				objectOwner: null,
-				rbac: true
-			);
+			->with($this->schema, 'create');
 
 		$this->invokePrivate('checkSavePermissions', ['new-uuid', true]);
 	}
@@ -1661,7 +1645,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->renderHandler
 			->expects($this->once())
-			->method('renderEntity')
+			->method('render')
 			->willReturn($renderedEntity);
 
 		$result = $this->service->renderEntity(entity: $entity);
@@ -1991,7 +1975,7 @@ class ObjectServiceTest extends TestCase {
 			->method('migrateObjects')
 			->willReturn(['success' => true, 'migrated' => 2]);
 
-		$result = $this->service->migrateObjects('1', '2', '3', '4', ['uuid-1'], ['field1' => 'field2']);
+		$result = $this->service->migrate(new ObjectMigration(source: new RegisterSchemaRef(register: '1', schema: '2'), target: new RegisterSchemaRef(register: '3', schema: '4'), objectIds: ['uuid-1'], mapping: ['field1' => 'field2']));
 
 		$this->assertTrue($result['success']);
 	}
@@ -2050,7 +2034,7 @@ class ObjectServiceTest extends TestCase {
 
 		$this->expectException(\OCA\OpenRegister\Exception\NotAuthorizedException::class);
 
-		$this->service->migrateObjects('1', '2', '3', '4', ['uuid-1'], ['a' => 'b']);
+		$this->service->migrate(new ObjectMigration(source: new RegisterSchemaRef(register: '1', schema: '2'), target: new RegisterSchemaRef(register: '3', schema: '4'), objectIds: ['uuid-1'], mapping: ['a' => 'b']));
 	}
 
 	public function testMigrateObjectsMovesOnlyObjectsTheCallerMayReadAndUpdate(): void {
@@ -2075,7 +2059,7 @@ class ObjectServiceTest extends TestCase {
 				]
 			);
 
-		$result = $this->service->migrateObjects('1', '2', '3', '4', ['uuid-1', 'uuid-2', 'uuid-3'], ['a' => 'b']);
+		$result = $this->service->migrate(new ObjectMigration(source: new RegisterSchemaRef(register: '1', schema: '2'), target: new RegisterSchemaRef(register: '3', schema: '4'), objectIds: ['uuid-1', 'uuid-2', 'uuid-3'], mapping: ['a' => 'b']));
 
 		$this->assertSame(1, $result['statistics']['objectsMigrated']);
 		$this->assertSame(2, $result['statistics']['objectsFailed']);
@@ -2104,7 +2088,7 @@ class ObjectServiceTest extends TestCase {
 			->method('validateAndSaveObjectsBySchema')
 			->willReturn(['processed' => 10, 'updated' => 8, 'failed' => 2, 'total' => 10, 'errors' => []]);
 
-		$result = $this->service->validateAndSaveObjectsBySchema(1, 2);
+		$result = $this->service->validateAndSaveTable(new RegisterSchemaRef(register: 1, schema: 2), ListQuery::unbounded());
 
 		$this->assertSame(10, $result['processed']);
 		$this->assertSame(8, $result['updated']);
@@ -2673,15 +2657,15 @@ class ObjectServiceTest extends TestCase {
 	}
 
 	/**
-	 * Test ensureObjectFolder returns null on general exception.
+	 * Test ensureObjectFolder refuses the save when the lookup fails.
 	 */
-	public function testEnsureObjectFolderReturnsNullOnGeneralException(): void {
+	public function testEnsureObjectFolderRefusesOnGeneralException(): void {
 		$this->objectEntityMapper->method('find')
 			->willThrowException(new Exception('Database error'));
 
-		$result = $this->invokePrivate('ensureObjectFolder', ['some-uuid']);
+		$this->expectException(\OCA\OpenRegister\Exception\FolderAccessDeniedException::class);
 
-		$this->assertNull($result);
+		$this->invokePrivate('ensureObjectFolder', ['some-uuid']);
 	}
 
 	/**

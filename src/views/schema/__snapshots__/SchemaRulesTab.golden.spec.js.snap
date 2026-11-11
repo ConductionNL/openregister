@@ -1,0 +1,240 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SchemaRulesTab.load keeps a full answer 1`] = `
+{
+  "log": [
+    [
+      "vocabulary",
+    ],
+    [
+      "inventory",
+      "reg/schema",
+    ],
+    [
+      "operators",
+    ],
+  ],
+  "tab": {
+    "draft": null,
+    "error": "",
+    "loading": false,
+    "operators": [
+      "eq",
+    ],
+    "rules": [
+      {
+        "id": 1,
+      },
+    ],
+    "schemaReference": "reg/schema",
+    "selected": null,
+    "vocabulary": {
+      "actions": [
+        "a",
+      ],
+      "kinds": [
+        "k",
+      ],
+      "verdicts": [
+        "v",
+      ],
+    },
+  },
+}
+`;
+
+exports[`SchemaRulesTab.load keeps empty answers 1`] = `
+{
+  "log": [
+    [
+      "vocabulary",
+    ],
+    [
+      "inventory",
+      "reg/schema",
+    ],
+    [
+      "operators",
+    ],
+  ],
+  "tab": {
+    "draft": null,
+    "error": "",
+    "loading": false,
+    "operators": [
+      "eq",
+    ],
+    "rules": [],
+    "schemaReference": "reg/schema",
+    "selected": null,
+    "vocabulary": {
+      "actions": [],
+      "kinds": [],
+      "verdicts": [],
+    },
+  },
+}
+`;
+
+exports[`SchemaRulesTab.load shows why the rules could not be read and empties them 1`] = `
+{
+  "loading": [
+    [
+      true,
+      "",
+      null,
+      null,
+    ],
+  ],
+  "tab": {
+    "draft": null,
+    "error": "t:The rules for this schema could not be read. (403)",
+    "loading": false,
+    "operators": null,
+    "rules": [],
+    "schemaReference": "reg/schema",
+    "selected": null,
+    "vocabulary": null,
+  },
+}
+`;
+
+exports[`SchemaRulesTab.toggle keeps an empty inventory when the answer has no rules 1`] = `
+{
+  "error": "",
+  "rules": [],
+  "schemaReference": "reg/schema",
+  "selected": null,
+  "switching": "",
+}
+`;
+
+exports[`SchemaRulesTab.toggle re-reads the inventory with another rule open that is gone 1`] = `
+{
+  "log": [
+    [
+      "switch",
+      "reg/schema",
+      1,
+      true,
+    ],
+    [
+      "inventory",
+      "reg/schema",
+    ],
+  ],
+  "tab": {
+    "error": "",
+    "rules": [
+      {
+        "enabled": false,
+        "id": 1,
+      },
+      {
+        "enabled": true,
+        "id": 2,
+      },
+    ],
+    "schemaReference": "reg/schema",
+    "selected": null,
+    "switching": "",
+  },
+}
+`;
+
+exports[`SchemaRulesTab.toggle re-reads the inventory with no rule open 1`] = `
+{
+  "log": [
+    [
+      "switch",
+      "reg/schema",
+      1,
+      true,
+    ],
+    [
+      "inventory",
+      "reg/schema",
+    ],
+  ],
+  "tab": {
+    "error": "",
+    "rules": [
+      {
+        "enabled": false,
+        "id": 1,
+      },
+      {
+        "enabled": true,
+        "id": 2,
+      },
+    ],
+    "schemaReference": "reg/schema",
+    "selected": null,
+    "switching": "",
+  },
+}
+`;
+
+exports[`SchemaRulesTab.toggle re-reads the inventory with the switched rule open 1`] = `
+{
+  "log": [
+    [
+      "switch",
+      "reg/schema",
+      1,
+      true,
+    ],
+    [
+      "inventory",
+      "reg/schema",
+    ],
+  ],
+  "tab": {
+    "error": "",
+    "rules": [
+      {
+        "enabled": false,
+        "id": 1,
+      },
+      {
+        "enabled": true,
+        "id": 2,
+      },
+    ],
+    "schemaReference": "reg/schema",
+    "selected": {
+      "enabled": false,
+      "id": 1,
+    },
+    "switching": "",
+  },
+}
+`;
+
+exports[`SchemaRulesTab.toggle shows why the re-read failed 1`] = `
+{
+  "error": "t:The rule could not be switched. (gone)",
+  "rules": [
+    "old",
+  ],
+  "schemaReference": "reg/schema",
+  "selected": {
+    "id": 1,
+  },
+  "switching": "",
+}
+`;
+
+exports[`SchemaRulesTab.toggle shows why the switch failed 1`] = `
+{
+  "error": "t:The rule could not be switched. (refused)",
+  "rules": [
+    "old",
+  ],
+  "schemaReference": "reg/schema",
+  "selected": {
+    "id": 1,
+  },
+  "switching": "",
+}
+`;

@@ -559,6 +559,28 @@ import {
 	validateDraft,
 } from './packDraft.js'
 
+/**
+ * Whether a parsed JSON value is an object (not null, not an array).
+ *
+ * @param {*} parsed The parsed JSON
+ * @return {boolean} Whether it is an object
+ */
+function isJsonObject(parsed) {
+	return parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+}
+
+/**
+ * Why the JSON view could not be parsed, as the browser wrote it.
+ *
+ * @param {Error} error The parse error
+ * @return {string} The message
+ */
+function invalidJsonText(error) {
+	return t('openregister', 'This is not valid JSON: {reason}', {
+		reason: error.message,
+	})
+}
+
 export default {
 	name: 'MigrationPackDetail',
 	components: {
@@ -1146,39 +1168,38 @@ export default {
 			try {
 				parsed = JSON.parse(this.jsonText)
 			} catch (error) {
-				this.jsonError = t(
-					'openregister',
-					'This is not valid JSON: {reason}',
-					{
-						reason: error.message,
-					},
-				)
+				this.jsonError = invalidJsonText(error)
 				return false
 			}
-			if (
-				parsed === null
-				|| typeof parsed !== 'object'
-				|| Array.isArray(parsed)
-			) {
-				this.jsonError = t(
-					'openregister',
-					'A pack definition is a JSON object.',
-				)
+			this.jsonError = this.definitionRefusal(parsed)
+			if (this.jsonError !== '') {
 				return false
+			}
+			this.draft = draftFromStored(parsed)
+			return true
+		},
+
+		/**
+		 * Why a parsed JSON view cannot become the pack definition: it is not
+		 * an object, or it renames a built-in pack. Empty when it can.
+		 *
+		 * @param {*} parsed The parsed JSON
+		 * @return {string} The refusal, or ''
+		 */
+		definitionRefusal(parsed) {
+			if (!isJsonObject(parsed)) {
+				return t('openregister', 'A pack definition is a JSON object.')
 			}
 			if (this.slugLocked && parsed.id !== this.pack.definition?.id) {
-				this.jsonError = t(
+				return t(
 					'openregister',
 					'The slug of a built-in pack cannot change. Keep "id" as {slug}.',
 					{
 						slug: this.pack.definition?.id ?? '',
 					},
 				)
-				return false
 			}
-			this.jsonError = ''
-			this.draft = draftFromStored(parsed)
-			return true
+			return ''
 		},
 
 		/**

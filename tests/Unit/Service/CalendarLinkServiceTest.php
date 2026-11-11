@@ -35,6 +35,7 @@ use DateTime;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Db\CalendarLink;
 use OCA\OpenRegister\Db\CalendarLinkMapper;
+use OCA\OpenRegister\Service\CalendarEventKey;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\LinkSessionRuntime;
@@ -121,11 +122,14 @@ class CalendarLinkServiceTest extends TestCase {
 			}))
 			->willReturnArgument(0);
 
-		// Critically: CalendarEventService::createEvent / linkEvent must NOT be called.
+		// Critically: CalendarEventService::createEvent / linkEventTo must NOT be called.
 		$this->calendarEventService->expects($this->never())->method('createEvent');
-		$this->calendarEventService->expects($this->never())->method('linkEvent');
+		$this->calendarEventService->expects($this->never())->method('linkEventTo');
 
-		$result = $this->service->linkEvent('obj-1', 1, 2, 'personal', 'ev-uid-1');
+		$result = $this->service->linkLocatedEvent(
+			target: (new LinkTarget(objectUuid: 'obj-1', registerId: 1))->inSchema(schemaId: 2),
+			key: new CalendarEventKey(calendarUri: 'personal', eventUid: 'ev-uid-1')
+		);
 		$this->assertInstanceOf(CalendarLink::class, $result);
 	}
 

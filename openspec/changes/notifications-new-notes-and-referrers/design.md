@@ -72,7 +72,7 @@ The canonical subject key for the new trigger is added beside `created` and
 - `recipients` is a nested block of any existing kind except `referrers`, so
   the kind is one level deep by construction.
 
-`NotificationRecipientResolver::resolveWithDiagnostics()`
+`NotificationRecipientResolver::resolveFromSource()`
 (`lib/Service/Notification/NotificationRecipientResolver.php:143`) resolves it
 by reading referring objects with `MagicMapper::findByRelationBatchInSchema()`
 (`lib/Db/MagicMapper.php:8424`), filtering to those whose named property holds

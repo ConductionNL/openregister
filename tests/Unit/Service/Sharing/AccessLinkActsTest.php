@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Sharing;
 
 use OCA\OpenRegister\Db\AccessLink;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
@@ -73,7 +75,10 @@ class AccessLinkActsTest extends TestCase {
 
 		$files = $this->createMock(ObjectFilesInterface::class);
 		$files->expects($this->once())->method('addFile')
-			->with($object, 'a.pdf', 'bytes', false)
+			->with(
+				$this->callback(fn (FileTarget $target): bool => $target->object === $object),
+				$this->callback(fn (FileUpload $upload): bool => $upload->fileName === 'a.pdf' && $upload->content === 'bytes' && $upload->share === false)
+			)
 			->willReturn($stored);
 		$files->expects($this->once())->method('formatFile')->with($stored)->willReturn(['name' => 'a.pdf', 'shared' => false]);
 		$notes = $this->createMock(NoteServiceInterface::class);

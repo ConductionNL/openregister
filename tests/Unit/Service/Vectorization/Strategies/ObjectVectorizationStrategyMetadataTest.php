@@ -197,4 +197,23 @@ class ObjectVectorizationStrategyMetadataTest extends TestCase {
 		$this->assertSame(9, $this->strategy->getEntityIdentifier(self::entity(['id' => 9])));
 		$this->assertSame('unknown', $this->strategy->getEntityIdentifier(self::entity(['id' => null])));
 	}
+
+	public function testTheMetadataKeysKeepTheirOrderAndTheDutchDescriptionIsRead(): void {
+		$entity = self::entity(self::data(['id' => 5, 'title' => 'T', 'Beschrijving' => 'Dutch']));
+
+		$meta = $this->strategy->prepareVectorMetadata($entity, ['text' => 'x']);
+
+		$this->assertSame(
+			['entity_type', 'entity_id', 'chunk_index', 'total_chunks', 'chunk_text', 'additional_metadata'],
+			array_keys($meta)
+		);
+		$this->assertSame(
+			[
+				'object_id', 'object_title', 'title', 'name', 'description', 'register', 'register_id',
+				'schema', 'schema_id', 'uuid', 'uri',
+			],
+			array_keys($meta['additional_metadata'])
+		);
+		$this->assertSame('Dutch', $meta['additional_metadata']['description']);
+	}
 }

@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Tests\Support\AuditTrailListing;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -125,7 +126,7 @@ trait BuildsReaderHistory {
 		$access->method('schemaOf')->willReturn($this->readerSchema());
 
 		$mapper = $this->createMock(AuditTrailMapper::class);
-		$mapper->method('findAll')->willReturnCallback(
+		$mapper->method('findTrail')->willReturnCallback(AuditTrailListing::positional(
 			static function (...$args) use ($rows): array {
 				$filters = ($args['filters'] ?? $args[2] ?? []);
 				if (($filters['object_uuid'] ?? null) !== self::$readableUuid) {
@@ -134,7 +135,7 @@ trait BuildsReaderHistory {
 
 				return $rows;
 			}
-		);
+		));
 
 		$register = new Register();
 		$register->setId(5);

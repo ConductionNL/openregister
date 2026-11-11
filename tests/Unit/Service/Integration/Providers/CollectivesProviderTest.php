@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 
 use OCA\OpenRegister\Db\CollectiveLink;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\CollectiveLinkMapper;
 use OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider;
 use OCP\App\IAppManager;
@@ -122,7 +123,7 @@ class CollectivesProviderTest extends TestCase {
 
 		$provider = $this->buildProvider(installed: false, mapper: $mapper);
 
-		$this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
+		$this->assertSame([], $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid')));
 	}//end testListReturnsEmptyWhenCollectivesUninstalled()
 
 	public function testListReturnsEmptyWhenNoLinks(): void {
@@ -131,7 +132,7 @@ class CollectivesProviderTest extends TestCase {
 
 		$provider = $this->buildProvider(installed: true, mapper: $mapper);
 
-		$rows = $provider->list('reg', 'sch', 'obj-uuid');
+		$rows = $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'));
 
 		$this->assertSame([], $rows);
 	}//end testListReturnsEmptyWhenNoLinks()
@@ -150,7 +151,7 @@ class CollectivesProviderTest extends TestCase {
 
 		$provider = $this->buildProvider(installed: true, mapper: $mapper);
 
-		$rows = $provider->list('reg', 'sch', 'obj-uuid');
+		$rows = $provider->list(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-uuid'));
 
 		$this->assertCount(1, $rows);
 		$this->assertSame('42', $rows[0]['id']);

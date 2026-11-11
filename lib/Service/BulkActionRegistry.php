@@ -154,27 +154,40 @@ class BulkActionRegistry implements BulkActionRegistryInterface {
 		$catalogue = [];
 
 		foreach ($this->all() as $id => $action) {
-			// An action that cannot be undone says so BEFORE it runs, which is
-			// the whole of D-4: the operator reads it in the same list they
-			// pick the action from, not in the error after they tried.
-			$window = null;
-			if ($action instanceof ReversibleBulkActionInterface) {
-				$window = $action->getReversalWindow();
-			}
-
-			$catalogue[] = [
-				'id' => $id,
-				'label' => $action->getLabel(),
-				'description' => $action->getDescription(),
-				'requiresJustification' => $action->requiresJustification(),
-				'guards' => $action->getGuards(),
-				'reversible' => ($window !== null),
-				'reversalWindow' => $window,
-			];
+			$catalogue[] = self::catalogueEntry(id: $id, action: $action);
 		}
 
 		return $catalogue;
 	}//end describe()
+
+	/**
+	 * One action as the catalogue lists it.
+	 *
+	 * An action that cannot be undone says so BEFORE it runs, which is
+	 * the whole of D-4: the operator reads it in the same list they
+	 * pick the action from, not in the error after they tried.
+	 *
+	 * @param int|string          $id     The action id.
+	 * @param BulkActionInterface $action The action.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function catalogueEntry(int|string $id, BulkActionInterface $action): array {
+		$window = null;
+		if ($action instanceof ReversibleBulkActionInterface) {
+			$window = $action->getReversalWindow();
+		}
+
+		return [
+			'id' => $id,
+			'label' => $action->getLabel(),
+			'description' => $action->getDescription(),
+			'requiresJustification' => $action->requiresJustification(),
+			'guards' => $action->getGuards(),
+			'reversible' => ($window !== null),
+			'reversalWindow' => $window,
+		];
+	}//end catalogueEntry()
 
 	/**
 	 * Dispatch the registration event once.

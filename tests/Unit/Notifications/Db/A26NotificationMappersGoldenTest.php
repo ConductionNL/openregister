@@ -60,7 +60,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationBroadcastMapper

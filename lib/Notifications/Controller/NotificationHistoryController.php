@@ -43,7 +43,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
-use OCA\OpenRegister\Db\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
  * Class NotificationHistoryController.
@@ -162,6 +162,17 @@ class NotificationHistoryController extends Controller {
 			);
 		}
 
+		return $this->historyPage(filters: $this->visibleFilters(uid: $user->getUID()));
+	}//end index()
+
+	/**
+	 * The query's filters, with the recipient forced to the caller unless they are an admin.
+	 *
+	 * @param string $uid The signed-in caller's uid.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function visibleFilters(string $uid): array {
 		$filters = $this->extractFilters();
 
 		// SECURITY: non-admins may only read their OWN history. Force the
@@ -170,10 +181,21 @@ class NotificationHistoryController extends Controller {
 		// `?recipient=alice` and read Alice's full notification stream
 		// (recipient list, channels, ruleId, dispatch timestamps), a
 		// privacy + recon vector across tenants.
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
-			$filters['recipient'] = $user->getUID();
+		if ($this->groupManager->isAdmin($uid) === false) {
+			$filters['recipient'] = $uid;
 		}
 
+		return $filters;
+	}//end visibleFilters()
+
+	/**
+	 * One page of the history the filters select, with the total.
+	 *
+	 * @param array<string, mixed> $filters The filters, recipient already scoped.
+	 *
+	 * @return JSONResponse JSON response with results, total, limit, offset.
+	 */
+	private function historyPage(array $filters): JSONResponse {
 		$limit = $this->resolveLimit();
 		$offset = $this->resolveOffset();
 
@@ -188,8 +210,7 @@ class NotificationHistoryController extends Controller {
 				'offset' => $offset,
 			]
 		);
-
-	}//end index()
+	}//end historyPage()
 
 	/**
 	 * Snooze one of the caller's own notices until a moment.
