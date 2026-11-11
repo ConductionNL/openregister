@@ -3163,3 +3163,27 @@ learniq	2313	2963e3c02a0c870a7afd6633a9a9ebc8d9262ff4	GREEN	FV9-02:4	tree green 
 learniq	2314	c735c33b42d43b34a5346e28802c5a382241e344	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
 learniq	2315	6643bd1e72175c8c063c94e7d888674f573cbe1f	GREEN	FV9-02:4	tree green (unit beyond 33 inherited baseline failures + node tests); diff review found no behaviour change; floor held
 learniq	2293	a7a8c4bfc14543c72aeb136c042b4a9fefdb6dd1	RED	FV9-02:4	FindAllConfigScopeTest::testNoFindAllInLibFiltersOnAnObjectId fails: new pokId() in lib/Lifecycle/PokActivationGuard.php:186 reads id/uuid off $pok and the scope test flags it as a findAll() filter on id/uuid
+stackiq	1650	1a2001c15942e0a118ca7e3244bb3be47a989930	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1651	63a3b290b5a7f84c2617ff1dbe59685f2f9e6f90	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1652	e5c1bb5077e4e3548399566c699617755c9cece8	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1653	cb0afe6cd07372f129a1b0301ea186ee4029323e	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1654	8b1e19c15f365ea6ac4bbcb4e5ad4d8824aca2ce	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1655	e5949adfffa8da1355fcd6b0e61ed34f58543b96	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1656	acf8f6469916e216e7fd7cf4c831e00ff7ccb1fe	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1657	9122bb787282d9db9263b4a7b2b5e73d8a5851d0	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1658	2983ba20042cf28f8a5e46ad834a5e202731f08c	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1659	a9ec4429e5a50c51050c57436263f33fb76c57ae	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1660	935ea0983d53a2c5f446c5573189d5099e9cc4ef	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1661	759b663c92afefdfa03d0ba3a51a204a46b556fe	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1662	f835fb997648a85595ef9251312e3b0099bcce95	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1663	41710228f599f25a829171862ed068d802ba31ca	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1664	d575ecbf911b7b95f7ddcf2558f8c2d986dbd1f5	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1665	3930fc0ce5db3ce5d20dec586f4b1a5270c09434	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1666	7a4292d1b8215ee14c796ab541061ede436d42fe	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1668	d129971d44264a72aaf4dc269a2ca55e76d7a298	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1669	8a704489763257c3ed33cde54e6e8925cdbfc1a6	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1670	6fe6c699436a41d8fc686f4f249da71fadf8f873	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1671	123441562d868b021113c6919aef96f5b2b9579a	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1672	8242e4d0322a5aacd5fdf8cb55fdf0e0cff366bb	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1673	86c4908b8e6b76f1ffe65d692029b9e1b2c73e1d	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
+stackiq	1674	77c2fcbdac7af9e32b3d09689319cac50dc4456b	GREEN	FV9-01:4	tree of 24 green on 21bd1efd05; unit failures only inherited (142); floor held
