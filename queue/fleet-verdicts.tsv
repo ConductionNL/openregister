@@ -2501,3 +2501,4 @@ planninq	1105	9237c44a643c908b8139fd23d305caae979282b2	GREEN	vm2:5	tree of 6: un
 planninq	1106	6ebea96e4fd23ca8bc368fc680485ffc4494dbf1	GREEN	vm2:5	tree of 6: unit 869 OK (baseline 0), vitest green, floor holds
 planninq	1107	fba566f831f5081ba47c21464a66a356e779b1f4	GREEN	vm2:5	tree of 6: unit 869 OK (baseline 0), vitest green, floor holds
 launchpad	1065	109540f098d640dc4f87b4f3a62722f115546efc	GREEN	vm2:6	unit 2761 OK (baseline 0), floor holds; split keeps every log/exception string
+keepiq	1502	cdaa1ca2e5afc27c4e7f7e8b24037499e748b123	CONFLICT	vm2:7	conflicts with origin/development
