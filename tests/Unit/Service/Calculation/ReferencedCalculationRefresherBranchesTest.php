@@ -34,7 +34,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * ReferencedCalculationRefresherBranchesTest.

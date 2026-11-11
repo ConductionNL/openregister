@@ -29,7 +29,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenRegister\Service\WriteCause;
 use PHPUnit\Framework\TestCase;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * findAll() config shaping and the updateFromArray() PATCH guard, as they are.

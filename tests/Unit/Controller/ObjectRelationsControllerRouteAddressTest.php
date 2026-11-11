@@ -46,7 +46,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectRelationsController

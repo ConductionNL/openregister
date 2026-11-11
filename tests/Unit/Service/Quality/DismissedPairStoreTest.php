@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use OCA\OpenRegister\Search\Service\Quality\PairDismissal;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class DismissedPairStoreTest extends TestCase {
 

@@ -62,7 +62,7 @@ use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 final class ImportPreviewServiceTest extends TestCase {
 

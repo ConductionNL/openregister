@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportOptions;

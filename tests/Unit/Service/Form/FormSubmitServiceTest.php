@@ -53,7 +53,7 @@ use RuntimeException;
 use OCA\OpenRegister\Service\Form\FormSubmitDestinations;
 use OCA\OpenRegister\Service\Form\FormSubmitKeeping;
 use OCA\OpenRegister\Service\Form\FormSubmitPlatform;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The submit contract against real stores, a real opis validator and a fake creating listener.

@@ -41,7 +41,7 @@ use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Decision 216. The save in this test is judged by the REAL DraftStatusPolicy,

@@ -27,9 +27,9 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
-use OCA\OpenRegister\Service\Object\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 
 /**
  * Integration tests for ObjectService

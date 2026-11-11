@@ -48,7 +48,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class MergeFieldDecisionTest extends TestCase {
 

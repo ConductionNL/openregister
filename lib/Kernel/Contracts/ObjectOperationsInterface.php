@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;

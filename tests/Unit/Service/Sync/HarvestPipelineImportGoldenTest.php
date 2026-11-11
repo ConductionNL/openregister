@@ -38,7 +38,7 @@ use OCA\OpenRegister\Service\Sync\SyncConflictResolver;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Each case imports scripted records and records the summary plus every

@@ -38,7 +38,7 @@ use OCP\IAppConfig;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Runs importListedObject() over a fixed corpus and compares the result

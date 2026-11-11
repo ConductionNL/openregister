@@ -33,8 +33,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 
 /**
  * Unit coverage for the `openregister.object-write` node.

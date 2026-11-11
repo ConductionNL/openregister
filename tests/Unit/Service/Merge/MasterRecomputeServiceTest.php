@@ -25,7 +25,7 @@ use OCA\OpenRegister\Service\Merge\MasterRecomputeService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Each branch of one recompute.

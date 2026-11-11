@@ -55,8 +55,8 @@ use OCP\IL10N;
 use OCP\IURLGenerator;
 use RuntimeException;
 use UnexpectedValueException;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Creates a related object, or runs a declared handoff, per item.

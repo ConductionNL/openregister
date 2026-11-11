@@ -41,7 +41,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * `POST /api/objects/{register}/{schema}?_upsertOn=<constraint>` through the real controller.

@@ -57,8 +57,8 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * RBAC + case-level access controlled DSAR case-management endpoints.

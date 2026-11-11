@@ -58,7 +58,7 @@ use OCA\OpenRegister\Service\Credential\OAuth2RefreshTarget;
 use OCA\OpenRegister\Service\Credential\TokenSetAddress;
 use OCA\OpenRegister\Service\Credential\TokenResponseOptions;
 use OCA\OpenRegister\Event\CredentialRelinkRequiredEvent;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2RefreshService

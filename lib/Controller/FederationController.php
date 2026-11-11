@@ -50,8 +50,8 @@ use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Token-scoped federation serving endpoints (read; write-through in a later phase).

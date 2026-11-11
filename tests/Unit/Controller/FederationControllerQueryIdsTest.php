@@ -31,7 +31,7 @@ use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * A query share whose own filter is an id list reaches by id only what that list names.

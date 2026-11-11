@@ -39,7 +39,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\SurvivorshipControllerFactory;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Pins the RBAC/tenant-scoped read, the write order and every status mapping.

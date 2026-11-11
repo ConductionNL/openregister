@@ -31,8 +31,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Refresh one object whose time-dependent calculations moved.

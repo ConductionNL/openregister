@@ -35,9 +35,9 @@ use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
 use OCA\OpenRegister\Service\Flow\FlowRunFrame;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
-use OCA\OpenRegister\Service\Object\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Writes a task form's accepted values onto its subject object, as the run that raised the task.

@@ -16,7 +16,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\VocabularyObjectStore;
 use PHPUnit\Framework\TestCase;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Golden test for VocabularyObjectStore: pins the exact findAll configs and

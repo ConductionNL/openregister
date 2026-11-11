@@ -38,7 +38,7 @@ use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class MergeServiceExecuteCharacterisationTest extends TestCase {
 

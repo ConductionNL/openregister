@@ -48,8 +48,8 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
 use Throwable;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Carries party roles and addresses across a merge, and back on a reversal.

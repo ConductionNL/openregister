@@ -26,9 +26,9 @@ namespace OCA\OpenRegister\Controller\Support;
 use Closure;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
-use OCA\OpenRegister\Service\Object\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 
 /**
  * One create: the submitted object, where it goes and how it was asked for.

@@ -67,9 +67,9 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
-use OCA\OpenRegister\Service\Object\ObjectFindTarget;
-use OCA\OpenRegister\Service\Object\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * Class ImportHandler

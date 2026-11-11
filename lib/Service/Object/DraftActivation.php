@@ -49,6 +49,9 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Form\FormPayloadFindings;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Full validation, one allowed promotion, the same id, one event.
