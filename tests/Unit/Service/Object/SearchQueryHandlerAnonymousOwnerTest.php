@@ -82,6 +82,13 @@ class SearchQueryHandlerAnonymousOwnerTest extends TestCase {
 		$this->assertSame(['__no-owner-for-anonymous__'], $query['_ids']);
 	}//end testAnAnonymousOwnerFilterAnswersNothing()
 
+	public function testAnAnonymousOwnerFilterUnderSelfAnswersNothing(): void {
+		$query = $this->makeHandler(uid: null)->buildSearchQuery(['@self' => ['owner' => 'alice']], 1, 2);
+
+		$this->assertArrayNotHasKey('owner', $query['@self']);
+		$this->assertSame(['__no-owner-for-anonymous__'], $query['_ids']);
+	}//end testAnAnonymousOwnerFilterUnderSelfAnswersNothing()
+
 	public function testAnAnonymousOwnerSortIsDropped(): void {
 		$query = $this->makeHandler(uid: null)->buildSearchQuery(
 			['_order' => ['@self.owner' => 'ASC', 'owner' => 'DESC', 'title' => 'ASC']],
