@@ -2441,3 +2441,4 @@ shillinq	2357	044f0b1673fcf9cb746d946f55b4112ed1247cd0	GREEN	FXL	spec reads Draf
 dossiq	5417	d20f3104d6024429a05d0ea0e1546ccc7c4d4e8d	GREEN	FXL	snapshot serializer records icons by name, re-recorded on development code; merged
 shillinq	2340	e383e87cf3c84ac72a5615b5dca103bccb42d7f7	GREEN	FXL	guard unreachable: findAll declares array on the interface (phpstan alreadyNarrowedType on restore); merged
 shillinq	2322	4bbc5aea5e6d65550968fe55f082781246092fa3	GREEN	FXL	validation order restored, two multi-field cases added; merged
+shillinq	2299	4bfe444cd0f73c35fcd41f600737272e3d127439	GREEN	FXL	new movement books the run's adjustment as on development, test added; merged
