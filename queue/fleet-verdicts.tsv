@@ -4002,3 +4002,4 @@ buildiq	1445	b639bf561301333c124705a1ba46cfa476015021	RED	worker-53:merge-gate	G
 buildiq	1447	5574756b6574297f5811cc52b71528e4c3914d64	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 buildiq	1448	949b20f12bdd9504af0ee22267a6f3d34d23e02a	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 shillinq	2796	d99c3d4798ba77ed87984458c1cc80e6ad5c93c2	GREEN	worker-06	8919 tests; baseline 1 failure (PaymentWebhookIntakeCharacterisationTest stripe timestamp, clock-bound, inherited); 0 new; vitest 1331 passed; constant renames, values unchanged, no old names left
+thematiq	1660	29d2f8f752354a21e785d3549b52ecdb722d711a	GREEN	worker-39	phpunit 2833 (baseline 1 failure inherited: MigrateOverrideValueTypesTest::testUnwritableDirectoryDoesNotThrow); new failures 0; adds openapi.json only
