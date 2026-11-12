@@ -5493,7 +5493,8 @@
     "spec": "openspec/specs/rbac-scopes",
     "requirement": [
      "openspec/specs/rbac-scopes :: Permission Types (read, create, update, delete, list)",
-     "openspec/specs/rbac-scopes :: Nextcloud Group Mapping"
+     "openspec/specs/rbac-scopes :: Nextcloud Group Mapping",
+     "openspec/specs/auth-system :: The RBAC model MUST enforce schema-level, property-level, and row-level access control using Nextcloud groups"
     ],
     "plan": "rbac-disable-public-inheritance"
    },
@@ -5998,7 +5999,7 @@
    "built": {
     "state": "decided-no",
     "owner": "ConductionNL/openregister",
-    "evidence": "Searched appinfo/routes.php and lib/ for signup/register-user/createUser: only lib/Service/File/FileOwnershipHandler.php. Outside parties use access links (routes.php:1052) or the portaliq seam (routes.php:2159), not own accounts"
+    "evidence": "Searched appinfo/routes.php and lib/ for signup/register-user/createUser: only lib/Files/Service/File/FileOwnershipHandler.php. Outside parties use access links (routes.php:1052) or the portaliq seam (routes.php:2159), not own accounts"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -6358,7 +6359,7 @@
    "built": {
     "state": "decided-no",
     "owner": "ConductionNL/openregister",
-    "evidence": "No @PublicPage on any method in lib/Controller/AuditTrailController.php; routes.php:1341-1359 all session-bound. Only a public timeline projection exists (lib/Service/Timeline/PublicTimeline.php) via access links"
+    "evidence": "No @PublicPage on any method in lib/Controller/AuditTrailController.php; routes.php:1341-1359 all session-bound. Only a public timeline projection exists (lib/Notifications/Service/Timeline/PublicTimeline.php) via access links"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -6891,7 +6892,7 @@
    "built": {
     "state": "decided-no",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Controller/FilesController.php:2098-2101 takes width/height query params and returns a Nextcloud preview; route appinfo/routes.php:1470. No format parameter."
+    "evidence": "lib/Files/Controller/FilesController.php:2098-2101 takes width/height query params and returns a Nextcloud preview; route appinfo/routes.php:1470. No format parameter."
    },
    "reachedOn": "API only: GET /api/objects/{r}/{s}/{id}/files/{fileId}/preview?width=&height=",
    "provider": "openregister",
@@ -6920,7 +6921,7 @@
    "built": {
     "state": "decided-no",
     "owner": "ConductionNL/openregister",
-    "evidence": "POST /api/files/{fileId}/anonymize appinfo/routes.php:1826 -> lib/Controller/FileTextController.php:433 -> lib/Service/File/DocumentProcessingHandler.php:362 (PdfTextReplacer for PDF :789). Replaces detected entities with '[type: key]' text :96, not black boxes. No UI trigger: git grep anonymizeFile in src finds nothing; sidebar only shows status src/components/files-sidebar/ExtractionTab.vue:134."
+    "evidence": "POST /api/files/{fileId}/anonymize appinfo/routes.php:1826 -> lib/Files/Controller/FileTextController.php:433 -> lib/Files/Service/File/DocumentProcessingHandler.php:362 (PdfTextReplacer for PDF :789). Replaces detected entities with '[type: key]' text :96, not black boxes. No UI trigger: git grep anonymizeFile in src finds nothing; sidebar only shows status src/components/files-sidebar/ExtractionTab.vue:134."
    },
    "reachedOn": "API only: POST /api/files/{fileId}/anonymize",
    "provider": "openregister",
@@ -6988,7 +6989,10 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Mail: src/mail-sidebar/components/ActionsTab.vue:70 linkObject -> emailLinks#link appinfo/routes.php:682, injected via MailAppScriptListener lib/AppInfo/Application.php:3584. Files sidebar RegisterObjectsTab only lists links. Talk linking only from the record side appinfo/routes.php:747.",
     "change": "files-leaf-save-to-object",
-    "requirement": "openspec/changes/files-leaf-save-to-object/specs/file-actions :: A Files action attaches a file to a register object"
+    "requirement": [
+     "openspec/changes/files-leaf-save-to-object/specs/file-actions :: A Files action attaches a file to a register object",
+     "openspec/changes/files-leaf-save-to-object/specs/file-actions :: A Talk action saves a conversation to a register object"
+    ]
    },
    "reachedOn": "Nextcloud Mail sidebar; files and chats only from the record side",
    "provider": "openregister",
@@ -7207,7 +7211,10 @@
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Listener/FlowTriggerListener registered for object created/updated/deleted lib/AppInfo/Application.php:3039-3041, runs lib/Service/Flow/FlowEngine.php; canvas page src/manifest.json:226 (flowDetail, type flow, CnFlowDetail from nextcloud-vue); flow routes appinfo/routes.php:788-826",
     "spec": "openspec/specs/flow-engine",
-    "requirement": "openspec/specs/flow-engine :: A TRIGGER is a node, and a flow may carry several",
+    "requirement": [
+     "openspec/specs/flow-engine :: A TRIGGER is a node, and a flow may carry several",
+     "openspec/changes/capability-rows-verified-b/specs/flow-engine :: An administrator builds a flow on a canvas, and it runs when a record changes"
+    ],
     "plan": [
      "flow-powerful-steps-need-a-right",
      "flow-trigger-transitions-and-changed-fields",
@@ -7312,7 +7319,7 @@
    "feature": "automation-flows",
    "screen": {
     "canvas": "design-system",
-    "board": null
+    "board": "OrFlowTriggerKalender"
    }
   },
   {
@@ -7342,7 +7349,7 @@
    "feature": "automation-flows",
    "screen": {
     "canvas": "design-system",
-    "board": null
+    "board": "OrFlowTriggerWebhook"
    }
   },
   {
@@ -7892,12 +7899,19 @@
    "source": "own-code-derived",
    "openregister": "yes",
    "built": {
-    "state": "built",
+    "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Import from GitHub/GitLab routes.php:1728-1729 via src/modals/configuration/ImportConfiguration.vue:82/97; publish PublishConfiguration.vue:267 -> configuration#publishToGitHub routes.php:1733",
+    "evidence": "Import from GitHub/GitLab routes.php:1728-1729 via src/modals/configuration/ImportConfiguration.vue:82/97; publish PublishConfiguration.vue:267 -> configuration#publishToGitHub routes.php:1733. Not built: publishing to GitLab; only configuration#publishToGitHub and registers#publishToGitHub exist (appinfo/routes.php), task 2.1 in capability-rows-verified-b",
     "spec": "openspec/specs/data-import-export",
-    "requirement": "openspec/specs/data-import-export :: Configurations MUST be publishable to and discoverable from remote GitHub, GitLab, and URL sources @e2e exclude backend remote discovery/publish (Git provider HTTP integration) — covered by Newman/PHPUnit",
-    "plan": "federated-config-sharing"
+    "requirement": [
+     "openspec/specs/data-import-export :: Configurations MUST be publishable to and discoverable from remote GitHub, GitLab, and URL sources @e2e exclude backend remote discovery/publish (Git provider HTTP integration) — covered by Newman/PHPUnit",
+     "openspec/changes/capability-rows-verified-b/specs/data-import-export :: A configuration package is published to a GitLab repository"
+    ],
+    "plan": [
+     "federated-config-sharing",
+     "capability-rows-verified-b"
+    ],
+    "change": "capability-rows-verified-b"
    },
    "reachedOn": "/configurations",
    "provider": "openregister",
@@ -8102,7 +8116,7 @@
    "built": {
     "state": "decided-no",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Controller/ChatController.php:415 sendMessage + streaming, routes appinfo/routes.php:1794-1803, RAG lib/Service/Chat/ContextRetrievalHandler.php:216. No chat screen in the app: src/components/AgentSelector.vue is imported by nothing, no manifest page"
+    "evidence": "lib/Controller/ChatController.php:415 sendMessage + streaming, routes appinfo/routes.php:1794-1803, RAG lib/Mcp/Service/Chat/ContextRetrievalHandler.php:216. No chat screen in the app: the former src/components/AgentSelector.vue has been removed, no manifest page"
    },
    "reachedOn": "API only: POST /api/chat/send",
    "provider": "openregister",
@@ -8167,7 +8181,10 @@
     "owner": "ConductionNL/openregister",
     "evidence": "Provider choice incl. Ollama: lib/Mcp/Service/Chat/ConversationManagementHandler.php:171; UI src/modals/settings/LLMConfigModal.vue:144 (OpenAI, Fireworks, Ollama) in src/views/settings/Settings.vue:63; routes appinfo/routes.php:294-299",
     "spec": "openspec/specs/chat-ai",
-    "requirement": "openspec/specs/chat-ai :: The system MUST expose an admin surface for reading and updating LLM provider settings"
+    "requirement": [
+     "openspec/specs/chat-ai :: The system MUST expose an admin surface for reading and updating LLM provider settings",
+     "openspec/changes/capability-rows-verified-b/specs/chat-ai :: An administrator picks the language model provider, including one on their own server"
+    ]
    },
    "reachedOn": "OpenRegister admin settings (LLM configuration)",
    "provider": "openregister",
