@@ -741,3 +741,4 @@ measure:launchpad:20261112h18	php 84.0% (pcov, pcov.directory=lib), js 66.2%	ses
 cover:pipelinq:f67520ec:jsd48eb217	PR pipelinq#3579: 20 vitest tests, settings.js+xwiki.js to 100%; store/modules lines 88.1->99.7%	session-20261112T221235-9e827ed1	2026-11-12T22:51:32Z
 cover:hermiq:755cdfe7m7444:js38e80a9f	failed: lang=js but dirs=lib/Command/*.php is PHP-only; no JS specs apply	session-20261112T215819-2dd7b64e	2026-11-12T22:51:30Z
 cover:hermiq:755cdfe7m7444:js9c1d94a2	failed: lang=js but dirs=lib/Tenant/*.php is PHP-only; no JS specs apply	session-20261112T215819-2dd7b64e	2026-11-12T22:51:42Z
+cover:pipelinq:f67520ecm9d2c:jsd528dcf0	failed: lang=js but dirs=lib/Dashboard/*.php is PHP only (no JS subject); feeder row malformed	session-20261112T221537-97382091	2026-11-12T22:52:06Z
