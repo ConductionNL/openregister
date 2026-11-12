@@ -2630,3 +2630,4 @@
 10051 7cd015c35d4d78d87f22d98bd0b75d0e67a92f81 APPROVE test-only: adds RegisterSchemaCard render spec (26 tests); cards suites 77/77 pass on PR merged with main, eslint clean, no production code changed
 10053 db69d331e1ed8afd8ee1b918f6cf97260782de70 APPROVE Tests only (1 jest spec); 40/40 tests in src/dialogs/avg pass on current main; eslint clean; no clock-pinned tests; no production code changed.
 10054 8b2cc5b676f050f7d1fb7ea940e7c421693045e1 APPROVE tests only (4 new trait tests, pass); Architecture, Service/Rules, Controller, Contract green on PR with main; no lib changes
+9995 5424d740cedeef07f2058e0f80e01eb5d709745f APPROVE prior block fixed: the 6 route tests read routes via DeclaredRoutes (drops only the appended /api/v1 aliases; main declares no v1 route) with every assertion unchanged; middleware adds Deprecation/Link only when the response has neither; up to date with main 1574bc5db5: guards + 20 route/middleware tests green (3291)
