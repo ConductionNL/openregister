@@ -158,6 +158,7 @@ Capabilities/CapabilityRegistrar.php,23,Capabilities,Platform,Platform/Capabilit
 Capabilities/IntegrationsCapability.php,80,Capabilities,Platform,Platform/Capabilities/IntegrationsCapability.php,0,,Platform
 Capabilities/UrnCapability.php,35,Capabilities,Platform,Platform/Capabilities/UrnCapability.php,0,,Platform
 Command/AdoptLeafOrganisationsCommand.php,312,Command,Access,Access/Command/AdoptLeafOrganisationsCommand.php,0,,Core
+Command/AdoptOrganisationlessRowsCommand.php,,Command,,,,,Core
 Command/AdoptionRun.php,,Command,,,,,Processes
 Command/ApplicationIdRename.php,,Command,,,,,Configuration
 Command/BackfillObjectSlugsCommand.php,118,Command,Service,Service/Command/BackfillObjectSlugsCommand.php,0,,Core
@@ -1564,6 +1565,7 @@ Reference/ObjectReferenceProvider.php,62,Reference,Platform,Platform/Reference/O
 Repair/AbstractRegisterImportStep.php,46,Repair,Platform,Platform/Repair/AbstractRegisterImportStep.php,0,,Platform
 Repair/AddObjectStateColumns.php,55,Repair,Platform,Platform/Repair/AddObjectStateColumns.php,0,,Platform
 Repair/AdminUserIds.php,,Repair,,,,,Platform
+Repair/AdoptOrganisationlessRows.php,,Repair,,,,,Core
 Repair/AppRegisterDescriptor.php,,Repair,,,,,Platform
 Repair/BackfillFlowSemanticVersions.php,114,Repair,Flows,Flows/Repair/BackfillFlowSemanticVersions.php,0,,Processes
 Repair/BackfillFlowTriggerIndex.php,86,Repair,Flows,Flows/Repair/BackfillFlowTriggerIndex.php,0,,Processes
