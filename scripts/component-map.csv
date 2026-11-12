@@ -1591,6 +1591,7 @@ Repair/MigrateApprovalChainsToTasks.php,414,Repair,Work,Work/Repair/MigrateAppro
 Repair/MigrateNotificationSubscriptionsToUserConfig.php,151,Repair,Platform,Platform/Repair/MigrateNotificationSubscriptionsToUserConfig.php,0,,Platform
 Repair/MigrateRegisterFlowsToTable.php,169,Repair,Platform,Platform/Repair/MigrateRegisterFlowsToTable.php,0,,Platform
 Repair/MigrateRenamedFlowNodeTypes.php,140,Repair,Flows,Flows/Repair/MigrateRenamedFlowNodeTypes.php,0,,Processes
+Repair/ProtectStoredSecrets.php,,Repair,,,,,Platform
 Repair/PurgePhantomMigratedFlows.php,142,Repair,Platform,Platform/Repair/PurgePhantomMigratedFlows.php,0,,Platform
 Repair/RechainAuditTrailForFlowAttribution.php,161,Repair,Compliance,Compliance/Repair/RechainAuditTrailForFlowAttribution.php,0,,Compliance
 Repair/ReconcileDeclaredBackgroundJobs.php,85,Repair,Platform,Platform/Repair/ReconcileDeclaredBackgroundJobs.php,0,,Platform

@@ -26,6 +26,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Db\CalendarFeedTokenMapperInterface;
 use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenService;
+use OCP\IAppConfig;
 use OCP\IURLGenerator;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -103,21 +104,43 @@ class CalendarFeedTokenServiceGuardsTest extends TestCase
         $data = (new CalendarFeedTokenService($this->mapper, $random, $urls))->mint(' alice ', $draft, 3600);
 
         $this->assertSame('https://nc.example/feed/tok123', $data['url']);
-        $this->assertSame(['tok123', 'alice', CalendarFeedToken::SCOPE_VIEW, 'view-9'], [$draft->getToken(), $draft->getUserId(), $draft->getScopeType(), $draft->getScopeId()]);
+        $this->assertSame('tok123', $data['token'], 'The holder gets the token itself once, at the mint');
+        $this->assertSame([hash('sha256', 'tok123'), 'alice', CalendarFeedToken::SCOPE_VIEW, 'view-9'], [$draft->getToken(), $draft->getUserId(), $draft->getScopeType(), $draft->getScopeId()]);
         $lifetime = $draft->getExpiresAt()->getTimestamp() - $draft->getCreatedAt()->getTimestamp();
         $this->assertSame(3600, $lifetime);
         $this->assertGreaterThanOrEqual($before, $draft->getCreatedAt()->getTimestamp());
     }//end testAMintWithATtlExpiresThatManySecondsLaterAndCarriesItsFeedUrl()
 
-    public function testAMintWithoutAPositiveTtlNeverExpires(): void
+    public function testAMintWithoutAPositiveTtlTakesTheDefaultLifetime(): void
     {
         $this->mapper->method('insert')->willReturnArgument(0);
         $draft = $this->draft(CalendarFeedToken::SCOPE_SCHEMA, 's-1');
 
         $this->service()->mint('alice', $draft, 0);
 
-        $this->assertNull($draft->getExpiresAt());
-    }//end testAMintWithoutAPositiveTtlNeverExpires()
+        $lifetime = $draft->getExpiresAt()->getTimestamp() - $draft->getCreatedAt()->getTimestamp();
+        $this->assertSame(CalendarFeedTokenService::DEFAULT_TTL_SECONDS, $lifetime);
+    }//end testAMintWithoutAPositiveTtlTakesTheDefaultLifetime()
+
+    public function testTheDefaultLifetimeIsConfigurableAndZeroMeansNoExpiry(): void
+    {
+        $this->mapper->method('insert')->willReturnArgument(0);
+        $config = $this->createMock(IAppConfig::class);
+        $config->method('getValueInt')
+            ->with('openregister', CalendarFeedTokenService::DEFAULT_TTL_KEY, CalendarFeedTokenService::DEFAULT_TTL_SECONDS)
+            ->willReturnOnConsecutiveCalls(60, 0);
+        $random = $this->createMock(ISecureRandom::class);
+        $random->method('generate')->willReturn('tok');
+        $service = new CalendarFeedTokenService($this->mapper, $random, $this->createMock(IURLGenerator::class), $config);
+
+        $short = $this->draft(CalendarFeedToken::SCOPE_SCHEMA, 's-1');
+        $service->mint('alice', $short, null);
+        $this->assertSame(60, $short->getExpiresAt()->getTimestamp() - $short->getCreatedAt()->getTimestamp());
+
+        $open = $this->draft(CalendarFeedToken::SCOPE_SCHEMA, 's-1');
+        $service->mint('alice', $open, null);
+        $this->assertNull($open->getExpiresAt());
+    }//end testTheDefaultLifetimeIsConfigurableAndZeroMeansNoExpiry()
 
     public function testABlankTokenResolvesToNothingWithoutALookup(): void
     {
@@ -128,7 +151,10 @@ class CalendarFeedTokenServiceGuardsTest extends TestCase
 
     public function testARevokedTokenDoesNotResolve(): void
     {
-        $this->mapper->method('findByToken')->with('abc')->willReturn($this->owned('alice', new DateTime('-1 day')));
+        $this->mapper->expects($this->once())
+            ->method('findByToken')
+            ->with(hash('sha256', 'abc'))
+            ->willReturn($this->owned('alice', new DateTime('-1 day')));
 
         $this->assertNull($this->service()->resolve(' abc '));
     }//end testARevokedTokenDoesNotResolve()
