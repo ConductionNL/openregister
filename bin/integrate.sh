@@ -127,7 +127,8 @@ needs_review() {
 	d=$(git -C "$C" diff "$fork" "$head" 2>/dev/null) || return 0
 	[ -n "$d" ] || return 0
 	grep -qE "$RISK_PATH" <<<"$d" && return 0
-	grep -E '^[-+]' <<<"$d" | grep -qE "$RISK"
+	# grep -c reads all input: grep -q under pipefail can SIGPIPE the producer and read as no match.
+	[ "$(grep -E '^[-+]' <<<"$d" | grep -cE "$RISK")" != 0 ]
 }
 
 phase_select() {
@@ -272,8 +273,9 @@ suite() {
 		front=red
 		( fe_deps > "$LOGS/front.log" 2>&1 || exit 1
 		  if ! npx jest --silent --testTimeout=30000 --maxWorkers=2 >> "$LOGS/front.log" 2>&1; then
-			sed -E 's/\x1b\[[0-9;]*m//g' "$LOGS/front.log" | grep -q 'Test suite failed to run' || exit 1
-			sed -E 's/\x1b\[[0-9;]*m//g' "$LOGS/front.log" | grep -qE '^Tests: .*[0-9]+ failed' && exit 1
+			plain=$(sed -E 's/\x1b\[[0-9;]*m//g' "$LOGS/front.log")
+			grep -q 'Test suite failed to run' <<<"$plain" || exit 1
+			grep -qE '^Tests: .*[0-9]+ failed' <<<"$plain" && exit 1
 			# Only suites that failed to load (the intermittent "Unexpected token 'export'" parse error
 			# on vue-material-design-icons under parallel workers): rerun just those files in band.
 			mv "$LOGS/front.log" "$LOGS/front-try1.log"
@@ -285,7 +287,7 @@ suite() {
 		local fpid=$!
 	fi
 	for i in $(seq 1 "$shards"); do
-		timeout 3000 php -d pcov.enabled=0 -d memory_limit=3G vendor/bin/phpunit -c ".batch-shard$i.xml" --no-coverage > "$LOGS/php-$i.log" 2>&1 &
+		timeout 3000 php -d pcov.enabled=0 -d memory_limit=2G vendor/bin/phpunit -c ".batch-shard$i.xml" --no-coverage > "$LOGS/php-$i.log" 2>&1 &
 		pids+=($!)
 	done
 	wait "${pids[@]}"
