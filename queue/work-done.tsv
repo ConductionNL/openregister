@@ -517,3 +517,4 @@ review:openregister:10040:214836bf	failed: permission (self-authored PR; needs r
 cover:integriq:9b0f5894:js0d617ff5	PR #3413 (29 tests, ApiProducts lines 0%->98.4%)	session-20261112T184505-d34a144f	2026-11-12T21:48:59Z
 fix:learniq:2414:61204dab	dockerimage not reproducible; dropped a regenerated .pyc from the PR; new head 17d4c32f7f99055907db99de8965e032899697ec; REVERIFY recorded	session-20261112T184441-77ab05a6	2026-11-12T21:49:54Z
 cover:openregister:7350e3ef:js6e3c1a64	PR #10042: 22 tests for Delete/Publish/View/Export configuration modals, dir lines 77.8->86.5%	session-20261112T212851-01e91591	2026-11-12T21:49:54Z
+cover:integriq:9b0f5894:js629c93bd	PR #3414: 36 tests for Approvals+callLog (lines 55.4->92.3%), suite 1392->1428 green	session-20261112T212852-3ecaf9de	2026-11-12T21:50:32Z
