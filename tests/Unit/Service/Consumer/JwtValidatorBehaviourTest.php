@@ -228,23 +228,27 @@ class JwtValidatorBehaviourTest extends TestCase
     }//end testHmacKeyLengthIsOnlyCheckedForHmacAlgorithms()
 
     /**
-     * @return array<string, array{0: array, 1: string}>
+     * Claim times as offsets in seconds from the moment the test runs.
+     *
+     * @return array<string, array{0: array<string, int>, 1: string}>
      */
     public static function claimRefusalProvider(): array
     {
-        $now = time();
         return [
             'no iat'          => [[], 'The token has no time of creation'],
-            'iat in future'   => [['iat' => $now + 600], 'The token has an invalid issue time'],
-            'default expiry'  => [['iat' => $now - 7200], 'The token has expired'],
-            'explicit expiry' => [['iat' => $now - 600, 'exp' => $now - 300], 'The token has expired'],
-            'not yet valid'   => [['iat' => $now, 'nbf' => $now + 600], 'The token is not yet valid'],
+            'iat in future'   => [['iat' => 600], 'The token has an invalid issue time'],
+            'default expiry'  => [['iat' => -7200], 'The token has expired'],
+            'explicit expiry' => [['iat' => -600, 'exp' => -300], 'The token has expired'],
+            'not yet valid'   => [['iat' => 0, 'nbf' => 600], 'The token is not yet valid'],
         ];
     }//end claimRefusalProvider()
 
     #[DataProvider('claimRefusalProvider')]
-    public function testValidateClaimsRefusesWithTheMessage(array $payload, string $message): void
+    public function testValidateClaimsRefusesWithTheMessage(array $offsets, string $message): void
     {
+        $now     = time();
+        $payload = array_map(static fn(int $offset): int => $now + $offset, $offsets);
+
         $e = $this->refusal(static fn() => (new JwtValidator())->validateClaims($payload));
 
         $this->assertSame($message, $e->getMessage());

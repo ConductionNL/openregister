@@ -33,6 +33,7 @@ use RuntimeException;
  * Golden recording of inbound federated shares.
  *
  * @covers \OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider
+ * @uses \OCA\OpenRegister\Db\FederatedShare
  */
 final class CloudFederationShareReceivedGoldenTest extends TestCase {
 

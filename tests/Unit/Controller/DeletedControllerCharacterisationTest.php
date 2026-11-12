@@ -52,6 +52,15 @@ use ReflectionMethod;
  * Request parameters of the trash listing, and the bulk destroy refusal.
  *
  * @covers \OCA\OpenRegister\Controller\DeletedController
+ * @uses \OCA\OpenRegister\Controller\Support\BatchOutcome
+ * @uses \OCA\OpenRegister\Controller\Support\DeletedAccess
+ * @uses \OCA\OpenRegister\Controller\Support\DeletedControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\DeletedStore
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer
+ * @uses \OCA\OpenRegister\Service\Deletion\DeletionServiceBundle
+ * @uses \OCA\OpenRegister\Service\Deletion\DestructionServices
+ * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
  */
 class DeletedControllerCharacterisationTest extends TestCase {
 	private DeletedController $controller;

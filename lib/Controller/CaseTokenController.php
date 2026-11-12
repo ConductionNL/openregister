@@ -68,7 +68,7 @@ class CaseTokenController extends Controller {
 	 *
 	 * @var string
 	 */
-	public const THROTTLE_ACTION = ThrottledSurfacesInterface::CASE_TOKEN;
+	public const THROTTLE_ACTION = ThrottledSurfacesInterface::CASE_LINK_SURFACE;
 
 	/**
 	 * Case-token mint/resolve/revoke service.

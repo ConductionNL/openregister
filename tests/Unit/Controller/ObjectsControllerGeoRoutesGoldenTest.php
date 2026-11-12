@@ -34,6 +34,11 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Controller\ObjectsController
  * @uses \OCA\OpenRegister\Search\Service\Geo\GeoResponseCrs
  * @uses   \OCA\OpenRegister\Controller\Support\GeoServices
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Search\Service\Geo\FeatureShape
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GeoResponseCrsFactory
+ * @uses \OCA\OpenRegister\Search\Service\Geo\GetFeatureRequest
+ * @uses \OCA\OpenRegister\Service\Geo\GeocodeOptions
  */
 class ObjectsControllerGeoRoutesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-geo-routes-golden.json';

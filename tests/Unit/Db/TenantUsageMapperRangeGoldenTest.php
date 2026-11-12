@@ -33,6 +33,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\TenantUsageMapper
+ * @uses \OCA\OpenRegister\Db\TenantUsage
+ * @uses \OCA\OpenRegister\Db\TenantUsage\UsageRange
  */
 final class TenantUsageMapperRangeGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
