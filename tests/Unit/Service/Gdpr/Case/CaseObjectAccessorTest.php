@@ -25,8 +25,11 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessorInterface;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Every case read is RBAC- and tenant-scoped; a listed row without uuid, or one the caller
@@ -71,7 +74,8 @@ final class CaseObjectAccessorTest extends TestCase {
 		)->willReturn([['@self' => ['uuid' => 'a']], ['id' => 'b'], 'not a row', ['@self' => []]]);
 		$loaded = [];
 		$this->objects->method('find')->willReturnCallback(
-			static function (int|string $id, ?array $_extend = [], bool $files = false, mixed $register = null, mixed $schema = null, bool $_rbac = true, bool $_multitenancy = true) use ($caseA, &$loaded): ?ObjectEntity {
+			static function (...$args) use ($caseA, &$loaded): ?ObjectEntity {
+				[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy] = FindCallShape::find(args: $args);
 				$loaded[] = [$id, $register, $schema, $_rbac, $_multitenancy];
 				return $id === 'a' ? $caseA : null;
 			}
@@ -94,9 +98,7 @@ final class CaseObjectAccessorTest extends TestCase {
 	 */
 	public function testTheSweepDeletesWithTheRetentionFlag(): void {
 		$this->objects->expects($this->once())->method('deleteObject')->with(
-			'case-1',
-			CaseObjectAccessorInterface::REGISTER_SLUG,
-			CaseObjectAccessorInterface::SCHEMA_SLUG,
+			$this->callback(static fn (ObjectDeletion $deletion): bool => $deletion->uuid == 'case-1' && $deletion->target->register == CaseObjectAccessorInterface::REGISTER_SLUG && $deletion->target->schema == CaseObjectAccessorInterface::SCHEMA_SLUG),
 			true,
 			true,
 			true
@@ -117,10 +119,7 @@ final class CaseObjectAccessorTest extends TestCase {
 		$this->dsar->method('getDsarProcessingActivityUuid')->willReturn('pa-9');
 		$this->objects->expects($this->once())->method('saveObject')->with(
 			$case,
-			[],
-			CaseObjectAccessorInterface::REGISTER_SLUG,
-			CaseObjectAccessorInterface::SCHEMA_SLUG,
-			'case-1',
+			$this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == CaseObjectAccessorInterface::REGISTER_SLUG && $options->target->schema == CaseObjectAccessorInterface::SCHEMA_SLUG && $options->uuid == 'case-1'),
 			true,
 			true
 		)->willReturn($saved);

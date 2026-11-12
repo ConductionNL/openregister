@@ -54,6 +54,12 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Audit\PurposeRefusedException
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsPurposeScope
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsRequest
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Relation\AffectedSets
+ * @uses \OCA\OpenRegister\Service\Relation\GraphExportOptions
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsReachability
  */
 class ObjectRelationsControllerAffectedTest extends TestCase {
 

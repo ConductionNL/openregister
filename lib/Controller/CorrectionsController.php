@@ -110,8 +110,6 @@ class CorrectionsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse The corrected record and the entry that recorded it.
 	 *
 	 * @contract tests/Unit/Controller/CorrectionsControllerTest.php

@@ -1,0 +1,3 @@
+- [x] T01 ExampleSetDraft reads and checks an object's `@self` draft declaration
+- [x] T02 ExampleSetStore validates without `@self` and writes a draft with its status and scoped owner
+- [x] T03 PHPUnit: a draft object is written as a draft for its owner; a faulty `@self` is refused

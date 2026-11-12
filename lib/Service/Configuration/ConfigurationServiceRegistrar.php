@@ -397,7 +397,8 @@ final class ConfigurationServiceRegistrar {
 			objectEntityMapper: $container->get(MagicMapperInterface::class),
 			configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 			mappingMapper: $container->get(MappingMapper::class),
-			logger: $container->get('Psr\Log\LoggerInterface')
+			logger: $container->get('Psr\Log\LoggerInterface'),
+			readableObjects: $container->get(ReadableExportObjects::class)
 		);
 
 		return $exportHandler;

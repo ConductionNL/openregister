@@ -124,7 +124,7 @@ class ExampleSetProfilesBehaviourTest extends TestCase {
 				return $service;
 			}
 		);
-		return new ExampleSetProfiles($this->users, $this->profiles, $container);
+		return new ExampleSetProfiles(new \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppReach(container: $container, apps: $this->createMock(\OCP\App\IAppManager::class), users: $this->users), $this->profiles);
 	}//end subject()
 
 	/**

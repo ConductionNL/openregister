@@ -40,6 +40,9 @@ use Symfony\Component\Console\Tester\CommandTester;
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationEdit
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacChecks
+ * @uses \OCA\OpenRegister\Service\Rbac\SchemaSave
  */
 class UnknownMetadataConditionsCommandTest extends TestCase {
 
