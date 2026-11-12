@@ -4148,3 +4148,4 @@ buildiq	1473	078ec94c49847637cd832956d287f45f2306af26	GREEN	worker-25	PHP unit 2
 buildiq	1474	b351b1e38eb3a492c15f0cfa6322e7f6a00b3997	GREEN	worker-25	PHP unit 2259 on tree, baseline 2234 (1269 inherited), 0 new; vitest 3142/3142 passed; tests only
 buildiq	1475	2cc36baf4a1438c07c6e4dc75daeba4a8a2eaa7b	GREEN	worker-25	PHP unit 2259 on tree, baseline 2234 (1269 inherited), 0 new; vitest 3142/3142 passed; tests only
 buildiq	1476	3abc42648c17b60ea36418b7d9df4f9a8947243e	GREEN	worker-25	PHP unit 2259 on tree, baseline 2234 (1269 inherited), 0 new; vitest 3142/3142 passed; tests only
+shillinq	2798	0c5a2c5e0f83367c91e5dad9e061c97c10a42c02	RED	worker-19:merge-gate	GATE RED checker floor: dockerimage: pass -> fail
