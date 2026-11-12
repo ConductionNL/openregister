@@ -42,7 +42,10 @@ on:
     #
     # `stable*` (ADR-122): the release branches stableX.Y. The ruleset on them
     # requires the quality checks, so a pull request into one must run this
-    # workflow, and a push to one carries the same default-branch jobs.
+    # workflow. A push to one starts a run in which only the shared workflow's
+    # "Run lane" job runs and every other job is skipped (that job gives a
+    # branch push the full lane only on main, master, beta or development), so
+    # the push-only jobs do not run on a stable branch.
     branches:
       - main
       - beta
