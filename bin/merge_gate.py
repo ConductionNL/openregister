@@ -3,7 +3,8 @@
 
     python3 bin/merge_gate.py <app-clone> <pr-number> [<head-sha>] [--base development]
 
-Three checks, each on the PR head against its merge base with the base branch:
+Three checks, each on the base branch with the PR head merged in (the tree that would land),
+against the current base:
   1. SBOM: a head that changes composer.lock or package-lock.json must bring a root
      sbom.cdx.json that matches them (bin/regen-sbom.sh --check, next to this file).
   2. Checker floor: no Common Ground checker criterion or score may get worse against the
@@ -128,6 +129,17 @@ def main():
                 git(head, "checkout", "-q", "--detach", head_sha).returncode:
             return "UNMEASURED", f"cannot check out {head_sha[:10]}"
         git(head, "fetch", "-q", c, f"+refs/remotes/origin/{a.base}:refs/remotes/origin/{a.base}")
+        # The checker names the repository after the origin URL; a local-path origin hides the
+        # published image references (dockerimage criterion) of the real repository.
+        url = git(c, "remote", "get-url", "origin").stdout.strip()
+        if url:
+            git(head, "remote", "set-url", "origin", url)
+        # Scan the tree that would land: the base with the PR merged in. A head scanned alone lacks
+        # everything the base gained after the PR branched off, which reads as a regression.
+        m = git(head, "-c", "user.name=merge-gate", "-c", "user.email=merge-gate@localhost",
+                "merge", "-q", "--no-ff", "--no-edit", base)
+        if m.returncode:
+            return "UNMEASURED", f"{head_sha[:10]} does not merge cleanly onto {a.base}"
         for check in (lambda: sbom(head, base), lambda: checker(checker_tool, head, base),
                       lambda: floor(floor_tool, head, base)):
             v, why = check()
