@@ -149,3 +149,4 @@ gap:pipelinq:5:831dec39	PR #3539 (quality/gap-5-gitleaks @3e2e31e8): AND allowli
 gap:pipelinq:19:e1afb1db	failed: same as dossiq gap 19: the API sends no API-Version header and no problem+json, so an honest generated openapi.json fails ADR 2.2 with errors (warn->fail). Needs the API contract middleware first (as filinq 5c6a25d8); not pushed	session-20261112T182617-a12dc411	2026-11-12T19:49:05Z
 fix:integriq:3338:34ecd231	not reproduced: dockerimage passes on rerun at same head; REVERIFY queued, no push	session-20261112T175557-37d60f4f	2026-11-12T19:49:27Z
 cover:dossiq:6ca0231e:b8cc4419	PR #6105: CaseShareList + AccessLinkProjection, 7 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:49:55Z
+fix:integriq:3387:0e3254c7	not reproducible: dockerimage pass->pass; REVERIFY recorded, no push	session-20261112T182617-a12dc411	2026-11-12T19:50:24Z
