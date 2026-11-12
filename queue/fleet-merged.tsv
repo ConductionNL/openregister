@@ -262,3 +262,4 @@ larpinq	988	aa3c5d0232adf287d62d730cf392095e12af58d5	MERGED	merge-local	deploy P
 portaliq	2307	7f7809df7ad974e9790e28ba5e32b8f1fa198f6d	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2340	5bc2a2edec13ab1ea6ecbf0107b1ab50d72db148	MERGED	merge-local	deploy PR: merge gate OK, unit suite on merged tree green (inherited only), docker compose config and helm lint pass
 keepiq	1668	8aff563f6c77341777a64b1240e075f23eb48bbf	MERGED	merge-local	deploy PR: merge gate OK, unit suite on merged tree green (inherited only), docker compose config and helm lint pass
+versioniq	649	182e890b88b7b467d14580c4ebb6ebbff857e91d	MERGED	merge-local	deploy PR: merge gate OK, unit suite on merged tree green (inherited only), docker compose config and helm lint pass
