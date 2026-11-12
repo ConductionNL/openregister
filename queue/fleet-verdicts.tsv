@@ -3879,3 +3879,4 @@ stackiq	1731	ada62127141f9e0f21a45ed36707428b6127a647	GREEN	fv11-25:stackiq-t3	u
 learniq	2414	61204dabdd99de0e5ab657634eb96fabd3b438ea	GREEN	fv11-20:learniq-t171827	unit 5842 run, 1 failure baseline, no new; no JS; diff review: test @uses annotations only (plus a regenerated .pyc), no production code
 decidiq	2060	29f702e3ea4170ee7e8f19a59c5d242f7b9799da	GREEN	fv11-11:decidiq-t1	unit 2967 tests OK on tree (dev f5a9a669 baseline OK), 0 new; php -l clean; diff review: test docblock @uses annotations only (17 files, +18/-0)
 humaniq	1093	3ac478ed6e8e8e68df4c514abdcdea4456337ae7	GREEN	fv11-11:humaniq-t1	unit 3662 tests, 0 failing (dev 10eab220 baseline 0), 0 new; php -l clean; diff review: test docblock @uses annotations only (15 files, +24/-0)
+humaniq	1093	3ac478ed6e8e8e68df4c514abdcdea4456337ae7	GREEN	fv11-25:humaniq-t4	unit 3662 OK (baseline 3662 clean, dev 10eab220); no JS touched; diff review: test docblock @uses annotations only
