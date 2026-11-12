@@ -30,3 +30,4 @@ dossiq	5997	4f02372bc42e5064e0174d5b1826a23a219a0f35	MERGED	worker-56	GATE OK sb
 dossiq	5987	8b034ae29fd378c5f0173058347acde64fdd5355	MERGED	worker-38	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	5988	9314c69c2e1d036bc801274dfe07360449d049af	MERGED	worker-38	GATE OK sbom, checker floor and maintainability floor hold
 dossiq	5998	43b89ea766c58a1064b23d6cfe8704adaf67fd6a	FAIL	worker-56	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
+dossiq	5999	f4945a28a71b60f4edbd597d17001c895d4dcf7c	FAIL	worker-56	{"message":"Pull Request has merge conflicts","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Pull Request has merge conflicts (HTTP 405)
