@@ -835,3 +835,13 @@ cover:keepiq:d76c2121:9d3a1784	PRs #1693 (8 jobs, 38 tests) and #1697 (5 jobs, 1
 gap:pipelinq:axe:lic2	PR #3585: axe-core moved to devDependencies, lock+SBOM regenerated, build passes	session-20261112T221532-752808b3	2026-11-12T23:12:27Z
 cover:pipelinq:f67520ec:jseedd6bb8	PR #3586: 35 vitest tests for LeadList, LeadForm, LeadProbabilityCell; src/views/leads 74.5 -> 86.1%; suite 3164 -> 3199 all green	session-20261112T221537-97382091	2026-11-12T23:13:30Z
 cover:pipelinq:f67520ec:jsc41b6099	PR #3587: 34 tests for 5 src/mixins (linkedPartyCascade 21%->100% lines); suite 3164->3198 green	session-20261112T224526-3200a03f	2026-11-12T23:13:45Z
+verify:integriq:3415:b65f6ba6	stale	feeder	2026-11-12T23:14:09Z
+verify:humaniq:1098:271d1955	stale	feeder	2026-11-12T23:14:09Z
+verify:shillinq:2800:ec085ed0	stale	feeder	2026-11-12T23:14:09Z
+verify:decidiq:2087:716638a2	stale	feeder	2026-11-12T23:14:09Z
+verify:portaliq:2368:cbf10caa	stale	feeder	2026-11-12T23:14:09Z
+verify:planninq:1133:50211d3a	stale	feeder	2026-11-12T23:14:09Z
+verify:opencatalogi:2579:6513b90b	stale	feeder	2026-11-12T23:14:09Z
+verify:versioniq:661:e6dca2d4	stale	feeder	2026-11-12T23:14:09Z
+verify:larpinq:1006:e6fc2414	stale	feeder	2026-11-12T23:14:09Z
+verify:thematiq:1663:c576c89e	stale	feeder	2026-11-12T23:14:09Z
