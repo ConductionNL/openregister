@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 
 use DateTime;
+use OCA\OpenRegister\Db\ConfigurationBindingMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDeployment;
 use OCA\OpenRegister\Db\ConfigurationDeploymentMapperInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -58,12 +59,14 @@ class ConfigurationExplainer {
 	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationValueStore       $store       The live values.
-	 * @param ConfigurationDeploymentMapperInterface $deployments The append-only history.
+	 * @param ConfigurationValueStore                  $store       The live values.
+	 * @param ConfigurationDeploymentMapperInterface   $deployments The append-only history.
+	 * @param ConfigurationBindingMapperInterface|null $bindings    The bundle bindings, when the instance has them.
 	 */
 	public function __construct(
 		private readonly ConfigurationValueStore $store,
-		private readonly ConfigurationDeploymentMapperInterface $deployments
+		private readonly ConfigurationDeploymentMapperInterface $deployments,
+		private readonly ?ConfigurationBindingMapperInterface $bindings = null
 	) {
 
 	}//end __construct()
@@ -200,13 +203,34 @@ class ConfigurationExplainer {
 		$references = [
 			ConfigurationLayer::INSTANCE => null,
 			ConfigurationLayer::REGISTER => $register,
-			ConfigurationLayer::BUNDLE => $bundle,
+			ConfigurationLayer::BUNDLE => ($bundle ?? $this->boundBundle(subject: $subject)),
 			ConfigurationLayer::SUBJECT => $subject,
 		];
 
 		return $this->readChain(configKey: $configKey, references: $references);
 
 	}//end chainFor()
+
+	/**
+	 * The bundle a subject follows, when the caller did not name one.
+	 *
+	 * A caller asking about a schema should not have to know which bundle it
+	 * follows: a caller that had to pass it could pass the wrong one and get a
+	 * confident answer about a bundle the subject never followed.
+	 *
+	 * @param string|null $subject The subject, when there is one.
+	 *
+	 * @return string|null The bundle name, or null.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	private function boundBundle(?string $subject): ?string {
+		if ($subject === null || $this->bindings === null) {
+			return null;
+		}
+
+		return $this->bindings->findBySubject(subject: $subject)?->getBundle();
+	}//end boundBundle()
 
 	/**
 	 * Read one key at every layer that has its reference, lowest precedence first.

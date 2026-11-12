@@ -3,7 +3,7 @@
     "info": {
         "title": "openregister",
         "version": "2.2.0-dev.0",
-        "description": "The OpenRegister API for the endpoints this document covers: the object file actions (upload, download, rename, copy, move, versions, locks, labels, previews and batches) and the GitHub issues proxy behind the features and roadmap menu. OpenRegister serves many more endpoints than are described here; the OpenAPI document of each register is generated at `/api/registers/{id}/oas`. Errors are RFC 9457 problem details (`application/problem+json`, schema `Problem`).",
+        "description": "The OpenRegister API for the endpoints this document covers: the object file actions (upload, download, rename, copy, move, versions, locks, labels, previews and batches) and the GitHub issues proxy behind the features and roadmap menu. OpenRegister serves many more endpoints than are described here; the OpenAPI document of each register is generated at `/api/registers/{id}/oas`. Errors are RFC 9457 problem details (`application/problem+json`, schema `Problem`). Every path is served under `/api/v1/`, the version this document describes. The same paths without the version (`/api/...`) still answer and are listed here as deprecated; their responses carry a `Deprecation` header and a `Link` to the `/api/v1/` path. The old upload path `filesMultipart` still answers, with the same headers, but is not listed: use `files-multipart`.",
         "license": {
             "name": "EUPL-1.2",
             "url": "https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"
@@ -2992,6 +2992,2652 @@
                     }
                 }
             }
+        },
+        "/api/github/issues": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "github-issues-list-unversioned",
+                "summary": "List GitHub issues for the configured repository",
+                "description": "Deprecated: use `/api/v1/github/issues`, which answers the same. Cached (15 min) read of GitHub Issues, filtered to the labels supplied in the `labels` query param (OR semantics — issues carrying any of the named labels are returned). Returns a structured `hint` instead of a 4xx when the app-level PAT or repo allowlist is unconfigured so the UI can render a clean empty state. Cache headers: `X-OpenRegister-GitHub-Cache: HIT|MISS`. Auth posture: requires an authenticated Nextcloud user; carries `#[NoCSRFRequired]` on the controller (pure read with no side effects).",
+                "tags": [
+                    "github-issues"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "repo",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                        },
+                        "example": "ConductionNL/openregister"
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "open",
+                                "closed",
+                                "all"
+                            ],
+                            "default": "open"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "reactions-+1",
+                                "created",
+                                "updated",
+                                "comments"
+                            ],
+                            "default": "reactions-+1"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100,
+                            "default": 30
+                        }
+                    },
+                    {
+                        "name": "labels",
+                        "in": "query",
+                        "required": false,
+                        "description": "Comma-separated label list (max 8 entries, each ≤ 50 chars, matching `^[a-z][a-z0-9_-]*$`). Two or more labels yield OR semantics — items with any of the named labels are returned (deduped by issue number).",
+                        "schema": {
+                            "type": "string",
+                            "example": "enhancement,feature"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cached list of issues, or a graceful-degradation response when PAT / repo allowlist is unconfigured.",
+                        "headers": {
+                            "X-OpenRegister-GitHub-Cache": {
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "HIT",
+                                        "MISS"
+                                    ]
+                                }
+                            },
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GitHubIssuesListResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error (invalid repo / per_page / sort / labels).",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/StructuredError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Repo not allowed (task 1.14), or feature disabled by admin (task 1.21).",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/StructuredError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Rate-limited — either per-user cache-miss budget (`user_rate_limited`) or GitHub-side (`github_rate_limited`).",
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/StructuredError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            },
+            "post": {
+                "operationId": "github-issues-submit-unversioned",
+                "summary": "Submit a GitHub issue (feature request) on behalf of the authenticated user",
+                "description": "Deprecated: use `/api/v1/github/issues`, which answers the same. Validates the submission body, enforces a per-user 60s rate limit (task 1.6), and creates a GitHub issue. Prefers the user's per-user PAT (`openregister::github_token` in IConfig). When that is empty falls back to the app-level PAT (`openregister::github_api_token` in IAppConfig) with an attribution prefix prepended to the body (`> Submitted by **<display>** via <instance_url>\\n\\n---\\n\\n`). When `specRef` is supplied the body is suffixed with `\\n\\n---\\nRelated capability: ``<specRef>```` and the created issue gets a `specRef:<slug>` label. Auth posture: requires an authenticated Nextcloud user; CSRF middleware MUST run (the controller does NOT carry `#[NoCSRFRequired]`).",
+                "tags": [
+                    "github-issues"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "OCS-APIRequest",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true
+                        }
+                    },
+                    {
+                        "name": "requesttoken",
+                        "in": "header",
+                        "required": true,
+                        "description": "Nextcloud CSRF token. Required because the endpoint does NOT carry #[NoCSRFRequired].",
+                        "schema": {
+                            "type": "string",
+                            "example": "YOUR_API_KEY_HERE"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GitHubIssueSubmitRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Issue created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GitHubIssueCreatedResponse"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error (invalid repo / title / body length / specRef format).",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/StructuredError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Repo not allowed (task 1.14), or feature disabled by admin (task 1.21).",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "412": {
+                        "description": "Missing or invalid CSRF token (enforced by Nextcloud middleware before the controller runs).",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Per-user submission rate limit exceeded (task 1.6).",
+                        "headers": {
+                            "Retry-After": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/StructuredError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Neither user nor app-level PAT configured (`github_pat_not_configured`), or repo allowlist unset on a POST (`github_repo_not_configured`).",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/StructuredError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "files-index-unversioned",
+                "summary": "List the files attached to an object",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files`, which answers the same. Returns the paginated list of files attached to the object. Anonymous callers (PublicPage) see only published (publicly shared) files; authenticated callers are subject to object-level read RBAC.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File list.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileList"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found or the object folder is missing.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            },
+            "post": {
+                "operationId": "files-create-unversioned",
+                "summary": "Attach a new file to an object (base64/text content)",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files`, which answers the same. Creates a file from an inline `content` payload. Enforces object-level write RBAC.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "content"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "report.pdf"
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "description": "File content (base64-encoded for binary files)."
+                                    },
+                                    "share": {
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "tags": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "File created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing file name or content.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/save": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-save-unversioned",
+                "summary": "Upsert a file on an object",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/save`, which answers the same. Creates a new file or updates the existing file with the same name (upsert). Body requires `name` and `content`. Auth posture: `#[NoAdminRequired] #[NoCSRFRequired]` with object-level write RBAC.",
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "content"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "report.pdf"
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "description": "File content (base64-encoded for binary files)."
+                                    },
+                                    "share": {
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "tags": {
+                                        "oneOf": [
+                                            {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            {
+                                                "type": "string",
+                                                "description": "Comma-separated list."
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "File created or updated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Missing file name or content.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller may not access the object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files-multipart": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "description": "Register slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "description": "Schema slug or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "description": "Object UUID or id.",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-create-multipart-unversioned",
+                "summary": "Upload one or more files via multipart form",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files-multipart`, which answers the same. Accepts `multipart/form-data` with a single `file` field or a `files[]` array, plus optional `share` and `tags`. Auth posture: `#[NoAdminRequired] #[NoCSRFRequired]` with object-level write RBAC.",
+                "tags": [
+                    "files"
+                ],
+                "security": [
+                    {
+                        "bearer_auth": []
+                    },
+                    {
+                        "basic_auth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "files": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    },
+                                    "share": {
+                                        "type": "boolean"
+                                    },
+                                    "tags": {
+                                        "type": "string",
+                                        "description": "Comma-separated list."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Files uploaded.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/File"
+                                    }
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "No file uploaded or upload error.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller may not access the object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/{fileId}": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "description": "Nextcloud filecache file id.",
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "files-show-unversioned",
+                "summary": "Stream a file attached to an object",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/{fileId}`, which answers the same. Streams the file content inline. Records a best-effort download event (counter + audit). Anonymous callers may only fetch published files.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Binary file stream.",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden — anonymous access to an unpublished file, or read RBAC denial.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object or file not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            },
+            "put": {
+                "operationId": "files-update-unversioned",
+                "summary": "Update file content and/or tags",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "content": {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "description": "Optional new content; omit for a metadata-only update."
+                                    },
+                                    "tags": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated file.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/{fileId}`, which answers the same. Replaces the content of a file attached to the object, its tags, or both.",
+                "deprecated": true
+            },
+            "delete": {
+                "operationId": "files-delete-unversioned",
+                "summary": "Delete a file from an object",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deletion result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/{fileId}`, which answers the same. Deletes a file from the object folder.",
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/{fileId}/rename": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "put": {
+                "operationId": "files-rename-unversioned",
+                "summary": "Rename a file within its object folder",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/{fileId}/rename`, which answers the same. Renames the file. Writes an audit-trail entry and dispatches the `nl.openregister.object.file.renamed` event.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileRenameRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Renamed file.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Name required, or contains invalid characters.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "A file with the target name already exists in the object folder.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "423": {
+                        "description": "File is locked by another user.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/{fileId}/copy": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-copy-unversioned",
+                "summary": "Copy a file into another object",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/{fileId}/copy`, which answers the same. Copies the file into the target object's folder, resolving name conflicts with a numeric suffix. Writes dual audit-trail entries (`file.copied` on the source, `file.copied_in` on the target) and dispatches `nl.openregister.object.file.copied`.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileCopyMoveRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Copied file (in the target object).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Target object id missing.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the source or target object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Source or target object not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/{fileId}/move": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-move-unversioned",
+                "summary": "Move a file into another object",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/{fileId}/move`, which answers the same. Copies the file to the target object then deletes the source. Writes dual audit-trail entries (`file.moved` / `file.moved_in`) and dispatches `nl.openregister.object.file.moved`.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileCopyMoveRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Moved file (in the target object).",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Target object id missing.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the source or target object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Source or target object not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "423": {
+                        "description": "Source file is locked.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/{fileId}/versions": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "files-list-versions-unversioned",
+                "summary": "List versions of a file",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/{fileId}/versions`, which answers the same. Lists historical versions via the Nextcloud `files_versions` app. Degrades gracefully (current version only) when that app is disabled.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Version list.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileVersionList"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object or file not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/{fileId}/versions/{versionId}/restore": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                },
+                {
+                    "name": "versionId",
+                    "in": "path",
+                    "required": true,
+                    "description": "Identifier of the version to restore.",
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-restore-version-unversioned",
+                "summary": "Restore a previous version of a file",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/{fileId}/versions/{versionId}/restore`, which answers the same. Rolls the file back to the named version. Writes a `file.version_restored` audit entry and dispatches `nl.openregister.object.file.version_restored`.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Restored file.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object, file, or version not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/{fileId}/lock": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-lock-unversioned",
+                "summary": "Lock a file",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/{fileId}/lock`, which answers the same. Acquires a distributed-cache-backed lock. Writes a `file.locked` audit entry and dispatches `nl.openregister.object.file.locked`.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lock metadata.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileLockResponse"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "423": {
+                        "description": "File is already locked by another user.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/{fileId}/unlock": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-unlock-unversioned",
+                "summary": "Unlock a file",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/{fileId}/unlock`, which answers the same. Releases a lock. The lock owner may unlock; an administrator may force-unlock another user's lock via `force: true`. Writes `file.unlocked` or `file.force_unlocked` audit entries and dispatches `nl.openregister.object.file.unlocked`.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileUnlockRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Unlock result.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileLockResponse"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Only the lock owner or an administrator may unlock the file.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/batch": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "files-batch-unversioned",
+                "summary": "Run a batch action over multiple files",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/batch`, which answers the same. Applies publish/depublish/delete/label to up to 100 files in one request, collecting per-file results. Returns HTTP 200 when every file succeeded and HTTP 207 when at least one failed.",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileBatchRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "All files processed successfully.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileBatchResponse"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "207": {
+                        "description": "Partial success — at least one file failed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileBatchResponse"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid action, or batch size over the 100-file limit.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/{fileId}/preview": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                },
+                {
+                    "name": "width",
+                    "in": "query",
+                    "required": false,
+                    "schema": {
+                        "type": "integer",
+                        "default": 256
+                    }
+                },
+                {
+                    "name": "height",
+                    "in": "query",
+                    "required": false,
+                    "schema": {
+                        "type": "integer",
+                        "default": 256
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "files-preview-unversioned",
+                "summary": "Get a file thumbnail/preview",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/{fileId}/preview`, which answers the same. Streams a preview image (cached `max-age=3600`). Anonymous callers may only preview published files; on an unsupported type the response is a 404 carrying a `fallbackIcon` URL.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Preview image stream.",
+                        "content": {
+                            "image/png": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Anonymous preview of an unpublished file, or read RBAC denial.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object/file not found or preview unsupported.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FilePreviewError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/{fileId}/labels": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "put": {
+                "operationId": "files-update-labels-unversioned",
+                "summary": "Replace a file's labels",
+                "tags": [
+                    "files"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileLabelsRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated file.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/File"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Caller lacks access to the object.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/{fileId}/labels`, which answers the same. Replaces every label of a file with the labels in the request.",
+                "deprecated": true
+            }
+        },
+        "/api/objects/{register}/{schema}/{id}/files/download": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "register",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "schema",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "schema": {
+                        "type": "string"
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "files-download-zip-unversioned",
+                "summary": "Download all (or selected) object files as a ZIP",
+                "description": "Deprecated: use `/api/v1/objects/{register}/{schema}/{id}/files/download`, which answers the same. Streams a ZIP archive of the object's files and writes a single `file.bulk_downloaded` audit entry capturing the archive contents.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ZIP archive stream.",
+                        "content": {
+                            "application/zip": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Object not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/files/{fileId}/download": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "parameters": [
+                {
+                    "name": "fileId",
+                    "in": "path",
+                    "required": true,
+                    "description": "Nextcloud filecache file id.",
+                    "schema": {
+                        "type": "integer"
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "files-download-by-id-unversioned",
+                "summary": "Download a file by its id (object-agnostic)",
+                "description": "Deprecated: use `/api/v1/files/{fileId}/download`, which answers the same. Streams a single file by numeric id without needing the register/schema/object. Records a best-effort download counter increment. Anonymous callers may only download published files.",
+                "tags": [
+                    "files"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Binary file stream.",
+                        "content": {
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Anonymous download of an unpublished file.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "File not found.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/FileError"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
+        },
+        "/api/openapi.json": {
+            "servers": [
+                {
+                    "url": "https://{host}/index.php/apps/openregister",
+                    "description": "The unversioned paths, deprecated in favour of `/api/v1/`.",
+                    "variables": {
+                        "host": {
+                            "default": "localhost",
+                            "description": "The host name of the Nextcloud instance."
+                        }
+                    }
+                }
+            ],
+            "get": {
+                "operationId": "open-api-show-unversioned",
+                "summary": "The OpenAPI document of this API",
+                "description": "Deprecated: use `/api/v1/openapi.json`, which answers the same. Returns this document. It needs no authentication and can be read from any origin.",
+                "tags": [
+                    "open-api"
+                ],
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "The OpenAPI document.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            },
+                            "access-control-allow-origin": {
+                                "description": "Always `*`.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "*"
+                                    ]
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The document is not installed.",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Problem"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "deprecated": true
+            }
         }
     },
     "tags": [
@@ -3010,8 +5656,8 @@
     ],
     "servers": [
         {
-            "url": "https://{host}/index.php/apps/openregister/api",
-            "description": "The OpenRegister API on a Nextcloud instance.",
+            "url": "https://{host}/index.php/apps/openregister/api/v1",
+            "description": "The OpenRegister API, version 1, on a Nextcloud instance.",
             "variables": {
                 "host": {
                     "default": "localhost",

@@ -127,6 +127,65 @@ class ConfigurationValueMapper extends QBMapper {
 	}//end findByKey()
 
 	/**
+	 * Every row at one layer and reference, optionally under a key prefix.
+	 *
+	 * A null reference is the instance address, exactly as in findAtAddress();
+	 * it never means "any reference" (see findAllAtLayer() for that).
+	 *
+	 * @param string      $layer    The layer.
+	 * @param string|null $layerRef The reference, or null for the instance address.
+	 * @param string|null $prefix   Only keys starting with this, when given.
+	 *
+	 * @return ConfigurationValue[] The rows, by key.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	public function findAtLayer(string $layer, ?string $layerRef, ?string $prefix = null): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('layer', $qb->createNamedParameter($layer)))
+			->orderBy('config_key', 'ASC');
+
+		if ($layerRef === null) {
+			$qb->andWhere($qb->expr()->isNull('layer_ref'));
+		} else {
+			$qb->andWhere($qb->expr()->eq('layer_ref', $qb->createNamedParameter($layerRef)));
+		}
+
+		if ($prefix !== null && $prefix !== '') {
+			$qb->andWhere(
+				$qb->expr()->like(
+					'config_key',
+					$qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%')
+				)
+			);
+		}
+
+		return $this->findEntities(query: $qb);
+	}//end findAtLayer()
+
+	/**
+	 * Every row at one layer, whatever its reference.
+	 *
+	 * @param string $layer The layer.
+	 *
+	 * @return ConfigurationValue[] The rows, by reference then key.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
+	 */
+	public function findAllAtLayer(string $layer): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('layer', $qb->createNamedParameter($layer)))
+			->orderBy('layer_ref', 'ASC')
+			->addOrderBy('config_key', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findAllAtLayer()
+
+	/**
 	 * Create a value row, assigning a uuid and timestamps.
 	 *
 	 * @param array<string, mixed> $data The value fields.

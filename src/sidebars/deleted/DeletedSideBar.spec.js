@@ -165,3 +165,10 @@ describe('DeletedSideBar', () => {
 		expect(eventBus.emit).toHaveBeenCalledWith('deleted-filters-changed', { register: 4, schema: 5, deletedBy: null, dateFrom: null, dateTo: null })
 	})
 })
+
+describe('DeletedSideBar labels', () => {
+	it('labels a top-list row with its deletion count', () => {
+		expect(sidebar().deletionsLabel(4)).toBe('4 deletions')
+		expect(sidebar().deletionsLabel(0)).toBe('0 deletions')
+	})
+})
