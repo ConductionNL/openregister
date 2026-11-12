@@ -129,12 +129,10 @@ class DeleteObjectBatchCascadeTest extends TestCase {
 		$this->handler = new DeleteObject(
 			$this->objectMapper,
 			$this->cacheHandler,
-			$this->userSession,
 			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditTrailMapper, $this->createMock(LoggerInterface::class)),
 			$this->settingsService,
-			$this->integrityService,
-			$this->createMock(IDBConnection::class),
-			$this->createMock(OrganisationMapper::class)
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->integrityService, $this->createMock(IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->userSession, $this->createMock(OrganisationMapper::class), $this->createMock(LoggerInterface::class))
 		);
 
 		$this->userSession->method('getUser')->willReturn(null);

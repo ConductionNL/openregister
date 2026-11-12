@@ -3176,6 +3176,242 @@ following behaviour. Each item MUST have its own automated test.
 - **WHEN** the same three objects, two of them titled `"Same"`, are saved one by one in the first and in one bulk save in the second
 - **THEN** the resulting slug of each object MUST be the same in both registers
 
+### Requirement: Whether a bulk write fires the save events is configured per schema
+
+The system SHALL read a `fireEventsOnBulkWrites` boolean from the schema's
+`configuration`, then from the register's `configuration`, then from the app
+config value `fire_events_on_bulk_writes` (`true` or `false`). The first
+explicit value SHALL decide. When none is set, the events SHALL fire for a
+schema that declares `x-openregister-lifecycle` and SHALL NOT fire for any
+other schema. A schema SHALL keep `fireEventsOnBulkWrites` through a save of
+its configuration.
+
+#### Scenario: a schema without a lifecycle keeps today's bulk behaviour
+
+- **GIVEN** a schema with no `fireEventsOnBulkWrites`, no lifecycle, and nothing set on its register or the instance
+- **WHEN** a caller bulk-saves rows to it
+- **THEN** no pre-save event is dispatched and every permitted row is written
+- @e2e exclude {server-side policy with no screen; covered by `BulkWriteEventsTest::testASchemaWithoutTheSettingFiresNothing`}
+
+#### Scenario: a lifecycle schema fires the events without a setting
+
+- **GIVEN** a schema that declares `x-openregister-lifecycle` and no `fireEventsOnBulkWrites` anywhere
+- **WHEN** the policy is asked whether a bulk write to it fires the events
+- **THEN** the answer is yes
+- @e2e exclude {server-side policy with no screen; covered by `BulkWriteEventsTest::testALifecycleSchemaFiresByDefault`}
+
+#### Scenario: the schema value beats the register and the instance
+
+- **GIVEN** the instance value `true`, the register value `true`, and the schema value `false`
+- **WHEN** the policy is asked for that schema
+- **THEN** the answer is no
+- @e2e exclude {server-side policy with no screen; covered by `BulkWriteEventsTest::testTheSchemaValueWins` and its register and instance siblings}
+
+#### Scenario: the setting survives a schema save
+
+- **WHEN** a schema is saved with `configuration.fireEventsOnBulkWrites: true`
+- **THEN** reading the schema back returns `fireEventsOnBulkWrites: true`
+- @e2e exclude {entity round trip; covered by `BulkWriteEventsTest::testTheSchemaKeepsTheSetting`}
+
+### Requirement: A bulk write with events on runs each row's pre-save event and refuses only the stopped row
+
+When the events are on for a row's schema, `SaveObjects::saveObjects()` SHALL
+dispatch `ObjectCreatingEvent` for a row that creates and `ObjectUpdatingEvent`
+for a row that updates, with the stored object as the old object. The event
+SHALL run after the row's permission, property and validation checks and
+before anything is written. A stopped event SHALL refuse that row into
+`invalid` with the hook's message and the row's position, and the other rows
+SHALL be written. Data a hook sets on the object or through
+`setModifiedData()` SHALL be written. After the write, each row SHALL
+dispatch its created or updated event, unless a `SystemOperationContext` is
+active. This covers every caller of `saveObjects()`: `POST
+/api/bulk/{register}/{schema}/save`, the CSV and Excel import, the import
+preview and the flow `ObjectWriteNode`.
+
+#### Scenario: a guard refuses one row of a bulk update
+
+- **GIVEN** a schema with `fireEventsOnBulkWrites: true` and a listener that stops `ObjectUpdatingEvent` when the new status is `in-deliberation`
+- **WHEN** a caller bulk-saves two stored objects, one moving to `in-deliberation` and one moving to `closed`
+- **THEN** the first is in `invalid` with the listener's message and its position, and only the second is written
+- @e2e exclude {needs an app guard listener; covered by `BulkWriteEventsTest::testAStoppedUpdateRefusesOnlyThatRow`, which fails on development}
+
+#### Scenario: a hook fills in a value on a bulk create
+
+- **GIVEN** the events on and a listener on `ObjectCreatingEvent` that sets `number` through `setModifiedData()`
+- **WHEN** a caller bulk-creates a row without `number`
+- **THEN** the written row carries the listener's `number`, and the created event follows the write
+- @e2e exclude {needs a test listener; covered by `BulkWriteEventsTest::testACreatingHookValueIsWritten`}
+
+#### Scenario: events off writes as before
+
+- **GIVEN** a schema with `fireEventsOnBulkWrites: false` and the same stopping listener
+- **WHEN** the caller sends the same batch
+- **THEN** both rows are written and no pre-save event is dispatched
+- @e2e exclude {covered by `BulkWriteEventsTest::testEventsOffWritesEveryRow`}
+
+### Requirement: A bulk row is screened against the register and schema it is written to
+
+When the caller of `SaveObjects::saveObjects()` names a register, every row
+SHALL be screened against that register, whatever its `@self.register` says,
+because the writer stores the row in that register's table. The same SHALL
+hold for a schema the caller names. `@self.register` and `@self.schema` SHALL
+decide only when the caller names none (mixed-schema mode). The create or
+update decision, the permission, appendOnly and draft checks, and the
+bulk-write events setting SHALL all use the register and schema the row is
+written to.
+
+#### Scenario: a row names another register for a stored object
+
+- **GIVEN** a stored object in register 3, a route naming register 3, and a guard on its update
+- **WHEN** a bulk row for that object carries `@self.register: 9`
+- **THEN** the row is screened as an update in register 3, the guard refuses it, and nothing is written
+- @e2e exclude {needs an app guard listener; covered by `BulkWriteEventsTest::testARowNamingAnotherRegisterIsScreenedAgainstTheRoute` and `testAnotherRegistersSettingDoesNotDecide`}
+
+#### Scenario: a row names its own schema in a call that names another
+
+- **GIVEN** a call naming schema 7, and a caller who may not create in schema 7
+- **WHEN** a row carries `@self.schema: 8`
+- **THEN** the row is refused for schema 7, the schema it would be written to
+- @e2e exclude {covered by the `row names its own schema` case of `SaveObjectsBulkSafeguardsGoldenTest`; the `mixed batch row names its schema` case pins that `@self.schema` still decides without a call schema}
+
+### Requirement: A refused create over a taken identifier is judged as an update
+
+When a creating hook refuses a create, the caller did not ask to fail on a
+taken identifier, and the identifier names a live stored row, the system
+SHALL write it as an update of that row through `ObjectUpdatingEvent`, so
+the update guards decide. When the identifier is free, names a soft-deleted
+row, or the caller asked to fail, the system SHALL throw the creating refusal
+and write nothing. Data a refusing hook set SHALL NOT be written.
+
+#### Scenario: a client re-posts an existing object in a later state
+
+- **GIVEN** a stored object in `open`, and a creating hook that refuses any state but the initial one
+- **WHEN** a create with the same identifier and status `archived` is written
+- **THEN** it is written as an update: the events are `ObjectCreatingEvent`, `ObjectUpdatingEvent` and `ObjectUpdatedEvent`, with the stored `open` object as the old one
+- @e2e exclude {needs a concurrent or repeated writer; covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateOverATakenIdentifierIsJudgedAsAnUpdate`}
+
+#### Scenario: a refused create of a free identifier
+
+- **WHEN** the same create targets an identifier that is not stored
+- **THEN** it is refused with the creating hook's message and nothing is written
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateOfAFreeIdentifierStaysRefused` and `testARefusedClaimStaysRefused`}
+
+#### Scenario: a refused create over a soft-deleted object
+
+- **GIVEN** a soft-deleted object and a creating hook that refuses the create
+- **WHEN** a create with the same identifier is written
+- **THEN** it is refused with the creating hook's message, the object stays deleted, and nothing is written
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateOverASoftDeletedRowStaysRefused`}
+
+#### Scenario: the row is deleted between the check and the update
+
+- **GIVEN** a live stored object when a refused create checks it, which is soft-deleted before the update is written
+- **WHEN** the update path reads the row again
+- **THEN** the creating refusal is thrown and nothing is written
+- @e2e exclude {needs a concurrent delete; covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateIsNotWrittenWhenItsRowIsDeletedBeforeTheUpdate`}
+
+#### Scenario: a listener deletes the row while the update runs
+
+- **GIVEN** a refused create carried out as an update of a live row, and an `ObjectUpdatingEvent` listener that soft-deletes or hard-deletes that row
+- **WHEN** the update is written
+- **THEN** the write changes only a row whose `_deleted` is empty and never inserts, so nothing is written and the creating refusal is thrown; a lost claim without a refusal is written as before
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testARefusedCreateIsNotWrittenWhenAnUpdatingListenerSoftDeletesItsRow`, `...HardDeletesItsRow`, `testALostClaimIsWrittenEvenWhenAnUpdatingListenerDeletesItsRow` and `MagicMapperLiveRowWriteTest`}
+
+#### Scenario: a write of the same object runs inside the update's listener
+
+- **GIVEN** a refused create carried out as an update of a live row, and an `ObjectUpdatingEvent` listener that writes the same object again
+- **WHEN** the nested write finishes and the row is then soft-deleted before the outer update is written
+- **THEN** the outer update still changes only a live row, so nothing is written and the creating refusal is thrown; the nested write is conditional only when it is itself a refused create
+- @e2e exclude {covered by `MagicMapperRefusedCreateComposedTest::testNestedRefusedCreateSameUuidThenSoftDelete` and `testNestedPlainWriteSameUuidIsUnconditional`}
+
+### Requirement: A create written as an update is announced as an update
+
+When a create finds its identifier taken and is written as an update of the
+stored row, the system SHALL dispatch `ObjectUpdatedEvent` with the stored
+row as the old object, and SHALL NOT dispatch `ObjectCreatedEvent` for it.
+
+#### Scenario: a create whose identifier is taken
+
+- **GIVEN** a stored object in status `open`
+- **WHEN** a create with the same identifier and status `closed` is written as an update
+- **THEN** the events are `ObjectCreatingEvent`, `ObjectUpdatingEvent` and `ObjectUpdatedEvent`, and the updated event's old object is `open`
+- @e2e exclude {needs a concurrent writer; covered by `MagicMapperInsertRaceGuardTest::testALostInsertAnnouncesAnUpdateNotACreate`}
+
+#### Scenario: a create that wins
+
+- **WHEN** a create claims a free identifier
+- **THEN** the events are `ObjectCreatingEvent` and `ObjectCreatedEvent`, also after an earlier insert on the same mapper replaced a row, and also when a listener on its creating event ran an insert that replaced a row
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testAWonInsertAnnouncesACreate`, `testAnInsertAfterALostOneAnnouncesACreateAgain` and `testANestedLostInsertDoesNotTurnTheOuterCreateIntoAnUpdate`}
+
+### Requirement: A save over a stored row the caller cannot see is judged as an update of it
+
+When a save with RBAC on names a uuid that is stored but hidden from the
+caller, the system SHALL require both the schema's create rule on the
+incoming data and the update rule against the stored row (its owner and the
+row). A uuid that is not stored SHALL be judged by the create rule alone.
+With RBAC off the stored row SHALL NOT be looked up.
+
+#### Scenario: a caller writes over a row they cannot read
+
+- **GIVEN** an object owned by `agent` that `mallory` cannot read
+- **WHEN** `mallory` saves to its uuid
+- **THEN** the save is checked with action `create` on the incoming data and with action `update` against owner `agent` and the stored row, and is refused when either refuses
+- @e2e exclude {covered by `ObjectServiceHiddenRowWriteTest::testAStoredRowTheCallerCannotSeeMustPassCreateAndUpdate` and `testAStoredRowTheCallerMayNotUpdateIsNotWritten`}
+
+### Requirement: A seed object is inserted once
+
+A seed object SHALL be inserted once: through the routing mapper when one is
+set, else through the object entity mapper.
+
+#### Scenario: a configuration with seed data and a routing mapper
+
+- **WHEN** a seed object is imported while a routing mapper is set
+- **THEN** the routing mapper inserts it once and the object entity mapper does not
+- @e2e exclude {covered by `ImportHandlerSeedMetadataKeysTest::testARoutingMapperWritesTheSeedOnce`}
+
+### Requirement: A create that finds its identifier taken runs the update guard
+
+When a single create finds its identifier already taken by the time it
+writes, and the caller did not ask to fail in that case, the system SHALL
+dispatch `ObjectUpdatingEvent` with the stored object as the old object
+before it updates the row. A stopped event SHALL throw `HookStoppedException`,
+and the row SHALL stay as stored. A caller that asked to fail SHALL get
+`ObjectExistsException`, and no update event SHALL run.
+
+#### Scenario: a concurrent create would move a stored object past its guard
+
+- **GIVEN** a stored object in status `open` and a listener that stops an update into `in-deliberation`
+- **WHEN** a create with the same identifier and status `in-deliberation` reaches the table
+- **THEN** the create throws `HookStoppedException` and the stored row is not written again
+- @e2e exclude {needs a concurrent writer; covered by `MagicMapperInsertRaceGuardTest::testALostInsertRunsTheUpdateGuard`}
+
+#### Scenario: a create the guard allows becomes an update
+
+- **GIVEN** the same stored object
+- **WHEN** a create with the same identifier and status `closed` reaches the table
+- **THEN** `ObjectUpdatingEvent` carries the stored `open` object as the old one, the row is updated, and the returned object has the stored id
+- @e2e exclude {needs a concurrent writer; covered by `MagicMapperInsertRaceGuardTest::testALostInsertTheGuardAllowsIsWrittenAsAnUpdate`}
+
+#### Scenario: a claim still refuses
+
+- **WHEN** a create that asked to fail finds its identifier taken
+- **THEN** it throws `ObjectExistsException` and only `ObjectCreatingEvent` was dispatched
+- @e2e exclude {covered by `MagicMapperInsertRaceGuardTest::testAnInsertThatMustNotUpdateStillRefuses`}
+
+### Requirement: A save over a soft-deleted object is judged against the stored object
+
+When a save with RBAC on names the uuid of a soft-deleted object, the system
+SHALL judge it as it judges a save over any stored row the caller cannot
+see: by the create rule on the incoming data and by the update rule against
+the stored object.
+
+#### Scenario: a caller saves over a soft-deleted object
+
+- **GIVEN** a soft-deleted object owned by `agent`
+- **WHEN** `mallory` saves to its uuid
+- **THEN** the save is checked with action `create` and with action `update` against owner `agent` and the stored object
+- @e2e exclude {covered by `ObjectServiceHiddenRowWriteTest::testASoftDeletedRowIsJudgedAgainstTheStoredObject`}
+
 ## Cross-References
 - **rbac-scopes** — RBAC checks are applied by `PermissionHandler` at the start of every pipeline stage
 - **schema-hooks** — schema hooks fire via event dispatcher after each successful save
