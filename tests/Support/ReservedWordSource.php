@@ -1,0 +1,520 @@
+<?php
+
+/**
+ * The words MariaDB and MySQL refuse as an unquoted column name, per server series.
+ *
+ * Neither project publishes the list as a file. Both keep it in two places in
+ * their server source: the lexer's symbol table (`sql/lex.h`, every keyword the
+ * lexer knows) and the grammar (`sql/sql_yacc.yy`), whose identifier rule names
+ * the keywords that may still be used as an identifier (MariaDB `keyword_ident`,
+ * MySQL `ident_keyword`). A reserved word is a lexer keyword that this rule
+ * cannot reach. This class downloads both files for a branch of the upstream
+ * repository, derives the words that way and falls back to the committed
+ * snapshot (`fixtures/reserved-words-<engine>-<series>.txt`) when the download
+ * fails, so a test that uses it stays deterministic without network.
+ * `fixtures/update-reserved-words.php` rewrites the snapshots from the same code.
+ *
+ * Environment: RESERVED_WORDS_BASE_URL replaces https://raw.githubusercontent.com
+ * (a mirror, or an unreachable host to exercise the fallback).
+ *
+ * @category Test
+ * @package  OCA\OpenRegister\Tests\Support
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Tests\Support;
+
+use RuntimeException;
+
+class ReservedWordSource {
+
+	/**
+	 * The upstream repository per engine, and the branch per supported series.
+	 *
+	 * Branches, not tags, so a new point release and the words the next series
+	 * adds are picked up without an edit here. `appinfo/info.xml` asks for MySQL
+	 * 8.0 or newer and docs/installation.md for MariaDB 10.5 or newer; the other
+	 * MariaDB series are the long-term releases Nextcloud 32 to 35 run on, plus
+	 * 11.3: MariaDB 11.0 to 11.3 reserve ROW_NUMBER, the word that broke the
+	 * import preview migration (#4909), and 11.4 and later do not. `main` /
+	 * `trunk` are the development lines (the words a coming series reserves).
+	 */
+	public const SOURCES = [
+		'mariadb' => [
+			'repository' => 'MariaDB/server',
+			'series'     => ['10.5', '10.6', '10.11', '11.3', '11.4', '11.8', 'main'],
+			'identifier' => 'keyword_ident',
+		],
+		'mysql'   => [
+			'repository' => 'mysql/mysql-server',
+			'series'     => ['8.0', '8.4', 'trunk'],
+			'identifier' => 'ident_keyword',
+		],
+	];
+
+	/**
+	 * A list shorter than this is a parser that lost its way, not a server.
+	 */
+	private const MINIMUM_WORDS = 200;
+
+	/**
+	 * Set once a download fails, so a network that is down costs one timeout, not one per file.
+	 */
+	private static bool $offline = false;
+
+	/**
+	 * The words per `<engine>-<series>`, resolved once per process.
+	 *
+	 * @var array<string, string[]>
+	 */
+	private static array $words = [];
+
+	/**
+	 * Where a series' words came from, per `<engine>-<series>`: 'online' or 'snapshot'.
+	 *
+	 * @var array<string, string>
+	 */
+	private static array $origin = [];
+
+	/**
+	 * The snapshot file of one series.
+	 *
+	 * @param string $engine The engine, a key of SOURCES.
+	 * @param string $series The series, an entry of that engine's series.
+	 *
+	 * @return string The absolute path.
+	 */
+	public static function snapshotPath(string $engine, string $series): string {
+		return __DIR__.'/../Unit/Migration/fixtures/reserved-words-'.$engine.'-'.$series.'.txt';
+	}//end snapshotPath()
+
+	/**
+	 * The URL of one source file on one branch.
+	 *
+	 * @param string $engine The engine.
+	 * @param string $series The branch.
+	 * @param string $file   The path inside the repository.
+	 *
+	 * @return string The URL.
+	 */
+	public static function url(string $engine, string $series, string $file): string {
+		$base = getenv('RESERVED_WORDS_BASE_URL');
+		if (is_string($base) === false || $base === '') {
+			$base = 'https://raw.githubusercontent.com';
+		}
+
+		return rtrim($base, '/').'/'.self::SOURCES[$engine]['repository'].'/'.$series.'/'.$file;
+	}//end url()
+
+	/**
+	 * The words one series reserves, from upstream when reachable, merged with the snapshot.
+	 *
+	 * @param string $engine The engine.
+	 * @param string $series The series.
+	 *
+	 * @return string[] Lower-case words, sorted.
+	 *
+	 * @throws RuntimeException When upstream answered but its files no longer parse.
+	 */
+	public static function words(string $engine, string $series): array {
+		$key = $engine.'-'.$series;
+		if (isset(self::$words[$key]) === true) {
+			return self::$words[$key];
+		}
+
+		$snapshot = self::readSnapshot(engine: $engine, series: $series);
+		$online   = self::fetch(engine: $engine, series: $series);
+		self::$origin[$key] = ($online === null) ? 'snapshot' : 'online';
+
+		$words = array_values(array_unique(array_merge($snapshot, $online ?? [])));
+		sort($words);
+		self::$words[$key] = $words;
+
+		return $words;
+	}//end words()
+
+	/**
+	 * Where each series' words came from in this run, for a failure message.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function origins(): array {
+		return self::$origin;
+	}//end origins()
+
+	/**
+	 * The words upstream reserves on one branch, or null when it cannot be reached.
+	 *
+	 * @param string $engine The engine.
+	 * @param string $series The branch.
+	 *
+	 * @return string[]|null
+	 *
+	 * @throws RuntimeException When both files came back but yield no plausible list.
+	 */
+	public static function fetch(string $engine, string $series): ?array {
+		$lexer   = self::download(url: self::url(engine: $engine, series: $series, file: 'sql/lex.h'));
+		$grammar = self::download(url: self::url(engine: $engine, series: $series, file: 'sql/sql_yacc.yy'));
+		if ($lexer === null || $grammar === null) {
+			return null;
+		}
+
+		$words = self::parse(engine: $engine, lexer: $lexer, grammar: $grammar);
+		if (count($words) < self::MINIMUM_WORDS || in_array('select', $words, true) === false) {
+			throw new RuntimeException(
+				'The '.$engine.' '.$series.' sources were downloaded but yielded only '.count($words).' reserved words; '
+				.'the layout of sql/lex.h or sql/sql_yacc.yy has changed, so ReservedWordSource::parse() needs an update.'
+			);
+		}
+
+		return $words;
+	}//end fetch()
+
+	/**
+	 * The reserved words in one pair of source files.
+	 *
+	 * @param string $engine  The engine.
+	 * @param string $lexer   The contents of sql/lex.h.
+	 * @param string $grammar The contents of sql/sql_yacc.yy.
+	 *
+	 * @return string[] Lower-case words, sorted.
+	 */
+	public static function parse(string $engine, string $lexer, string $grammar): array {
+		$allowed = self::identifierTokens(
+			rules: self::grammarRules(grammar: $grammar),
+			start: self::SOURCES[$engine]['identifier']
+		);
+
+		$words = [];
+		foreach (self::lexerKeywords(engine: $engine, lexer: $lexer) as $word => $token) {
+			if (isset($allowed[$token]) === false) {
+				$words[] = $word;
+			}
+		}
+
+		sort($words);
+
+		return array_values(array_unique($words));
+	}//end parse()
+
+	/**
+	 * The keyword each lexer symbol names, word => grammar token, lower case.
+	 *
+	 * MariaDB keeps the keywords in `symbols[]` and the names only recognised
+	 * before a '(' in `sql_functions[]`, which is not reserved. MySQL marks them
+	 * with SYM (keyword) and SYM_HK (keyword usable in an optimizer hint); SYM_FN
+	 * (function) and SYM_H (hint) entries are no keywords.
+	 *
+	 * @param string $engine The engine.
+	 * @param string $lexer  The contents of sql/lex.h.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function lexerKeywords(string $engine, string $lexer): array {
+		if ($engine === 'mariadb') {
+			$start = strpos($lexer, 'symbols[]');
+			$end   = strpos($lexer, 'sql_functions[]');
+			$block = ($start === false || $end === false) ? '' : substr($lexer, $start, ($end - $start));
+			$found = preg_match_all('/\{\s*"([A-Za-z_][A-Za-z0-9_]*)"\s*,\s*SYM\(\s*(\w+)\s*\)/', $block, $matches, PREG_SET_ORDER);
+		} else {
+			$found = preg_match_all('/\{SYM(?:_HK)?\(\s*"([A-Za-z_][A-Za-z0-9_]*)"\s*,\s*(\w+)\s*\)\}/', $lexer, $matches, PREG_SET_ORDER);
+		}
+
+		$keywords = [];
+		foreach (($found === false) ? [] : $matches as $match) {
+			$keywords[strtolower($match[1])] = $match[2];
+		}
+
+		return $keywords;
+	}//end lexerKeywords()
+
+	/**
+	 * The grammar tokens an identifier may be spelled as, from the identifier rule down.
+	 *
+	 * @param array<string, string[][]> $rules The grammar, rule name => alternatives => symbols.
+	 * @param string                    $start The rule that lists the keywords usable as an identifier.
+	 *
+	 * @return array<string, true> The token names.
+	 */
+	private static function identifierTokens(array $rules, string $start): array {
+		$tokens = [];
+		$seen   = [];
+		$queue  = [$start];
+		while ($queue !== []) {
+			$rule = array_pop($queue);
+			if (isset($seen[$rule]) === true) {
+				continue;
+			}
+
+			$seen[$rule] = true;
+			foreach ($rules[$rule] ?? [] as $alternative) {
+				foreach ($alternative as $symbol) {
+					if (isset($rules[$symbol]) === true) {
+						$queue[] = $symbol;
+					} else {
+						$tokens[$symbol] = true;
+					}
+				}
+			}
+		}
+
+		return $tokens;
+	}//end identifierTokens()
+
+	/**
+	 * The rules of a Bison grammar, without actions, comments or conditional sections.
+	 *
+	 * @param string $grammar The contents of sql_yacc.yy.
+	 *
+	 * @return array<string, string[][]> Rule name => alternatives => symbols.
+	 */
+	private static function grammarRules(string $grammar): array {
+		$tokens = self::grammarTokens(text: self::withoutOtherModes(grammar: $grammar));
+		$rules  = [];
+		$name   = null;
+		$count  = count($tokens);
+		for ($i = 0; $i < $count; $i++) {
+			$token = $tokens[$i];
+			if ($token === ';') {
+				$name = null;
+			} else if (($tokens[($i + 1)] ?? '') === ':' && preg_match('/^[A-Za-z_]/', $token) === 1) {
+				$name         = $token;
+				$rules[$name] = ($rules[$name] ?? []);
+				$rules[$name][] = [];
+				$i++;
+			} else if ($name !== null && $token === '|') {
+				$rules[$name][] = [];
+			} else if ($name !== null) {
+				$last = (count($rules[$name]) - 1);
+				$rules[$name][$last][] = $token;
+			}
+		}
+
+		return $rules;
+	}//end grammarRules()
+
+	/**
+	 * The grammar text as the default build sees it: the MariaDB sections, not the Oracle-mode ones.
+	 *
+	 * MariaDB compiles one grammar twice and marks the differences with
+	 * `%ifdef MARIADB|ORACLE`, `%else` and `%endif`. The text before the first
+	 * `%%` is the declarations, which hold no rules.
+	 *
+	 * @param string $grammar The contents of sql_yacc.yy.
+	 *
+	 * @return string The rules section with the unused sections removed.
+	 */
+	private static function withoutOtherModes(string $grammar): string {
+		$kept   = [];
+		$active = [true];
+		$inRules = false;
+		foreach (preg_split('/\R/', $grammar) ?: [] as $line) {
+			if ($inRules === false) {
+				$inRules = (trim($line) === '%%');
+				continue;
+			}
+
+			if (preg_match('/^%(ifdef|ifndef)\s+(\w+)/', $line, $match) === 1) {
+				$defined  = ($match[2] === 'MARIADB');
+				$active[] = (end($active) === true) && (($match[1] === 'ifdef') ? $defined : ($defined === false));
+			} else if (preg_match('/^%else\b/', $line) === 1) {
+				$inner = array_pop($active);
+				$outer = (end($active) !== false) ? end($active) : false;
+				$active[] = $outer && ($inner === false);
+			} else if (preg_match('/^%endif\b/', $line) === 1) {
+				array_pop($active);
+			} else if (end($active) === true) {
+				$kept[] = $line;
+			}
+		}
+
+		return implode("\n", $kept);
+	}//end withoutOtherModes()
+
+	/**
+	 * The symbols, ':', '|' and ';' of a rules section; comments and `{ action }` blocks dropped.
+	 *
+	 * @param string $text The rules section.
+	 *
+	 * @return string[]
+	 */
+	private static function grammarTokens(string $text): array {
+		$tokens = [];
+		$length = strlen($text);
+		$i      = 0;
+		while ($i < $length) {
+			$char = $text[$i];
+			if (ctype_space($char) === true) {
+				$i++;
+			} else if ($char === '/' && ($text[($i + 1)] ?? '') === '*') {
+				$end = strpos($text, '*/', ($i + 2));
+				$i   = ($end === false) ? $length : ($end + 2);
+			} else if ($char === '/' && ($text[($i + 1)] ?? '') === '/') {
+				$end = strpos($text, "\n", $i);
+				$i   = ($end === false) ? $length : $end;
+			} else if ($char === '{') {
+				$i = self::endOfAction(text: $text, open: $i);
+			} else if ($char === '"' || $char === "'") {
+				$end      = self::endOfQuote(text: $text, open: $i);
+				$tokens[] = substr($text, $i, ($end - $i));
+				$i        = $end;
+			} else if ($char === ':' || $char === '|' || $char === ';') {
+				$tokens[] = $char;
+				$i++;
+			} else if ($char === '%') {
+				// A directive such as `%prec TOKEN`: it names no symbol of the rule.
+				preg_match('/\G%\w+(?:\s+\w+)?/', $text, $match, 0, $i);
+				$i += max(1, strlen($match[0] ?? ''));
+			} else if (preg_match('/\G[A-Za-z_][A-Za-z0-9_.]*/', $text, $match, 0, $i) === 1) {
+				$tokens[] = $match[0];
+				$i       += strlen($match[0]);
+			} else {
+				$i++;
+			}
+		}
+
+		return $tokens;
+	}//end grammarTokens()
+
+	/**
+	 * The offset just after the `}` that closes the action starting at $open.
+	 *
+	 * @param string $text The rules section.
+	 * @param int    $open The offset of the opening brace.
+	 *
+	 * @return int
+	 */
+	private static function endOfAction(string $text, int $open): int {
+		$length = strlen($text);
+		$depth  = 0;
+		for ($i = $open; $i < $length; $i++) {
+			$char = $text[$i];
+			if ($char === '"' || $char === "'") {
+				$i = (self::endOfQuote(text: $text, open: $i) - 1);
+			} else if ($char === '/' && ($text[($i + 1)] ?? '') === '*') {
+				$end = strpos($text, '*/', ($i + 2));
+				$i   = ($end === false) ? $length : ($end + 1);
+			} else if ($char === '/' && ($text[($i + 1)] ?? '') === '/') {
+				$end = strpos($text, "\n", $i);
+				$i   = ($end === false) ? $length : $end;
+			} else if ($char === '{') {
+				$depth++;
+			} else if ($char === '}') {
+				$depth--;
+				if ($depth === 0) {
+					return ($i + 1);
+				}
+			}
+		}
+
+		return $length;
+	}//end endOfAction()
+
+	/**
+	 * The offset just after the quote that closes the string or character literal starting at $open.
+	 *
+	 * @param string $text The text.
+	 * @param int    $open The offset of the opening quote.
+	 *
+	 * @return int
+	 */
+	private static function endOfQuote(string $text, int $open): int {
+		$quote  = $text[$open];
+		$length = strlen($text);
+		for ($i = ($open + 1); $i < $length; $i++) {
+			if ($text[$i] === '\\') {
+				$i++;
+			} else if ($text[$i] === $quote) {
+				return ($i + 1);
+			} else if ($text[$i] === "\n") {
+				// An apostrophe in prose inside an action, not a literal: stop at the line end.
+				return $i;
+			}
+		}
+
+		return $length;
+	}//end endOfQuote()
+
+	/**
+	 * One file from upstream, or null when the network does not deliver it.
+	 *
+	 * A refused connection, a timeout, a rate limit or a server error is a network
+	 * that is down for our purposes (null). A 404 is different: the branch or file
+	 * no longer exists, which no snapshot can repair.
+	 *
+	 * @param string $url The URL.
+	 *
+	 * @return string|null
+	 *
+	 * @throws RuntimeException On a 404.
+	 */
+	private static function download(string $url): ?string {
+		if (self::$offline === true || function_exists('curl_init') === false) {
+			return null;
+		}
+
+		$handle = curl_init($url);
+		curl_setopt_array(
+			$handle,
+			[
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_CONNECTTIMEOUT => 5,
+				CURLOPT_TIMEOUT        => 20,
+				CURLOPT_FOLLOWLOCATION => false,
+			]
+		);
+		$body   = curl_exec($handle);
+		$status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+		curl_close($handle);
+
+		if ($status === 404) {
+			throw new RuntimeException($url.' does not exist; a series in ReservedWordSource::SOURCES was renamed or removed upstream.');
+		}
+
+		if (is_string($body) === false || $body === '' || $status !== 200) {
+			self::$offline = true;
+			return null;
+		}
+
+		return $body;
+	}//end download()
+
+	/**
+	 * The words in one committed snapshot.
+	 *
+	 * @param string $engine The engine.
+	 * @param string $series The series.
+	 *
+	 * @return string[]
+	 *
+	 * @throws RuntimeException When the snapshot is missing or empty.
+	 */
+	private static function readSnapshot(string $engine, string $series): array {
+		$path  = self::snapshotPath(engine: $engine, series: $series);
+		$lines = is_file($path) ? file($path, (FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)) : false;
+		if ($lines === false) {
+			throw new RuntimeException('Snapshot '.$path.' is missing; run tests/Unit/Migration/fixtures/update-reserved-words.php.');
+		}
+
+		$words = [];
+		foreach ($lines as $line) {
+			$word = strtolower(trim($line));
+			if ($word !== '' && str_starts_with($word, '#') === false) {
+				$words[] = $word;
+			}
+		}
+
+		if (count($words) < self::MINIMUM_WORDS) {
+			throw new RuntimeException('Snapshot '.$path.' lists only '.count($words).' words; run tests/Unit/Migration/fixtures/update-reserved-words.php.');
+		}
+
+		return $words;
+	}//end readSnapshot()
+}//end class

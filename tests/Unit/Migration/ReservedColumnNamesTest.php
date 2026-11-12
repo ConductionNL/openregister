@@ -8,8 +8,17 @@
  * reserved on MariaDB but missing from Doctrine's MariaDB list, so the import
  * preview migration failed on every MariaDB install (#4909). CI does not run
  * the migrations on MariaDB, so this test checks every column the migrations
- * define against the reserved words measured on MariaDB 11.3 and MySQL 8.0
- * (fixtures/), whatever Doctrine version runs the test.
+ * define against the words each supported MariaDB and MySQL series reserves,
+ * whatever Doctrine version runs the test.
+ *
+ * The lists come from the upstream server sources, one per series
+ * (ReservedWordSource::SOURCES), so a new point release or a word a coming
+ * series reserves is picked up without an edit. The snapshots in fixtures/ back
+ * them up: a series whose download fails is checked against its snapshot, and
+ * the test never needs network. A word upstream starts to reserve that a
+ * migration already uses fails this test; rename the column in a new migration
+ * or, for a column that is already released, add the word to ALREADY_IN_USE.
+ * `php fixtures/update-reserved-words.php` refreshes the snapshots.
  *
  * It needs a Nextcloud server's classes for the migrated schema, like the
  * other MigratedSqliteDatabase tests, so it runs in CI and not in a bare clone.
@@ -23,6 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
+use OCA\OpenRegister\Tests\Support\ReservedWordSource;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -41,34 +51,32 @@ class ReservedColumnNamesTest extends TestCase {
 	private const ALREADY_IN_USE = ['cursor', 'groups', 'limit', 'offset', 'schema', 'schemas', 'trigger'];
 
 	/**
-	 * The words one fixture lists, lower case.
+	 * The words one series reserves, lower case.
 	 *
-	 * @param string $file The fixture file name.
+	 * @param string $engine The engine, a key of ReservedWordSource::SOURCES.
+	 * @param string $series The series.
 	 *
 	 * @return string[]
 	 */
-	private static function reservedWords(string $file): array {
-		$lines = file(__DIR__.'/fixtures/'.$file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-		self::assertIsArray($lines, 'Fixture '.$file.' could not be read');
+	private static function reservedWords(string $engine, string $series): array {
+		$words = ReservedWordSource::words(engine: $engine, series: $series);
+		self::assertGreaterThan(200, count($words), 'The '.$engine.' '.$series.' list is nearly empty, so nothing would be checked');
 
-		return array_values(
-			array_filter(
-				array_map(static fn (string $line): string => strtolower(trim($line)), $lines),
-				static fn (string $word): bool => $word !== '' && str_starts_with($word, '#') === false
-			)
-		);
+		return $words;
 	}//end reservedWords()
 
 	/**
-	 * Every reserved word on either engine, as a lookup.
+	 * Every word any supported series of either engine reserves, as a lookup.
 	 *
 	 * @return array<string, true>
 	 */
 	private static function reserved(): array {
-		$words = array_merge(
-			self::reservedWords(file: 'reserved-words-mariadb-11.3.txt'),
-			self::reservedWords(file: 'reserved-words-mysql-8.0.txt')
-		);
+		$words = [];
+		foreach (ReservedWordSource::SOURCES as $engine => $source) {
+			foreach ($source['series'] as $series) {
+				$words = array_merge($words, self::reservedWords(engine: $engine, series: $series));
+			}
+		}
 
 		return array_fill_keys($words, true);
 	}//end reserved()
@@ -96,19 +104,31 @@ class ReservedColumnNamesTest extends TestCase {
 		$this->assertSame(
 			[],
 			$offenders,
-			'These columns use a word MariaDB or MySQL reserves; Doctrine may not quote it there. Pick another name.'
+			'These columns use a word MariaDB or MySQL reserves; Doctrine may not quote it there. Pick another name. '
+			.'Lists used: '.json_encode(ReservedWordSource::origins())
 		);
 	}//end testNoMigrationColumnIsAReservedWord()
 
 	/**
-	 * The fixtures still hold the word that broke MariaDB, so the check above can catch it.
+	 * The lists hold the words they must, so the check above can catch the word that broke MariaDB.
+	 *
+	 * ROW_NUMBER is reserved on MariaDB 11.0 to 11.3 and MySQL 8, SELECT on every series,
+	 * and WINDOW on MySQL 8 (MariaDB lets it through as a column name).
 	 *
 	 * @return void
 	 */
-	public function testTheWordThatBrokeMariaDbIsReserved(): void {
-		$this->assertContains('row_number', self::reservedWords(file: 'reserved-words-mariadb-11.3.txt'));
+	public function testTheListsHoldTheWordsThatMustBeReserved(): void {
+		$this->assertContains('row_number', self::reservedWords(engine: 'mariadb', series: '11.3'));
+		$this->assertContains('row_number', self::reservedWords(engine: 'mysql', series: '8.0'));
+		$this->assertContains('window', self::reservedWords(engine: 'mysql', series: '8.0'));
 		$this->assertNotContains('row_number', self::ALREADY_IN_USE);
-	}//end testTheWordThatBrokeMariaDbIsReserved()
+
+		foreach (ReservedWordSource::SOURCES as $engine => $source) {
+			foreach ($source['series'] as $series) {
+				$this->assertContains('select', self::reservedWords(engine: $engine, series: $series), $engine.' '.$series);
+			}
+		}
+	}//end testTheListsHoldTheWordsThatMustBeReserved()
 
 	/**
 	 * Every word in the allowance is still a column and still reserved, so the allowance cannot grow stale.
