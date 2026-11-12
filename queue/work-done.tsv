@@ -980,3 +980,4 @@ cover:dossiq:6ca0231e:9d3a1784	PR dossiq#6201: 4 job tests (+15), suite 12970->1
 cover:dossiq:6ca0231e:3b1fd60e	PR #6202: lib/Review line cov 90.8->94.5% (+13 tests, 3 classes to 100%); 19 inherited failures unchanged	session-20261112T231637-60fd49c4	2026-11-12T23:56:44Z
 cover:dossiq:6ca0231e:81b1241f	PR #6203: 28 tests over 7 lib/Portal classes; suite 12970->12998, same 19 inherited failures	session-20261112T234655-793f46ee	2026-11-12T23:57:00Z
 fix:buildiq:1469:6c309825	problem details limited to /api/v1, unversioned errors unchanged; new head 32a620ea, REVERIFY recorded	session-20261112T231645-3f0591a5	2026-11-12T23:57:13Z
+cover:integriq:9b0f5894m2367:js906774c0	failed: lang=js but lib/Service/AgentTools/ holds only PHP files (11, no js/ts); task payload inconsistent	session-20261112T234655-793f46ee	2026-11-12T23:57:24Z
