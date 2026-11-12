@@ -362,3 +362,4 @@ merge:portaliq:2281:7c13dbcf	2281 SKIP 2282 SKIP 	session-20261112T184502-4ecd60
 cover:dossiq:6ca0231e:jsd48eb217	already done: src/store/modules lines 96.4% (705/731) on development, above the 80% target; no PR	session-20261112T184439-5c9a5b03	2026-11-12T21:03:36Z
 verify:humaniq:1094:32a0648b	GREEN humaniq#1094	session-20261112T205850-5f960ec2	2026-11-12T21:03:43Z
 verify:stackiq:1750:7336ad32	4 GREEN (1750,1751,1752,1753); phpunit 2353 OK, vitest 1593 OK	session-20261112T205855-bb08648d	2026-11-12T21:04:27Z
+gap:humaniq:opensourcehealth:724b9637	failed: opensourcehealth stars come from 652 transitive npm deps (activity, licence use from GPL/AGPL Nextcloud libraries, freshness); no bounded app-level change lifts it to 4 stars	session-20261112T205850-5f960ec2	2026-11-12T21:05:02Z
