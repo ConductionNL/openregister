@@ -4856,11 +4856,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// MAGIC_TABLE_SCAN_CHUNK_SIZE tables selecting only (table, _id). FETCH:
 		// one `SELECT *` from the table that holds the row. The shared metadata
 		// columns are what make the union across heterogeneous tables well-typed.
+		//
+		// A uuid-shaped identifier is first looked for in the _uuid column of every
+		// table, so a row whose slug or uri merely equals another row's uuid can
+		// never answer for it, whichever chunk it sits in.
 		$candidates = $this->liveMagicTablesInScope(registerIdScope: $registerIdScope);
-		foreach (array_chunk($candidates, self::MAGIC_TABLE_SCAN_CHUNK_SIZE, true) as $chunk) {
-			$found = $this->findInMagicTableChunk(chunk: $chunk, template: $template);
-			if ($found !== null) {
-				return $found;
+		$passes     = [false];
+		if (Uuid::isValid((string)$identifier) === true) {
+			$passes = [true, false];
+		}
+
+		foreach ($passes as $uuidOnly) {
+			foreach (array_chunk($candidates, self::MAGIC_TABLE_SCAN_CHUNK_SIZE, true) as $chunk) {
+				$found = $this->findInMagicTableChunk(chunk: $chunk, template: $template, uuidOnly: $uuidOnly);
+				if ($found !== null) {
+					return $found;
+				}
 			}
 		}
 
@@ -4907,11 +4918,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param array<string, array{registerId: int|string, schemaId: int|string}> $chunk    The tables, keyed by name
 	 * @param MagicCrossTableHit                                                 $template The identifier and flags of the lookup
+	 * @param bool                                                               $uuidOnly Whether only the _uuid column may match
 	 *
 	 * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}|null The answer, or null to keep scanning.
 	 */
-	private function findInMagicTableChunk(array $chunk, MagicCrossTableHit $template): ?array {
-		$probe   = new MagicIdentifierProbe(identifier: (string)$template->identifier, includeDeleted: $template->includeDeleted);
+	private function findInMagicTableChunk(array $chunk, MagicCrossTableHit $template, bool $uuidOnly=false): ?array {
+		$probe   = new MagicIdentifierProbe(identifier: (string)$template->identifier, includeDeleted: $template->includeDeleted, uuidOnly: $uuidOnly);
 		$located = $this->locateIdentifierInMagicTables(tables: array_keys($chunk), probe: $probe);
 		if ($located === null) {
 			return null;
@@ -5309,7 +5321,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Run the locate union and return its single row.
 	 *
 	 * Binds four parameters per branch, in branch order: _id as a true integer so
-	 * a UUID never reaches the bigint column, then _uuid, _slug and _uri.
+	 * a UUID never reaches the bigint column, then _uuid, _slug and _uri. A
+	 * uuid-only probe binds -1 and null for the others, which no row matches.
 	 *
 	 * @param string[]             $branches The union branches.
 	 * @param MagicIdentifierProbe $probe    What to look for.
@@ -5325,11 +5338,15 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		$parameterCount = (4 * count($branches));
 		for ($position = 1; $position <= $parameterCount; $position++) {
-			$value = $probe->identifier;
+			$value = $probe->otherParam();
 			$type = IQueryBuilder::PARAM_STR;
 			if ($position % 4 === 1) {
 				$value = $probe->idParam;
 				$type = IQueryBuilder::PARAM_INT;
+			}
+
+			if ($position % 4 === 2) {
+				$value = $probe->identifier;
 			}
 
 			$stmt->bindValue($position, $value, $type);
@@ -5403,7 +5420,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$searchQb->select($idCol)->from($tableName);
 
 		$matches = [];
-		foreach (['id', 'uuid', 'slug', 'uri'] as $column) {
+		$columns = ['id', 'uuid', 'slug', 'uri'];
+		if ($probe->uuidOnly === true) {
+			$columns = ['uuid'];
+		}
+
+		foreach ($columns as $column) {
 			$value = $probe->identifier;
 			$type = IQueryBuilder::PARAM_STR;
 			if ($column === 'id') {
