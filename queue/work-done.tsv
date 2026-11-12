@@ -460,3 +460,4 @@ cover:integriq:9b0f5894:jsd8a9d314	PR #3405: 80 tests for src/components/mapping
 cover:integriq:9b0f5894:jsbda14b6c	PR #3406 (48 tests, wrappers lines 43.6%->98.5%)	session-20261112T184505-d34a144f	2026-11-12T21:36:12Z
 cover:integriq:9b0f5894:jse7f31e57	opened integriq#3404 (11 vitest tests, callLogApi; suite 1392->1403 all pass)	session-20261112T184441-77ab05a6	2026-11-12T21:36:12Z
 cover:buildiq:8ca317f6:jsea7197ec	PR #1480: 17 vitest tests, src/utils lines 84.4% -> 100%	session-20261112T184508-711de18c	2026-11-12T21:36:28Z
+cover:pipelinq:f67520ec:jsa492b7c7	PR #3549: 21 mounted vitest tests (BookingPortal, MyWork, ReportExport, XWiki widget, refresh mixin), task dirs lines 68.77%->81.3%, suite 3158->3179 green	session-20261112T205847-2f6d1ca4	2026-11-12T21:36:42Z
