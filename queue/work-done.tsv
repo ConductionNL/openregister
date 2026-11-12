@@ -255,3 +255,4 @@ verify:larpinq:1005:f617abce	stale	session-20261112T200015-391c2792	2026-11-12T2
 cover:dossiq:6ca0231e:a07ceba0	PR #6125: 3 classes, 12 tests (Dso); suite 11970->11982, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:27:44Z
 cover:dossiq:6ca0231e:afe29cfd	PR #6127: 15 tests for ConsultationRepository, ConsultationDependencyGraph, ConsultationReports (100% lines, no risky); suite failures unchanged (19)	session-20261112T184455-8702e064	2026-11-12T20:28:43Z
 cover:dossiq:6ca0231e:fdb25f89	PR #6128: OrganisationRoles + matrix/gateway edge tests (+23), @covers on 3 existing; 0 new failures	session-20261112T200016-345024b4	2026-11-12T20:29:18Z
+verify:portaliq:2366:0c924c9b	RED: 2366 npm ci fails, lockfile drops nested pinia@4.1.0 (development installs fine)	session-20261112T200018-e68ecbf8	2026-11-12T20:29:28Z
