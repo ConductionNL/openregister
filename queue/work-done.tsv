@@ -456,3 +456,4 @@ cover:integriq:9b0f5894:js5fe81985	opened integriq#3403 (10 vitest tests, TraceT
 merge:shillinq:2281:6bc15662	2281 FAIL 2333 FAIL 2343 FAIL 2735 MERGED 2736 MERGED 2737 MERGED 2738 MERGED 2739 MERGED 2740 MERGED 	session-20261112T184502-4ecd6072	2026-11-12T21:34:06Z
 verify:shillinq:2799:79288991	BLOCK 2799: API error bodies and Content-Type rewritten by new middleware; tests 0 new failures	session-20261112T200015-391c2792	2026-11-12T21:35:32Z
 cover:buildiq:8ca317f6:js8a19c098	PR #1479: 4 vitest tests, src/store/* 90% -> 100% statements	session-20261112T200014-a0c0c232	2026-11-12T21:35:45Z
+cover:integriq:9b0f5894:jsd8a9d314	PR #3405: 80 tests for src/components/mapping (lines 47.8->84.8%), suite 1392->1472 green	session-20261112T212852-3ecaf9de	2026-11-12T21:35:55Z
