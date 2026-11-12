@@ -711,6 +711,7 @@ fix:learniq:2419:f3b7bef8	failed: behaviour change is the PR's purpose (API v1 c
 verify:integriq:3415:229315d4	stale	session-20261112T224529-5928280e	2026-11-12T22:46:25Z
 merge:stackiq:1683:569f5768	stale	feeder	2026-11-12T22:45:25Z
 cover:pipelinq:f67520ec:jsa28cfff0	already done: src/config/objectTypes.js 123/123 statements, all branches and functions covered on development 31215f087; no PR	session-20261112T221537-97382091	2026-11-12T22:47:13Z
+measure:keepiq:20261112h18	php 80.2% js 79.46% (pcov needed pcov.directory=lib: src/ holds JS)	session-20261112T223908-abd0da4a	2026-11-12T22:47:10Z
 verify:dossiq:6185:52a3161b	stale	session-20261112T221235-91821e68	2026-11-12T22:46:48Z
 cover:integriq:9b0f5894m2367:js60c2c265	failed: payload mismatch, lang=js but dirs=lib/Controller/*.php (PHP); needs regeneration as lang=php	session-20261112T224529-5928280e	2026-11-12T22:47:11Z
 verify:learniq:2420:f6921af0	stale	session-20261112T224530-d70ae278	2026-11-12T22:46:38Z
