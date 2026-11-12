@@ -639,3 +639,4 @@ cover:launchpad:755175ff:dfaef732	PR #1137: 3 tests pinning notifier language/na
 cover:hermiq:755cdfe7:65e30692	PR #1606: 12 tests for IntakeService/IntakeSettings, no new failures	session-20261112T221235-39b35722	2026-11-12T22:31:24Z
 cover:pipelinq:f67520ec:8f8dca30	PR #3569: ExportRunService+ExportJobService to 100%, Export dir 81.6->94.8% (26 tests)	session-20261112T221234-13fcfd6a	2026-11-12T22:31:40Z
 cover:openregister:7350e3ef:js935e37b7	PR #10052: 46 jest tests for DeleteSource, ViewSource, PublishRegister, AuditTrailDetails; target dirs lines 63.0->68.4%	session-20261112T221235-91821e68	2026-11-12T22:32:04Z
+cover:pipelinq:f67520ec:38e80a9f	PR #3570: 12 tests, lib/Command/*.php all 100%; suite 5773->5785, same 1 inherited failure	session-20261112T221520-70f29253	2026-11-12T22:32:03Z
