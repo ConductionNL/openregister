@@ -520,4 +520,5 @@ cover:openregister:7350e3ef:js6e3c1a64	PR #10042: 22 tests for Delete/Publish/Vi
 cover:decidiq:13261b1b:58192586	PR #2083: 7 tests for SelectionCategoryReader per-object reading, suite all green	session-20261112T200014-a0c0c232	2026-11-12T21:50:33Z
 cover:integriq:9b0f5894:js629c93bd	PR #3414: 36 tests for Approvals+callLog (lines 55.4->92.3%), suite 1392->1428 green	session-20261112T212852-3ecaf9de	2026-11-12T21:50:32Z
 cover:pipelinq:f67520ec:js6d6735a6	PR #3557: bookings views, 20 vitest tests; stmts 75.0%->82.5%	session-20261112T200016-345024b4	2026-11-12T21:51:22Z
+cover:pipelinq:f67520ec:jsd4e4a205	PR #3558: 17 vitest tests (CashShiftDropsWidget, PosTransactionPaymentWidget, ReceiptModalBody); suite 3164->3181, 0 failures	session-20261112T202909-d1558483	2026-11-12T21:51:30Z
 review:openregister:10038:918d088a	APPROVE: tests-only, full jest green on merge with main	session-20261112T212851-01e91591	2026-11-12T21:51:48Z
