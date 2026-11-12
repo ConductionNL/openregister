@@ -78,6 +78,7 @@ use OCA\OpenRegister\Service\Sharing\ShareListCheck;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
+use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -149,7 +150,14 @@ class CredentialBrokerService {
 	 *
 	 * @var string
 	 */
-	private const KIND_OAUTH2_TOKEN_SET = 'oauth2-token-set';
+	private const KIND_OAUTH2_SET = 'oauth2-token-set';
+
+	/**
+	 * True only inside {@see requestForBackgroundUser()}: the guards then see no session.
+	 *
+	 * @var boolean
+	 */
+	private bool $ignoreSession = false;
 
 	/**
 	 * Constructor.
@@ -214,10 +222,11 @@ class CredentialBrokerService {
 		// Guard 1 — access (per-object IDOR): scope-dispatched owner/membership check.
 		// TRUST BOUNDARY (openregister#450): request() is HTTP-routed (credential#brokerRequest),
 		// so it MUST NEVER let a caller assert an acting organisation — passing null keeps the
-		// sessionless organisation admit path (assertOrganisationMember) unreachable from a routed
-		// request, exactly as the controller passes no actingUserId. A sessionless proxy call
-		// against an organisation credential therefore still denies; only the non-routed
-		// resolveInjectable() path may carry an in-process organisation assertion.
+		// sessionless organisation-assertion admit path unreachable from a routed request,
+		// exactly as the controller passes no actingUserId. A sessionless call against an
+		// organisation credential is admitted only for an asserted actingUserId that is an
+		// enabled member of the credential's organisation, and that value comes only from
+		// trusted in-process code: both HTTP endpoints refuse a caller without a session.
 		$credential = $this->loadAdmittedCredential(
 			credentialId: $credentialId,
 			actingUserId: $actingUserId,
@@ -271,6 +280,76 @@ class CredentialBrokerService {
 			secret: (string)$secret
 		);
 	}//end request()
+
+	/**
+	 * Broker a call for a background task's user, judged by the sessionless rules only.
+	 *
+	 * The PHP-internal counterpart of {@see request()} for trusted same-instance code that
+	 * answers a task for its user (an Assistant task run from cron). Such work may run inside
+	 * a `runAs()` user switch, which {@see request()} would read as a signed-in session and
+	 * judge by the session rule, under which a Nextcloud administrator reaches every
+	 * organisation's credential. Here every guard ignores the session for the duration of
+	 * the call: a personal credential needs `actingUserId` to be its owner, an organisation
+	 * credential needs `actingUserId` to be an enabled member of its organisation. The
+	 * allowed-app, allow-rule and host-lock guards run unchanged. Not HTTP-routed.
+	 *
+	 * @param string                $credentialId The `credential` object UUID.
+	 * @param string                $appId        The calling app's own id.
+	 * @param string                $method       The HTTP method.
+	 * @param string                $path         The provider-relative path.
+	 * @param array<string, string> $headers      Optional extra request headers.
+	 * @param string|null           $body         Optional raw request body.
+	 * @param string                $actingUserId The task's user, from trusted server state.
+	 *
+	 * @return array{status: int, headers: array<string, mixed>, body: string} The upstream answer.
+	 *
+	 * @throws CredentialAccessDeniedException When the user is empty or any guard fails closed.
+	 * @throws CredentialUpstreamException When the outbound call fails at the transport level.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function requestForBackgroundUser(
+		string $credentialId,
+		string $appId,
+		string $method,
+		string $path,
+		array $headers = [],
+		?string $body = null,
+		string $actingUserId = '',
+	): array {
+		if (trim($actingUserId) === '') {
+			$this->deny(reason: 'a background call must name the user it acts for', credentialId: $credentialId);
+		}
+
+		$previous = $this->ignoreSession;
+		$this->ignoreSession = true;
+		try {
+			return $this->request(
+				credentialId: $credentialId,
+				appId: $appId,
+				method: $method,
+				path: $path,
+				headers: $headers,
+				body: $body,
+				actingUserId: $actingUserId
+			);
+		} finally {
+			$this->ignoreSession = $previous;
+		}
+	}//end requestForBackgroundUser()
+
+	/**
+	 * The session user the guards see: none inside {@see requestForBackgroundUser()}.
+	 *
+	 * @return IUser|null The session user, or null.
+	 */
+	private function sessionUser(): ?IUser {
+		if ($this->ignoreSession === true) {
+			return null;
+		}
+
+		return $this->principals->userSession->getUser();
+	}//end sessionUser()
 
 	/**
 	 * Resolve the raw secret for an INJECT-ONLY credential, for same-instance app-side injection.
@@ -383,7 +462,7 @@ class CredentialBrokerService {
 		// accident of how a catalogue entry happens to be written, so a future entry that
 		// set both flags would silently start leaking. Both paths then refuse such an
 		// entry, which is the right answer for a catalogue that contradicts itself.
-		if ($this->kindOf(provider: $provider) === self::KIND_OAUTH2_TOKEN_SET) {
+		if ($this->kindOf(provider: $provider) === self::KIND_OAUTH2_SET) {
 			$this->outbound->logger->warning(
 				'[CredentialBroker] resolveInjectable refused for the oauth2-token-set kind: ' . $credentialId
 			);
@@ -804,7 +883,8 @@ class CredentialBrokerService {
 			$this->assertOrganisationMember(
 				data: $data,
 				credentialId: $credentialId,
-				actingOrganisationId: $actingOrganisationId
+				actingOrganisationId: $actingOrganisationId,
+				actingUserId: $actingUserId
 			);
 			return $credential;
 		}
@@ -916,7 +996,7 @@ class CredentialBrokerService {
 			return false;
 		}
 
-		$userId = $this->principals->userSession->getUser()?->getUID();
+		$userId = $this->sessionUser()?->getUID();
 
 		return $this->objectGrants->grantCarriesVerb(lookup: new GrantLookup(userId: $userId, objectUuid: $uuid), verb: 'use');
 	}//end objectGrantAdmits()
@@ -941,7 +1021,7 @@ class CredentialBrokerService {
 		// Session present: the session is authoritative and any asserted
 		// organisation is ignored, so a request-context caller can never escalate
 		// by asserting one.
-		if ($this->principals->userSession->getUser() !== null) {
+		if ($this->sessionUser() !== null) {
 			return $this->principals->organisationService->hasAccessToOrganisation($organisation) === true;
 		}
 
@@ -964,7 +1044,7 @@ class CredentialBrokerService {
 			return [];
 		}
 
-		$user = $this->principals->userSession->getUser();
+		$user = $this->sessionUser();
 		if ($user === null || $user->getUID() !== $uid) {
 			$user = $this->principals->userManager?->get($uid);
 		}
@@ -1002,7 +1082,7 @@ class CredentialBrokerService {
 	}//end assertPersonalOwner()
 
 	/**
-	 * Organisation membership guard — a session member OR a matching sessionless in-process assertion.
+	 * Organisation membership guard — a session member, a matching organisation assertion, or an asserted member.
 	 *
 	 * ADR-064 Rule 4 REQUIRES an infrastructure credential (a source/consumer secret) to be
 	 * `organisation`-scoped, never `personal` — coupling it to one employee would break the
@@ -1022,22 +1102,34 @@ class CredentialBrokerService {
 	 *     {@see request()} passes null; the controller never reads it; {@see resolveInjectable()}
 	 *     is not HTTP-routed). The match is a consistency guard so an org-A assertion cannot
 	 *     resolve an org-B credential; resolution stays DECOUPLED from any individual user's
-	 *     membership, which is the entire point of organisation scope (ADR-064 Rule 4). The
-	 *     sessionless `actingUserId` fallback is deliberately NOT reused — org scope must not be
-	 *     recoupled to a single user.
+	 *     membership, which is the entire point of organisation scope (ADR-064 Rule 4).
+	 *   - Sessionless, acting for a person: a trusted in-process caller that asserts
+	 *     `actingUserId` (an Assistant task run from cron for its user) is admitted only when
+	 *     that user exists, is enabled and is on the organisation's own member list
+	 *     ({@see OrganisationService::isMemberOfOrganisation()}). A Nextcloud administrator gets
+	 *     no blanket pass on this path. Any member's task may use the credential, so it is not
+	 *     coupled to one employee, and the user it names could already use it in a session.
 	 *
 	 * @param array<string, mixed> $data The credential's serialised data.
 	 * @param string $credentialId The `credential` object UUID (for logging).
 	 * @param string|null $actingOrganisationId Asserted organisation for sessionless in-process callers only.
+	 * @param string|null $actingUserId Asserted user for sessionless in-process callers only.
 	 *
 	 * @return void
 	 *
 	 * @throws CredentialAccessDeniedException When the org is malformed, the session user is not a member, or the
-	 *                                         sessionless assertion is absent or does not match the credential organisation.
+	 *                                         sessionless caller asserts neither the credential organisation nor
+	 *                                         an enabled member of it.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
 	 */
-	private function assertOrganisationMember(array $data, string $credentialId, ?string $actingOrganisationId = null): void {
+	private function assertOrganisationMember(
+		array $data,
+		string $credentialId,
+		?string $actingOrganisationId = null,
+		?string $actingUserId = null,
+	): void {
 		$organisation = (string)($data['organisation'] ?? '');
 		if ($organisation === '') {
 			$this->deny(reason: 'organisation credential has no organisation', credentialId: $credentialId);
@@ -1045,7 +1137,7 @@ class CredentialBrokerService {
 
 		// Session present: the session identity is authoritative and the asserted acting
 		// organisation is ignored — membership is resolved exactly as before.
-		if ($this->principals->userSession->getUser() !== null) {
+		if ($this->sessionUser() !== null) {
 			if ($this->principals->organisationService->hasAccessToOrganisation($organisation) === false) {
 				$this->deny(reason: 'caller is not a member of the credential organisation', credentialId: $credentialId);
 			}
@@ -1054,15 +1146,55 @@ class CredentialBrokerService {
 		}
 
 		// Sessionless (in-process by construction — request input never reaches
-		// actingOrganisationId). Admit only when the trusted caller asserts THIS
+		// actingOrganisationId). Admit when the trusted caller asserts THIS
 		// credential's organisation; matching decouples resolution from any one user.
-		if ($actingOrganisationId === null || $actingOrganisationId !== $organisation) {
-			$this->deny(
-				reason: 'sessionless organisation resolution requires a matching acting organisation',
-				credentialId: $credentialId
-			);
+		if ($actingOrganisationId !== null && $actingOrganisationId === $organisation) {
+			return;
 		}
+
+		// Sessionless, acting for a named person: admitted only when that person is an
+		// enabled member of the organisation, so the assertion never reaches a credential
+		// its user could not use in a session of their own.
+		if ($this->actingUserIsMember(organisation: $organisation, actingUserId: $actingUserId) === true) {
+			return;
+		}
+
+		$this->deny(
+			reason: 'sessionless organisation resolution requires a matching acting organisation or an acting member',
+			credentialId: $credentialId
+		);
 	}//end assertOrganisationMember()
+
+	/**
+	 * Whether a sessionless caller's asserted user may use an organisation credential.
+	 *
+	 * Reached only without a session: {@see assertOrganisationMember()} returns from its
+	 * session branch first. Fails closed on every gap: no asserted id, no user manager, an
+	 * unknown or disabled user, or a user not on the organisation's member list. A Nextcloud
+	 * administrator gets no blanket pass here.
+	 *
+	 * @param string      $organisation The credential's organisation UUID (non-empty).
+	 * @param string|null $actingUserId The asserted user, from trusted in-process code only.
+	 *
+	 * @return bool True when the asserted user exists, is enabled and is a member of the organisation.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	private function actingUserIsMember(string $organisation, ?string $actingUserId): bool {
+		if ($actingUserId === null || $actingUserId === '' || $this->principals->userManager === null) {
+			return false;
+		}
+
+		$user = $this->principals->userManager->get($actingUserId);
+		if ($user === null || $user->isEnabled() === false) {
+			return false;
+		}
+
+		return $this->principals->organisationService->isMemberOfOrganisation(
+			organisationUuid: $organisation,
+			userId: $user->getUID()
+		) === true;
+	}//end actingUserIsMember()
 
 	/**
 	 * Resolve a credential's scope from its serialised data (absent ⇒ personal).
@@ -1099,7 +1231,7 @@ class CredentialBrokerService {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	private function resolveActingIdentity(?string $actingUserId): ?string {
-		$user = $this->principals->userSession->getUser();
+		$user = $this->sessionUser();
 		if ($user !== null) {
 			return $user->getUID();
 		}
@@ -1184,7 +1316,7 @@ class CredentialBrokerService {
 		string $scope,
 		?string $actingUserId,
 	): string {
-		if ($this->kindOf(provider: $provider) !== self::KIND_OAUTH2_TOKEN_SET) {
+		if ($this->kindOf(provider: $provider) !== self::KIND_OAUTH2_SET) {
 			$secret = $this->sources->credentialStore->get($credentialId, $scope);
 			if ($secret === null) {
 				$this->deny(reason: 'no secret stored for credential', credentialId: $credentialId);
@@ -1224,8 +1356,8 @@ class CredentialBrokerService {
 	private function kindOf(array $provider): string {
 		$kind = trim((string)($provider['kind'] ?? ''));
 
-		if ($kind === self::KIND_OAUTH2_TOKEN_SET) {
-			return self::KIND_OAUTH2_TOKEN_SET;
+		if ($kind === self::KIND_OAUTH2_SET) {
+			return self::KIND_OAUTH2_SET;
 		}
 
 		return self::KIND_SECRET;

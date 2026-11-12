@@ -217,6 +217,7 @@ import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
 import eventBus from '../../eventBus.js'
 import { refreshAction } from '../../services/menuActions.js'
+import { withRequestToken } from '../../services/requestToken.js'
 import { storePaging } from '../storePaging.js'
 import { recountOnChange } from './recountOnChange.js'
 
@@ -791,11 +792,11 @@ export default {
 		async requestBulkDelete() {
 			const response = await fetch(
 				'/index.php/apps/openregister/api/search-trails/bulk-delete',
-				{
+				withRequestToken({
 					method: 'DELETE',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ ids: this.selectedSearchTrails }),
-				},
+				}),
 			)
 			const result = await response.json()
 			if (!result.success) {

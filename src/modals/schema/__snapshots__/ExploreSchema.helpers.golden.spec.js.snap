@@ -141,6 +141,7 @@ exports[`ExploreSchema.updateSchema request posts only the selected properties, 
       "body": "{"properties":{"name":{"type":"string","title":"Name","description":"The name","required":true,"facetable":false},"age":{"type":"integer","title":"Age"}}}",
       "headers": {
         "Content-Type": "application/json",
+        "requesttoken": "test-request-token",
       },
       "method": "POST",
     },

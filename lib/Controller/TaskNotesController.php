@@ -152,7 +152,6 @@ class TaskNotesController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function create(string $uuid): JSONResponse {
 		return $this->guard->withReadableTask(uuid: $uuid, action: $this->writeNote(...));
 	}//end create()
@@ -169,7 +168,6 @@ class TaskNotesController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function update(string $uuid, string $noteId): JSONResponse {
 		return $this->guard->withReadableTask(
 			uuid: $uuid,
@@ -189,7 +187,6 @@ class TaskNotesController extends Controller {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function destroy(string $uuid, string $noteId): JSONResponse {
 		return $this->guard->withReadableTask(
 			uuid: $uuid,

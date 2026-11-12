@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
  * The administrator report reads every live outgoing share, across organisations.
  *
  * @covers \OCA\OpenRegister\Db\FederatedShareMapper
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
  */
 class FederatedShareMapperLiveOutgoingTest extends TestCase {
 

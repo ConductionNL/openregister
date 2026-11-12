@@ -35,6 +35,15 @@ use OCA\OpenRegister\Kernel\Contracts\ListQuery;
  * for every allowed and refused path.
  *
  * @covers \OCA\OpenRegister\Notifications\Controller\TimelineEntriesController
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\ReadableObject
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesControllerServices
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesDomain
+ * @uses \OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesVisibility
+ * @uses \OCA\OpenRegister\Notifications\Db\TimelineEntry
+ * @uses \OCA\OpenRegister\Notifications\Service\Timeline\EntryPin
+ * @uses \OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException
  */
 class TimelineEntriesControllerGoldenTest extends TestCase
 {

@@ -280,23 +280,24 @@ import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue
 import Database from 'vue-material-design-icons/Database.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
-import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import RbacTable from '../../components/RbacTable.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import GroupSelect from '../../components/shared/GroupSelect.vue'
 import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import OrganisationMembers from './OrganisationMembers.vue'
 import RemoveUserDialog from './RemoveUserDialog.vue'
 import SpecialRightsTable from './SpecialRightsTable.vue'
+import { searchGroupsDebounced } from '../../services/groupSearch.js'
+import { freshState } from '../../services/initialState.js'
+import { quotaFields, unlimitedQuota } from '../../services/quotaFields.js'
+import { withRequestToken } from '../../services/requestToken.js'
 import {
 	entityTabs,
 	EVERYONE,
 	everyoneOption,
 	SPECIAL_RIGHTS,
 } from './organisationRights.js'
-import { searchGroupsDebounced } from '../../services/groupSearch.js'
-import { freshState } from '../../services/initialState.js'
-import { quotaFields, unlimitedQuota } from '../../services/quotaFields.js'
 
 /**
  * The state every instance of this component starts from.
@@ -354,11 +355,11 @@ const NEXT_FORM = {
  * @return {Promise<Response>} The response
  */
 function postLeave(uuid, userId) {
-	return fetch(`/index.php/apps/openregister/api/organisations/${uuid}/leave`, {
+	return fetch(`/index.php/apps/openregister/api/organisations/${uuid}/leave`, withRequestToken({
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ userId }),
-	})
+	}))
 }
 
 export default {

@@ -46,6 +46,10 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Repair\SeedFlowRunTriggerSubject
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunSubjects
  * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\FlowRunFilter
+ * @uses \OCA\OpenRegister\Db\FlowRunListing
+ * @uses \OCA\OpenRegister\Db\FlowRunViewer
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSubjectClaim
  */
 final class SeedFlowRunTriggerSubjectTest extends TestCase {
 

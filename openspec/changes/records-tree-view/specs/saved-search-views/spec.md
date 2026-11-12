@@ -48,3 +48,21 @@ record at the top level marked as having a hidden parent.
 - **WHEN** the user opens the tree view
 - **THEN** the team appears at the top level with a note that its parent is hidden
 - @e2e exclude {specified only; task 1.3 adds the API test}
+
+### Requirement: A user moves through the tree and opens a record from it
+
+A tree view SHALL let a user open and close branches with the mouse and with the keyboard, and choosing a node SHALL open that record's page. Opening a branch SHALL keep the branches already open, and going back from a record SHALL return to the tree as the user left it.
+
+#### Scenario: A user browses to a team and opens it
+- **GIVEN** the department tree with the directorate `Ruimte` and its team `Vergunningen`
+- **WHEN** a user opens `Ruimte` and chooses `Vergunningen`
+- **THEN** the record page of `Vergunningen` opens
+- **AND** going back shows the tree with `Ruimte` still open
+- @e2e exclude {specified only; task 2.1 adds tests/e2e/tree-view.spec.ts}
+
+#### Scenario: A keyboard user browses the same tree
+- **GIVEN** the same tree with focus on `Ruimte`
+- **WHEN** the user presses the right arrow, the down arrow and Enter
+- **THEN** `Ruimte` opens, focus moves to its first team, and that team's record page opens
+- **AND** the left arrow on an open branch closes it
+- @e2e exclude {specified only; task 2.2 drives the tree by keyboard in tests/e2e/tree-view.spec.ts}

@@ -10,6 +10,7 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
         "PUT",
         {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         {
           "name": "Edited",
@@ -132,6 +133,7 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
         "PUT",
         {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         {
           "name": "Edited",
@@ -328,6 +330,7 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
         "PUT",
         {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         {
           "name": "Edited",
@@ -524,6 +527,7 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
         "PUT",
         {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         {
           "name": "Edited",
@@ -643,6 +647,7 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
         "PUT",
         {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         {},
       ],
@@ -774,6 +779,7 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
         "PUT",
         {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         {
           "name": "Edited",
@@ -826,6 +832,7 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
         "PUT",
         {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         {
           "name": "Edited",
@@ -869,6 +876,7 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
         "PUT",
         {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         {
           "name": "Edited",
@@ -912,6 +920,7 @@ exports[`organisationStore.updateOrganisation (golden) matches the recorded beha
         "PUT",
         {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         {
           "name": "Edited",

@@ -48,6 +48,13 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Files\Controller\FileTextController
  * @covers \OCA\OpenRegister\Files\Controller\FileSidebarController
+ * @uses \OCA\OpenRegister\Controller\Support\ControllerSession
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileSidebarControllerServices
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileTextControllerServices
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileTextDomain
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileTextMappers
+ * @uses \OCA\OpenRegister\Files\Controller\Support\FileTextPlatform
+ * @uses \OCA\OpenRegister\Files\Service\File\CallerFileAccess
  */
 final class FileAccessGuardGoldenTest extends TestCase {
 

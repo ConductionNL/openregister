@@ -427,6 +427,9 @@ Vrij en open source onder de EUPL-licentie.
 			     the owner narrows a list. Also under <install>, so a fresh install
 			     records that it ran and its first upgrade leaves narrowed lists alone. -->
 			<step>OCA\OpenRegister\Repair\OpenSpecialRightsToEveryone</step>
+			<!-- Encrypts webhook and consumer secrets stored in clear and hashes stored
+			     calendar feed tokens; idempotent. -->
+			<step>OCA\OpenRegister\Repair\ProtectStoredSecrets</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
