@@ -779,3 +779,34 @@ measure:integriq:20261112h18	measure	integriq	development	queue/coverage/integri
 measure:openregister:20261112h18	measure	openregister	main	queue/coverage/openregister.json	why=slices need per-directory coverage	2026-11-12T22:11:43Z
 measure:pipelinq:20261112h18	measure	pipelinq	development	queue/coverage/pipelinq.json	why=slices need per-directory coverage	2026-11-12T22:11:43Z
 measure:stackiq:20261112h18	measure	stackiq	development	queue/coverage/stackiq.json	why=slices need per-directory coverage	2026-11-12T18:12:32Z
+fix:launchpad:1121:30685fba	fix	launchpad	development	1121	sha=30685fba6b1fddcb45e5c055b3377a4caea40c15;verdict=BLOCK;branch=quality/api-v1-launchpad;reason=3350 tests run (baseline 3256), 0 new failures, behaviour change: new app-wide middleware rewrites API error bodies (adds type/title/status/detail) and sets Content-Type application/problem+json, adds API-Version/Deprecation/Link headers	2026-11-12T22:15:24Z
+review:openregister:10045:92c03492	review	openregister	main	10045	sha=92c0349266ba8c3674c0e0f1eaad4b32f92d834c;last_approved=;title=test(openregister): cover registers and deleted sidebars	2026-11-12T22:15:24Z
+review:openregister:10046:04d5ae77	review	openregister	main	10046	sha=04d5ae771b2598c9d5301cf7dfc79479dafa9360;last_approved=;title=test(openregister): cover working calendar form handlers	2026-11-12T22:15:24Z
+verify:stackiq:1774:e41fcd93	verify	stackiq	development	merge	prs=1774@e0bf8d67767f22e5b1d330fce2bad1f52e250b85	2026-11-12T22:15:24Z
+verify:learniq:2420:f6921af0	verify	learniq	development	merge	prs=2420@3cf682db96a98781a8210759bc9b25da32a41bb1	2026-11-12T22:15:24Z
+verify:dossiq:6185:52a3161b	verify	dossiq	development	merge	prs=6185@755f579b681b914df951200d98d0529930772475	2026-11-12T22:15:24Z
+verify:buildiq:1482:3ec4425d	verify	buildiq	development	merge	prs=1482@0a8d95a75b0e4bcf682a5baec0d63c46c46d7697	2026-11-12T22:15:24Z
+verify:pipelinq:3565:c43ab7b1	verify	pipelinq	development	merge	prs=3565@15e3e445b184248dd9eb1d64a583c42015f73cff	2026-11-12T22:15:24Z
+verify:hermiq:1599:d9f73035	verify	hermiq	development	merge	prs=1599@00d522afcea6ae934cc5190055f2ac2fdc38ab21	2026-11-12T22:15:24Z
+verify:integriq:3415:229315d4	verify	integriq	development	merge	prs=3415@4f065dc676098984ce33d084ac4736f93406b7ac	2026-11-12T22:15:24Z
+verify:humaniq:1097:4d54e9c7	verify	humaniq	development	merge	prs=1097@9392cda73577b0e4ba391e9155bee90aad4363b7,1098@6189eb79084167a0c2c8b5c11dac8d911f36f639	2026-11-12T22:15:24Z
+verify:shillinq:2800:ce163956	verify	shillinq	development	merge	prs=2800@07a1bdf3a588d7d56d0d2da08e6a953170e7c811	2026-11-12T22:15:24Z
+verify:decidiq:2087:98dda831	verify	decidiq	development	merge	prs=2087@3800e885b1b23eb72756db08a0038b7ed91fd0bc	2026-11-12T22:15:24Z
+verify:portaliq:2368:2ef96a34	verify	portaliq	development	merge	prs=2368@8531e2e9add014b81a11f52f497d54ca0be88a67	2026-11-12T22:15:24Z
+verify:filinq:1972:f3e5ba3f	verify	filinq	development	merge	prs=1972@76465151cf2536ce529b2f8c124b92242c32105e,1973@2977e0873a9487b2ab3c938f9d5168743fa8cf80	2026-11-12T22:15:24Z
+verify:keepiq:1679:aea93eae	verify	keepiq	development	merge	prs=1679@cc2cc877e6c175ac38b6ac15532456ce32cd40db	2026-11-12T22:15:24Z
+verify:launchpad:1126:556a77a6	verify	launchpad	development	merge	prs=1126@9764d01a28fa2ca381ba4bdbd2c2db5b5c9429ef,1127@16fb3d8813c7a7fd3764019741cf8b196cc27d0f	2026-11-12T22:15:24Z
+verify:planninq:1133:3053dc64	verify	planninq	development	merge	prs=1133@4a3b786b196c9d793fcd4f37e7f8afe6494e6ab0	2026-11-12T22:15:24Z
+verify:opencatalogi:2579:2b7defff	verify	opencatalogi	development	merge	prs=2579@5b5c3a82a87c6cfd7950a5b42b9fac5c772c97b8	2026-11-12T22:15:24Z
+verify:versioniq:661:8548c87f	verify	versioniq	development	merge	prs=661@772880d6f720498bc495e665d745dbbf46f8b788	2026-11-12T22:15:24Z
+verify:larpinq:1006:14c4c964	verify	larpinq	development	merge	prs=1006@eac858e419ac8aadb94e51bd2ef87bcc0aee1be2	2026-11-12T22:15:24Z
+verify:thematiq:1663:479ef12f	verify	thematiq	development	merge	prs=1663@e490a46394eac7db1d63d582a0d44f26a2a0b909	2026-11-12T22:15:24Z
+merge:stackiq:1683:569f5768	merge	stackiq	development	development	prs=1683@27a4e10f5d250a5cbe9e2c3e7a72e0c0658316a0	2026-11-12T22:15:24Z
+merge:dossiq:6172:7ca90664	merge	dossiq	development	development	prs=6172@c77b2a4f0775b3d2d8b1fe5c6aff30728e621a28,6174@30c70bc677b8438bd3081895651d727e94f750e8,6175@15cf32e006e95a15919b6131a77e215baddab7b4,6176@626a8ce6762c7fc9ee733cdb027bb9ef6a8a6abd,6177@60c61ba076eecf8ac1f7ccdd57fe48c8c98a06e4,6178@264c089149b4c8d760687f4c6003ca6422682877,6179@58b3a24db5041d85c52fa304e4381f6f1a6db53d,6180@d8e124989e0f69cbb33d22da2e8eb63911110e9e	2026-11-12T22:15:24Z
+merge:launchpad:1119:45ae83d5	merge	launchpad	development	development	prs=1119@8564248b334dc48455ee7373d6cec646fa6ac229,1120@43c00cedc0bdb6d0d94c8226b36ccae0dad83bb3	2026-11-12T22:15:24Z
+merge:versioniq:660:e05e562e	merge	versioniq	development	development	prs=660@cc4e8f8a5de1d9a9ece060b05d8a4261f778fd43	2026-11-12T22:15:24Z
+cover:openregister:7350e3ef:js70928e5e	cover	openregister	main	test/coverage-js-70928e5e	lang=js;dirs=lib/Search/*.php,lib/Search/Controller/,lib/Search/Db/,lib/Search/Listener/,lib/Search/Service/*.php,lib/Search/Service/Aggregation/,lib/Search/Service/Search/;focus=uncovered;weight=1059;coverage=76.07;target=85.0	2026-11-12T13:02:56Z
+cover:openregister:7350e3ef:js2c7c06c5	cover	openregister	main	test/coverage-js-2c7c06c5	lang=js;dirs=lib/Service/Object/SaveObject/;focus=uncovered;weight=1059;coverage=76.07;target=85.0	2026-11-12T13:02:56Z
+measure:decidiq:20261112h18	measure	decidiq	development	queue/coverage/decidiq.json	why=slices need per-directory coverage	2026-11-12T22:15:24Z
+measure:keepiq:20261112h18	measure	keepiq	development	queue/coverage/keepiq.json	why=slices need per-directory coverage	2026-11-12T22:15:24Z
+measure:launchpad:20261112h18	measure	launchpad	development	queue/coverage/launchpad.json	why=slices need per-directory coverage	2026-11-12T22:15:24Z
