@@ -25,6 +25,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use DateTime;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
@@ -965,9 +966,9 @@ class SearchTrailController extends Controller {
 
 		$output = fopen('php://temp', 'r+');
 		// Add headers, then the data rows.
-		fputcsv($output, array_keys($data[0]));
+		fputcsv($output, SpreadsheetCell::csvRow(row: array_keys($data[0])));
 		foreach ($data as $row) {
-			fputcsv($output, array_map(static fn ($cell) => self::csvCell(cell: $cell), $row));
+			fputcsv($output, SpreadsheetCell::csvRow(row: array_map(static fn ($cell) => self::csvCell(cell: $cell), $row)));
 		}
 
 		rewind($output);
