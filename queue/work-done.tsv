@@ -450,4 +450,5 @@ verify:larpinq:1005:71b96a79	larpinq#1005 BLOCK: tests green (697 vs 682), but c
 verify:dossiq:6181:b8ef5622	4 GREEN (6181-6184), tests-only; phpunit 12497 and vitest 6217, 0 new failures	session-20261112T202912-56c18a61	2026-11-12T21:32:21Z
 cover:integriq:9b0f5894:jsb5995953	PR #3402: 16 vitest tests for DirectoryRunModal, SubscriptionSigningModal, NotificatiesAbonnementForm; dirs 54.01->81.07%; suite green	session-20261112T202914-c73e3765	2026-11-12T21:32:40Z
 cover:buildiq:8ca317f6:jsc41b6099	PR #1478: 38 vitest tests, src/mixins 92.6%->98.9% lines	session-20261112T205854-40cde0c5	2026-11-12T21:32:42Z
+fix:dossiq:6151:dc90a5b0	failed: the BLOCK names the PR's own purpose (intended API contract change: /api/v1 aliases, problem details); nothing a worker can fix without removing the feature, needs a human decision to accept the contract change	session-20261112T202912-56c18a61	2026-11-12T21:32:53Z
 verify:launchpad:1117:8fafb718	GREEN 1117 (gitleaks allowlist only; 3256 tests, 0 new failures)	session-20261112T212855-9d7d9581	2026-11-12T21:32:57Z
