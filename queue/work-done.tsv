@@ -39,3 +39,4 @@ merge:dossiq:5850:65c1f2fb	failed: REST merge refused by this cloud session's pe
 gap:filinq:9:7d352ecb	failed: scanner rule not available in this worker, so the 3 findings cannot be identified or re-measured; ~35 *_KEY config constants match a generic regex and renaming them blind is not a safe change. PdfViewer.vue:158 innerHTML='' is a clear, not an injection	session-20261112T184438-005b5eda	2026-11-12T19:01:04Z
 merge:humaniq:1070:5b075c50	merged 1070,1071,1072; 1093 gate RED (checker floor dockerimage pass->fail)	session-20261112T184505-d34a144f	2026-11-12T19:01:17Z
 gap:filinq:3:475d3f06	failed: only 2 of filinq's routes answer on /api/v1 (report render); all others are /api/... (fleet pattern ADR-002), so a versioned servers URL would misdescribe the spec. Same URI-versioning owner decision as openregister gap 3 / decidiq gap 19	session-20261112T175557-37d60f4f	2026-11-12T19:02:14Z
+merge:buildiq:1325:2b957804	stale	feeder	2026-11-12T19:00:16Z
