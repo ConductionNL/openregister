@@ -2872,7 +2872,7 @@
    "feature": "field-types",
    "screen": {
     "canvas": "design-system",
-    "board": null
+    "board": "OrEigenschap"
    }
   },
   {
@@ -6124,7 +6124,7 @@
    "feature": "audit-hash-chain",
    "screen": {
     "canvas": "design-system",
-    "board": null
+    "board": "OrAuditTrails"
    }
   },
   {
