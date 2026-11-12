@@ -826,4 +826,5 @@ verify:keepiq:1682:32fecc34	GREEN 1682,1683,1684: 3781 tests vs baseline 3722, n
 cover:pipelinq:f67520ecm9d2c:50cc8442	PR pipelinq#3583: 29 tests for 13 lib/Util traits; suite 5773->5802, same 1 inherited failure	session-20261112T224530-a1180ad3	2026-11-12T23:07:50Z
 cover:pipelinq:f67520ecm9d2c:e372e6ff	PR pipelinq#3582: 5 tests, TenderPostedEvent to 100% + LandingPage event outcome; rest of lib/Event is getter-only; suite 5773->5778	session-20261112T221235-9e827ed1	2026-11-12T23:07:45Z
 verify:pipelinq:3561:a83ed2a7	8 GREEN (3561,3569-3574,3576), 3575 CONFLICT with 3569; 0 new failures	session-20261112T224530-faaec44c	2026-11-12T23:08:06Z
+cover:keepiq:d76c2121:11ebfefd	PR #1694: +20 tests (SchemaFingerprint, TableStore, ArchiveStore, BackupService listing); lib/Backup 387->444/481	session-20261112T223908-abd0da4a	2026-11-12T23:08:41Z
 cover:hermiq:755cdfe7m7444:17bbac84	PR #1624: 19 tests for TaskProcessing providers; suite 3567->3586, no new failures (169 inherited)	session-20261112T224535-bdffbbbc	2026-11-12T23:08:39Z
