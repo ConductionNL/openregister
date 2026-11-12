@@ -28,7 +28,7 @@ foreach (ReservedWordSource::SOURCES as $engine => $source) {
 	foreach ($source['series'] as $series) {
 		$words = ReservedWordSource::fetch(engine: $engine, series: $series);
 		if ($words === null) {
-			fwrite(STDERR, 'Could not download the '.$engine.' '.$series.' sources from '.ReservedWordSource::url(engine: $engine, series: $series, file: 'sql/lex.h').PHP_EOL);
+			fwrite(STDERR, 'Could not download the '.$engine.' '.$series.' sources: '.(ReservedWordSource::downloadFailure() ?? 'unknown reason').PHP_EOL);
 			$status = 1;
 			continue;
 		}

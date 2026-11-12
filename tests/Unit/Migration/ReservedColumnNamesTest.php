@@ -91,6 +91,38 @@ class ReservedColumnNamesTest extends TestCase {
 	];
 
 	/**
+	 * Where each list came from: the series per origin, and why the download failed if one did.
+	 *
+	 * @return string
+	 */
+	private static function originReport(): string {
+		$by = [];
+		foreach (ReservedWordSource::origins() as $series => $origin) {
+			$by[$origin][] = $series;
+		}
+
+		$parts = [];
+		foreach ($by as $origin => $series) {
+			$parts[] = $origin.': '.implode(', ', $series);
+		}
+
+		$failure = ReservedWordSource::downloadFailure();
+
+		return implode('; ', $parts).(($failure === null) ? '' : '. Download failed: '.$failure);
+	}//end originReport()
+
+	/**
+	 * Says on STDERR where the lists came from, so a snapshot-only run is visible while green.
+	 *
+	 * @return void
+	 */
+	public static function tearDownAfterClass(): void {
+		if (ReservedWordSource::origins() !== [] && defined('STDERR') === true) {
+			fwrite(STDERR, PHP_EOL.'ReservedColumnNamesTest word lists - '.self::originReport().PHP_EOL);
+		}
+	}//end tearDownAfterClass()
+
+	/**
 	 * The words one series reserves, lower case.
 	 *
 	 * @param string $engine The engine, a key of ReservedWordSource::SOURCES.
@@ -184,7 +216,7 @@ class ReservedColumnNamesTest extends TestCase {
 			[],
 			self::offenders(columns: self::migratedColumns(test: $this), reserved: self::reservers(development: false)),
 			'These columns use a word the listed MariaDB or MySQL series reserve; Doctrine may not quote it there. '
-			.'Pick another name. Lists used: '.json_encode(ReservedWordSource::origins())
+			.'Pick another name. Lists used - '.self::originReport()
 		);
 	}//end testNoMigrationColumnIsAReservedWord()
 

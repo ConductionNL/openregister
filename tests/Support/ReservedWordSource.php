@@ -86,9 +86,9 @@ class ReservedWordSource {
 	private const NEVER_RESERVED = ['status', 'date'];
 
 	/**
-	 * Set once a download fails, so a network that is down costs one timeout, not one per file.
+	 * Why downloads stopped, once one failed, so a network that is down costs one timeout, not one per file.
 	 */
-	private static bool $offline = false;
+	private static ?string $offlineReason = null;
 
 	/**
 	 * The words per `<engine>-<series>`, resolved once per process.
@@ -98,7 +98,7 @@ class ReservedWordSource {
 	private static array $words = [];
 
 	/**
-	 * Where a series' words came from, per `<engine>-<series>`: 'online' or 'snapshot'.
+	 * Where a series' words came from, per `<engine>-<series>`: 'online' or 'snapshot' (downloadFailure() says why).
 	 *
 	 * @var array<string, string>
 	 */
@@ -174,13 +174,22 @@ class ReservedWordSource {
 	}//end words()
 
 	/**
-	 * Where each series' words came from in this run, for a failure message.
+	 * Where each series' words came from in this run.
 	 *
-	 * @return array<string, string>
+	 * @return array<string, string> `<engine>-<series>` => 'online' or 'snapshot'.
 	 */
 	public static function origins(): array {
 		return self::$origin;
 	}//end origins()
+
+	/**
+	 * Why the last download failed, or null when none did.
+	 *
+	 * @return string|null
+	 */
+	public static function downloadFailure(): ?string {
+		return self::$offlineReason;
+	}//end downloadFailure()
 
 	/**
 	 * The words upstream reserves on one branch, or null when it cannot be reached.
@@ -528,18 +537,26 @@ class ReservedWordSource {
 	/**
 	 * One file from upstream, or null when the network does not deliver it.
 	 *
-	 * A refused connection, a timeout, a rate limit or a server error is a network
-	 * that is down for our purposes (null). A 404 is different: the branch or file
-	 * no longer exists, which no snapshot can repair.
+	 * 200 is the file. A refused connection, a timeout, a rate limit (429) or a
+	 * server error (5xx) is a network that is down for our purposes: null, with the
+	 * reason kept for the origin report, and no further download in this run.
+	 * A 404 or any redirect is different: the branch or file moved or is gone, and
+	 * the snapshot cannot repair that, so it throws. Any other status (a 403, say)
+	 * falls back like an outage; the origin report names it.
 	 *
 	 * @param string $url The URL.
 	 *
 	 * @return string|null
 	 *
-	 * @throws RuntimeException On a 404.
+	 * @throws RuntimeException On a 404 or a 3xx.
 	 */
 	private static function download(string $url): ?string {
-		if (self::$offline === true || function_exists('curl_init') === false) {
+		if (self::$offlineReason !== null) {
+			return null;
+		}
+
+		if (function_exists('curl_init') === false) {
+			self::$offlineReason = 'the curl extension is not loaded';
 			return null;
 		}
 
@@ -555,14 +572,17 @@ class ReservedWordSource {
 		);
 		$body   = curl_exec($handle);
 		$status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-		curl_close($handle);
+		$error  = curl_error($handle);
 
-		if ($status === 404) {
-			throw new RuntimeException($url.' does not exist; a series in ReservedWordSource::SOURCES was renamed or removed upstream.');
+		if ($status === 404 || ($status >= 300 && $status < 400)) {
+			throw new RuntimeException(
+				$url.' answered HTTP '.$status.'; the source file or branch was moved or removed upstream, '
+				.'so ReservedWordSource::SOURCES or its URLs need an update.'
+			);
 		}
 
 		if (is_string($body) === false || $body === '' || $status !== 200) {
-			self::$offline = true;
+			self::$offlineReason = ($status === 0) ? 'no answer from '.$url.' ('.($error !== '' ? $error : 'connection failed').')' : 'HTTP '.$status.' from '.$url;
 			return null;
 		}
 
