@@ -3677,3 +3677,10 @@ learniq	2189	ae11c40d875d215a8caacd0cbda65e1f9bb224c6	GREEN	fv11-20:learniq-t115
 learniq	2229	ec572f7022f7031ffbf771e41f35fba80676e320	GREEN	fv11-20:learniq-t115135	unit 5778 run, 1 failure baseline (HigherEducationExampleSetTest), no new; no JS; diff review: helper extraction, log messages kept verbatim
 learniq	2366	8e9856a5219a69e9bdb85b4cf60051fb925ade15	GREEN	fv11-20:learniq-t115135	unit 5778 run, 1 failure baseline (HigherEducationExampleSetTest), no new; no JS; diff review: helper extraction, log messages kept verbatim
 learniq	2362	365f686825cdbc90f77857b6a31150d4ed2e2395	CONFLICT	fv11-20:learniq-t115135	merge conflict against origin/development
+integriq	3266	aa8470b7155dd91cf42f50e32dd307f06cebf391	RED	fv11-20:integriq-t123002	new unit failure: SourceNestedAuthWriteOnlyTest::testAllSixDirectGuzzleBridgesReResolveTheSourceRaw (source-text assertion no longer matches after ActiveSourceLookup extraction)
+integriq	3272	2caaadc614a0dd70f19876d272b4c63606669daf	GREEN	fv11-20:integriq-t123002	unit 7020 run on tree without 3266/3291, 2 errors baseline (CallServiceTest), no new; no JS; diff review: helper extraction, behaviour identical
+integriq	3276	6a8c3210dc0a3b21ca0f4fc7c916f1d052b3a498	GREEN	fv11-20:integriq-t123002	unit 7020 run on tree without 3266/3291, 2 errors baseline (CallServiceTest), no new; no JS; diff review: helper extraction, behaviour identical
+integriq	3278	a426b3d77b18c17b147d9ce1541d4e4c16938e31	GREEN	fv11-20:integriq-t123002	unit 7020 run on tree without 3266/3291, 2 errors baseline (CallServiceTest), no new; no JS; diff review: helper extraction, behaviour identical
+integriq	3291	ba0229759dabad6133b5eb87968e0347b315d4d9	RED	fv11-20:integriq-t123002	new unit failure: BroadServiceCollaboratorsTest::testEveryCollaboratorResolvesToTheSameClass (new EventEmission::$eventService collaborator not in expected map)
+integriq	3122	ef653c4cdd5108b33dc94bfdc7e8f42fac0ca724	CONFLICT	fv11-20:integriq-t123002	merge conflict against origin/development
+integriq	3124	bbce81a0740a93184b64cccddb9c28e04792fb61	CONFLICT	fv11-20:integriq-t123002	merge conflict against origin/development
