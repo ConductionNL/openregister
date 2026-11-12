@@ -1515,6 +1515,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$envelope = $this->getObject();
 		$metadata = $this->getObjectArray();
 		$metadata['expires'] = $this->getFormattedDate(date: $this->expires);
+		// Conditions read the stored value, as the list reads the column: no display fallback.
+		$metadata['name'] = $this->name;
+		$metadata['description'] = $this->description;
 		foreach (array_keys($metadata) as $field) {
 			unset($envelope['_' . $field]);
 		}

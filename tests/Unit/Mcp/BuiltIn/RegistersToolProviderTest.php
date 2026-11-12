@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp\BuiltIn;
 
+use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\AuthorizationChange;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
@@ -40,10 +42,14 @@ class RegistersToolProviderTest extends TestCase {
 
 	private RegistersToolProvider $provider;
 
+	/** @var AuthorizationAuditService&MockObject */
+	private AuthorizationAuditService $audit;
+
 	protected function setUp(): void {
 		parent::setUp();
+		$this->audit = $this->createMock(AuthorizationAuditService::class);
 		$this->registerService = $this->createMock(RegisterService::class);
-		$this->provider = new RegistersToolProvider($this->registerService, $this->rightsFor(uid: 'root'));
+		$this->provider = new RegistersToolProvider($this->registerService, $this->rightsFor(uid: 'root'), $this->audit, new \Psr\Log\NullLogger());
 
 	}//end setUp()
 
@@ -68,7 +74,7 @@ class RegistersToolProviderTest extends TestCase {
 	 * @return RegistersToolProvider
 	 */
 	private function providerFor(array $groups = []): RegistersToolProvider {
-		return new RegistersToolProvider($this->registerService, $this->rightsFor(uid: 'mallory', groups: $groups));
+		return new RegistersToolProvider($this->registerService, $this->rightsFor(uid: 'mallory', groups: $groups), $this->audit, new \Psr\Log\NullLogger());
 	}//end providerFor()
 
 	/**
@@ -290,4 +296,43 @@ class RegistersToolProviderTest extends TestCase {
 		$this->provider->invokeTool(RegistersToolProvider::TOOL_ID, []);
 
 	}//end testMissingActionThrows()
+	public function testAnAuthorizationChangeIsAudited(): void {
+		$stored = $this->storedRegister();
+		$saved = new Register();
+		$saved->setId(5);
+		$saved->setTitle('Edited');
+		$saved->setAuthorization(['manage' => ['beheer'], 'read' => ['beheer']]);
+		$this->registerService->method('updateFromArray')->willReturn($saved);
+		$this->audit->expects($this->once())->method('recordRegisterChange')->with(
+			$this->callback(static fn (AuthorizationChange $change): bool => $change->entityId === 5
+				&& $change->before === $stored->getAuthorization()
+				&& $change->after === ['manage' => ['beheer'], 'read' => ['beheer']])
+		);
+
+		$this->providerFor(groups: ['beheer'])->invokeTool(
+			RegistersToolProvider::TOOL_ID,
+			['action' => 'update', 'id' => 5, 'data' => ['authorization' => ['manage' => ['beheer'], 'read' => ['beheer']]]]
+		);
+	}//end testAnAuthorizationChangeIsAudited()
+
+	public function testAnUpdateWithoutAuthorizationIsNotAudited(): void {
+		$stored = $this->storedRegister();
+		$this->registerService->method('updateFromArray')->willReturn($stored);
+		$this->audit->expects($this->never())->method('recordRegisterChange');
+
+		$this->providerFor(groups: ['beheer'])->invokeTool(RegistersToolProvider::TOOL_ID, ['action' => 'update', 'id' => 5, 'data' => ['title' => 'Edited']]);
+	}//end testAnUpdateWithoutAuthorizationIsNotAudited()
+
+	public function testInternalParametersAreNotWritten(): void {
+		$stored = $this->storedRegister();
+		$this->registerService->expects($this->once())
+			->method('updateFromArray')
+			->with(id: 5, data: ['title' => 'Edited'])
+			->willReturn($stored);
+
+		$this->providerFor(groups: ['beheer'])->invokeTool(
+			RegistersToolProvider::TOOL_ID,
+			['action' => 'update', 'id' => 5, 'data' => ['title' => 'Edited', '_rbac' => false, '_route' => 'x']]
+		);
+	}//end testInternalParametersAreNotWritten()
 }//end class

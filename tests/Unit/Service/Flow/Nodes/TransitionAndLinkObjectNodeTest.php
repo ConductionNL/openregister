@@ -27,6 +27,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 class TransitionAndLinkObjectNodeTest extends TestCase {
 
@@ -145,7 +146,8 @@ class TransitionAndLinkObjectNodeTest extends TestCase {
 		$this->objects->method('find')->with(id: 'req-1')->willReturn($this->object('req-1', ['title' => 'Aanvraag', 'notes' => ['n-0']]));
 		$saved = [];
 		$this->objects->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$saved): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$saved): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$saved[] = $args;
 				return $this->object('n-1', ['text' => 'x']);
 			}

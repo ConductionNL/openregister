@@ -49,6 +49,8 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 
@@ -281,13 +283,16 @@ final class ObjectWriteBulkGoldenTest extends TestCase {
 		$store->method('runAs')->willReturnCallback(static fn (IUser $user, callable $work): mixed => $work());
 		$store->method('findAll')->willReturnCallback(fn (): array => $this->found);
 		$store->method('saveObjects')->willReturnCallback(
-			function (array $objects, mixed $register, mixed $schema, bool $_rbac, bool $_multitenancy, bool $validation, bool $events): array {
+			function (array $objects, BulkSaveOptions $options = new BulkSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): array {
+				$validation = $options->validation;
+				$events = $options->events;
 				$this->calls[] = ['saveObjects' => $objects, 'validation' => $validation, 'events' => $events];
 				return $this->bulkAnswer;
 			}
 		);
 		$store->method('saveObject')->willReturnCallback(
-			function (array|ObjectEntity $object, mixed ...$rest): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
+				$rest = [$options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$this->calls[] = ['saveObject' => $object, 'uuid' => ($rest[3] ?? null), 'failIfExists' => ($rest[10] ?? null)];
 				return $this->entity(data: (array)$object);
 			}

@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
  * Pins the block's shape: null without properties, the version default and the stamp.
  *
  * @covers \OCA\OpenRegister\Db\Schema\PropertyFacetBlock
+ * @uses \OCA\OpenRegister\Db\Schema\FacetBlockStamp
  */
 class PropertyFacetBlockTest extends TestCase {
 

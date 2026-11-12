@@ -30,6 +30,8 @@ use ReflectionMethod;
  * Golden subject match of the processing log.
  *
  * @covers \OCA\OpenRegister\Db\ProcessingLogMapper
+ * @uses \OCA\OpenRegister\Db\ProcessingLogReadScope
+ * @uses \OCA\OpenRegister\Db\ProcessingLog\ProcessingLogSubject
  */
 final class ProcessingLogMapperSubjectMatchGoldenTest extends TestCase {
 	use RecordsQueries;

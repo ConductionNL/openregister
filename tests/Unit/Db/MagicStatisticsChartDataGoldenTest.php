@@ -45,6 +45,8 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\RegisterSchemaFilter
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
  */
 class MagicStatisticsChartDataGoldenTest extends TestCase {
 

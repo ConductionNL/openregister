@@ -140,8 +140,6 @@ class LlmSettingsController extends Controller {
 	/**
 	 * Update LLM (Large Language Model) settings
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with updated LLM settings
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
@@ -187,8 +185,6 @@ class LlmSettingsController extends Controller {
 	 * It provides the same functionality but is registered under a different route name
 	 * to ensure PATCH verb is properly registered in Nextcloud routing.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse Updated LLM settings
 	 *
 	 * @psalm-return JSONResponse<200|500,
@@ -209,8 +205,6 @@ class LlmSettingsController extends Controller {
 	 * by generating a test embedding vector.
 	 * Accepts provider and config from the request to allow testing
 	 * before saving the configuration.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with embedding test result
 	 *
@@ -241,8 +235,6 @@ class LlmSettingsController extends Controller {
 	 * by sending a simple test message and receiving a response.
 	 * Accepts provider and config from the request to allow testing
 	 * before saving the configuration.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Test result with chat response
 	 *
@@ -538,8 +530,6 @@ class LlmSettingsController extends Controller {
 
 	/**
 	 * Clear all embeddings from the database
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Result with deleted count
 	 *

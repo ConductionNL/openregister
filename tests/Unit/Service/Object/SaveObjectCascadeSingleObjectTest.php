@@ -26,6 +26,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\NestedObjectTarget;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
@@ -148,9 +151,15 @@ final class SaveObjectCascadeSingleObjectTest extends TestCase {
 	public function testTheNestedSaveArgumentsAreFixed(): void {
 		self::cascade($this->handler(createdUuid: 'c-1'), ['$ref' => 'note', 'register' => 5]);
 
-		$this->assertSame(
-			[5, '2', ['text' => 'new'], null, true, true, true, true],
-			array_slice($this->saves[0], 0, 8)
+		$this->assertEquals(
+			[
+				['text' => 'new'],
+				new ObjectSaveOptions(target: new ObjectFindTarget(register: 5, schema: '2'), policy: new SavePolicy(silent: true)),
+				true,
+				true,
+				true,
+			],
+			$this->saves[0]
 		);
 		$this->assertCount(1, $this->saves);
 	}//end testTheNestedSaveArgumentsAreFixed()
