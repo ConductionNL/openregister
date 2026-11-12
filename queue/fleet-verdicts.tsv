@@ -4120,3 +4120,4 @@ dossiq	6156	a0456a1dcd73bc55058611c66829a317ed4cbf19	GREEN	worker-01	phpunit 125
 dossiq	6157	b7298f056cefc5a2fcdb2ebc4c364020e7e8abb8	GREEN	worker-01	phpunit 12564 on 9-PR tree, baseline 12467/19, 0 new failures; tests-only diff
 dossiq	6158	4e273aedd348031477d9fd22d6b31a451cf303d1	GREEN	worker-01	phpunit 12564 on 9-PR tree, baseline 12467/19, 0 new failures; tests-only diff
 dossiq	6159	08b6400bb2fe0eca9dbf51f185372c96bb04c7f6	GREEN	worker-01	phpunit 12564 on 9-PR tree, baseline 12467/19, 0 new failures; tests-only diff
+learniq	2414	61204dabdd99de0e5ab657634eb96fabd3b438ea	RED	merge-local:merge-gate	GATE RED checker floor: dockerimage: pass -> fail
