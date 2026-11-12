@@ -546,3 +546,4 @@ merge:shillinq:2797:bc4d2461	2797 SKIP 	session-20261112T184502-4ecd6072	2026-11
 cover:decidiq:13261b1b:882bd950	PR #2086: 8 tests for DecidiqSearchProvider (lines 96.6->100%), suite 3109->3117 OK	session-20261112T212852-3ecaf9de	2026-11-12T21:57:21Z
 cover:pipelinq:f67520ec:1b97f731	PR #3564: 27 tests, 4 untested lib/Listener classes; suite 5773->5800, 1 inherited failure	session-20261112T205854-40cde0c5	2026-11-12T21:57:40Z
 review:openregister:10039:2d962e41	APPROVE: tests-only spec, 84/84 sidebar tests pass merged with main	session-20261112T202914-c73e3765	2026-11-12T21:58:09Z
+cover:pipelinq:f67520ec:f545d745	PR #3563: 4 repair steps, 19 tests; suite 5773->5792, 0 new failures	session-20261112T200016-345024b4	2026-11-12T21:58:47Z
