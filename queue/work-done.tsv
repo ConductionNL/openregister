@@ -778,6 +778,7 @@ cover:pipelinq:f67520ecm9d2c:jse19add4c	failed: payload lang=js but dirs=lib/Ser
 cover:pipelinq:f67520ecm9d2c:js0a24f15f	failed: payload lang=js but dirs=lib/Service/Letter/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:57:41Z
 cover:pipelinq:f67520ecm9d2c:jsf0c02922	failed: payload lang=js but dirs=lib/Service/External/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:57:50Z
 cover:pipelinq:f67520ecm9d2c:js95a79563	failed: payload lang=js but dirs=lib/Service/Lifecycle/ is PHP (pipelinq lib/ has 0 js/ts/vue files); requeue as lang=php	session-20261112T221234-13fcfd6a	2026-11-12T22:58:00Z
+review:openregister:10055:0f5d134c	APPROVE: quality-config only (licence exclusion pattern), no code change	session-20261112T221531-958a2fbc	2026-11-12T22:58:29Z
 cover:keepiq:d76c2121:e372e6ff	PR #1689: 7 tests for 4 Event classes, suite 3722->3729 OK	session-20261112T224529-41d77a96	2026-11-12T22:58:26Z
 cover:integriq:9b0f5894m2367:js28cccfd9	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:58:34Z
 cover:integriq:9b0f5894m2367:jsb2c9296a	failed: lib/Service/Engine/ does not exist in integriq development (no Engine dir anywhere, never in history); stale row	session-20261112T220141-9622e2a0	2026-11-12T22:58:41Z
@@ -798,6 +799,7 @@ cover:integriq:9b0f5894m2367:js9c1d94a2	failed: lib/Tenant no longer exists on i
 cover:integriq:9b0f5894m2367:js5597bc7b	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T23:01:10Z
 verify:versioniq:661:8548c87f	stale: 661 head moved (b0a8175b != 772880d6), skipped	session-20261112T224526-3200a03f	2026-11-12T23:01:15Z
 cover:integriq:9b0f5894m2367:js9d3a1784	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T23:01:20Z
+cover:integriq:9b0f5894m2367:js65e30692	failed: row inconsistent: lang=js but dirs=lib/Service/Intake/ (PHP); needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T23:01:36Z
 cover:integriq:9b0f5894m2367:jsd39f9857	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T23:01:35Z
 cover:integriq:9b0f5894m2367:js568ec52a	failed: lang=js but dirs=lib/Lifecycle/*.php is PHP-only; no JS specs apply	session-20261112T215819-2dd7b64e	2026-11-12T23:01:50Z
 cover:integriq:9b0f5894m2367:js59826f43	failed: lang=js but dirs=lib/Settings/*.php is PHP-only; no JS specs apply	session-20261112T215819-2dd7b64e	2026-11-12T23:02:00Z
