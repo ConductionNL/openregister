@@ -364,3 +364,4 @@ verify:humaniq:1094:32a0648b	GREEN humaniq#1094	session-20261112T205850-5f960ec2
 verify:stackiq:1750:7336ad32	4 GREEN (1750,1751,1752,1753); phpunit 2353 OK, vitest 1593 OK	session-20261112T205855-bb08648d	2026-11-12T21:04:27Z
 gap:humaniq:opensourcehealth:724b9637	failed: opensourcehealth stars come from 652 transitive npm deps (activity, licence use from GPL/AGPL Nextcloud libraries, freshness); no bounded app-level change lifts it to 4 stars	session-20261112T205850-5f960ec2	2026-11-12T21:05:02Z
 cover:stackiq:8cfacb29:js0be8c659	PR #1760: 16 tests (SaveFacetViewModal, SubmitReviewModal, Modals); src/modals/* 71.23%->83.1% lines	session-20261112T202437-4020bd95	2026-11-12T21:05:07Z
+cover:dossiq:6ca0231e:390adfb9	PR #6176: 4 tests for Prerequisites report edges; suite 11976->11980, 19 inherited failures	session-20261112T202909-d1558483	2026-11-12T21:05:30Z
