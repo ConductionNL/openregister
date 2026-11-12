@@ -212,4 +212,5 @@ buildiq	1448	949b20f12bdd9504af0ee22267a6f3d34d23e02a	RED	worker-53	GATE RED che
 learniq	2316	47d909a5f7a918cb4c874849a7679fff4b5c95cc	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2295	feb35cb98319dbb6af00e0a5cf4a6be4ff6b8b46	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2296	6ccdaaccb3d237034bae9ab154e9e0593997678f	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2317	0efd9c038dedaeb54dd8ecb107cf56e97ce6f5d6	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2297	b9f6a5bd4d18ed9945297149473b6839d5d34e11	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
