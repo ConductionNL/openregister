@@ -862,3 +862,4 @@ cover:openregister:7350e3efm0e99:js38e80a9f	failed: lang=js but dirs=lib/Command
 cover:pipelinq:f67520ecm9d2c:js36ac5d07	PR #3589: 18 PHP tests for lib/Service/LineTotals (dir is PHP despite lang=js); suite 5773->5791, 1 inherited failure	session-20261112T231633-96ffe7b8	2026-11-12T23:21:09Z
 verify:launchpad:1121:8548b6df	failed: permission (running the unit suite was refused)	session-20261112T231639-173f6289	2026-11-12T23:21:24Z
 verify:dossiq:6185:8f60c29c	failed: permission (composer-cloud.sh refused); PR only edits an analysis yaml	session-20261112T231637-27871bfa	2026-11-12T23:21:23Z
+verify:filinq:1973:5f23a39e	1975 GREEN (php 5318 OK, vitest 450 OK); 1973 already on development, no verdict	session-20261112T231645-3f0591a5	2026-11-12T23:21:45Z
