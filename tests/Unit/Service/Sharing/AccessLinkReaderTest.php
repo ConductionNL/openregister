@@ -43,9 +43,14 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Service\Timeline\PublicTimeline;
-use OCA\OpenRegister\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
+use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReaderSources;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
+use OCP\IUser;
+use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -62,6 +67,7 @@ class AccessLinkReaderTest extends TestCase {
 	private PropertyRbacHandler&MockObject $properties;
 	private PublicTimeline&MockObject $timeline;
 	private LoggerInterface&MockObject $logger;
+	private IUserManager&MockObject $users;
 	private AccessLinkReader $reader;
 
 	protected function setUp(): void {
@@ -74,13 +80,19 @@ class AccessLinkReaderTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->schemas->method('find')->willReturn($this->createMock(Schema::class));
+		$this->users = $this->createMock(IUserManager::class);
 
 		$this->reader = new AccessLinkReader(
-			objects: $this->objects,
-			schemas: $this->schemas,
-			properties: $this->properties,
-			timeline: $this->timeline,
-			subjects: new AccessLinkSubject(),
+			sources: new AccessLinkReaderSources(
+				objects: $this->objects,
+				subjects: new AccessLinkSubject(),
+				users: $this->users
+			),
+			filters: new AccessLinkReaderFilters(
+				schemas: $this->schemas,
+				properties: $this->properties,
+				timeline: $this->timeline
+			),
 			logger: $this->logger
 		);
 	}
@@ -137,11 +149,15 @@ class AccessLinkReaderTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willThrowException(new RuntimeException('gone'));
 		$reader = new AccessLinkReader(
-			objects: $this->objects,
-			schemas: $schemas,
-			properties: $this->properties,
-			timeline: $this->timeline,
-			subjects: new AccessLinkSubject(),
+			sources: new AccessLinkReaderSources(
+				objects: $this->objects,
+				subjects: new AccessLinkSubject()
+			),
+			filters: new AccessLinkReaderFilters(
+				schemas: $schemas,
+				properties: $this->properties,
+				timeline: $this->timeline
+			),
 			logger: $this->logger
 		);
 
@@ -258,10 +274,29 @@ class AccessLinkReaderTest extends TestCase {
 
 	// ---- Task 1.1: a view link. --------------------------------------------
 
+	/**
+	 * The minter the link names, enabled or not, and the object path running as them.
+	 *
+	 * @param bool $enabled Whether the account is enabled.
+	 *
+	 * @return IUser
+	 */
+	private function minter(bool $enabled = true): IUser {
+		$minter = $this->createMock(IUser::class);
+		$minter->method('getUID')->willReturn('owner');
+		$minter->method('isEnabled')->willReturn($enabled);
+		$this->users->method('get')->willReturnCallback(static fn (string $uid): ?IUser => $uid === 'owner' ? $minter : null);
+		$this->objects->method('runAs')->willReturnCallback(static fn (IUser $user, callable $operation) => $operation());
+
+		return $minter;
+	}
+
 	public function testAViewLinkServesTheViewsObjectsEachFiltered(): void {
+		$minter = $this->minter();
+		$this->objects->expects($this->once())->method('runAs')->with($minter, $this->anything());
 		$this->objects->expects($this->once())
 			->method('searchObjects')
-			->with($this->anything(), false, false, null, null, ['view-uuid'])
+			->with($this->anything(), true, true, null, null, ['view-uuid'])
 			->willReturn([$this->object(), $this->object()]);
 		$this->properties->method('filterReadableProperties')->willReturn(['onderwerp' => 'Bezwaar']);
 
@@ -274,7 +309,24 @@ class AccessLinkReaderTest extends TestCase {
 	}
 
 	public function testAViewThatNoLongerResolvesServesNothing(): void {
+		$this->minter();
 		$this->objects->method('searchObjects')->willThrowException(new RuntimeException('gone'));
+
+		$this->assertNull($this->reader->read(link: $this->link(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid')));
+	}
+
+	public function testAViewLinkWhoseMinterIsGoneServesNothing(): void {
+		$this->minter();
+		$this->objects->expects($this->never())->method('searchObjects');
+		$link = $this->link(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid');
+		$link->setCreatedBy('someone-removed');
+
+		$this->assertNull($this->reader->read(link: $link));
+	}
+
+	public function testAViewLinkWhoseMinterIsDisabledServesNothing(): void {
+		$this->minter(enabled: false);
+		$this->objects->expects($this->never())->method('searchObjects');
 
 		$this->assertNull($this->reader->read(link: $this->link(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid')));
 	}
@@ -290,7 +342,7 @@ class AccessLinkReaderTest extends TestCase {
 	public function testTheSubjectIsFetchedWithoutRbacBecauseThereIsNoPrincipalToJudge(): void {
 		$this->objects->expects($this->once())
 			->method('find')
-			->with('object-uuid', [], false, null, null, false, false, false, false)
+			->with(...FindCallShape::findArgs('object-uuid', [], false, null, null, false, false, false, false))
 			->willReturn($this->object());
 		$this->properties->method('filterReadableProperties')->willReturn([]);
 		$this->timeline->method('forObject')->willReturn([]);
@@ -332,4 +384,25 @@ class AccessLinkReaderTest extends TestCase {
 			);
 		}
 	}
+
+	/**
+	 * The property rules read the record's own metadata, and the data keeps its own `@self`.
+	 *
+	 * @return void
+	 */
+	public function testThePropertyRulesReadTheRecordsOwnMetadata(): void {
+		$this->objects->method('find')->willReturn($this->object(['onderwerp' => 'Bezwaar', '@self' => ['organisation' => 'elders']]));
+		$this->timeline->method('forObject')->willReturn([]);
+		$seen = null;
+		$this->properties->method('filterReadableProperties')->willReturnCallback(
+			static function (Schema $schema, array $object) use (&$seen): array {
+				$seen = $object;
+				return $object;
+			}
+		);
+
+		$this->reader->read(link: $this->link());
+
+		$this->assertSame('gemeente', $seen['@self']['organisation'] ?? null);
+	}//end testThePropertyRulesReadTheRecordsOwnMetadata()
 }

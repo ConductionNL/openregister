@@ -18,7 +18,7 @@ declare(strict_types=1);
 namespace Unit\Service\Aggregation;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use PHPUnit\Framework\TestCase;
 
 class AggregationQueryTest extends TestCase {

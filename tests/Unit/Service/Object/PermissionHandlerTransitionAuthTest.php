@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Object;
 
+use OCA\OpenRegister\Service\Object\TransitionGate;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -69,7 +70,7 @@ class PermissionHandlerTransitionAuthTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 
-		$this->handler = new PermissionHandler(
+		$this->handler = \OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory::create(
 			$userSession,
 			$this->userManager,
 			$this->groupManager,
@@ -121,7 +122,7 @@ class PermissionHandlerTransitionAuthTest extends TestCase {
 		$schema = $this->schemaWithAuthorization([]);
 
 		$this->assertTrue(
-			$this->handler->isTransitionAuthorized(['vergunningverleners'], 'alice', $schema)
+			$this->handler->isTransitionAuthorized(new TransitionGate(authorizationList: ['vergunningverleners'], schema: $schema), 'alice')
 		);
 	}//end testGroupMemberIsAuthorized()
 
@@ -135,7 +136,7 @@ class PermissionHandlerTransitionAuthTest extends TestCase {
 		$schema = $this->schemaWithAuthorization([]);
 
 		$this->assertFalse(
-			$this->handler->isTransitionAuthorized(['vergunningverleners'], 'bob', $schema)
+			$this->handler->isTransitionAuthorized(new TransitionGate(authorizationList: ['vergunningverleners'], schema: $schema), 'bob')
 		);
 	}//end testNonMemberIsDenied()
 
@@ -149,7 +150,7 @@ class PermissionHandlerTransitionAuthTest extends TestCase {
 		$schema = $this->schemaWithAuthorization([]);
 
 		$this->assertTrue(
-			$this->handler->isTransitionAuthorized(['vergunningverleners'], 'root', $schema)
+			$this->handler->isTransitionAuthorized(new TransitionGate(authorizationList: ['vergunningverleners'], schema: $schema), 'root')
 		);
 	}//end testAdminAlwaysAuthorized()
 
@@ -161,7 +162,7 @@ class PermissionHandlerTransitionAuthTest extends TestCase {
 	public function testAnonymousIsDenied(): void {
 		$schema = $this->schemaWithAuthorization([]);
 		$this->assertFalse(
-			$this->handler->isTransitionAuthorized(['vergunningverleners'], null, $schema)
+			$this->handler->isTransitionAuthorized(new TransitionGate(authorizationList: ['vergunningverleners'], schema: $schema), null)
 		);
 	}//end testAnonymousIsDenied()
 
@@ -173,7 +174,7 @@ class PermissionHandlerTransitionAuthTest extends TestCase {
 	public function testEmptyListAuthorizesNobody(): void {
 		$schema = $this->schemaWithAuthorization([]);
 		$this->assertFalse(
-			$this->handler->isTransitionAuthorized([], 'alice', $schema)
+			$this->handler->isTransitionAuthorized(new TransitionGate(authorizationList: [], schema: $schema), 'alice')
 		);
 	}//end testEmptyListAuthorizesNobody()
 
@@ -187,7 +188,7 @@ class PermissionHandlerTransitionAuthTest extends TestCase {
 		$schema = $this->schemaWithAuthorization([]);
 
 		$this->assertFalse(
-			$this->handler->isTransitionAuthorized(['vergunningverleners'], 'ghost', $schema)
+			$this->handler->isTransitionAuthorized(new TransitionGate(authorizationList: ['vergunningverleners'], schema: $schema), 'ghost')
 		);
 	}//end testUnknownUserIsDenied()
 
@@ -205,7 +206,7 @@ class PermissionHandlerTransitionAuthTest extends TestCase {
 		);
 
 		$this->assertTrue(
-			$this->handler->isTransitionAuthorized([['role' => 'handler']], 'carol', $schema)
+			$this->handler->isTransitionAuthorized(new TransitionGate(authorizationList: [['role' => 'handler']], schema: $schema), 'carol')
 		);
 	}//end testNamedRoleResolvesToAssignedGroups()
 
@@ -222,7 +223,7 @@ class PermissionHandlerTransitionAuthTest extends TestCase {
 		);
 
 		$this->assertFalse(
-			$this->handler->isTransitionAuthorized([['role' => 'handler']], 'dave', $schema)
+			$this->handler->isTransitionAuthorized(new TransitionGate(authorizationList: [['role' => 'handler']], schema: $schema), 'dave')
 		);
 	}//end testNamedRoleNonMemberIsDenied()
 }//end class

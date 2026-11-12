@@ -12,8 +12,8 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
- * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+ * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+ * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
  */
 
 declare(strict_types=1);
@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Tests\Support\MigratedSqliteDatabase;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -56,10 +57,7 @@ class AuditTrailMapperReadHistoryTest extends TestCase {
 		$this->database = new MigratedSqliteDatabase($this, ['openregister_audit_trails']);
 		$this->mapper = new AuditTrailMapper(
 			db: $this->database->idbConnection(),
-			container: $this->createMock(ContainerInterface::class),
-			userSession: $this->createMock(IUserSession::class),
-			request: $this->createMock(IRequest::class),
-			logger: new NullLogger()
+			services: new AuditTrailMapperServices(container: $this->createMock(ContainerInterface::class), logger: new NullLogger(), userSession: $this->createMock(IUserSession::class), request: $this->createMock(IRequest::class))
 		);
 	}//end setUp()
 

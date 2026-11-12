@@ -25,8 +25,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface;
 use OCP\EventDispatcher\Event;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 
 /**
  * Event dispatched during OpenRegister boot to allow consuming apps
@@ -39,12 +40,12 @@ class DeepLinkRegistrationEvent extends Event {
 	/**
 	 * Constructor for DeepLinkRegistrationEvent.
 	 *
-	 * @param DeepLinkRegistryService $registry The deep link registry service
+	 * @param DeepLinkRegistryServiceInterface $registry The deep link registry service
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly DeepLinkRegistryService $registry,
+		private readonly DeepLinkRegistryServiceInterface $registry,
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -52,11 +53,11 @@ class DeepLinkRegistrationEvent extends Event {
 	/**
 	 * Get the deep link registry service to register URL patterns.
 	 *
-	 * @return DeepLinkRegistryService The registry service
+	 * @return DeepLinkRegistryServiceInterface The registry service
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-9
 	 */
-	public function getRegistry(): DeepLinkRegistryService {
+	public function getRegistry(): DeepLinkRegistryServiceInterface {
 		return $this->registry;
 	}//end getRegistry()
 
@@ -84,6 +85,15 @@ class DeepLinkRegistrationEvent extends Event {
 		string $icon = '',
 		?string $displayName = null,
 	): void {
-		$this->registry->register($appId, $registerSlug, $schemaSlug, $urlTemplate, $icon, $displayName);
+		$this->registry->add(
+			registration: new DeepLinkRegistration(
+				appId: $appId,
+				registerSlug: $registerSlug,
+				schemaSlug: $schemaSlug,
+				urlTemplate: $urlTemplate,
+				icon: $icon,
+				displayName: $displayName
+			)
+		);
 	}//end register()
 }//end class

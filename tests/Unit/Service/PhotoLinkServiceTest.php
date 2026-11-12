@@ -29,10 +29,12 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use Exception;
 use OCA\OpenRegister\Db\PhotoLink;
 use OCA\OpenRegister\Db\PhotoLinkMapper;
 use OCA\OpenRegister\Service\PhotoLinkService;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -48,6 +50,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
  * @group requires-app-photos
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class PhotoLinkServiceTest extends TestCase {
 
@@ -90,10 +93,12 @@ class PhotoLinkServiceTest extends TestCase {
 		$this->service = new PhotoLinkService(
 			$this->mapper,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
 			$this->urlGenerator,
-			$this->logger
+			new LinkServiceRuntime(
+				$this->appManager,
+				$this->userSession,
+				$this->logger
+			)
 		);
 	}//end setUp()
 
@@ -120,7 +125,7 @@ class PhotoLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->linkAlbum('abc-123', 1, 2, 99);
+		$this->service->linkAlbum((new LinkTarget('abc-123', 1))->inSchema(2), 99);
 	}//end testLinkAlbumThrowsWhenNoUser()
 
 	public function testLinkAlbumThrowsWhenPhotosUnavailable(): void {
@@ -130,7 +135,7 @@ class PhotoLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->linkAlbum('abc-123', 1, 2, 99);
+		$this->service->linkAlbum((new LinkTarget('abc-123', 1))->inSchema(2), 99);
 	}//end testLinkAlbumThrowsWhenPhotosUnavailable()
 
 	public function testLinkAlbumThrowsOnDuplicate(): void {
@@ -142,7 +147,7 @@ class PhotoLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('Album already linked to this object');
 
-		$this->service->linkAlbum('abc-123', 1, 2, 99);
+		$this->service->linkAlbum((new LinkTarget('abc-123', 1))->inSchema(2), 99);
 	}//end testLinkAlbumThrowsOnDuplicate()
 
 	public function testCreateAndLinkAlbumThrowsWhenNoUser(): void {
@@ -151,7 +156,7 @@ class PhotoLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->createAndLinkAlbum('abc-123', 1, 2, 'Holiday');
+		$this->service->createAndLinkAlbum((new LinkTarget('abc-123', 1))->inSchema(2), 'Holiday');
 	}//end testCreateAndLinkAlbumThrowsWhenNoUser()
 
 	public function testCreateAndLinkAlbumThrowsOnEmptyName(): void {
@@ -160,7 +165,7 @@ class PhotoLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkAlbum('abc-123', 1, 2, '   ');
+		$this->service->createAndLinkAlbum((new LinkTarget('abc-123', 1))->inSchema(2), '   ');
 	}//end testCreateAndLinkAlbumThrowsOnEmptyName()
 
 	public function testCreateAndLinkAlbumThrowsWhenPhotosUnavailable(): void {
@@ -170,7 +175,7 @@ class PhotoLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->createAndLinkAlbum('abc-123', 1, 2, 'Holiday');
+		$this->service->createAndLinkAlbum((new LinkTarget('abc-123', 1))->inSchema(2), 'Holiday');
 	}//end testCreateAndLinkAlbumThrowsWhenPhotosUnavailable()
 
 	public function testUnlinkAlbumThrowsWhenNoUser(): void {

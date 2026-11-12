@@ -38,7 +38,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
-use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -78,10 +77,8 @@ class ImportHandlerSlugDefaultsToKeyTest extends TestCase {
 		$objectEntityMapper = $this->createMock(MagicMapper::class);
 		$configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$mappingMapper = $this->createMock(MappingMapper::class);
-		$client = $this->createMock(Client::class);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$logger = $this->createMock(LoggerInterface::class);
-		$uploadHandler = $this->createMock(UploadHandler::class);
 		$objectService = $this->createMock(ObjectService::class);
 
 		// No previously-imported version, nothing in the database: a fresh instance.
@@ -114,17 +111,20 @@ class ImportHandlerSlugDefaultsToKeyTest extends TestCase {
 		$this->registerMapper->method('update')->willReturnArgument(0);
 
 		$this->handler = new ImportHandler(
-			schemaMapper:        $this->schemaMapper,
-			registerMapper:      $this->registerMapper,
-			objectEntityMapper:  $objectEntityMapper,
-			configurationMapper: $configurationMapper,
-			mappingMapper:       $mappingMapper,
-			client:              $client,
-			appConfig:           $appConfig,
-			logger:              $logger,
-			appDataPath:         '/tmp',
-			uploadHandler:       $uploadHandler,
-			objectService:       $objectService
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->registerMapper,
+				schemas: $this->schemaMapper,
+				tables: $objectEntityMapper
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $configurationMapper,
+				mappings: $mappingMapper,
+				appConfig: $appConfig
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $logger,
+			appDataPath: '/tmp',
+			objectService: $objectService
 		);
 	}//end setUp()
 

@@ -1,0 +1,863 @@
+{
+    "unlink tagged": {
+        "result": null,
+        "calls": [
+            "findByObjectAndEvent obj-1 ev-1",
+            "deleteByObjectAndEvent obj-1 ev-1",
+            "unlinkEvent 2 a.ics"
+        ]
+    },
+    "unlink tagged strip fails": {
+        "result": null,
+        "calls": [
+            "findByObjectAndEvent obj-1 ev-1",
+            "deleteByObjectAndEvent obj-1 ev-1",
+            "unlinkEvent 2 a.ics",
+            "warning Failed to strip X-OPENREGISTER properties for event ev-1: strip down"
+        ]
+    },
+    "unlink untagged legacy match": {
+        "result": null,
+        "calls": [
+            "findByObjectAndEvent obj-1 ev-1",
+            "deleteByObjectAndEvent obj-1 ev-1",
+            "getEventsForObject obj-1",
+            "unlinkEvent 3 one.ics"
+        ]
+    },
+    "unlink tagged no calendar id": {
+        "result": null,
+        "calls": [
+            "findByObjectAndEvent obj-1 ev-1",
+            "deleteByObjectAndEvent obj-1 ev-1",
+            "getEventsForObject obj-1"
+        ]
+    },
+    "unlink tagged no uri": {
+        "result": null,
+        "calls": [
+            "findByObjectAndEvent obj-1 ev-1",
+            "deleteByObjectAndEvent obj-1 ev-1",
+            "getEventsForObject obj-1"
+        ]
+    },
+    "unlink no row no match": {
+        "result": null,
+        "calls": [
+            "findByObjectAndEvent obj-1 ev-1",
+            "deleteByObjectAndEvent obj-1 ev-1",
+            "getEventsForObject obj-1"
+        ]
+    },
+    "unlink no row scan fails": {
+        "result": null,
+        "calls": [
+            "findByObjectAndEvent obj-1 ev-1",
+            "deleteByObjectAndEvent obj-1 ev-1",
+            "getEventsForObject obj-1",
+            "info Legacy X-OR unlink fallback failed for event ev-1: scan down"
+        ]
+    },
+    "unlink no row legacy unlink fails": {
+        "result": null,
+        "calls": [
+            "findByObjectAndEvent obj-1 ev-1",
+            "deleteByObjectAndEvent obj-1 ev-1",
+            "getEventsForObject obj-1",
+            "unlinkEvent 3 one.ics",
+            "info Legacy X-OR unlink fallback failed for event ev-1: strip down"
+        ]
+    },
+    "linked nothing": {
+        "result": [],
+        "calls": [
+            "findByObjectUuid obj-1",
+            "getEventsForObject obj-1",
+            "calendars principals/users/alice"
+        ]
+    },
+    "linked merge": {
+        "result": [
+            {
+                "id": "a.ics",
+                "uid": "ev-a",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "A",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [
+                    {
+                        "name": "Ann",
+                        "email": "ann@x.nl",
+                        "partstat": "accepted"
+                    },
+                    {
+                        "name": "",
+                        "email": "bob@x.nl",
+                        "partstat": "needs-action"
+                    }
+                ],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "both"
+            },
+            {
+                "id": "b.ics",
+                "uid": "ev-b",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "Live B",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": "CONFIRMED",
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "both"
+            },
+            {
+                "id": "todo.ics",
+                "uid": "t",
+                "calendarId": "1",
+                "calendarUri": "tasks",
+                "summary": "T",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "broken.ics",
+                "uid": "ev-z",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "Z",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "empty.ics",
+                "uid": "ev-e",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "E",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "string.ics",
+                "uid": "ev-s",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "S",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "missing.ics",
+                "uid": "ev-m",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "M",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "uid": "ev-x",
+                "calendarId": 2,
+                "id": "x.ics",
+                "summary": "X",
+                "source": "xor-only",
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-y",
+                "id": "y.ics",
+                "source": "xor-only",
+                "calendarUri": ""
+            }
+        ],
+        "calls": [
+            "findByObjectUuid obj-1",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 1 todo.ics",
+            "object 2 broken.ics",
+            "object 2 empty.ics",
+            "object 2 string.ics",
+            "object 2 missing.ics",
+            "getEventsForObject obj-1",
+            "calendars principals/users/alice"
+        ]
+    },
+    "linked no user": {
+        "result": [
+            {
+                "id": "a.ics",
+                "uid": "ev-a",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "A",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [
+                    {
+                        "name": "Ann",
+                        "email": "ann@x.nl",
+                        "partstat": "accepted"
+                    },
+                    {
+                        "name": "",
+                        "email": "bob@x.nl",
+                        "partstat": "needs-action"
+                    }
+                ],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "both"
+            },
+            {
+                "id": "b.ics",
+                "uid": "ev-b",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "B",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "both"
+            },
+            {
+                "id": "todo.ics",
+                "uid": "t",
+                "calendarId": "1",
+                "calendarUri": "tasks",
+                "summary": "T",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "broken.ics",
+                "uid": "ev-z",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "Z",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "empty.ics",
+                "uid": "ev-e",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "E",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "string.ics",
+                "uid": "ev-s",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "S",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "missing.ics",
+                "uid": "ev-m",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "M",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "uid": "ev-x",
+                "calendarId": 2,
+                "id": "x.ics",
+                "summary": "X",
+                "source": "xor-only",
+                "calendarUri": ""
+            },
+            {
+                "uid": "ev-y",
+                "id": "y.ics",
+                "source": "xor-only",
+                "calendarUri": ""
+            }
+        ],
+        "calls": [
+            "findByObjectUuid obj-1",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 1 todo.ics",
+            "object 2 broken.ics",
+            "object 2 empty.ics",
+            "object 2 string.ics",
+            "object 2 missing.ics",
+            "getEventsForObject obj-1"
+        ]
+    },
+    "linked calendars fail": {
+        "result": [
+            {
+                "id": "a.ics",
+                "uid": "ev-a",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "A",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [
+                    {
+                        "name": "Ann",
+                        "email": "ann@x.nl",
+                        "partstat": "accepted"
+                    },
+                    {
+                        "name": "",
+                        "email": "bob@x.nl",
+                        "partstat": "needs-action"
+                    }
+                ],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "both"
+            },
+            {
+                "id": "b.ics",
+                "uid": "ev-b",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "B",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "both"
+            },
+            {
+                "id": "todo.ics",
+                "uid": "t",
+                "calendarId": "1",
+                "calendarUri": "tasks",
+                "summary": "T",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "broken.ics",
+                "uid": "ev-z",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "Z",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "empty.ics",
+                "uid": "ev-e",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "E",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "string.ics",
+                "uid": "ev-s",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "S",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "missing.ics",
+                "uid": "ev-m",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "M",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "uid": "ev-x",
+                "calendarId": 2,
+                "id": "x.ics",
+                "summary": "X",
+                "source": "xor-only",
+                "calendarUri": ""
+            },
+            {
+                "uid": "ev-y",
+                "id": "y.ics",
+                "source": "xor-only",
+                "calendarUri": ""
+            }
+        ],
+        "calls": [
+            "findByObjectUuid obj-1",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 1 todo.ics",
+            "object 2 broken.ics",
+            "object 2 empty.ics",
+            "object 2 string.ics",
+            "object 2 missing.ics",
+            "getEventsForObject obj-1",
+            "calendars principals/users/alice"
+        ]
+    },
+    "linked scan fails": {
+        "result": [
+            {
+                "id": "a.ics",
+                "uid": "ev-a",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "A",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [
+                    {
+                        "name": "Ann",
+                        "email": "ann@x.nl",
+                        "partstat": "accepted"
+                    },
+                    {
+                        "name": "",
+                        "email": "bob@x.nl",
+                        "partstat": "needs-action"
+                    }
+                ],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "b.ics",
+                "uid": "ev-b",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "B",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "todo.ics",
+                "uid": "t",
+                "calendarId": "1",
+                "calendarUri": "tasks",
+                "summary": "T",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "broken.ics",
+                "uid": "ev-z",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "Z",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "empty.ics",
+                "uid": "ev-e",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "E",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "string.ics",
+                "uid": "ev-s",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "S",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            },
+            {
+                "id": "missing.ics",
+                "uid": "ev-m",
+                "calendarId": "2",
+                "calendarUri": "work",
+                "summary": "M",
+                "dtstart": null,
+                "dtend": null,
+                "location": null,
+                "description": "",
+                "attendees": [],
+                "status": null,
+                "objectUuid": null,
+                "registerId": null,
+                "schemaId": null,
+                "linkedBy": null,
+                "linkedAt": "2023-11-14T22:13:20+00:00",
+                "taggedWithXor": false,
+                "source": "link-table"
+            }
+        ],
+        "calls": [
+            "findByObjectUuid obj-1",
+            "object 2 a.ics",
+            "object 2 b.ics",
+            "object 1 todo.ics",
+            "object 2 broken.ics",
+            "object 2 empty.ics",
+            "object 2 string.ics",
+            "object 2 missing.ics",
+            "getEventsForObject obj-1",
+            "info X-OR-* scan failed during getLinkedEvents: scan down",
+            "calendars principals/users/alice"
+        ]
+    },
+    "linked xor only": {
+        "result": [
+            {
+                "uid": "ev-x",
+                "calendarId": 2,
+                "id": "x.ics",
+                "summary": "X",
+                "source": "xor-only",
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-b",
+                "calendarId": "2",
+                "id": "b.ics",
+                "summary": "Live B",
+                "location": "",
+                "status": "CONFIRMED",
+                "dtstart": null,
+                "source": "xor-only",
+                "calendarUri": "work"
+            },
+            {
+                "uid": "ev-a",
+                "calendarId": 99,
+                "id": "a.ics",
+                "summary": "elsewhere",
+                "source": "xor-only",
+                "calendarUri": ""
+            },
+            {
+                "uid": "ev-y",
+                "id": "y.ics",
+                "source": "xor-only",
+                "calendarUri": ""
+            }
+        ],
+        "calls": [
+            "findByObjectUuid obj-1",
+            "getEventsForObject obj-1",
+            "calendars principals/users/alice"
+        ]
+    },
+    "calendars no user": {
+        "result": {
+            "throws": "Exception",
+            "message": "No user logged in"
+        },
+        "calls": []
+    },
+    "calendars": {
+        "result": [
+            {
+                "id": 2,
+                "uri": "work",
+                "displayName": "Work",
+                "color": "#ff0000"
+            },
+            {
+                "id": 3,
+                "uri": "iter",
+                "displayName": "iter",
+                "color": null
+            },
+            {
+                "id": 5,
+                "uri": "obj",
+                "displayName": "obj",
+                "color": null
+            }
+        ],
+        "calls": [
+            "calendars principals/users/alice"
+        ]
+    }
+}

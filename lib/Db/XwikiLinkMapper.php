@@ -21,7 +21,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
 
@@ -29,8 +28,13 @@ use OCP\IDBConnection;
  * Class XwikiLinkMapper
  *
  * @template-extends QBMapper<XwikiLink>
+ * @method list<XwikiLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class XwikiLinkMapper extends QBMapper {
+class XwikiLinkMapper extends QBMapper implements XwikiLinkMapperInterface {
+
+	use ObjectKeyLinkTrait;
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -41,23 +45,6 @@ class XwikiLinkMapper extends QBMapper {
 	}//end __construct()
 
 	/**
-	 * Find xWiki links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return XwikiLink[] Array of xWiki links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
-
-	/**
 	 * Find a specific xWiki link by object UUID and page reference.
 	 *
 	 * @param string $objectUuid The object UUID.
@@ -66,33 +53,13 @@ class XwikiLinkMapper extends QBMapper {
 	 * @return XwikiLink|null The link or null if not found.
 	 */
 	public function findByObjectAndPage(string $objectUuid, string $pageReference): ?XwikiLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('page_reference', $qb->createNamedParameter($pageReference)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'page_reference', value: $pageReference));
+		if ($link instanceof XwikiLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndPage()
-
-	/**
-	 * Delete all xWiki links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete an xWiki link by object UUID + page reference (Tier-2 unlink path).
@@ -106,11 +73,6 @@ class XwikiLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndPage(string $objectUuid, string $pageReference): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('page_reference', $qb->createNamedParameter($pageReference)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'page_reference', value: $pageReference));
 	}//end deleteByObjectAndPage()
 }//end class

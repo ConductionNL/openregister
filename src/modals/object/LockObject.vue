@@ -1,29 +1,18 @@
 <script setup>
 import { translate as t } from '@nextcloud/l10n'
 import { navigationStore, objectStore } from '../../store/store.js'
+import { objectName } from './objectName.js'
 </script>
 
 <template>
 	<NcDialog
 		v-if="navigationStore.modal === 'lockObject'"
-		:name="
-			'Lock '
-			+ (objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-				|| 'Object')
-		"
+		:name="'Lock ' + (objectName(objectStore.objectItem) || 'Object')"
 		size="normal"
-		:canClose="false">
+		noClose>
 		<p v-if="success === null">
 			Do you want to lock
-			<b>{{
-				objectStore.objectItem?.['@self']?.name
-				|| objectStore.objectItem?.name
-				|| objectStore.objectItem?.['@self']?.title
-				|| objectStore.objectItem?.id
-			}}</b
+			<b>{{ objectName(objectStore.objectItem) }}</b
 			>? Locking an object prevents other users from modifying it until it is
 			unlocked. You can specify an optional process name to indicate why it's
 			locked and a duration after which it will automatically unlock. Only the
@@ -38,12 +27,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 		</NcNoteCard>
 
 		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
+			<CloseCancelButton :label="success ? 'Close' : 'Cancel'" @click="closeModal" />
 			<NcButton
 				:disabled="loading || success"
 				variant="primary"
@@ -78,8 +62,8 @@ import {
 	NcNoteCard,
 	NcTextField,
 } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
+import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 
 export default {
 	name: 'LockObject',
@@ -90,7 +74,7 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		LockOutline,
-		Cancel,
+		CloseCancelButton,
 	},
 
 	data() {
@@ -125,11 +109,7 @@ export default {
 			this.loading = true
 
 			try {
-				await objectStore.lockObject(
-					objectStore.objectItem.id,
-					this.process || undefined,
-					this.duration || undefined,
-				)
+				await this.requestLock()
 				this.success = true
 				this.error = null
 				this.closeModalTimeout = setTimeout(this.closeModal, 2000)
@@ -139,6 +119,20 @@ export default {
 				this.loading = false
 			}
 		},
+
+		/**
+		 * Lock the object, for the process and duration given, if any.
+		 *
+		 * @return {Promise<object>} The store's answer
+		 */
+		requestLock() {
+			return objectStore.lockObject(
+				objectStore.objectItem.id,
+				this.process || undefined,
+				this.duration || undefined,
+			)
+		},
+
 	},
 }
 </script>

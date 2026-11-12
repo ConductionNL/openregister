@@ -6,7 +6,7 @@ namespace Unit\Service\Notification;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use OCA\OpenRegister\Service\Notification\NotificationDeliveryWindowService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationDeliveryWindowService;
 use OCP\IConfig;
 use OCP\IDateTimeZone;
 use PHPUnit\Framework\MockObject\MockObject;

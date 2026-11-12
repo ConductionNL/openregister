@@ -1,0 +1,582 @@
+{
+    "dedupe fields": [
+        {
+            "cacheGet": [
+                "sched:7:e"
+            ]
+        },
+        {
+            "findBySchema": [
+                7
+            ]
+        },
+        {
+            "findOne": [
+                7,
+                "e",
+                "same"
+            ]
+        },
+        {
+            "upsert": [
+                7,
+                "e",
+                "same",
+                "4acc71e0547112eb432f0a36fb1924c4a738cb49",
+                false
+            ]
+        },
+        {
+            "info": [
+                "[ScheduledNotificationJob] fired \"e\" on schema 7: matched=1 dispatched=0 deduped=1 of 1",
+                []
+            ]
+        },
+        {
+            "cacheSet": [
+                "sched:7:e",
+                true,
+                2592000
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "notification_dedupe_retention_days",
+                "90"
+            ]
+        },
+        {
+            "deleteSeenBefore": [
+                90
+            ]
+        }
+    ],
+    "every rule and object": [
+        {
+            "cacheGet": [
+                "sched:7:recent"
+            ]
+        },
+        {
+            "cacheGet": [
+                "sched:7:remind"
+            ]
+        },
+        {
+            "findBySchema": [
+                7
+            ]
+        },
+        {
+            "findOne": [
+                7,
+                "remind",
+                "open-1"
+            ]
+        },
+        {
+            "dispatch": [
+                "open-1",
+                "scheduled",
+                {
+                    "notificationName": "remind"
+                }
+            ]
+        },
+        {
+            "upsert": [
+                7,
+                "remind",
+                "open-1",
+                "d810ca965a236c6f46a932efff918a4b3a191918",
+                true
+            ]
+        },
+        {
+            "findOne": [
+                7,
+                "remind",
+                "same"
+            ]
+        },
+        {
+            "upsert": [
+                7,
+                "remind",
+                "same",
+                "d810ca965a236c6f46a932efff918a4b3a191918",
+                false
+            ]
+        },
+        {
+            "findOne": [
+                7,
+                "remind",
+                "changed"
+            ]
+        },
+        {
+            "dispatch": [
+                "changed",
+                "scheduled",
+                {
+                    "notificationName": "remind"
+                }
+            ]
+        },
+        {
+            "upsert": [
+                7,
+                "remind",
+                "changed",
+                "d810ca965a236c6f46a932efff918a4b3a191918",
+                true
+            ]
+        },
+        {
+            "findOne": [
+                7,
+                "remind",
+                "touch-fails"
+            ]
+        },
+        {
+            "upsert": [
+                7,
+                "remind",
+                "touch-fails",
+                "d810ca965a236c6f46a932efff918a4b3a191918",
+                false
+            ]
+        },
+        {
+            "warning": [
+                "[ScheduledNotificationJob] Could not touch the dedupe state, the sweep reclaims it",
+                {
+                    "objectUuid": "touch-fails",
+                    "exception": "touch failed"
+                }
+            ]
+        },
+        {
+            "findOne": [
+                7,
+                "remind",
+                "dispatch-fails"
+            ]
+        },
+        {
+            "dispatch": [
+                "dispatch-fails",
+                "scheduled",
+                {
+                    "notificationName": "remind"
+                }
+            ]
+        },
+        {
+            "warning": [
+                "[ScheduledNotificationJob] dispatch failed for object dispatch-fails: dispatch failed",
+                []
+            ]
+        },
+        {
+            "info": [
+                "[ScheduledNotificationJob] fired \"remind\" on schema 7: matched=6 dispatched=2 deduped=2 of 8",
+                []
+            ]
+        },
+        {
+            "cacheSet": [
+                "sched:7:remind",
+                true,
+                2592000
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "notification_dedupe_retention_days",
+                "90"
+            ]
+        },
+        {
+            "deleteSeenBefore": [
+                90
+            ]
+        }
+    ],
+    "no cache": [
+        {
+            "getValueString": [
+                "openregister",
+                "notification_dedupe_retention_days",
+                "90"
+            ]
+        },
+        {
+            "deleteSeenBefore": [
+                90
+            ]
+        }
+    ],
+    "no notifications": [
+        {
+            "getValueString": [
+                "openregister",
+                "notification_dedupe_retention_days",
+                "90"
+            ]
+        },
+        {
+            "deleteSeenBefore": [
+                90
+            ]
+        }
+    ],
+    "objects throw": [
+        {
+            "cacheGet": [
+                "sched:7:remind"
+            ]
+        },
+        {
+            "findBySchema": [
+                7
+            ]
+        },
+        {
+            "warning": [
+                "[ScheduledNotificationJob] findBySchema(7, \"remind\") failed: objects down",
+                []
+            ]
+        },
+        {
+            "cacheSet": [
+                "sched:7:remind",
+                true,
+                2592000
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "notification_dedupe_retention_days",
+                "90"
+            ]
+        },
+        {
+            "deleteSeenBefore": [
+                90
+            ]
+        }
+    ],
+    "offset past the end": [
+        {
+            "cacheGet": [
+                "sched:7:r"
+            ]
+        },
+        {
+            "findBySchema": [
+                7
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "sched_offset:7:r",
+                "0"
+            ]
+        },
+        {
+            "warning": [
+                "[ScheduledNotificationJob] schema 7 / \"r\" returned 5003 objects; processing rotating window [0, 5000) this run (PERF-3 SQL filter pushdown pending)",
+                []
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "sched_offset:7:r",
+                "5000"
+            ]
+        },
+        {
+            "info": [
+                "[ScheduledNotificationJob] fired \"r\" on schema 7: matched=0 dispatched=0 deduped=0 of 5000",
+                []
+            ]
+        },
+        {
+            "cacheSet": [
+                "sched:7:r",
+                true,
+                2592000
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "notification_dedupe_retention_days",
+                "90"
+            ]
+        },
+        {
+            "deleteSeenBefore": [
+                90
+            ]
+        }
+    ],
+    "older-than field": [
+        {
+            "cacheGet": [
+                "sched:7:o"
+            ]
+        },
+        {
+            "findBySchema": [
+                7
+            ]
+        },
+        {
+            "findOne": [
+                7,
+                "o",
+                "same"
+            ]
+        },
+        {
+            "dispatch": [
+                "same",
+                "scheduled",
+                {
+                    "notificationName": "o"
+                }
+            ]
+        },
+        {
+            "upsert": [
+                7,
+                "o",
+                "same",
+                "af133a8f2d7e1e6eb45aca69f9082e4dc96a38b3",
+                true
+            ]
+        },
+        {
+            "info": [
+                "[ScheduledNotificationJob] fired \"o\" on schema 7: matched=1 dispatched=1 deduped=0 of 1",
+                []
+            ]
+        },
+        {
+            "cacheSet": [
+                "sched:7:o",
+                true,
+                2592000
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "notification_dedupe_retention_days",
+                "90"
+            ]
+        },
+        {
+            "deleteSeenBefore": [
+                90
+            ]
+        }
+    ],
+    "retention off": [
+        {
+            "getValueString": [
+                "openregister",
+                "notification_dedupe_retention_days",
+                "90"
+            ]
+        }
+    ],
+    "retention unreadable": [
+        {
+            "getValueString": [
+                "openregister",
+                "notification_dedupe_retention_days",
+                "90"
+            ]
+        },
+        {
+            "deleteSeenBefore": [
+                90
+            ]
+        }
+    ],
+    "rotating window": [
+        {
+            "cacheGet": [
+                "sched:7:r"
+            ]
+        },
+        {
+            "findBySchema": [
+                7
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "sched_offset:7:r",
+                "0"
+            ]
+        },
+        {
+            "warning": [
+                "[ScheduledNotificationJob] schema 7 / \"r\" returned 5003 objects; processing rotating window [4000, 5003) this run (PERF-3 SQL filter pushdown pending)",
+                []
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "sched_offset:7:r",
+                "0"
+            ]
+        },
+        {
+            "info": [
+                "[ScheduledNotificationJob] fired \"r\" on schema 7: matched=0 dispatched=0 deduped=0 of 1003",
+                []
+            ]
+        },
+        {
+            "cacheSet": [
+                "sched:7:r",
+                true,
+                2592000
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "notification_dedupe_retention_days",
+                "90"
+            ]
+        },
+        {
+            "deleteSeenBefore": [
+                90
+            ]
+        }
+    ],
+    "rotation start": [
+        {
+            "cacheGet": [
+                "sched:7:r"
+            ]
+        },
+        {
+            "findBySchema": [
+                7
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "sched_offset:7:r",
+                "0"
+            ]
+        },
+        {
+            "warning": [
+                "[ScheduledNotificationJob] schema 7 / \"r\" returned 5003 objects; processing rotating window [0, 5000) this run (PERF-3 SQL filter pushdown pending)",
+                []
+            ]
+        },
+        {
+            "setValueString": [
+                "openregister",
+                "sched_offset:7:r",
+                "5000"
+            ]
+        },
+        {
+            "warning": [
+                "[ScheduledNotificationJob] failed to persist rotation offset for schema 7 / \"r\": config read-only",
+                []
+            ]
+        },
+        {
+            "info": [
+                "[ScheduledNotificationJob] fired \"r\" on schema 7: matched=0 dispatched=0 deduped=0 of 5000",
+                []
+            ]
+        },
+        {
+            "cacheSet": [
+                "sched:7:r",
+                true,
+                2592000
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "notification_dedupe_retention_days",
+                "90"
+            ]
+        },
+        {
+            "deleteSeenBefore": [
+                90
+            ]
+        }
+    ],
+    "schema list throws": [
+        {
+            "warning": [
+                "[ScheduledNotificationJob] schema list failed: schemas down",
+                []
+            ]
+        }
+    ],
+    "watched fields": [
+        {
+            "cacheGet": [
+                "sched:7:w"
+            ]
+        },
+        {
+            "findBySchema": [
+                7
+            ]
+        },
+        {
+            "info": [
+                "[ScheduledNotificationJob] fired \"w\" on schema 7: matched=0 dispatched=0 deduped=0 of 1",
+                []
+            ]
+        },
+        {
+            "cacheSet": [
+                "sched:7:w",
+                true,
+                2592000
+            ]
+        },
+        {
+            "getValueString": [
+                "openregister",
+                "notification_dedupe_retention_days",
+                "90"
+            ]
+        },
+        {
+            "deleteSeenBefore": [
+                90
+            ]
+        }
+    ]
+}

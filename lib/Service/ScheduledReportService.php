@@ -32,15 +32,20 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use DateTimeInterface;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\ScheduledReport;
-use OCA\OpenRegister\Db\ScheduledReportMapper;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Notifications\Db\ScheduledReport;
+use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Kernel\Contracts\ReportCaller;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportInterface;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ScheduledReportUpdate;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCA\OpenRegister\Service\Export\ExportRunContent;
+use OCA\OpenRegister\Service\Export\ExportRunFile;
+use OCA\OpenRegister\Service\Export\ExportRunOrigin;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
@@ -53,6 +58,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * Service for managing and executing scheduled report exports.
@@ -75,7 +81,7 @@ use RuntimeException;
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
-class ScheduledReportService {
+class ScheduledReportService implements ScheduledReportsInterface {
 
 	/**
 	 * Export formats a scheduled report may use — a deliberate subset of
@@ -129,42 +135,123 @@ class ScheduledReportService {
 	];
 
 	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var ScheduledReportMapperInterface
+	 */
+	private readonly ScheduledReportMapperInterface $mapper;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var RegisterMapperInterface
+	 */
+	private readonly RegisterMapperInterface $registerMapper;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var SchemaMapperInterface
+	 */
+	private readonly SchemaMapperInterface $schemaMapper;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var ExportService
+	 */
+	private readonly ExportService $exportService;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var IRootFolder
+	 */
+	private readonly IRootFolder $rootFolder;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var IUserManager
+	 */
+	private readonly IUserManager $userManager;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var IManager
+	 */
+	private readonly IManager $notificationManager;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var IMailer
+	 */
+	private readonly IMailer $mailer;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var IConfig
+	 */
+	private readonly IConfig $config;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var ExportProfileService|null
+	 */
+	private readonly ?ExportProfileService $profileService;
+
+	/**
+	 * Collaborator, assigned from its bundle in the constructor.
+	 *
+	 * @var ExportRunRecorder|null
+	 */
+	private readonly ?ExportRunRecorder $exportRuns;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ScheduledReportMapper $mapper Scheduled report mapper.
-	 * @param RegisterMapper $registerMapper Register lookup (create/update validation).
-	 * @param SchemaMapper $schemaMapper Schema lookup (create/update validation).
-	 * @param ExportService $exportService The export engine this feature composes.
-	 * @param IRootFolder $rootFolder Files root, for owner-folder delivery.
-	 * @param IUserManager $userManager Resolves the owner IUser for impersonation.
-	 * @param IUserSession $userSession Session, swapped to the owner during a run.
-	 * @param IManager $notificationManager Notification dispatch.
-	 * @param LoggerInterface $logger Logger.
-	 * @param IMailer $mailer Sends the email-delivery leg (deliveryMode email|both).
-	 * @param IConfig $config Resolves the instance's default mail sender.
-	 * @param ExportProfileService|null $profileService Runs a named export profile, when the schedule names one.
-	 * @param ExportRunRecorder|null $exportRuns Records what each run produced. Nullable and last so adding it is not
-	 *                                           a fatal at an existing construction site.
-	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies — IMailer/IConfig are the
-	 *     two email-delivery additions on top of the original 9; each is a distinct, testable collaborator
-	 *     (mail transport vs. system config) rather than an arbitrary parameter split.
+	 * @param ScheduledReportStores    $stores    Report, register and schema stores.
+	 * @param ScheduledReportExporters $exporters Export engine, profile runner and run recorder.
+	 * @param ScheduledReportDelivery  $delivery  Owner-facing services and the mail transport.
+	 * @param LoggerInterface          $logger    Logger.
 	 */
 	public function __construct(
-		private readonly ScheduledReportMapper $mapper,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly ExportService $exportService,
-		private readonly IRootFolder $rootFolder,
-		private readonly IUserManager $userManager,
-		private readonly IUserSession $userSession,
-		private readonly IManager $notificationManager,
-		private readonly LoggerInterface $logger,
-		private readonly IMailer $mailer,
-		private readonly IConfig $config,
-		private readonly ?ExportProfileService $profileService = null,
-		private readonly ?ExportRunRecorder $exportRuns = null,
+		ScheduledReportStores $stores,
+		ScheduledReportExporters $exporters,
+		ScheduledReportDelivery $delivery,
+		LoggerInterface $logger,
 	) {
+		$this->mapper = $stores->mapper;
+		$this->registerMapper = $stores->registerMapper;
+		$this->schemaMapper = $stores->schemaMapper;
+		$this->exportService = $exporters->exportService;
+		$this->rootFolder = $delivery->owner->rootFolder;
+		$this->userManager = $delivery->owner->userManager;
+		$this->userSession = $delivery->owner->userSession;
+		$this->notificationManager = $delivery->owner->notificationManager;
+		$this->logger = $logger;
+		$this->mailer = $delivery->mailer;
+		$this->config = $delivery->config;
+		$this->profileService = $exporters->profileService;
+		$this->exportRuns = $exporters->exportRuns;
 	}//end __construct()
 
 	/**
@@ -253,10 +340,7 @@ class ScheduledReportService {
 	/**
 	 * Update an existing scheduled report. Only the owner or an admin may update.
 	 *
-	 * @param int $id The scheduled report id.
-	 * @param array<string,mixed> $data Fields to update (same shape as create()).
-	 * @param string $callerUid The calling user's uid.
-	 * @param bool $callerIsAdmin Whether the caller is a Nextcloud administrator.
+	 * @param ScheduledReportUpdate $update The report id, the fields to update and who asks.
 	 *
 	 * @return ScheduledReport
 	 *
@@ -266,41 +350,30 @@ class ScheduledReportService {
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function update(int $id, array $data, string $callerUid, bool $callerIsAdmin): ScheduledReport {
-		$report = $this->mapper->find(id: $id);
-		$this->assertOwnerOrAdmin(report: $report, callerUid: $callerUid, callerIsAdmin: $callerIsAdmin);
+	public function applyUpdate(ScheduledReportUpdate $update): ScheduledReport {
+		$report = $this->mapper->find(id: $update->id);
+		$this->assertMayAccess(report: $report, caller: $update->caller);
 
+		$this->applyFields(report: $report, data: $update->data);
+		$report->setUpdatedAt(new DateTime());
+
+		return $this->mapper->update(entity: $report);
+	}//end applyUpdate()
+
+	/**
+	 * Merge the update payload over the stored report, validate it and set the fields.
+	 *
+	 * @param ScheduledReport     $report The stored report.
+	 * @param array<string,mixed> $data   The update payload.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When validation fails.
+	 */
+	private function applyFields(ScheduledReport $report, array $data): void {
 		// Merge with existing values so a partial update doesn't blow away
 		// fields the caller didn't send.
-		$schemaId = $report->getSchemaId();
-		if (array_key_exists('schemaId', $data) === true) {
-			$schemaId = $data['schemaId'];
-		}
-
-		$scheduleDayOfWeek = $report->getScheduleDayOfWeek();
-		if (array_key_exists('scheduleDayOfWeek', $data) === true) {
-			$scheduleDayOfWeek = $data['scheduleDayOfWeek'];
-		}
-
-		$scheduleDayOfMonth = $report->getScheduleDayOfMonth();
-		if (array_key_exists('scheduleDayOfMonth', $data) === true) {
-			$scheduleDayOfMonth = $data['scheduleDayOfMonth'];
-		}
-
-		$merged = [
-			'name' => ($data['name'] ?? $report->getName()),
-			'registerId' => ($data['registerId'] ?? $report->getRegisterId()),
-			'schemaId' => $schemaId,
-			'filters' => ($data['filters'] ?? $report->getFiltersArray()),
-			'format' => ($data['format'] ?? $report->getFormat()),
-			'scheduleType' => ($data['scheduleType'] ?? $report->getScheduleType()),
-			'scheduleHour' => ($data['scheduleHour'] ?? $report->getScheduleHour()),
-			'scheduleDayOfWeek' => $scheduleDayOfWeek,
-			'scheduleDayOfMonth' => $scheduleDayOfMonth,
-			'deliveryFolder' => ($data['deliveryFolder'] ?? $report->getDeliveryFolder()),
-			'deliveryMode' => ($data['deliveryMode'] ?? ($report->getDeliveryMode() ?? 'files')),
-			'recipients' => ($data['recipients'] ?? $report->getRecipientsArray()),
-		];
+		$merged = $this->mergedPayload(report: $report, data: $data);
 		$this->validate(data: $merged);
 
 		$report->setName((string)$merged['name']);
@@ -324,18 +397,56 @@ class ScheduledReportService {
 		if (array_key_exists('enabled', $data) === true) {
 			$report->setEnabled((bool)$data['enabled']);
 		}
+	}//end applyFields()
 
-		$report->setUpdatedAt(new DateTime());
+	/**
+	 * The stored report's fields overlaid with the ones the update sends.
+	 *
+	 * The schema and the two schedule days take an explicit null from the update;
+	 * every other field keeps its stored value when the update sends null or nothing.
+	 *
+	 * @param ScheduledReport     $report The stored report.
+	 * @param array<string,mixed> $data   The update payload.
+	 *
+	 * @return array<string,mixed> The merged payload, in the shape create() validates.
+	 */
+	private function mergedPayload(ScheduledReport $report, array $data): array {
+		$schemaId = $report->getSchemaId();
+		if (array_key_exists('schemaId', $data) === true) {
+			$schemaId = $data['schemaId'];
+		}
 
-		return $this->mapper->update(entity: $report);
-	}//end update()
+		$scheduleDayOfWeek = $report->getScheduleDayOfWeek();
+		if (array_key_exists('scheduleDayOfWeek', $data) === true) {
+			$scheduleDayOfWeek = $data['scheduleDayOfWeek'];
+		}
+
+		$scheduleDayOfMonth = $report->getScheduleDayOfMonth();
+		if (array_key_exists('scheduleDayOfMonth', $data) === true) {
+			$scheduleDayOfMonth = $data['scheduleDayOfMonth'];
+		}
+
+		return [
+			'name' => ($data['name'] ?? $report->getName()),
+			'registerId' => ($data['registerId'] ?? $report->getRegisterId()),
+			'schemaId' => $schemaId,
+			'filters' => ($data['filters'] ?? $report->getFiltersArray()),
+			'format' => ($data['format'] ?? $report->getFormat()),
+			'scheduleType' => ($data['scheduleType'] ?? $report->getScheduleType()),
+			'scheduleHour' => ($data['scheduleHour'] ?? $report->getScheduleHour()),
+			'scheduleDayOfWeek' => $scheduleDayOfWeek,
+			'scheduleDayOfMonth' => $scheduleDayOfMonth,
+			'deliveryFolder' => ($data['deliveryFolder'] ?? $report->getDeliveryFolder()),
+			'deliveryMode' => ($data['deliveryMode'] ?? ($report->getDeliveryMode() ?? 'files')),
+			'recipients' => ($data['recipients'] ?? $report->getRecipientsArray()),
+		];
+	}//end mergedPayload()
 
 	/**
 	 * Delete a scheduled report. Only the owner or an admin may delete.
 	 *
-	 * @param int $id The scheduled report id.
-	 * @param string $callerUid The calling user's uid.
-	 * @param bool $callerIsAdmin Whether the caller is a Nextcloud administrator.
+	 * @param int          $id     The scheduled report id.
+	 * @param ReportCaller $caller Who asks.
 	 *
 	 * @return void
 	 *
@@ -344,18 +455,17 @@ class ScheduledReportService {
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function delete(int $id, string $callerUid, bool $callerIsAdmin): void {
+	public function deleteAs(int $id, ReportCaller $caller): void {
 		$report = $this->mapper->find(id: $id);
-		$this->assertOwnerOrAdmin(report: $report, callerUid: $callerUid, callerIsAdmin: $callerIsAdmin);
+		$this->assertMayAccess(report: $report, caller: $caller);
 		$this->mapper->delete(entity: $report);
-	}//end delete()
+	}//end deleteAs()
 
 	/**
 	 * Assert the caller owns the report or is an admin.
 	 *
-	 * @param ScheduledReport $report The report.
-	 * @param string $callerUid The calling user's uid.
-	 * @param bool $callerIsAdmin Whether the caller is an admin.
+	 * @param ScheduledReportInterface $report The report.
+	 * @param ReportCaller             $caller Who asks.
 	 *
 	 * @return void
 	 *
@@ -363,17 +473,17 @@ class ScheduledReportService {
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function assertOwnerOrAdmin(ScheduledReport $report, string $callerUid, bool $callerIsAdmin): void {
-		if ($callerIsAdmin === true) {
+	public function assertMayAccess(ScheduledReportInterface $report, ReportCaller $caller): void {
+		if ($caller->isAdmin === true) {
 			return;
 		}
 
-		if ($report->getOwner() === $callerUid) {
+		if ($report->getOwner() === $caller->uid) {
 			return;
 		}
 
 		throw new RuntimeException('You do not have permission to access this scheduled report.');
-	}//end assertOwnerOrAdmin()
+	}//end assertMayAccess()
 
 	/**
 	 * Validate a create/update payload. Register/schema existence is checked
@@ -386,11 +496,33 @@ class ScheduledReportService {
 	 * @return void
 	 *
 	 * @throws InvalidArgumentException When any field is invalid.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
 	private function validate(array $data): void {
+		$this->assertRequiredFields(data: $data);
+		$this->assertRegisterAccessible(registerId: $data['registerId']);
+		$schemaId = $this->accessibleSchemaId(data: $data);
+		$this->assertFormat(format: ($data['format'] ?? null), schemaId: $schemaId);
+
+		$scheduleType = ($data['scheduleType'] ?? null);
+		$this->assertScheduleType(scheduleType: $scheduleType);
+		$this->assertScheduleHour(data: $data);
+		$this->assertWeeklyDay(scheduleType: $scheduleType, data: $data);
+		$this->assertMonthlyDay(scheduleType: $scheduleType, data: $data);
+
+		$this->assertDeliveryMode(deliveryMode: ($data['deliveryMode'] ?? 'files'));
+		$this->validateRecipients(recipients: ($data['recipients'] ?? []));
+	}//end validate()
+
+	/**
+	 * Refuse a payload without a name or a register.
+	 *
+	 * @param array<string,mixed> $data The payload.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When either is empty.
+	 */
+	private function assertRequiredFields(array $data): void {
 		if (empty($data['name']) === true) {
 			throw new InvalidArgumentException('A name is required.');
 		}
@@ -398,13 +530,35 @@ class ScheduledReportService {
 		if (empty($data['registerId']) === true) {
 			throw new InvalidArgumentException('A registerId is required.');
 		}
+	}//end assertRequiredFields()
 
+	/**
+	 * Refuse a register the caller cannot read.
+	 *
+	 * @param mixed $registerId The register id.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the register cannot be found with multi-tenancy on.
+	 */
+	private function assertRegisterAccessible(mixed $registerId): void {
 		try {
-			$this->registerMapper->find($data['registerId'], _multitenancy: true);
+			$this->registerMapper->find($registerId, _multitenancy: true);
 		} catch (\Throwable $e) {
 			throw new InvalidArgumentException('Register not found or not accessible.');
 		}
+	}//end assertRegisterAccessible()
 
+	/**
+	 * The payload's schema id, refused when given and the caller cannot read it.
+	 *
+	 * @param array<string,mixed> $data The payload.
+	 *
+	 * @return int|null The schema id, or null when none is given.
+	 *
+	 * @throws InvalidArgumentException When the schema cannot be found with multi-tenancy on.
+	 */
+	private function accessibleSchemaId(array $data): ?int {
 		$schemaId = $this->coerceNullableInt(value: ($data['schemaId'] ?? null));
 		if ($schemaId !== null) {
 			try {
@@ -414,7 +568,20 @@ class ScheduledReportService {
 			}
 		}
 
-		$format = ($data['format'] ?? null);
+		return $schemaId;
+	}//end accessibleSchemaId()
+
+	/**
+	 * Refuse an unknown format, and CSV without a schema.
+	 *
+	 * @param mixed    $format   The format.
+	 * @param int|null $schemaId The schema id.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the format is not allowed here.
+	 */
+	private function assertFormat(mixed $format, ?int $schemaId): void {
 		if (in_array($format, self::ALLOWED_FORMATS, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf('format must be one of: %s', implode(', ', self::ALLOWED_FORMATS))
@@ -424,42 +591,99 @@ class ScheduledReportService {
 		if ($format === 'csv' && $schemaId === null) {
 			throw new InvalidArgumentException('CSV export requires a specific schemaId.');
 		}
+	}//end assertFormat()
 
-		$scheduleType = ($data['scheduleType'] ?? null);
+	/**
+	 * Refuse an unknown schedule type.
+	 *
+	 * @param mixed $scheduleType The schedule type.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not allowed.
+	 */
+	private function assertScheduleType(mixed $scheduleType): void {
 		if (in_array($scheduleType, self::ALLOWED_SCHEDULE_TYPES, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf('scheduleType must be one of: %s', implode(', ', self::ALLOWED_SCHEDULE_TYPES))
 			);
 		}
+	}//end assertScheduleType()
 
+	/**
+	 * Refuse an hour outside 0-23.
+	 *
+	 * @param array<string,mixed> $data The payload.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the hour is out of range.
+	 */
+	private function assertScheduleHour(array $data): void {
 		$scheduleHour = (int)($data['scheduleHour'] ?? 0);
 		if ($scheduleHour < 0 || $scheduleHour > 23) {
 			throw new InvalidArgumentException('scheduleHour must be between 0 and 23.');
 		}
+	}//end assertScheduleHour()
 
-		if ($scheduleType === 'weekly') {
-			$dayOfWeek = $this->coerceNullableInt(value: ($data['scheduleDayOfWeek'] ?? null));
-			if ($dayOfWeek === null || $dayOfWeek < 0 || $dayOfWeek > 6) {
-				throw new InvalidArgumentException('scheduleDayOfWeek (0-6) is required when scheduleType is weekly.');
-			}
+	/**
+	 * Refuse a weekly schedule without a day of the week in 0-6.
+	 *
+	 * @param mixed               $scheduleType The schedule type.
+	 * @param array<string,mixed> $data         The payload.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the day is missing or out of range.
+	 */
+	private function assertWeeklyDay(mixed $scheduleType, array $data): void {
+		if ($scheduleType !== 'weekly') {
+			return;
 		}
 
-		if ($scheduleType === 'monthly') {
-			$dayOfMonth = $this->coerceNullableInt(value: ($data['scheduleDayOfMonth'] ?? null));
-			if ($dayOfMonth === null || $dayOfMonth < 1 || $dayOfMonth > 28) {
-				throw new InvalidArgumentException('scheduleDayOfMonth (1-28) is required when scheduleType is monthly.');
-			}
+		$dayOfWeek = $this->coerceNullableInt(value: ($data['scheduleDayOfWeek'] ?? null));
+		if ($dayOfWeek === null || $dayOfWeek < 0 || $dayOfWeek > 6) {
+			throw new InvalidArgumentException('scheduleDayOfWeek (0-6) is required when scheduleType is weekly.');
+		}
+	}//end assertWeeklyDay()
+
+	/**
+	 * Refuse a monthly schedule without a day of the month in 1-28.
+	 *
+	 * @param mixed               $scheduleType The schedule type.
+	 * @param array<string,mixed> $data         The payload.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the day is missing or out of range.
+	 */
+	private function assertMonthlyDay(mixed $scheduleType, array $data): void {
+		if ($scheduleType !== 'monthly') {
+			return;
 		}
 
-		$deliveryMode = ($data['deliveryMode'] ?? 'files');
+		$dayOfMonth = $this->coerceNullableInt(value: ($data['scheduleDayOfMonth'] ?? null));
+		if ($dayOfMonth === null || $dayOfMonth < 1 || $dayOfMonth > 28) {
+			throw new InvalidArgumentException('scheduleDayOfMonth (1-28) is required when scheduleType is monthly.');
+		}
+	}//end assertMonthlyDay()
+
+	/**
+	 * Refuse an unknown delivery mode.
+	 *
+	 * @param mixed $deliveryMode The delivery mode.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not allowed.
+	 */
+	private function assertDeliveryMode(mixed $deliveryMode): void {
 		if (in_array($deliveryMode, self::ALLOWED_DELIVERY_MODES, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf('deliveryMode must be one of: %s', implode(', ', self::ALLOWED_DELIVERY_MODES))
 			);
 		}
-
-		$this->validateRecipients(recipients: ($data['recipients'] ?? []));
-	}//end validate()
+	}//end assertDeliveryMode()
 
 	/**
 	 * Validate a recipients payload: must be an array of strings, each a
@@ -485,18 +709,31 @@ class ScheduledReportService {
 		}
 
 		foreach ($recipients as $email) {
-			if (is_string($email) === false) {
-				throw new InvalidArgumentException(sprintf('"%s" is not a valid email address.', gettype($email)));
-			}
-
-			// Trimmed the same way normalizeRecipients() will store it —
-			// incidental whitespace shouldn't fail validation only to have
-			// the trimmed form pass moments later.
-			if (filter_var(trim($email), FILTER_VALIDATE_EMAIL) === false) {
-				throw new InvalidArgumentException(sprintf('"%s" is not a valid email address.', $email));
-			}
+			$this->assertRecipientAddress(email: $email);
 		}
 	}//end validateRecipients()
+
+	/**
+	 * Refuse a recipient that is not a string holding a valid email address.
+	 *
+	 * @param mixed $email One recipient.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When it is not a valid email address.
+	 */
+	private function assertRecipientAddress(mixed $email): void {
+		if (is_string($email) === false) {
+			throw new InvalidArgumentException(sprintf('"%s" is not a valid email address.', gettype($email)));
+		}
+
+		// Trimmed the same way normalizeRecipients() will store it —
+		// incidental whitespace shouldn't fail validation only to have
+		// the trimmed form pass moments later.
+		if (filter_var(trim($email), FILTER_VALIDATE_EMAIL) === false) {
+			throw new InvalidArgumentException(sprintf('"%s" is not a valid email address.', $email));
+		}
+	}//end assertRecipientAddress()
 
 	/**
 	 * Normalize an already-validated recipients payload to a de-duplicated
@@ -511,8 +748,19 @@ class ScheduledReportService {
 			return [];
 		}
 
+		return $this->uniqueTrimmedStrings(values: $recipients);
+	}//end normalizeRecipients()
+
+	/**
+	 * The string values, trimmed, without empties and duplicates, in order.
+	 *
+	 * @param array $values The values.
+	 *
+	 * @return string[]
+	 */
+	private function uniqueTrimmedStrings(array $values): array {
 		$normalized = [];
-		foreach ($recipients as $email) {
+		foreach ($values as $email) {
 			if (is_string($email) === false) {
 				continue;
 			}
@@ -524,7 +772,7 @@ class ScheduledReportService {
 		}
 
 		return $normalized;
-	}//end normalizeRecipients()
+	}//end uniqueTrimmedStrings()
 
 	/**
 	 * Coerce a value to a nullable int. Empty string and null both become null.
@@ -552,14 +800,14 @@ class ScheduledReportService {
 	 * or when at least a full schedule period has elapsed since the last run.
 	 * Disabled reports are never due.
 	 *
-	 * @param ScheduledReport $report The report to check.
+	 * @param ScheduledReportInterface $report The report to check.
 	 * @param DateTimeInterface $now The reference time.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function isDue(ScheduledReport $report, DateTimeInterface $now): bool {
+	public function isDue(ScheduledReportInterface $report, DateTimeInterface $now): bool {
 		if ($report->getEnabled() !== true) {
 			return false;
 		}
@@ -591,14 +839,20 @@ class ScheduledReportService {
 	 * email leg fails outright, the run is marked `failed` since nothing was
 	 * delivered.
 	 *
-	 * @param ScheduledReport $report The report to run.
+	 * @param ScheduledReportInterface $report The report to run.
 	 *
 	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the report is not a stored ScheduledReport row.
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	public function runOne(ScheduledReport $report): void {
+	public function runOne(ScheduledReportInterface $report): void {
+		if (($report instanceof ScheduledReport) === false) {
+			throw new InvalidArgumentException('Only a stored ScheduledReport row can run.');
+		}
+
 		$ownerUid = $report->getOwner();
 		$owner = null;
 		if ($ownerUid !== null) {
@@ -610,7 +864,7 @@ class ScheduledReportService {
 				message: '[ScheduledReportService] Owner account not found — skipping run',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $report->getId(), 'owner' => $ownerUid]
 			);
-			$this->markOutcome(report: $report, status: 'failed', error: 'Owner account no longer exists.');
+			$this->markFailed(report: $report, error: 'Owner account no longer exists.');
 			return;
 		}
 
@@ -618,15 +872,14 @@ class ScheduledReportService {
 		$this->userSession->setUser($owner);
 
 		try {
-			$export = $this->runExport(report: $report, owner: $owner);
-			$filename = $this->buildFilename(report: $report);
+			$run = new ScheduledReportRun(report: $report, owner: $owner);
+			$run->export = $this->runExport(report: $report, owner: $owner);
+			$run->filename = $this->buildFilename(report: $report);
 			$mode = ($report->getDeliveryMode() ?? 'files');
 
-			$delivered = false;
-			$writtenFile = null;
 			if (in_array($mode, ['files', 'both'], true) === true) {
-				$writtenFile = $this->deliverToFiles(report: $report, owner: $owner, filename: $filename, bytes: $export['bytes']);
-				$delivered = true;
+				$run->file = $this->deliverToFiles(run: $run);
+				$run->delivered = true;
 			}
 
 			// Record the run. Until this existed, a scheduled report wrote a
@@ -635,33 +888,20 @@ class ScheduledReportService {
 			// it carried, and not when it should stop existing. The file is
 			// what the sweep deletes; the row is what an administrator is
 			// asked about, and it outlives the file.
-			$this->recordRun(report: $report, owner: $owner, filename: $filename, export: $export, file: $writtenFile);
+			$this->recordRun(run: $run);
 
-			$emailFailureReason = null;
 			if (in_array($mode, ['email', 'both'], true) === true) {
-				$emailFailureReason = $this->deliverToEmail(
-					report: $report,
-					owner: $owner,
-					filename: $filename,
-					bytes: $export['bytes'],
-					rowCount: $export['rowCount'],
-					alreadyDelivered: $delivered
-				);
+				$run->emailFailureReason = $this->deliverToEmail(run: $run);
 			}
 
-			$this->finalizeOutcome(
-				report: $report,
-				filename: $filename,
-				delivered: $delivered,
-				emailFailureReason: $emailFailureReason
-			);
+			$this->finalizeOutcome(run: $run);
 		} catch (ExportTooLargeException $e) {
 			$this->logger->warning(
 				message: '[ScheduledReportService] Export too large',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $report->getId(), 'error' => $e->getMessage()]
 			);
-			$this->markOutcome(report: $report, status: 'failed', error: $e->getMessage());
-			$this->notifyOwner(report: $report, success: false, reason: $e->getMessage(), filename: null, emailFailureReason: null);
+			$this->markFailed(report: $report, error: $e->getMessage());
+			$this->notifyFailed(report: $report, reason: $e->getMessage());
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				message: '[ScheduledReportService] Scheduled report run failed',
@@ -672,8 +912,8 @@ class ScheduledReportService {
 					'error' => $e->getMessage(),
 				]
 			);
-			$this->markOutcome(report: $report, status: 'failed', error: $e->getMessage());
-			$this->notifyOwner(report: $report, success: false, reason: $e->getMessage(), filename: null, emailFailureReason: null);
+			$this->markFailed(report: $report, error: $e->getMessage());
+			$this->notifyFailed(report: $report, reason: $e->getMessage());
 		} finally {
 			$this->userSession->setUser($previousUser);
 		}//end try
@@ -689,32 +929,31 @@ class ScheduledReportService {
 	 *  - email failed, but Files already delivered → `email_failed` (isolated).
 	 *  - email failed and nothing else delivered    → `failed`.
 	 *
-	 * @param ScheduledReport $report The report.
-	 * @param string $filename The delivery filename.
-	 * @param bool $delivered Whether the Files leg delivered this pass.
-	 * @param string|null $emailFailureReason The email leg's failure reason, or null on success/not-requested.
+	 * @param ScheduledReportRun $run The run, after both legs.
 	 *
 	 * @return void
 	 */
-	private function finalizeOutcome(ScheduledReport $report, string $filename, bool $delivered, ?string $emailFailureReason): void {
+	private function finalizeOutcome(ScheduledReportRun $run): void {
+		$report = $run->report;
+		$emailFailureReason = $run->emailFailureReason;
 		if ($emailFailureReason === null) {
-			$this->markOutcome(report: $report, status: 'success', error: null);
-			$this->notifyOwner(report: $report, success: true, reason: null, filename: $filename, emailFailureReason: null);
+			$this->markSucceeded(report: $report);
+			$this->notifyDelivered(run: $run);
 			return;
 		}
 
-		if ($delivered === true) {
+		if ($run->delivered === true) {
 			// Files delivery (the requested Files/both leg) succeeded —
 			// don't report a hard failure, but do surface the distinct
 			// email problem.
-			$this->markOutcome(report: $report, status: 'email_failed', error: $emailFailureReason);
-			$this->notifyOwner(report: $report, success: true, reason: null, filename: $filename, emailFailureReason: $emailFailureReason);
+			$this->markEmailFailed(report: $report, error: $emailFailureReason);
+			$this->notifyDelivered(run: $run);
 			return;
 		}
 
 		// Email-only mode and the email leg failed — nothing was delivered.
-		$this->markOutcome(report: $report, status: 'failed', error: $emailFailureReason);
-		$this->notifyOwner(report: $report, success: false, reason: $emailFailureReason, filename: null, emailFailureReason: null);
+		$this->markFailed(report: $report, error: $emailFailureReason);
+		$this->notifyFailed(report: $report, reason: $emailFailureReason);
 	}//end finalizeOutcome()
 
 	/**
@@ -747,18 +986,16 @@ class ScheduledReportService {
 			$schema = $this->schemaMapper->find($report->getSchemaId(), _rbac: false, _multitenancy: false);
 		}
 
-		$filters = $report->getFiltersArray();
+		$query = new ScheduledReportExportQuery(register: $register, schema: $schema, filters: $report->getFiltersArray(), owner: $owner);
 
 		switch ($report->getFormat()) {
 			case 'csv':
-				$bytes = $this->exportService->exportToCsv(register: $register, schema: $schema, filters: $filters, currentUser: $owner);
+				$bytes = $this->exportService->exportToCsv(request: $this->exportRequest(query: $query));
 				return ['bytes' => $bytes, 'rowCount' => $this->countCsvRows(csv: $bytes)];
 			case 'pdf':
-				$bytes = $this->exportService->exportToPdf(register: $register, schema: $schema, filters: $filters, currentUser: $owner);
-				$rowCount = $this->bestEffortRowCount(register: $register, schema: $schema, filters: $filters, owner: $owner);
-				return ['bytes' => $bytes, 'rowCount' => $rowCount];
+				return $this->exportPdf(query: $query);
 			default:
-				$spreadsheet = $this->exportService->exportToExcel(register: $register, schema: $schema, filters: $filters, currentUser: $owner);
+				$spreadsheet = $this->exportService->exportToExcel(request: $this->exportRequest(query: $query));
 				return [
 					'bytes' => $this->spreadsheetToXlsxBytes(spreadsheet: $spreadsheet),
 					'rowCount' => $this->countSpreadsheetRows(spreadsheet: $spreadsheet),
@@ -786,7 +1023,7 @@ class ScheduledReportService {
 	 *
 	 * @throws RuntimeException When the profile cannot be run.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function runProfileExport(ScheduledReport $report, \OCP\IUser $owner): array {
 		if ($this->profileService === null) {
@@ -833,20 +1070,48 @@ class ScheduledReportService {
 	}//end countSpreadsheetRows()
 
 	/**
+	 * The export-service request for a scheduled report's export.
+	 *
+	 * @param ScheduledReportExportQuery $query What to export, and as whom.
+	 *
+	 * @return ObjectExportRequest
+	 */
+	private function exportRequest(ScheduledReportExportQuery $query): ObjectExportRequest {
+		return new ObjectExportRequest(
+			register: $query->register,
+			schema: $query->schema,
+			filters: $query->filters,
+			currentUser: $query->owner,
+		);
+	}//end exportRequest()
+
+	/**
+	 * Render a pdf export, with a best-effort row count for the email body.
+	 *
+	 * @param ScheduledReportExportQuery $query What to export, and as whom.
+	 *
+	 * @return array{bytes: string, rowCount: int}
+	 *
+	 * @throws ExportTooLargeException When the pdf row cap is exceeded.
+	 */
+	private function exportPdf(ScheduledReportExportQuery $query): array {
+		$bytes = $this->exportService->exportToPdf(request: $this->exportRequest(query: $query));
+
+		return ['bytes' => $bytes, 'rowCount' => $this->bestEffortRowCount(query: $query)];
+	}//end exportPdf()
+
+	/**
 	 * Best-effort row count for a pdf export, used only for the delivery
 	 * email body — never allowed to turn an otherwise-successful pdf export
 	 * into a failure.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema|null $schema The schema, if any.
-	 * @param array<string,mixed> $filters The filter map.
-	 * @param \OCP\IUser $owner The impersonated owner.
+	 * @param ScheduledReportExportQuery $query What was exported, and as whom.
 	 *
 	 * @return int
 	 */
-	private function bestEffortRowCount(Register $register, ?Schema $schema, array $filters, \OCP\IUser $owner): int {
+	private function bestEffortRowCount(ScheduledReportExportQuery $query): int {
 		try {
-			$spreadsheet = $this->exportService->exportToExcel(register: $register, schema: $schema, filters: $filters, currentUser: $owner);
+			$spreadsheet = $this->exportService->exportToExcel(request: $this->exportRequest(query: $query));
 			return $this->countSpreadsheetRows(spreadsheet: $spreadsheet);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
@@ -928,24 +1193,22 @@ class ScheduledReportService {
 	 * (sanitized) delivery folder. Mirrors `ReportRenderJob::writeToFiles()`'s
 	 * ownership + path-traversal hardening.
 	 *
-	 * @param ScheduledReport $report The report.
-	 * @param \OCP\IUser $owner The owner.
-	 * @param string $filename The delivery filename.
-	 * @param string $bytes The rendered bytes.
+	 * @param ScheduledReportRun $run The run, with its export and filename.
 	 *
 	 * @return \OCP\Files\Node|null The file it wrote, so the export run can name it. Without a file id
 	 *                              the sweep has nothing to delete and the retention is a label on a row.
 	 *
 	 * @throws RuntimeException When the delivery folder is rejected or the user folder is unavailable.
 	 */
-	private function deliverToFiles(ScheduledReport $report, \OCP\IUser $owner, string $filename, string $bytes): ?\OCP\Files\Node {
+	private function deliverToFiles(ScheduledReportRun $run): ?\OCP\Files\Node {
+		$filename = $run->filename;
 		try {
-			$userFolder = $this->rootFolder->getUserFolder(userId: $owner->getUID());
+			$userFolder = $this->rootFolder->getUserFolder(userId: $run->owner->getUID());
 		} catch (NotFoundException $e) {
 			throw new RuntimeException('Owner Nextcloud Files folder unavailable: ' . $e->getMessage());
 		}
 
-		$folderPath = trim((string)($report->getDeliveryFolder() ?? 'Reports/'), '/');
+		$folderPath = trim((string)($run->report->getDeliveryFolder() ?? 'Reports/'), '/');
 		if ($folderPath === '') {
 			$folderPath = 'Reports';
 		}
@@ -961,7 +1224,7 @@ class ScheduledReportService {
 		$folder = $userFolder->get(path: $folderPath);
 		if ($folder->nodeExists(path: $filename) === true) {
 			$existing = $folder->get(path: $filename);
-			$existing->putContent(data: $bytes);
+			$existing->putContent(data: $run->bytes());
 
 			// The node is RETURNED rather than discarded so the run can name
 			// the file it produced. Without a file id the sweep has nothing to
@@ -969,7 +1232,7 @@ class ScheduledReportService {
 			return $existing;
 		}
 
-		return $folder->newFile(path: $filename, content: $bytes);
+		return $folder->newFile(path: $filename, content: $run->bytes());
 	}//end deliverToFiles()
 
 	/**
@@ -980,40 +1243,43 @@ class ScheduledReportService {
 	 * out there either way, and a swallowed record is a gap in the area rather
 	 * than a lost delivery. The gap is logged.
 	 *
-	 * @param ScheduledReport $report   The report.
-	 * @param \OCP\IUser      $owner    The owner the run was made for.
-	 * @param string          $filename The delivery filename.
-	 * @param array           $export   The rendered export, with its row count.
-	 * @param mixed           $file     The produced node, or null when nothing was written.
+	 * @param ScheduledReportRun $run The run, with its export and the file it wrote, if any.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
 	 */
-	private function recordRun(ScheduledReport $report, \OCP\IUser $owner, string $filename, array $export, $file): void {
+	private function recordRun(ScheduledReportRun $run): void {
 		if ($this->exportRuns === null) {
 			return;
 		}
 
+		$report = $run->report;
 		$fileId = null;
 		$filePath = null;
-		if ($file instanceof \OCP\Files\Node) {
-			$fileId = $file->getId();
-			$filePath = $file->getPath();
+		if ($run->file !== null) {
+			$fileId = $run->file->getId();
+			$filePath = $run->file->getPath();
 		}
 
 		try {
 			$this->exportRuns->record(
-				source: 'scheduled-report',
-				actor: $owner->getUID(),
-				format: (string)($report->getFormat() ?? 'csv'),
-				rowCount: (int)($export['rowCount'] ?? 0),
-				profile: (string)($report->getName() ?? ('report-' . (string)$report->getId())),
-				filename: $filename,
-				registerName: $this->nullableString(value: $report->getRegisterId()),
-				schemaName: $this->nullableString(value: $report->getSchemaId()),
-				fileId: $fileId,
-				filePath: $filePath,
+				origin: new ExportRunOrigin(
+					source: 'scheduled-report',
+					actor: $run->owner->getUID(),
+					profile: (string)($report->getName() ?? ('report-' . (string)$report->getId()))
+				),
+				content: new ExportRunContent(
+					format: (string)($report->getFormat() ?? 'csv'),
+					rowCount: (int)($run->export['rowCount'] ?? 0),
+					registerName: $this->nullableString(value: $report->getRegisterId()),
+					schemaName: $this->nullableString(value: $report->getSchemaId())
+				),
+				file: new ExportRunFile(
+					filename: $run->filename,
+					fileId: $fileId,
+					filePath: $filePath
+				),
 				retentionSeconds: $this->retentionFor(report: $report)
 			);
 		} catch (\Throwable $e) {
@@ -1080,87 +1346,108 @@ class ScheduledReportService {
 	 * whether the Files leg already succeeded, whether this is a hard
 	 * failure or an isolated `email_failed` detail.
 	 *
-	 * @param ScheduledReport $report The report.
-	 * @param \OCP\IUser $owner The owner (recipient default + display name).
-	 * @param string $filename The delivery filename.
-	 * @param string $bytes The rendered export bytes.
-	 * @param int $rowCount The best-effort exported row count, for the email body.
-	 * @param bool $alreadyDelivered Whether the Files leg already ran this pass (mode `both`).
+	 * @param ScheduledReportRun $run The run; its Files leg already ran when `delivered` is set (mode `both`).
 	 *
 	 * @return string|null The failure reason, or null on success.
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	private function deliverToEmail(
-		ScheduledReport $report,
-		\OCP\IUser $owner,
-		string $filename,
-		string $bytes,
-		int $rowCount,
-		bool $alreadyDelivered,
-	): ?string {
-		$recipients = $this->resolveRecipients(report: $report, owner: $owner);
+	private function deliverToEmail(ScheduledReportRun $run): ?string {
+		$recipients = $this->resolveRecipients(report: $run->report, owner: $run->owner);
 		if (count($recipients) === 0) {
 			return 'No valid recipient email address available (no recipients configured and the owner has no email on file).';
 		}
 
-		$oversize = (strlen($bytes) > self::MAX_EMAIL_ATTACHMENT_BYTES);
-
-		if ($oversize === true && $alreadyDelivered === false) {
+		if ($this->isOversize(run: $run) === true && $run->delivered === false) {
 			try {
-				$this->deliverToFiles(report: $report, owner: $owner, filename: $filename, bytes: $bytes);
+				$this->deliverToFiles(run: $run);
 			} catch (\Throwable $e) {
 				return 'Export exceeds the email attachment size limit and the Files fallback failed: ' . $e->getMessage();
 			}
 		}
 
 		try {
-			$subject = sprintf('Scheduled report "%s"', $report->getName());
-
-			$bodyLines = $this->buildEmailBodyLines(report: $report, rowCount: $rowCount);
-			if ($oversize === true) {
-				$bodyLines[] = sprintf(
-					'The export (%s) exceeds the %dMB email attachment limit and was not attached. '
-					. 'It has been saved to your Nextcloud Files at %s%s instead.',
-					$this->humanFileSize(bytes: strlen($bytes)),
-					(int)(self::MAX_EMAIL_ATTACHMENT_BYTES / 1024 / 1024),
-					trim((string)($report->getDeliveryFolder() ?? 'Reports/'), '/'),
-					'/' . $filename
-				);
-			}
-
-			$emailTemplate = $this->mailer->createEMailTemplate('openregister.scheduledReportDelivery', []);
-			$emailTemplate->setSubject($subject);
-			$emailTemplate->addHeader();
-			$emailTemplate->addHeading($report->getName());
-			foreach ($bodyLines as $line) {
-				$emailTemplate->addBodyText($line);
-			}
-
-			$emailTemplate->addFooter();
-
-			$message = $this->mailer->createMessage();
-			$message->setTo($recipients);
-			$message->setSubject($subject);
-			$message->useTemplate($emailTemplate);
-			$message->setFrom($this->resolveFromAddress());
-
-			if ($oversize === false) {
-				$attachment = $this->mailer->createAttachment(
-					$bytes,
-					$filename,
-					$this->mimeTypeFor(format: $report->getFormat())
-				);
-				$message->attach($attachment);
-			}
-
-			$this->mailer->send($message);
+			$this->mailer->send($this->composeEmail(run: $run, recipients: $recipients));
 		} catch (\Throwable $e) {
 			return 'Email delivery failed: ' . $e->getMessage();
-		}//end try
+		}
 
 		return null;
 	}//end deliverToEmail()
+
+	/**
+	 * Whether the export is too large to attach to an email.
+	 *
+	 * @param ScheduledReportRun $run The run.
+	 *
+	 * @return bool
+	 */
+	private function isOversize(ScheduledReportRun $run): bool {
+		return (strlen($run->bytes()) > self::MAX_EMAIL_ATTACHMENT_BYTES);
+	}//end isOversize()
+
+	/**
+	 * The delivery email for a run: subject, body and, when it fits, the export attached.
+	 *
+	 * @param ScheduledReportRun   $run        The run.
+	 * @param array<string,string> $recipients Email address => display name.
+	 *
+	 * @return \OCP\Mail\IMessage The message, ready to send.
+	 */
+	private function composeEmail(ScheduledReportRun $run, array $recipients): \OCP\Mail\IMessage {
+		$report = $run->report;
+		$subject = sprintf('Scheduled report "%s"', $report->getName());
+
+		$emailTemplate = $this->mailer->createEMailTemplate('openregister.scheduledReportDelivery', []);
+		$emailTemplate->setSubject($subject);
+		$emailTemplate->addHeader();
+		$emailTemplate->addHeading($report->getName());
+		foreach ($this->emailBodyLines(run: $run) as $line) {
+			$emailTemplate->addBodyText($line);
+		}
+
+		$emailTemplate->addFooter();
+
+		$message = $this->mailer->createMessage();
+		$message->setTo($recipients);
+		$message->setSubject($subject);
+		$message->useTemplate($emailTemplate);
+		$message->setFrom($this->resolveFromAddress());
+
+		if ($this->isOversize(run: $run) === false) {
+			$attachment = $this->mailer->createAttachment(
+				$run->bytes(),
+				$run->filename,
+				$this->mimeTypeFor(format: $report->getFormat())
+			);
+			$message->attach($attachment);
+		}
+
+		return $message;
+	}//end composeEmail()
+
+	/**
+	 * The email body lines, with a note on where an oversize export was saved instead.
+	 *
+	 * @param ScheduledReportRun $run The run.
+	 *
+	 * @return array<int,string>
+	 */
+	private function emailBodyLines(ScheduledReportRun $run): array {
+		$bodyLines = $this->buildEmailBodyLines(report: $run->report, rowCount: $run->export['rowCount']);
+		if ($this->isOversize(run: $run) === true) {
+			$bodyLines[] = sprintf(
+				'The export (%s) exceeds the %dMB email attachment limit and was not attached. '
+				. 'It has been saved to your Nextcloud Files at %s%s instead.',
+				$this->humanFileSize(bytes: strlen($run->bytes())),
+				(int)(self::MAX_EMAIL_ATTACHMENT_BYTES / 1024 / 1024),
+				trim((string)($run->report->getDeliveryFolder() ?? 'Reports/'), '/'),
+				'/' . $run->filename
+			);
+		}
+
+		return $bodyLines;
+	}//end emailBodyLines()
 
 	/**
 	 * Resolve the email recipients for a report: the explicitly configured
@@ -1278,18 +1565,56 @@ class ScheduledReportService {
 	}//end humanFileSize()
 
 	/**
-	 * Persist the outcome of a run.
+	 * Persist that a run delivered everything it was asked to.
 	 *
 	 * @param ScheduledReport $report The report.
-	 * @param string $status success|failed|email_failed.
-	 * @param string|null $error The failure reason, if any.
 	 *
 	 * @return void
 	 */
-	private function markOutcome(ScheduledReport $report, string $status, ?string $error): void {
-		$report->setLastRunAt(new DateTime());
-		$report->setLastStatus($status);
+	private function markSucceeded(ScheduledReport $report): void {
+		$report->setLastStatus('success');
+		$report->setLastError(null);
+		$this->saveOutcome(report: $report);
+	}//end markSucceeded()
+
+	/**
+	 * Persist that a run failed: nothing was delivered.
+	 *
+	 * @param ScheduledReport $report The report.
+	 * @param string|null     $error  The failure reason.
+	 *
+	 * @return void
+	 */
+	private function markFailed(ScheduledReport $report, ?string $error): void {
+		$report->setLastStatus('failed');
 		$report->setLastError($error);
+		$this->saveOutcome(report: $report);
+	}//end markFailed()
+
+	/**
+	 * Persist that the Files leg delivered but the email leg failed.
+	 *
+	 * @param ScheduledReport $report The report.
+	 * @param string|null     $error  Why the email leg failed.
+	 *
+	 * @return void
+	 */
+	private function markEmailFailed(ScheduledReport $report, ?string $error): void {
+		$report->setLastStatus('email_failed');
+		$report->setLastError($error);
+		$this->saveOutcome(report: $report);
+	}//end markEmailFailed()
+
+	/**
+	 * Stamp and persist the outcome already set on the report; a failure to
+	 * persist is logged, never thrown.
+	 *
+	 * @param ScheduledReport $report The report, carrying its status and error.
+	 *
+	 * @return void
+	 */
+	private function saveOutcome(ScheduledReport $report): void {
+		$report->setLastRunAt(new DateTime());
 		$report->setUpdatedAt(new DateTime());
 
 		try {
@@ -1300,63 +1625,85 @@ class ScheduledReportService {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $report->getId(), 'error' => $e->getMessage()]
 			);
 		}
-	}//end markOutcome()
+	}//end saveOutcome()
 
 	/**
-	 * Notify the report owner of a run's outcome. Reuses the existing
-	 * `scheduled_report_delivered`/`scheduled_report_failed` subjects for
-	 * every deliveryMode — `mode` and `emailFailureReason` are passed as
-	 * extra, optional subject parameters so `Notifier` can render
-	 * email-aware wording without a new notification subject.
+	 * Notify the report owner that a run failed.
 	 *
 	 * @param ScheduledReport $report The report.
-	 * @param bool $success Whether the run succeeded (or partially succeeded — see `email_failed`).
-	 * @param string|null $reason The failure reason (failure only).
-	 * @param string|null $filename The delivered filename (success only).
-	 * @param string|null $emailFailureReason Set when Files succeeded but the email leg failed (mode `both`).
+	 * @param string|null     $reason The failure reason.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
-	private function notifyOwner(
-		ScheduledReport $report,
-		bool $success,
-		?string $reason,
-		?string $filename,
-		?string $emailFailureReason,
-	): void {
+	private function notifyFailed(ScheduledReport $report, ?string $reason): void {
+		$this->notifyOwner(
+			report: $report,
+			notice: new ScheduledReportNotice(
+				subject: 'scheduled_report_failed',
+				parameters: [
+					'reportId' => $report->getId(),
+					'reportName' => $report->getName(),
+					'reason' => ($reason ?? 'Unknown error'),
+				]
+			)
+		);
+	}//end notifyFailed()
+
+	/**
+	 * Notify the report owner that a run delivered. `mode` and `emailFailureReason` are
+	 * optional subject parameters so `Notifier` can render email-aware wording without a
+	 * new notification subject.
+	 *
+	 * @param ScheduledReportRun $run The run: its report, delivered filename, and the email leg's failure
+	 *                                reason (set when Files succeeded but the email leg failed, mode `both`).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	private function notifyDelivered(ScheduledReportRun $run): void {
+		$report = $run->report;
+		$this->notifyOwner(
+			report: $report,
+			notice: new ScheduledReportNotice(
+				subject: 'scheduled_report_delivered',
+				parameters: [
+					'reportId' => $report->getId(),
+					'reportName' => $report->getName(),
+					'folder' => $report->getDeliveryFolder(),
+					'filename' => $run->filename,
+					'mode' => ($report->getDeliveryMode() ?? 'files'),
+					'emailFailureReason' => $run->emailFailureReason,
+				]
+			)
+		);
+	}//end notifyDelivered()
+
+	/**
+	 * Send the report owner a notification; a failure to notify is logged, never thrown.
+	 *
+	 * @param ScheduledReport       $report The report.
+	 * @param ScheduledReportNotice $notice The notification subject and its parameters.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/scheduled-report-jobs/spec.md
+	 */
+	private function notifyOwner(ScheduledReport $report, ScheduledReportNotice $notice): void {
 		$ownerUid = $report->getOwner();
 		if ($ownerUid === null) {
 			return;
 		}
 
 		try {
-			$mode = ($report->getDeliveryMode() ?? 'files');
-			$subject = 'scheduled_report_failed';
-			$parameters = [
-				'reportId' => $report->getId(),
-				'reportName' => $report->getName(),
-				'reason' => ($reason ?? 'Unknown error'),
-			];
-			if ($success === true) {
-				$subject = 'scheduled_report_delivered';
-				$parameters = [
-					'reportId' => $report->getId(),
-					'reportName' => $report->getName(),
-					'folder' => $report->getDeliveryFolder(),
-					'filename' => $filename,
-					'mode' => $mode,
-					'emailFailureReason' => $emailFailureReason,
-				];
-			}
-
 			$notification = $this->notificationManager->createNotification();
 			$notification->setApp('openregister')
 				->setUser($ownerUid)
 				->setDateTime(new DateTime())
 				->setObject(type: 'scheduled_report', id: (string)$report->getId())
-				->setSubject(subject: $subject, parameters: $parameters);
+				->setSubject(subject: $notice->subject, parameters: $notice->parameters);
 
 			$this->notificationManager->notify($notification);
 		} catch (\Throwable $e) {
@@ -1364,6 +1711,6 @@ class ScheduledReportService {
 				message: '[ScheduledReportService] Failed to send outcome notification',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'reportId' => $report->getId(), 'error' => $e->getMessage()]
 			);
-		}//end try
+		}
 	}//end notifyOwner()
 }//end class

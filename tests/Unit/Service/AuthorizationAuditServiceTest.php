@@ -7,11 +7,13 @@ namespace Unit\Service;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\LinkSessionRuntime;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\AuthorizationChange;
 
 /**
  * Tests for AuthorizationAuditService.
@@ -28,9 +30,8 @@ class AuthorizationAuditServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->service = new AuthorizationAuditService(
-			$this->userSession,
-			$this->registerMapper,
-			$this->logger
+			new LinkSessionRuntime($this->userSession, $this->logger),
+			$this->registerMapper
 		);
 	}
 
@@ -58,11 +59,13 @@ class AuthorizationAuditServiceTest extends TestCase {
 				})
 			);
 
-		$this->service->logSchemaAuthorizationChange(
-			schemaId: 42,
-			schemaTitle: 'Test Schema',
-			oldAuthorization: ['read' => ['public']],
-			newAuthorization: ['read' => ['public', 'behandelaars']]
+		$this->service->recordSchemaChange(
+			change: new AuthorizationChange(
+				entityId: 42,
+				entityTitle: 'Test Schema',
+				before: ['read' => ['public']],
+				after: ['read' => ['public', 'behandelaars']]
+			)
 		);
 	}
 
@@ -87,11 +90,13 @@ class AuthorizationAuditServiceTest extends TestCase {
 				})
 			);
 
-		$this->service->logRegisterAuthorizationChange(
-			registerId: 10,
-			registerTitle: 'Test Register',
-			oldAuthorization: null,
-			newAuthorization: ['read' => ['medewerkers']]
+		$this->service->recordRegisterChange(
+			change: new AuthorizationChange(
+				entityId: 10,
+				entityTitle: 'Test Register',
+				before: null,
+				after: ['read' => ['medewerkers']]
+			)
 		);
 	}
 
@@ -109,14 +114,16 @@ class AuthorizationAuditServiceTest extends TestCase {
 				})
 			);
 
-		$this->service->logRoleDefinitionChange(
-			registerId: 10,
-			registerTitle: 'Test Register',
-			oldRoles: [['name' => 'viewer', 'actions' => ['read']]],
-			newRoles: [
+		$this->service->recordRoleChange(
+			change: new AuthorizationChange(
+				entityId: 10,
+				entityTitle: 'Test Register',
+				before: [['name' => 'viewer', 'actions' => ['read']]],
+				after: [
 				['name' => 'viewer', 'actions' => ['read']],
 				['name' => 'editor', 'actions' => ['read', 'create', 'update']],
 			]
+			)
 		);
 	}
 
@@ -134,11 +141,8 @@ class AuthorizationAuditServiceTest extends TestCase {
 				})
 			);
 
-		$this->service->logSchemaAuthorizationChange(
-			schemaId: 1,
-			schemaTitle: 'Test',
-			oldAuthorization: null,
-			newAuthorization: ['read' => ['public']]
+		$this->service->recordSchemaChange(
+			change: new AuthorizationChange(entityId: 1, entityTitle: 'Test', before: null, after: ['read' => ['public']])
 		);
 	}
 }

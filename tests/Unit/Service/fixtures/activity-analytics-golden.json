@@ -1,0 +1,607 @@
+{
+    "activity entries plain": {
+        "result": {
+            "results": [
+                {
+                    "id": "9",
+                    "title": "[or:obj-1] created",
+                    "subject": "[or:obj-1] created",
+                    "type": "create",
+                    "timestamp": 300,
+                    "affecteduser": "alice",
+                    "actor_id": "alice",
+                    "object_id": "o",
+                    "url": "/index.php/apps/activity/9",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 9,
+                        "subject": "[or:obj-1] created",
+                        "type": "create",
+                        "affecteduser": "alice",
+                        "timestamp": 300,
+                        "object_id": "o"
+                    }
+                },
+                {
+                    "id": "8",
+                    "title": "[or:obj-1] updated",
+                    "subject": "[or:obj-1] updated",
+                    "type": "update",
+                    "timestamp": 200,
+                    "affecteduser": "bob",
+                    "actor_id": "bob",
+                    "object_id": "",
+                    "url": "/index.php/apps/activity/8",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 8,
+                        "subject": "[or:obj-1] updated",
+                        "type": "update",
+                        "affecteduser": "bob",
+                        "timestamp": 200
+                    }
+                },
+                {
+                    "id": "7",
+                    "title": "[or:obj-1] updated",
+                    "subject": "[or:obj-1] updated",
+                    "type": "update",
+                    "timestamp": 100,
+                    "affecteduser": "",
+                    "actor_id": "",
+                    "object_id": "",
+                    "url": "/index.php/apps/activity/7",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 7,
+                        "subject": "[or:obj-1] updated",
+                        "type": "update",
+                        "affecteduser": "",
+                        "timestamp": 100
+                    }
+                }
+            ],
+            "total": 3,
+            "nextCursor": null
+        },
+        "calls": [
+            "isInstalled(activity)",
+            "getQueryBuilder",
+            "qb.select([\"activity_id\",\"subject\",\"type\",\"affecteduser\",\"timestamp\",\"object_id\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.orderBy([\"timestamp\",\"DESC\"])",
+            "qb.addOrderBy([\"activity_id\",\"DESC\"])",
+            "qb.setMaxResults([101])",
+            "qb.executeQuery",
+            "closeCursor",
+            "getQueryBuilder",
+            "func.count([\"*\",\"cnt\"])",
+            "qb.select([\"FUNC\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "activity entries every filter": {
+        "result": {
+            "results": [
+                {
+                    "id": "9",
+                    "title": "[or:obj-1] created",
+                    "subject": "[or:obj-1] created",
+                    "type": "create",
+                    "timestamp": 300,
+                    "affecteduser": "alice",
+                    "actor_id": "alice",
+                    "object_id": "o",
+                    "url": "/index.php/apps/activity/9",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 9,
+                        "subject": "[or:obj-1] created",
+                        "type": "create",
+                        "affecteduser": "alice",
+                        "timestamp": 300,
+                        "object_id": "o"
+                    }
+                },
+                {
+                    "id": "8",
+                    "title": "[or:obj-1] updated",
+                    "subject": "[or:obj-1] updated",
+                    "type": "update",
+                    "timestamp": 200,
+                    "affecteduser": "bob",
+                    "actor_id": "bob",
+                    "object_id": "",
+                    "url": "/index.php/apps/activity/8",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 8,
+                        "subject": "[or:obj-1] updated",
+                        "type": "update",
+                        "affecteduser": "bob",
+                        "timestamp": 200
+                    }
+                }
+            ],
+            "total": 3,
+            "nextCursor": 200
+        },
+        "calls": [
+            "isInstalled(activity)",
+            "getQueryBuilder",
+            "qb.select([\"activity_id\",\"subject\",\"type\",\"affecteduser\",\"timestamp\",\"object_id\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.andWhere([\"eq(type,:\\\"update\\\"\\/2)\"])",
+            "qb.andWhere([\"eq(affecteduser,:\\\"bob\\\"\\/2)\"])",
+            "qb.andWhere([\"gte(timestamp,:50\\/1)\"])",
+            "qb.andWhere([\"lt(timestamp,:250\\/1)\"])",
+            "qb.orderBy([\"timestamp\",\"DESC\"])",
+            "qb.addOrderBy([\"activity_id\",\"DESC\"])",
+            "qb.setMaxResults([3])",
+            "qb.executeQuery",
+            "closeCursor",
+            "getQueryBuilder",
+            "func.count([\"*\",\"cnt\"])",
+            "qb.select([\"FUNC\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.andWhere([\"eq(type,:\\\"update\\\"\\/2)\"])",
+            "qb.andWhere([\"eq(affecteduser,:\\\"bob\\\"\\/2)\"])",
+            "qb.andWhere([\"gte(timestamp,:50\\/1)\"])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "activity entries empty filters": {
+        "result": {
+            "results": [
+                {
+                    "id": "9",
+                    "title": "[or:obj-1] created",
+                    "subject": "[or:obj-1] created",
+                    "type": "create",
+                    "timestamp": 300,
+                    "affecteduser": "alice",
+                    "actor_id": "alice",
+                    "object_id": "o",
+                    "url": "/index.php/apps/activity/9",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 9,
+                        "subject": "[or:obj-1] created",
+                        "type": "create",
+                        "affecteduser": "alice",
+                        "timestamp": 300,
+                        "object_id": "o"
+                    }
+                },
+                {
+                    "id": "8",
+                    "title": "[or:obj-1] updated",
+                    "subject": "[or:obj-1] updated",
+                    "type": "update",
+                    "timestamp": 200,
+                    "affecteduser": "bob",
+                    "actor_id": "bob",
+                    "object_id": "",
+                    "url": "/index.php/apps/activity/8",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 8,
+                        "subject": "[or:obj-1] updated",
+                        "type": "update",
+                        "affecteduser": "bob",
+                        "timestamp": 200
+                    }
+                },
+                {
+                    "id": "7",
+                    "title": "[or:obj-1] updated",
+                    "subject": "[or:obj-1] updated",
+                    "type": "update",
+                    "timestamp": 100,
+                    "affecteduser": "",
+                    "actor_id": "",
+                    "object_id": "",
+                    "url": "/index.php/apps/activity/7",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 7,
+                        "subject": "[or:obj-1] updated",
+                        "type": "update",
+                        "affecteduser": "",
+                        "timestamp": 100
+                    }
+                }
+            ],
+            "total": 3,
+            "nextCursor": null
+        },
+        "calls": [
+            "isInstalled(activity)",
+            "getQueryBuilder",
+            "qb.select([\"activity_id\",\"subject\",\"type\",\"affecteduser\",\"timestamp\",\"object_id\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.orderBy([\"timestamp\",\"DESC\"])",
+            "qb.addOrderBy([\"activity_id\",\"DESC\"])",
+            "qb.setMaxResults([101])",
+            "qb.executeQuery",
+            "closeCursor",
+            "getQueryBuilder",
+            "func.count([\"*\",\"cnt\"])",
+            "qb.select([\"FUNC\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "activity entries big limit": {
+        "result": {
+            "results": [
+                {
+                    "id": "9",
+                    "title": "[or:obj-1] created",
+                    "subject": "[or:obj-1] created",
+                    "type": "create",
+                    "timestamp": 300,
+                    "affecteduser": "alice",
+                    "actor_id": "alice",
+                    "object_id": "o",
+                    "url": "/index.php/apps/activity/9",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 9,
+                        "subject": "[or:obj-1] created",
+                        "type": "create",
+                        "affecteduser": "alice",
+                        "timestamp": 300,
+                        "object_id": "o"
+                    }
+                },
+                {
+                    "id": "8",
+                    "title": "[or:obj-1] updated",
+                    "subject": "[or:obj-1] updated",
+                    "type": "update",
+                    "timestamp": 200,
+                    "affecteduser": "bob",
+                    "actor_id": "bob",
+                    "object_id": "",
+                    "url": "/index.php/apps/activity/8",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 8,
+                        "subject": "[or:obj-1] updated",
+                        "type": "update",
+                        "affecteduser": "bob",
+                        "timestamp": 200
+                    }
+                },
+                {
+                    "id": "7",
+                    "title": "[or:obj-1] updated",
+                    "subject": "[or:obj-1] updated",
+                    "type": "update",
+                    "timestamp": 100,
+                    "affecteduser": "",
+                    "actor_id": "",
+                    "object_id": "",
+                    "url": "/index.php/apps/activity/7",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 7,
+                        "subject": "[or:obj-1] updated",
+                        "type": "update",
+                        "affecteduser": "",
+                        "timestamp": 100
+                    }
+                }
+            ],
+            "total": 3,
+            "nextCursor": null
+        },
+        "calls": [
+            "isInstalled(activity)",
+            "getQueryBuilder",
+            "qb.select([\"activity_id\",\"subject\",\"type\",\"affecteduser\",\"timestamp\",\"object_id\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.andWhere([\"gte(timestamp,:0\\/1)\"])",
+            "qb.andWhere([\"lt(timestamp,:0\\/1)\"])",
+            "qb.orderBy([\"timestamp\",\"DESC\"])",
+            "qb.addOrderBy([\"activity_id\",\"DESC\"])",
+            "qb.setMaxResults([201])",
+            "qb.executeQuery",
+            "closeCursor",
+            "getQueryBuilder",
+            "func.count([\"*\",\"cnt\"])",
+            "qb.select([\"FUNC\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.andWhere([\"gte(timestamp,:0\\/1)\"])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "activity entries more pages": {
+        "result": {
+            "results": [
+                {
+                    "id": "9",
+                    "title": "[or:obj-1] created",
+                    "subject": "[or:obj-1] created",
+                    "type": "create",
+                    "timestamp": 300,
+                    "affecteduser": "alice",
+                    "actor_id": "alice",
+                    "object_id": "o",
+                    "url": "/index.php/apps/activity/9",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 9,
+                        "subject": "[or:obj-1] created",
+                        "type": "create",
+                        "affecteduser": "alice",
+                        "timestamp": 300,
+                        "object_id": "o"
+                    }
+                },
+                {
+                    "id": "8",
+                    "title": "[or:obj-1] updated",
+                    "subject": "[or:obj-1] updated",
+                    "type": "update",
+                    "timestamp": 200,
+                    "affecteduser": "bob",
+                    "actor_id": "bob",
+                    "object_id": "",
+                    "url": "/index.php/apps/activity/8",
+                    "visibility": "internal",
+                    "data": {
+                        "activity_id": 8,
+                        "subject": "[or:obj-1] updated",
+                        "type": "update",
+                        "affecteduser": "bob",
+                        "timestamp": 200
+                    }
+                }
+            ],
+            "total": 3,
+            "nextCursor": 200
+        },
+        "calls": [
+            "isInstalled(activity)",
+            "getQueryBuilder",
+            "qb.select([\"activity_id\",\"subject\",\"type\",\"affecteduser\",\"timestamp\",\"object_id\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.orderBy([\"timestamp\",\"DESC\"])",
+            "qb.addOrderBy([\"activity_id\",\"DESC\"])",
+            "qb.setMaxResults([3])",
+            "qb.executeQuery",
+            "closeCursor",
+            "getQueryBuilder",
+            "func.count([\"*\",\"cnt\"])",
+            "qb.select([\"FUNC\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "activity entries public": {
+        "result": {
+            "results": [],
+            "total": 0,
+            "nextCursor": null
+        },
+        "calls": [
+            "isInstalled(activity)"
+        ]
+    },
+    "activity entries app missing": {
+        "result": {
+            "results": [],
+            "total": 0,
+            "nextCursor": null
+        },
+        "calls": [
+            "isInstalled(activity)"
+        ]
+    },
+    "activity entries query fails": {
+        "result": {
+            "results": [],
+            "total": 0,
+            "nextCursor": null
+        },
+        "calls": [
+            "isInstalled(activity)",
+            "getQueryBuilder",
+            "qb.select([\"activity_id\",\"subject\",\"type\",\"affecteduser\",\"timestamp\",\"object_id\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.andWhere([\"eq(type,:\\\"x\\\"\\/2)\"])",
+            "qb.orderBy([\"timestamp\",\"DESC\"])",
+            "qb.addOrderBy([\"activity_id\",\"DESC\"])",
+            "qb.setMaxResults([101])",
+            "qb.executeQuery",
+            "debug [ActivityFilterService] queryRows failed: db down exception",
+            "getQueryBuilder",
+            "func.count([\"*\",\"cnt\"])",
+            "qb.select([\"FUNC\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.andWhere([\"eq(type,:\\\"x\\\"\\/2)\"])",
+            "qb.executeQuery",
+            "debug [ActivityFilterService] countRows failed: db down exception"
+        ]
+    },
+    "activity types": {
+        "result": [
+            "create",
+            "update"
+        ],
+        "calls": [
+            "isInstalled(activity)",
+            "getQueryBuilder",
+            "qb.selectDistinct([\"type\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.orderBy([\"type\",\"ASC\"])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "activity actors": {
+        "result": [
+            "alice",
+            "bob"
+        ],
+        "calls": [
+            "isInstalled(activity)",
+            "getQueryBuilder",
+            "qb.selectDistinct([\"affecteduser\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.orderBy([\"affecteduser\",\"ASC\"])",
+            "qb.executeQuery",
+            "closeCursor"
+        ]
+    },
+    "activity types fail": {
+        "result": [],
+        "calls": [
+            "isInstalled(activity)",
+            "getQueryBuilder",
+            "qb.selectDistinct([\"type\"])",
+            "qb.from([\"activity\",null])",
+            "qb.where([\"iLike(subject,:\\\"%[or:obj-1]%\\\"\\/2)\"])",
+            "qb.orderBy([\"type\",\"ASC\"])",
+            "qb.executeQuery",
+            "debug [ActivityFilterService] distinctColumn:type failed: db down exception"
+        ]
+    },
+    "series blank key": {
+        "result": {
+            "throws": "InvalidArgumentException",
+            "message": "seriesKey is required to register a series",
+            "code": 0
+        },
+        "calls": [],
+        "widgets": []
+    },
+    "series bad visibility": {
+        "result": {
+            "throws": "InvalidArgumentException",
+            "message": "Invalid visibility — expected one of: private, group, public",
+            "code": 0
+        },
+        "calls": [],
+        "widgets": []
+    },
+    "series bad chart": {
+        "result": {
+            "throws": "InvalidArgumentException",
+            "message": "Invalid chartType — expected one of: line, bar, pie, doughnut, area, radar",
+            "code": 0
+        },
+        "calls": [],
+        "widgets": []
+    },
+    "series anonymous": {
+        "result": {
+            "throws": "InvalidArgumentException",
+            "message": "A logged-in user is required to register a series",
+            "code": 0
+        },
+        "calls": [],
+        "widgets": []
+    },
+    "series insert": {
+        "result": {
+            "id": null,
+            "seriesKey": "k",
+            "registerId": 3,
+            "schemaId": 4,
+            "title": "Title",
+            "chartType": "bar",
+            "labels": [
+                "Jan",
+                "Feb"
+            ],
+            "datasets": [
+                {
+                    "label": "n",
+                    "data": [
+                        1,
+                        2
+                    ]
+                }
+            ],
+            "visibility": "group",
+            "createdBy": "alice",
+            "createdAt": "NOW",
+            "updatedAt": "NOW"
+        },
+        "calls": [
+            "findByKey(k)",
+            "insert({\"id\":null,\"seriesKey\":\"k\",\"registerId\":3,\"schemaId\":4,\"title\":\"Title\",\"chartType\":\"bar\",\"labels\":[\"Jan\",\"Feb\"],\"datasets\":[{\"label\":\"n\",\"data\":[1,2]}],\"visibility\":\"group\",\"createdBy\":\"alice\",\"createdAt\":\"NOW\",\"updatedAt\":\"NOW\"})"
+        ],
+        "widgets": [
+            {
+                "id": "analytics-series:k",
+                "type": "chart",
+                "title": "Title",
+                "providerId": "analytics-series",
+                "config": {
+                    "seriesKey": "k",
+                    "chartType": "bar",
+                    "registerId": 3,
+                    "schemaId": 4
+                }
+            }
+        ]
+    },
+    "series update": {
+        "result": {
+            "id": 5,
+            "seriesKey": "k",
+            "registerId": null,
+            "schemaId": null,
+            "title": null,
+            "chartType": "line",
+            "labels": [],
+            "datasets": [],
+            "visibility": "private",
+            "createdBy": "bob",
+            "createdAt": "2020-09-13T12:26:40+00:00",
+            "updatedAt": "NOW"
+        },
+        "calls": [
+            "findByKey(k)",
+            "update({\"id\":5,\"seriesKey\":\"k\",\"registerId\":null,\"schemaId\":null,\"title\":null,\"chartType\":\"line\",\"labels\":[],\"datasets\":[],\"visibility\":\"private\",\"createdBy\":\"bob\",\"createdAt\":\"2020-09-13T12:26:40+00:00\",\"updatedAt\":\"NOW\"})"
+        ],
+        "widgets": [
+            {
+                "id": "analytics-series:k",
+                "type": "chart",
+                "title": null,
+                "providerId": "analytics-series",
+                "config": {
+                    "seriesKey": "k",
+                    "chartType": "line",
+                    "registerId": null,
+                    "schemaId": null
+                }
+            }
+        ]
+    }
+}

@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -70,6 +70,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Unit tests for ObjectService::searchObjectsBySlug — spec REQ
@@ -99,7 +100,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			dataManipHandler:    $this->createMock(DataManipulationHandler::class),
 			deleteHandler:       $this->createMock(DeleteObject::class),
 			getHandler:          $this->createMock(GetObject::class),
@@ -138,7 +139,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 			dateTimeNormalizer:  $this->createMock(DateTimeNormalizer::class),
 			container:           $this->createMock(IAppContainer::class),
 			objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 	}//end setUp()
 

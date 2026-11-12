@@ -1,3 +1,5 @@
+import type { TQuota, TUsage } from '../quotaUsage.types'
+
 export type TOrganisation = {
 	id?: number
 	uuid?: string
@@ -11,20 +13,8 @@ export type TOrganisation = {
 	owner?: string
 	parent?: string | null
 	children?: string[]
-	quota?: {
-		storage?: number | null
-		bandwidth?: number | null
-		requests?: number | null
-		users?: number | null
-		groups?: number | null
-	}
-	usage?: {
-		storage?: number
-		bandwidth?: number
-		requests?: number
-		users?: number
-		groups?: number
-	}
+	quota?: TQuota
+	usage?: TUsage
 	authorization?: {
 		register?: {
 			create?: string[]

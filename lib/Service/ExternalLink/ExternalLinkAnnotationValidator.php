@@ -35,7 +35,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ namespace OCA\OpenRegister\Service\ExternalLink;
  *         reach one stateless parse would add a dependency with nothing behind
  *         it, and duplicating the regex is precisely how the two would drift.
  */
-final class ExternalLinkAnnotationValidator {
+final class ExternalLinkAnnotationValidator implements ExternalLinkAnnotationValidatorInterface {
 
 	/**
 	 * Schemes a rendered link may use.
@@ -86,7 +86,7 @@ final class ExternalLinkAnnotationValidator {
 	 *
 	 * @return array<int, string> The errors; an empty list means valid.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-a-schema-declares-links-out-of-its-objects-req-avs-001
 	 */
 	public function validate(array $shape): array {
 		$declarations = ($shape[ExternalLinkResolver::ANNOTATION] ?? null);
@@ -131,12 +131,7 @@ final class ExternalLinkAnnotationValidator {
 			return ['must be an object with a title and a url.'];
 		}
 
-		$errors = [];
-
-		$title = trim((string)($declaration['title'] ?? ''));
-		if ($title === '') {
-			$errors[] = 'needs a title; a link with no label is a link nobody clicks.';
-		}
+		$errors = $this->titleErrors(declaration: $declaration);
 
 		$template = trim((string)($declaration['url'] ?? ''));
 		if ($template === '') {
@@ -144,22 +139,48 @@ final class ExternalLinkAnnotationValidator {
 			return $errors;
 		}
 
+		return array_merge($errors, $this->templateErrors(declaration: $declaration, known: $known));
+
+	}//end validateOne()
+
+	/**
+	 * A link needs a title.
+	 *
+	 * @param array<string, mixed> $declaration The link declaration.
+	 *
+	 * @return array<int, string> The error, or none.
+	 */
+	private function titleErrors(array $declaration): array {
+		if (trim((string)($declaration['title'] ?? '')) === '') {
+			return ['needs a title; a link with no label is a link nobody clicks.'];
+		}
+
+		return [];
+	}//end titleErrors()
+
+	/**
+	 * The errors of a declared url template: its scheme, its placeholders and its condition.
+	 *
+	 * @param array<string, mixed> $declaration The link declaration, with a non-empty url.
+	 * @param array<int, string>   $known       The property names the schema declares.
+	 *
+	 * @return array<int, string> The errors, in that order.
+	 */
+	private function templateErrors(array $declaration, array $known): array {
+		$template = trim((string)($declaration['url'] ?? ''));
+		$errors = [];
+
 		$schemeError = $this->validateScheme(template: $template);
 		if ($schemeError !== null) {
 			$errors[] = $schemeError;
 		}
 
-		foreach ($this->validatePlaceholders(template: $template, known: $known) as $error) {
-			$errors[] = $error;
-		}
-
-		foreach ($this->validateCondition(condition: ($declaration['condition'] ?? null), known: $known) as $error) {
-			$errors[] = $error;
-		}
-
-		return $errors;
-
-	}//end validateOne()
+		return array_merge(
+			$errors,
+			$this->validatePlaceholders(template: $template, known: $known),
+			$this->validateCondition(condition: ($declaration['condition'] ?? null), known: $known)
+		);
+	}//end templateErrors()
 
 	/**
 	 * Refuse a scheme that is not on the allowlist.

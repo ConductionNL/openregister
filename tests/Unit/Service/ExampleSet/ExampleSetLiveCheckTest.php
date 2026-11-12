@@ -28,6 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
@@ -48,7 +51,32 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
- * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProofPlace
  */
 class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -86,14 +114,41 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame('created', $report['changes']['cases/case-1-result']);
-		$case   = $this->store->find(register: 'cases', schema: 'case', filters: [])[0];
-		$result = $this->store->find(register: 'cases', schema: 'result', filters: [])[0];
+		$case   = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: [])[0];
+		$result = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'result'), filters: [])[0];
 		$this->assertSame($result['id'], $case['result']);
 		$this->assertSame('[{"status":"ontvangen","enteredAt":"2026-10-10"}]', $case['statusHistory']);
 
 		$this->assertSame([], $this->remover->remove(set: 'demo')['failed']);
 		$this->assertSame([], $this->store->ids(register: 'cases', schema: 'case'));
 	}
+
+	/**
+	 * A text property the store reads back as a structure (a GeoJSON geometry
+	 * kept as JSON text) is validated and written as text again when a change
+	 * touches another field of the object, without the change naming it.
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-change-sends-a-text-property-as-text
+	 */
+	public function testAChangeSendsATextPropertyTheStoreReadsAsAStructureAsText(): void {
+		$this->store->textFields['cases case'][] = 'geometry';
+		$this->store->storedAs['cases case']['geometry'] = static fn (mixed $value): mixed => (is_string($value) ? json_decode($value, true) : $value);
+		$this->app(app: 'cases', fragment: [
+			'objects' => [
+				['key' => 'case-1', 'register' => 'cases', 'schema' => 'case', 'data' => ['title' => 'Parkeren', 'geometry' => '{"type":"Point","coordinates":[4.6612,51.8148]}']],
+				['key' => 'result-1', 'register' => 'cases', 'schema' => 'result', 'data' => ['case' => '{{object:case-1.id}}']],
+			],
+			'changes' => [['key' => 'case-1-result', 'register' => 'cases', 'schema' => 'case', 'object' => 'case-1', 'set' => ['result' => '{{object:result-1.id}}']]],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertSame('created', $report['changes']['cases/case-1-result']);
+		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals'], 'the check on the kept object');
+		$this->assertSame([], $this->remover->remove(set: 'demo')['failed'], 'remove writes the text property as text too');
+	}//end testAChangeSendsATextPropertyTheStoreReadsAsAStructureAsText()
 
 	/**
 	 * The check counts objects per register and schema as the install declares
@@ -142,10 +197,10 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame([], $report['lost']);
-		$this->assertSame('[{"at":"a"},{"at":"b"}]', $this->store->get(register: 'cases', schema: 'case', id: $id)['history']);
+		$this->assertSame('[{"at":"a"},{"at":"b"}]', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id))['history']);
 
 		$this->assertSame([], $this->remover->remove(set: 'demo')['failed']);
-		$this->assertSame('[{"at":"a"}]', $this->store->get(register: 'cases', schema: 'case', id: $id)['history']);
+		$this->assertSame('[{"at":"a"}]', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $id))['history']);
 	}
 
 	/**
@@ -172,7 +227,7 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 		// so the ticket is only written when the accounts are there first.
 		$report = $this->installer->install(plan: $plan, today: $this->today());
 		$this->assertTrue($report['ok'], (string) json_encode($report));
-		$ticket = $this->store->find(register: 'crm', schema: 'ticket', filters: [])[0];
+		$ticket = $this->store->find(table: new RegisterSchemaRef(register: 'crm', schema: 'ticket'), filters: [])[0];
 		$this->assertSame('esra.demir', $ticket['assignee']);
 		$this->assertSame('demo_bot', $ticket['owner']);
 	}
@@ -183,7 +238,7 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 	 * in a change; an existing account still passes.
 	 */
 	public function testAnAccountIdTheSetDoesNotDeclareIsStillRefused(): void {
-		$this->accounts->createUser(uid: 'kees.bestaand', displayName: 'Kees', email: '', password: 'x');
+		$this->accounts->createAccount(account: new \OCA\OpenRegister\Service\ExampleSet\ExampleSetNewAccount(uid: 'kees.bestaand', displayName: 'Kees', email: '', password: 'x'));
 		$this->app(app: 'crm', fragment: [
 			'objects' => [
 				['key' => 'ticket-1', 'register' => 'crm', 'schema' => 'ticket', 'data' => ['assignee' => 'nobody.here']],

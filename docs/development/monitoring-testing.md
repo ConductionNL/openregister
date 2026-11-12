@@ -36,7 +36,7 @@ This document outlines the monitoring infrastructure and testing framework imple
 
 ### MetricsService
 
-**Location**: `lib/Service/MetricsService.php`
+**Location**: `lib/Search/Service/MetricsService.php`
 
 **Key Methods**:
 
@@ -53,9 +53,6 @@ recordMetric(
     ?string $userId = null
 ): void
 
-// Get files processed per day
-getFilesProcessedPerDay(int $days = 30): array
-
 // Get embedding generation stats
 getEmbeddingStats(int $days = 30): array
 // Returns: total, successful, failed, success_rate, estimated_cost_usd
@@ -68,9 +65,6 @@ getSearchLatencyStats(int $days = 7): array
 getStorageGrowth(int $days = 30): array
 // Returns: daily_vectors_added, current_storage_mb, avg_vectors_per_day
 
-// Get all dashboard metrics
-getDashboardMetrics(): array
-
 // Clean old metrics (retention)
 cleanOldMetrics(int $retentionDays = 90): int
 ```
@@ -82,7 +76,7 @@ cleanOldMetrics(int $retentionDays = 90): int
 **File**: `lib/AppInfo/Application.php`
 
 ```php
-use OCA\OpenRegister\Service\MetricsService;
+use OCA\OpenRegister\Search\Service\MetricsService;
 
 // In register() method:
 $context->registerService(

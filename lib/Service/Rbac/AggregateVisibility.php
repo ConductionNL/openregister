@@ -22,8 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Service\PropertyAccessRequest;
+use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -42,19 +45,23 @@ use Throwable;
  * two answers to one question, they would drift, and the wider one would be the
  * one that discloses.
  *
+ * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules and SystemOperationContext are process-wide.
+ *
  * @spec openspec/changes/aggregate-paths-ask-permission/specs/rbac-scopes/spec.md
  */
-class AggregateVisibility {
+class AggregateVisibility implements AggregateVisibilityInterface {
 
 	/**
 	 * The collaborators.
 	 *
-	 * @param PropertyRbacHandler|null $rbac   The one thing that decides property reads.
+	 * @param PropertyRbacHandlerInterface|null $rbac   The one thing that decides property reads.
 	 * @param LoggerInterface|null     $logger The logger.
+	 * @param ExplicitReveal|null      $reveal The request's trusted-code state; without it only a system operation is trusted.
 	 */
 	public function __construct(
-		private readonly ?PropertyRbacHandler $rbac = null,
+		private readonly ?PropertyRbacHandlerInterface $rbac = null,
 		private readonly ?LoggerInterface $logger = null,
+		private readonly ?ExplicitReveal $reveal = null,
 	) {
 	}//end __construct()
 
@@ -89,6 +96,22 @@ class AggregateVisibility {
 			return true;
 		}
 
+		if (self::isUngoverned(schema: $schema, property: $property) === true) {
+			return true;
+		}
+
+		return $this->readRuleAdmits(property: new SchemaProperty(schema: $schema, name: $property));
+	}//end maySummarise()
+
+	/**
+	 * Whether the property carries no read rule of its own, so there is nothing to ask.
+	 *
+	 * @param Schema $schema   The schema the property belongs to.
+	 * @param string $property The property name.
+	 *
+	 * @return bool True when the property is not governed at property level.
+	 */
+	private static function isUngoverned(Schema $schema, string $property): bool {
 		if ($schema->hasPropertyAuthorization() === false) {
 			// Nothing on this schema is governed at property level, so there is
 			// no question to ask and no handler to resolve. This short-circuit
@@ -108,22 +131,109 @@ class AggregateVisibility {
 		// so `canReadProperty()` already returns true for it. Answering here
 		// changes nothing when the rule is available and keeps the fallback
 		// proportionate when it is not.
-		if ($schema->getPropertyAuthorization($property) === null) {
-			return true;
-		}
+		return ($schema->getPropertyAuthorization($property) === null);
+	}//end isUngoverned()
 
+	/**
+	 * Ask the property read rule; with no rule to ask, or one that fails, withhold the summary.
+	 *
+	 * @param SchemaProperty $property The schema and the property name.
+	 *
+	 * @return bool Whether the summary may be shown.
+	 */
+	private function readRuleAdmits(SchemaProperty $property): bool {
 		if ($this->rbac === null) {
-			$this->warn(property: $property, reason: 'no property read rule available to ask');
+			$this->warn(property: $property->name, reason: 'no property read rule available to ask');
 			return false;
 		}
 
 		try {
-			return $this->rbac->canReadProperty(schema: $schema, property: $property, object: []);
+			return $this->rbac->canReadProperty(property: $property, request: new PropertyAccessRequest(object: []));
+		} catch (Throwable $e) {
+			$this->warn(property: $property->name, reason: $e->getMessage());
+			return false;
+		}
+	}//end readRuleAdmits()
+
+	/**
+	 * Whether this caller could read this property on some row.
+	 *
+	 * An output field cannot come and go per row, so a generated type keeps a property
+	 * a conditional rule may show this caller. Fails closed, as maySummarise() does.
+	 *
+	 * @param Schema $schema   The schema the property belongs to.
+	 * @param string $property The property name.
+	 *
+	 * @return bool Whether some row could show it.
+	 *
+	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md
+	 */
+	public function mayReadOnSomeRow(Schema $schema, string $property): bool {
+		if ($schema->getPropertyAuthorization($property) === null) {
+			return true;
+		}
+
+		try {
+			return $this->rbac?->couldReadProperty(schema: $schema, property: $property) === true;
 		} catch (Throwable $e) {
 			$this->warn(property: $property, reason: $e->getMessage());
 			return false;
 		}
-	}//end maySummarise()
+	}//end mayReadOnSomeRow()
+
+	/**
+	 * Whether this property is explicit-reveal and the caller is not trusted
+	 * code: its values leave OpenRegister only as their mask.
+	 *
+	 * @param Schema|null $schema   The schema the property belongs to.
+	 * @param string      $property The property name.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	public function isMaskedExplicit(?Schema $schema, string $property): bool {
+		if ($schema === null) {
+			return false;
+		}
+
+		$definition = (($schema->getProperties() ?? [])[$property] ?? null);
+		if (ExplicitReveal::isExplicit(definition: $definition) === false) {
+			return false;
+		}
+
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
+		$trusted = ($this->reveal?->isTrusted() ?? SystemOperationContext::isActive());
+
+		return $trusted === false;
+	}//end isMaskedExplicit()
+
+	/**
+	 * Whether the VALUES of this property may be summarised: grouped on (a
+	 * bucket key is a value), taken a min or max of, or drawn as a heading.
+	 *
+	 * 🔴 AN EXPLICIT-REVEAL PROPERTY IS WITHHELD FOR EVERY READER, administrators
+	 * included, even when its read rule admits them. Its value is shown only
+	 * through the single-object reveal, which is recorded; a bucket key would be
+	 * the same value with no record. `maySummarise()` stays the read-rule answer
+	 * because the OpenAPI and GraphQL descriptions ask it whether the property
+	 * may be NAMED, and a masked property may be named.
+	 *
+	 * @param Schema|null $schema   The schema the property belongs to.
+	 * @param string      $property The property name.
+	 *
+	 * @return bool Whether its values may be summarised.
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	public function maySummariseValues(?Schema $schema, string $property): bool {
+		if ($this->isMaskedExplicit(schema: $schema, property: $property) === true) {
+			$this->warn(property: $property, reason: 'the property is shown only on an explicit reveal');
+			return false;
+		}
+
+		return $this->maySummarise(schema: $schema, property: $property);
+	}//end maySummariseValues()
 
 	/**
 	 * Split a set of fields into the ones that may be summarised and the rest.
@@ -146,7 +256,7 @@ class AggregateVisibility {
 		$withheld = [];
 
 		foreach ($fields as $field) {
-			if ($this->maySummarise(schema: $schema, property: (string)$field) === true) {
+			if ($this->maySummariseValues(schema: $schema, property: (string)$field) === true) {
 				$allowed[] = (string)$field;
 				continue;
 			}

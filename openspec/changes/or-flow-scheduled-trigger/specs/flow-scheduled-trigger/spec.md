@@ -5,7 +5,9 @@
 OpenRegister SHALL run a flow whose `trigger` is `schedule` on the cadence of its
 `cron` expression, driven by a background worker. A due flow SHALL have a run
 queued with trigger `schedule`; the fire time SHALL be remembered so the flow is
-not re-fired until its next occurrence. A disabled flow, a non-schedule trigger,
+not re-fired until its next occurrence. A flow that has never fired SHALL be
+measured from when it was last saved, so it SHALL NOT fire before its first
+occurrence after that save. A disabled flow, a non-schedule trigger,
 and an invalid or missing cron SHALL NOT fire.
 
 #### Scenario: A due scheduled flow fires
@@ -13,6 +15,16 @@ and an invalid or missing cron SHALL NOT fire.
 - **GIVEN** an enabled flow with trigger `schedule` and a valid cron
 - **WHEN** the schedule worker ticks and the flow is due
 - **THEN** a run is queued for it with trigger `schedule`
+
+#### Scenario: A new scheduled flow waits for its first occurrence
+
+- **GIVEN** an enabled flow with trigger `schedule` that has never fired, saved
+  on 2 November with cron `0 6 2 12 *`
+- **WHEN** the schedule worker ticks on 2 November
+- **THEN** no run is queued for it
+- **AND** a run is queued on the first tick after 06:00 on 2 December
+- **AND** an occurrence that falls between the save and the first tick still fires
+- @e2e tests/e2e/api-direct/flow-schedule.spec.ts
 
 #### Scenario: A non-schedule flow is not fired by the worker
 

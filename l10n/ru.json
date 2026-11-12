@@ -2925,7 +2925,7 @@
         "Complete: {outcome}": "Завершить: {outcome}",
         "Could not load the task": "Не удалось загрузить задачу",
         "The task refused that action": "Задача отклонила это действие",
-        "Store": "Магазин",
+        "Marketplace": "Магазин",
         "Install registers, schemas and flows that other organisations have published.": "Установите реестры, схемы и потоки, опубликованные другими организациями.",
         "No such run": "Нет такого запуска",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Запуск не существует, или у вас нет права его видеть. Удаление потока удаляет и его запуски.",

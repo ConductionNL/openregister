@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Listener\FormDestinationSchemaListener;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
+use OCA\OpenRegister\Service\Form\FormDependentsCheckInterface;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -100,7 +101,7 @@ class FormDestinationSchemaListenerTest extends TestCase {
 
 	public function testAnImportThatAddsARequiredPropertyUnpublishesTheBrokenForms(): void {
 		$assessment = ['refused' => false, 'schema' => 'aanvraag', 'affected' => [['id' => 'form-1']]];
-		$this->container->method('get')->with(FormDependentsCheck::class)->willReturn($this->check);
+		$this->container->method('get')->with(FormDependentsCheckInterface::class)->willReturn($this->check);
 		$this->check->method('isClaimed')->willReturn(false);
 		$this->check->expects($this->once())->method('assess')->willReturn($assessment);
 		$this->check->expects($this->once())->method('apply')->with($assessment);

@@ -23,9 +23,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Settings;
 
 use Exception;
 use OCA\OpenRegister\Service\Object\CacheHandler;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SchemaCacheClearers;
 use OCP\AppFramework\IAppContainer;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -37,14 +38,14 @@ use RuntimeException;
 class CacheSettingsHandlerCoverageTest extends TestCase {
 	private ICacheFactory|MockObject $cacheFactory;
 	private SchemaCacheHandler|MockObject $schemaCacheService;
-	private FacetCacheHandler|MockObject $facetCacheService;
+	private FacetResultCacheClearer|MockObject $facetCacheService;
 	private CacheHandler|MockObject $objectCacheService;
 	private IAppContainer|MockObject $container;
 
 	protected function setUp(): void {
 		$this->cacheFactory = $this->createMock(ICacheFactory::class);
 		$this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-		$this->facetCacheService = $this->createMock(FacetCacheHandler::class);
+		$this->facetCacheService = $this->createMock(FacetResultCacheClearer::class);
 		$this->objectCacheService = $this->createMock(CacheHandler::class);
 		$this->container = $this->createMock(IAppContainer::class);
 	}
@@ -55,8 +56,7 @@ class CacheSettingsHandlerCoverageTest extends TestCase {
 	): CacheSettingsHandler {
 		return new CacheSettingsHandler(
 			$this->cacheFactory,
-			$this->schemaCacheService,
-			$this->facetCacheService,
+			new SchemaCacheClearers($this->schemaCacheService, $this->facetCacheService),
 			$objectCache,
 			$container
 		);
@@ -177,10 +177,7 @@ class CacheSettingsHandlerCoverageTest extends TestCase {
 	}
 
 	public function testClearCacheWithFacetType(): void {
-		$this->facetCacheService->method('getCacheStatistics')->willReturn([
-			'total_entries' => 10,
-		]);
-		$this->facetCacheService->expects($this->once())->method('clearAllCaches');
+		$this->facetCacheService->expects($this->once())->method('clearAll');
 
 		$handler = $this->createHandler($this->objectCacheService);
 		$result = $handler->clearCache('facet');
@@ -361,21 +358,6 @@ class CacheSettingsHandlerCoverageTest extends TestCase {
 
 		$this->assertFalse($result['success']);
 		$this->assertSame('DB error', $result['error']);
-	}
-
-	// =========================================================================
-	// clearFacetCache — exception path
-	// =========================================================================
-
-	public function testClearFacetCacheException(): void {
-		$this->facetCacheService->method('getCacheStatistics')
-			->willThrowException(new Exception('Facet error'));
-
-		$handler = $this->createHandler($this->objectCacheService);
-		$result = $this->invokeMethod($handler, 'clearFacetCache', [null]);
-
-		$this->assertFalse($result['success']);
-		$this->assertSame('Facet error', $result['error']);
 	}
 
 	// =========================================================================

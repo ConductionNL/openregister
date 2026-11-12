@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 /**
  * Dot-path access to an object.
  *
- * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
  */
 class ExampleSetPaths {
 	/**
@@ -41,7 +41,7 @@ class ExampleSetPaths {
 	 *
 	 * @return string The path itself when only its last step is missing (or nothing is).
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
 	 */
 	public function firstMissing(array $row, string $path): string {
 		$parts = explode('.', $path);
@@ -64,7 +64,7 @@ class ExampleSetPaths {
 	 *
 	 * @return array{found: bool, value: mixed}
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
 	 */
 	public function atPath(array $row, string $path): array {
 		$here = $row;
@@ -82,23 +82,22 @@ class ExampleSetPaths {
 	/**
 	 * The object with a value at a dot path, making the maps on the way.
 	 *
-	 * @param array<string, mixed> $row   The object.
-	 * @param string               $path  The dot path.
-	 * @param mixed                $value The value.
+	 * @param array<string, mixed> $row The object.
+	 * @param ExampleSetPathValue  $set The dot path and the value.
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
 	 */
-	public function withPath(array $row, string $path, mixed $value): array {
-		[$head, $rest] = array_pad(explode('.', $path, 2), 2, null);
+	public function withPath(array $row, ExampleSetPathValue $set): array {
+		[$head, $rest] = array_pad(explode('.', $set->path, 2), 2, null);
 		if ($rest === null) {
-			$row[$head] = $value;
+			$row[$head] = $set->value;
 			return $row;
 		}
 
 		$child      = $row[$head] ?? [];
-		$row[$head] = $this->withPath(row: (array) $child, path: $rest, value: $value);
+		$row[$head] = $this->withPath(row: (array) $child, set: $set->below(rest: $rest));
 
 		return $row;
 	}//end withPath()
@@ -111,7 +110,7 @@ class ExampleSetPaths {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
 	 */
 	public function withoutPath(array $row, string $path): array {
 		[$head, $rest] = array_pad(explode('.', $path, 2), 2, null);
@@ -138,7 +137,7 @@ class ExampleSetPaths {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function withJsonText(array $row, array $fields): array {
 		foreach ($fields as $field) {
@@ -160,7 +159,7 @@ class ExampleSetPaths {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function withJsonDecoded(array $row, array $fields): array {
 		foreach ($fields as $field) {

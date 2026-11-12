@@ -1,0 +1,1210 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`DashboardIndex actions opens the register and schema behind a row 1`] = `
+[
+  [
+    "/registers/11",
+  ],
+  [
+    "/registers/12",
+  ],
+  [
+    "/schemas/21",
+  ],
+  [
+    "/schemas/22",
+  ],
+  [
+    {
+      "path": "/search-trails",
+      "query": {
+        "search": "water",
+      },
+    },
+  ],
+]
+`;
+
+exports[`DashboardIndex actions refreshes in order and clears the flag 1`] = `
+[
+  [
+    "preload",
+  ],
+  [
+    "fetchAllChartData",
+  ],
+  [
+    "refreshRegisterList",
+  ],
+  [
+    "refreshSchemaList",
+  ],
+  [
+    "fetchStatistics",
+    {
+      "from": null,
+      "to": null,
+    },
+  ],
+  [
+    "fetchPopularTerms",
+  ],
+]
+`;
+
+exports[`DashboardIndex markup renders a dashboard with data on a bounded range 1`] = `
+"<x-ncappcontent>
+  <slot-default>
+    <x-cndashboardpage title="Dashboard" widgets="[{&quot;id&quot;:&quot;count-objects&quot;,&quot;title&quot;:&quot;Objects&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-registers&quot;,&quot;title&quot;:&quot;Registers&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-schemas&quot;,&quot;title&quot;:&quot;Schemas&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-searches&quot;,&quot;title&quot;:&quot;Searches&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-events&quot;,&quot;title&quot;:&quot;Events&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;popular-terms&quot;,&quot;title&quot;:&quot;Popular Search Terms&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-register&quot;,&quot;title&quot;:&quot;Objects by Register&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-schema&quot;,&quot;title&quot;:&quot;Objects by Schema&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-chart&quot;,&quot;title&quot;:&quot;Objects Distribution&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;my-tasks&quot;,&quot;title&quot;:&quot;Tasks&quot;,&quot;type&quot;:&quot;tasks&quot;,&quot;content&quot;:{&quot;scope&quot;:&quot;assigned&quot;,&quot;limit&quot;:6,&quot;pollSeconds&quot;:30}}]" layout="[{&quot;id&quot;:1,&quot;widgetId&quot;:&quot;count-objects&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:2,&quot;widgetId&quot;:&quot;count-registers&quot;,&quot;gridX&quot;:4,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:3,&quot;widgetId&quot;:&quot;count-schemas&quot;,&quot;gridX&quot;:8,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:4,&quot;widgetId&quot;:&quot;count-searches&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:5,&quot;widgetId&quot;:&quot;count-events&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:6,&quot;widgetId&quot;:&quot;popular-terms&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:7,&quot;widgetId&quot;:&quot;objects-by-register&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:8,&quot;widgetId&quot;:&quot;objects-by-schema&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:9,&quot;widgetId&quot;:&quot;objects-chart&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4},{&quot;id&quot;:10,&quot;widgetId&quot;:&quot;my-tasks&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:12,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4}]" loading="false" emptylabel="No data available" showrefresh="false" data-on="onLayoutChange">
+      <slot-actions>
+        <x-ncbutton disabled="false" aria-label="Refresh dashboard" data-on="onClick">
+          <slot-icon>
+            <x-refresh size="20"></x-refresh>
+          </slot-icon>
+        </x-ncbutton>
+      </slot-actions>
+      <slot-widget-count-objects>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-cubeoutline size="24"></x-cubeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">12,345</span><span class="kpi-sub">across {count} registers {"count":"3"}</span></div>
+        </div>
+      </slot-widget-count-objects>
+      <slot-widget-count-registers>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-databaseoutline size="24"></x-databaseoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Registers</span><span class="kpi-value">3</span></div>
+        </div>
+      </slot-widget-count-registers>
+      <slot-widget-count-schemas>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-filetreeoutline size="24"></x-filetreeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Schemas</span><span class="kpi-value">3</span></div>
+        </div>
+      </slot-widget-count-schemas>
+      <slot-widget-count-searches>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-magnify size="24"></x-magnify>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">2,500</span><span class="kpi-sub">{pct}% success rate {"pct":"88"}</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">Last 30 days</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-searches>
+      <slot-widget-count-events>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-history size="24"></x-history>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Events</span><span class="kpi-value">7</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">Last 30 days</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-events>
+      <slot-widget-popular-terms>
+        <x-cndatatable columns="[{&quot;key&quot;:&quot;term&quot;,&quot;label&quot;:&quot;Search Term&quot;,&quot;sortable&quot;:true},{&quot;key&quot;:&quot;count&quot;,&quot;label&quot;:&quot;Count&quot;,&quot;sortable&quot;:true,&quot;align&quot;:&quot;right&quot;},{&quot;key&quot;:&quot;effectiveness&quot;,&quot;label&quot;:&quot;Effectiveness&quot;}]" rows="[{&quot;term&quot;:&quot;water&quot;,&quot;count&quot;:5,&quot;effectiveness&quot;:&quot;high&quot;}]" borderless="" data-on="onRowClick"></x-cndatatable>
+      </slot-widget-popular-terms>
+      <slot-widget-objects-by-register>
+        <x-cndatatable columns="[{&quot;key&quot;:&quot;label&quot;,&quot;label&quot;:&quot;Register&quot;,&quot;sortable&quot;:true},{&quot;key&quot;:&quot;count&quot;,&quot;label&quot;:&quot;Objects&quot;,&quot;sortable&quot;:true,&quot;align&quot;:&quot;right&quot;}]" rows="[{&quot;label&quot;:&quot;Alpha&quot;,&quot;count&quot;:3000},{&quot;label&quot;:&quot;Beta&quot;,&quot;count&quot;:0}]" borderless="" data-on="onRowClick"></x-cndatatable>
+      </slot-widget-objects-by-register>
+      <slot-widget-objects-by-schema>
+        <x-cndatatable columns="[{&quot;key&quot;:&quot;label&quot;,&quot;label&quot;:&quot;Schema&quot;,&quot;sortable&quot;:true},{&quot;key&quot;:&quot;count&quot;,&quot;label&quot;:&quot;Objects&quot;,&quot;sortable&quot;:true,&quot;align&quot;:&quot;right&quot;}]" rows="[{&quot;label&quot;:&quot;One&quot;,&quot;count&quot;:1},{&quot;label&quot;:&quot;Two&quot;,&quot;count&quot;:2},{&quot;label&quot;:&quot;Three&quot;,&quot;count&quot;:0}]" borderless="" data-on="onRowClick"></x-cndatatable>
+      </slot-widget-objects-by-schema>
+      <slot-widget-objects-chart>
+        <div class="chart-widget-content">
+          <x-apexchart type="pie" height="260" options="{&quot;chart&quot;:{&quot;type&quot;:&quot;pie&quot;},&quot;labels&quot;:[&quot;Alpha&quot;,&quot;Beta&quot;],&quot;legend&quot;:{&quot;position&quot;:&quot;bottom&quot;},&quot;responsive&quot;:[{&quot;breakpoint&quot;:480,&quot;options&quot;:{&quot;chart&quot;:{&quot;width&quot;:200},&quot;legend&quot;:{&quot;position&quot;:&quot;bottom&quot;}}}]}" series="[3000,0]"></x-apexchart>
+        </div>
+      </slot-widget-objects-chart>
+    </x-cndashboardpage>
+  </slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`DashboardIndex markup renders a dashboard with data on all time 1`] = `
+"<x-ncappcontent>
+  <slot-default>
+    <x-cndashboardpage title="Dashboard" widgets="[{&quot;id&quot;:&quot;count-objects&quot;,&quot;title&quot;:&quot;Objects&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-registers&quot;,&quot;title&quot;:&quot;Registers&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-schemas&quot;,&quot;title&quot;:&quot;Schemas&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-searches&quot;,&quot;title&quot;:&quot;Searches&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-events&quot;,&quot;title&quot;:&quot;Events&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;popular-terms&quot;,&quot;title&quot;:&quot;Popular Search Terms&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-register&quot;,&quot;title&quot;:&quot;Objects by Register&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-schema&quot;,&quot;title&quot;:&quot;Objects by Schema&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-chart&quot;,&quot;title&quot;:&quot;Objects Distribution&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;my-tasks&quot;,&quot;title&quot;:&quot;Tasks&quot;,&quot;type&quot;:&quot;tasks&quot;,&quot;content&quot;:{&quot;scope&quot;:&quot;assigned&quot;,&quot;limit&quot;:6,&quot;pollSeconds&quot;:30}}]" layout="[{&quot;id&quot;:1,&quot;widgetId&quot;:&quot;count-objects&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:2,&quot;widgetId&quot;:&quot;count-registers&quot;,&quot;gridX&quot;:4,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:3,&quot;widgetId&quot;:&quot;count-schemas&quot;,&quot;gridX&quot;:8,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:4,&quot;widgetId&quot;:&quot;count-searches&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:5,&quot;widgetId&quot;:&quot;count-events&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:6,&quot;widgetId&quot;:&quot;popular-terms&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:7,&quot;widgetId&quot;:&quot;objects-by-register&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:8,&quot;widgetId&quot;:&quot;objects-by-schema&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:9,&quot;widgetId&quot;:&quot;objects-chart&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4},{&quot;id&quot;:10,&quot;widgetId&quot;:&quot;my-tasks&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:12,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4}]" loading="false" emptylabel="No data available" showrefresh="false" data-on="onLayoutChange">
+      <slot-actions>
+        <x-ncbutton disabled="false" aria-label="Refresh dashboard" data-on="onClick">
+          <slot-icon>
+            <x-refresh size="20"></x-refresh>
+          </slot-icon>
+        </x-ncbutton>
+      </slot-actions>
+      <slot-widget-count-objects>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-cubeoutline size="24"></x-cubeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">12,345</span><span class="kpi-sub">across {count} registers {"count":"3"}</span></div>
+        </div>
+      </slot-widget-count-objects>
+      <slot-widget-count-registers>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-databaseoutline size="24"></x-databaseoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Registers</span><span class="kpi-value">3</span></div>
+        </div>
+      </slot-widget-count-registers>
+      <slot-widget-count-schemas>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-filetreeoutline size="24"></x-filetreeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Schemas</span><span class="kpi-value">3</span></div>
+        </div>
+      </slot-widget-count-schemas>
+      <slot-widget-count-searches>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-magnify size="24"></x-magnify>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">2,500</span><span class="kpi-sub">{pct}% success rate {"pct":"88"}</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">All time</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-searches>
+      <slot-widget-count-events>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-history size="24"></x-history>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Events</span><span class="kpi-value">678</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">All time</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-events>
+      <slot-widget-popular-terms>
+        <x-cndatatable columns="[{&quot;key&quot;:&quot;term&quot;,&quot;label&quot;:&quot;Search Term&quot;,&quot;sortable&quot;:true},{&quot;key&quot;:&quot;count&quot;,&quot;label&quot;:&quot;Count&quot;,&quot;sortable&quot;:true,&quot;align&quot;:&quot;right&quot;},{&quot;key&quot;:&quot;effectiveness&quot;,&quot;label&quot;:&quot;Effectiveness&quot;}]" rows="[{&quot;term&quot;:&quot;water&quot;,&quot;count&quot;:5,&quot;effectiveness&quot;:&quot;high&quot;}]" borderless="" data-on="onRowClick"></x-cndatatable>
+      </slot-widget-popular-terms>
+      <slot-widget-objects-by-register>
+        <x-cndatatable columns="[{&quot;key&quot;:&quot;label&quot;,&quot;label&quot;:&quot;Register&quot;,&quot;sortable&quot;:true},{&quot;key&quot;:&quot;count&quot;,&quot;label&quot;:&quot;Objects&quot;,&quot;sortable&quot;:true,&quot;align&quot;:&quot;right&quot;}]" rows="[{&quot;label&quot;:&quot;Alpha&quot;,&quot;count&quot;:3000},{&quot;label&quot;:&quot;Beta&quot;,&quot;count&quot;:0}]" borderless="" data-on="onRowClick"></x-cndatatable>
+      </slot-widget-objects-by-register>
+      <slot-widget-objects-by-schema>
+        <x-cndatatable columns="[{&quot;key&quot;:&quot;label&quot;,&quot;label&quot;:&quot;Schema&quot;,&quot;sortable&quot;:true},{&quot;key&quot;:&quot;count&quot;,&quot;label&quot;:&quot;Objects&quot;,&quot;sortable&quot;:true,&quot;align&quot;:&quot;right&quot;}]" rows="[{&quot;label&quot;:&quot;One&quot;,&quot;count&quot;:1},{&quot;label&quot;:&quot;Two&quot;,&quot;count&quot;:2},{&quot;label&quot;:&quot;Three&quot;,&quot;count&quot;:0}]" borderless="" data-on="onRowClick"></x-cndatatable>
+      </slot-widget-objects-by-schema>
+      <slot-widget-objects-chart>
+        <div class="chart-widget-content">
+          <x-apexchart type="pie" height="260" options="{&quot;chart&quot;:{&quot;type&quot;:&quot;pie&quot;},&quot;labels&quot;:[&quot;Alpha&quot;,&quot;Beta&quot;],&quot;legend&quot;:{&quot;position&quot;:&quot;bottom&quot;},&quot;responsive&quot;:[{&quot;breakpoint&quot;:480,&quot;options&quot;:{&quot;chart&quot;:{&quot;width&quot;:200},&quot;legend&quot;:{&quot;position&quot;:&quot;bottom&quot;}}}]}" series="[3000,0]"></x-apexchart>
+        </div>
+      </slot-widget-objects-chart>
+    </x-cndashboardpage>
+  </slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`DashboardIndex markup renders no events on a bounded range without a series 1`] = `
+"<x-ncappcontent>
+  <slot-default>
+    <x-cndashboardpage title="Dashboard" widgets="[{&quot;id&quot;:&quot;count-objects&quot;,&quot;title&quot;:&quot;Objects&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-registers&quot;,&quot;title&quot;:&quot;Registers&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-schemas&quot;,&quot;title&quot;:&quot;Schemas&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-searches&quot;,&quot;title&quot;:&quot;Searches&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-events&quot;,&quot;title&quot;:&quot;Events&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;popular-terms&quot;,&quot;title&quot;:&quot;Popular Search Terms&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-register&quot;,&quot;title&quot;:&quot;Objects by Register&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-schema&quot;,&quot;title&quot;:&quot;Objects by Schema&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-chart&quot;,&quot;title&quot;:&quot;Objects Distribution&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;my-tasks&quot;,&quot;title&quot;:&quot;Tasks&quot;,&quot;type&quot;:&quot;tasks&quot;,&quot;content&quot;:{&quot;scope&quot;:&quot;assigned&quot;,&quot;limit&quot;:6,&quot;pollSeconds&quot;:30}}]" layout="[{&quot;id&quot;:1,&quot;widgetId&quot;:&quot;count-objects&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:2,&quot;widgetId&quot;:&quot;count-registers&quot;,&quot;gridX&quot;:4,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:3,&quot;widgetId&quot;:&quot;count-schemas&quot;,&quot;gridX&quot;:8,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:4,&quot;widgetId&quot;:&quot;count-searches&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:5,&quot;widgetId&quot;:&quot;count-events&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:6,&quot;widgetId&quot;:&quot;popular-terms&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:7,&quot;widgetId&quot;:&quot;objects-by-register&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:8,&quot;widgetId&quot;:&quot;objects-by-schema&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:9,&quot;widgetId&quot;:&quot;objects-chart&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4},{&quot;id&quot;:10,&quot;widgetId&quot;:&quot;my-tasks&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:12,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4}]" loading="false" emptylabel="No data available" showrefresh="false" data-on="onLayoutChange">
+      <slot-actions>
+        <x-ncbutton disabled="false" aria-label="Refresh dashboard" data-on="onClick">
+          <slot-icon>
+            <x-refresh size="20"></x-refresh>
+          </slot-icon>
+        </x-ncbutton>
+      </slot-actions>
+      <slot-widget-count-objects>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-cubeoutline size="24"></x-cubeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-objects>
+      <slot-widget-count-registers>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-databaseoutline size="24"></x-databaseoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Registers</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-registers>
+      <slot-widget-count-schemas>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-filetreeoutline size="24"></x-filetreeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Schemas</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-schemas>
+      <slot-widget-count-searches>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-magnify size="24"></x-magnify>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">Last 7 days</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-searches>
+      <slot-widget-count-events>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-history size="24"></x-history>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Events</span><span class="kpi-value">0</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">Last 7 days</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-events>
+      <slot-widget-popular-terms>
+        <div class="widget-empty">No search terms data available</div>
+      </slot-widget-popular-terms>
+      <slot-widget-objects-by-register>
+        <div class="widget-empty">No register data available</div>
+      </slot-widget-objects-by-register>
+      <slot-widget-objects-by-schema>
+        <div class="widget-empty">No schema data available</div>
+      </slot-widget-objects-by-schema>
+      <slot-widget-objects-chart>
+        <div class="widget-empty">No data available for chart</div>
+      </slot-widget-objects-chart>
+    </x-cndashboardpage>
+  </slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`DashboardIndex markup renders the empty dashboard 1`] = `
+"<x-ncappcontent>
+  <slot-default>
+    <x-cndashboardpage title="Dashboard" widgets="[{&quot;id&quot;:&quot;count-objects&quot;,&quot;title&quot;:&quot;Objects&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-registers&quot;,&quot;title&quot;:&quot;Registers&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-schemas&quot;,&quot;title&quot;:&quot;Schemas&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-searches&quot;,&quot;title&quot;:&quot;Searches&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-events&quot;,&quot;title&quot;:&quot;Events&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;popular-terms&quot;,&quot;title&quot;:&quot;Popular Search Terms&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-register&quot;,&quot;title&quot;:&quot;Objects by Register&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-schema&quot;,&quot;title&quot;:&quot;Objects by Schema&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-chart&quot;,&quot;title&quot;:&quot;Objects Distribution&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;my-tasks&quot;,&quot;title&quot;:&quot;Tasks&quot;,&quot;type&quot;:&quot;tasks&quot;,&quot;content&quot;:{&quot;scope&quot;:&quot;assigned&quot;,&quot;limit&quot;:6,&quot;pollSeconds&quot;:30}}]" layout="[{&quot;id&quot;:1,&quot;widgetId&quot;:&quot;count-objects&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:2,&quot;widgetId&quot;:&quot;count-registers&quot;,&quot;gridX&quot;:4,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:3,&quot;widgetId&quot;:&quot;count-schemas&quot;,&quot;gridX&quot;:8,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:4,&quot;widgetId&quot;:&quot;count-searches&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:5,&quot;widgetId&quot;:&quot;count-events&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:6,&quot;widgetId&quot;:&quot;popular-terms&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:7,&quot;widgetId&quot;:&quot;objects-by-register&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:8,&quot;widgetId&quot;:&quot;objects-by-schema&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:9,&quot;widgetId&quot;:&quot;objects-chart&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4},{&quot;id&quot;:10,&quot;widgetId&quot;:&quot;my-tasks&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:12,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4}]" loading="false" emptylabel="No data available" showrefresh="false" data-on="onLayoutChange">
+      <slot-actions>
+        <x-ncbutton disabled="false" aria-label="Refresh dashboard" data-on="onClick">
+          <slot-icon>
+            <x-refresh size="20"></x-refresh>
+          </slot-icon>
+        </x-ncbutton>
+      </slot-actions>
+      <slot-widget-count-objects>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-cubeoutline size="24"></x-cubeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-objects>
+      <slot-widget-count-registers>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-databaseoutline size="24"></x-databaseoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Registers</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-registers>
+      <slot-widget-count-schemas>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-filetreeoutline size="24"></x-filetreeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Schemas</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-schemas>
+      <slot-widget-count-searches>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-magnify size="24"></x-magnify>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">All time</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-searches>
+      <slot-widget-count-events>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-history size="24"></x-history>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Events</span><span class="kpi-value">0</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">All time</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-events>
+      <slot-widget-popular-terms>
+        <div class="widget-empty">No search terms data available</div>
+      </slot-widget-popular-terms>
+      <slot-widget-objects-by-register>
+        <div class="widget-empty">No register data available</div>
+      </slot-widget-objects-by-register>
+      <slot-widget-objects-by-schema>
+        <div class="widget-empty">No schema data available</div>
+      </slot-widget-objects-by-schema>
+      <slot-widget-objects-chart>
+        <div class="widget-empty">No data available for chart</div>
+      </slot-widget-objects-chart>
+    </x-cndashboardpage>
+  </slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`DashboardIndex markup renders the loading dashboard 1`] = `
+"<x-ncappcontent>
+  <slot-default>
+    <x-cndashboardpage title="Dashboard" widgets="[{&quot;id&quot;:&quot;count-objects&quot;,&quot;title&quot;:&quot;Objects&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-registers&quot;,&quot;title&quot;:&quot;Registers&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-schemas&quot;,&quot;title&quot;:&quot;Schemas&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-searches&quot;,&quot;title&quot;:&quot;Searches&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-events&quot;,&quot;title&quot;:&quot;Events&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;popular-terms&quot;,&quot;title&quot;:&quot;Popular Search Terms&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-register&quot;,&quot;title&quot;:&quot;Objects by Register&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-schema&quot;,&quot;title&quot;:&quot;Objects by Schema&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-chart&quot;,&quot;title&quot;:&quot;Objects Distribution&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;my-tasks&quot;,&quot;title&quot;:&quot;Tasks&quot;,&quot;type&quot;:&quot;tasks&quot;,&quot;content&quot;:{&quot;scope&quot;:&quot;assigned&quot;,&quot;limit&quot;:6,&quot;pollSeconds&quot;:30}}]" layout="[{&quot;id&quot;:1,&quot;widgetId&quot;:&quot;count-objects&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:2,&quot;widgetId&quot;:&quot;count-registers&quot;,&quot;gridX&quot;:4,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:3,&quot;widgetId&quot;:&quot;count-schemas&quot;,&quot;gridX&quot;:8,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:4,&quot;widgetId&quot;:&quot;count-searches&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:5,&quot;widgetId&quot;:&quot;count-events&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:6,&quot;widgetId&quot;:&quot;popular-terms&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:7,&quot;widgetId&quot;:&quot;objects-by-register&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:8,&quot;widgetId&quot;:&quot;objects-by-schema&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:9,&quot;widgetId&quot;:&quot;objects-chart&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4},{&quot;id&quot;:10,&quot;widgetId&quot;:&quot;my-tasks&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:12,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4}]" loading="true" emptylabel="No data available" showrefresh="false" data-on="onLayoutChange">
+      <slot-actions>
+        <x-ncbutton disabled="false" aria-label="Refresh dashboard" data-on="onClick">
+          <slot-icon>
+            <x-refresh size="20"></x-refresh>
+          </slot-icon>
+        </x-ncbutton>
+      </slot-actions>
+      <slot-widget-count-objects>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-cubeoutline size="24"></x-cubeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-objects>
+      <slot-widget-count-registers>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-databaseoutline size="24"></x-databaseoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Registers</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-registers>
+      <slot-widget-count-schemas>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-filetreeoutline size="24"></x-filetreeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Schemas</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-schemas>
+      <slot-widget-count-searches>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-magnify size="24"></x-magnify>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">All time</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-searches>
+      <slot-widget-count-events>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-history size="24"></x-history>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Events</span><span class="kpi-value">0</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">All time</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-events>
+      <slot-widget-popular-terms>
+        <div class="widget-empty">No search terms data available</div>
+      </slot-widget-popular-terms>
+      <slot-widget-objects-by-register>
+        <div class="widget-empty">No register data available</div>
+      </slot-widget-objects-by-register>
+      <slot-widget-objects-by-schema>
+        <div class="widget-empty">No schema data available</div>
+      </slot-widget-objects-by-schema>
+      <slot-widget-objects-chart>
+        <div class="widget-empty">No data available for chart</div>
+      </slot-widget-objects-chart>
+    </x-cndashboardpage>
+  </slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`DashboardIndex markup renders the refresh button while refreshing 1`] = `
+"<x-ncappcontent>
+  <slot-default>
+    <x-cndashboardpage title="Dashboard" widgets="[{&quot;id&quot;:&quot;count-objects&quot;,&quot;title&quot;:&quot;Objects&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-registers&quot;,&quot;title&quot;:&quot;Registers&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-schemas&quot;,&quot;title&quot;:&quot;Schemas&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-searches&quot;,&quot;title&quot;:&quot;Searches&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-events&quot;,&quot;title&quot;:&quot;Events&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;popular-terms&quot;,&quot;title&quot;:&quot;Popular Search Terms&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-register&quot;,&quot;title&quot;:&quot;Objects by Register&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-schema&quot;,&quot;title&quot;:&quot;Objects by Schema&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-chart&quot;,&quot;title&quot;:&quot;Objects Distribution&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;my-tasks&quot;,&quot;title&quot;:&quot;Tasks&quot;,&quot;type&quot;:&quot;tasks&quot;,&quot;content&quot;:{&quot;scope&quot;:&quot;assigned&quot;,&quot;limit&quot;:6,&quot;pollSeconds&quot;:30}}]" layout="[{&quot;id&quot;:1,&quot;widgetId&quot;:&quot;count-objects&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:2,&quot;widgetId&quot;:&quot;count-registers&quot;,&quot;gridX&quot;:4,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:3,&quot;widgetId&quot;:&quot;count-schemas&quot;,&quot;gridX&quot;:8,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:4,&quot;widgetId&quot;:&quot;count-searches&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:5,&quot;widgetId&quot;:&quot;count-events&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:6,&quot;widgetId&quot;:&quot;popular-terms&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:7,&quot;widgetId&quot;:&quot;objects-by-register&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:8,&quot;widgetId&quot;:&quot;objects-by-schema&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:9,&quot;widgetId&quot;:&quot;objects-chart&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4},{&quot;id&quot;:10,&quot;widgetId&quot;:&quot;my-tasks&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:12,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4}]" loading="false" emptylabel="No data available" showrefresh="false" data-on="onLayoutChange">
+      <slot-actions>
+        <x-ncbutton disabled="true" aria-label="Refresh dashboard" data-on="onClick">
+          <slot-icon>
+            <x-ncloadingicon size="20"></x-ncloadingicon>
+          </slot-icon>
+        </x-ncbutton>
+      </slot-actions>
+      <slot-widget-count-objects>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-cubeoutline size="24"></x-cubeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-objects>
+      <slot-widget-count-registers>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-databaseoutline size="24"></x-databaseoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Registers</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-registers>
+      <slot-widget-count-schemas>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-filetreeoutline size="24"></x-filetreeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Schemas</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-schemas>
+      <slot-widget-count-searches>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-magnify size="24"></x-magnify>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">All time</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-searches>
+      <slot-widget-count-events>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-history size="24"></x-history>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Events</span><span class="kpi-value">0</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">All time</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-events>
+      <slot-widget-popular-terms>
+        <div class="widget-empty">No search terms data available</div>
+      </slot-widget-popular-terms>
+      <slot-widget-objects-by-register>
+        <div class="widget-empty">No register data available</div>
+      </slot-widget-objects-by-register>
+      <slot-widget-objects-by-schema>
+        <div class="widget-empty">No schema data available</div>
+      </slot-widget-objects-by-schema>
+      <slot-widget-objects-chart>
+        <div class="widget-empty">No data available for chart</div>
+      </slot-widget-objects-chart>
+    </x-cndashboardpage>
+  </slot-default>
+</x-ncappcontent>"
+`;
+
+exports[`DashboardIndex mount falls back to empty search data when popular terms fail 1`] = `
+[
+  [
+    "preload",
+  ],
+  [
+    "fetchAllChartData",
+  ],
+  [
+    "refreshRegisterList",
+  ],
+  [
+    "refreshSchemaList",
+  ],
+  [
+    "setDateRange",
+    null,
+    null,
+  ],
+  [
+    "fetchStatistics",
+    {
+      "from": null,
+      "to": null,
+    },
+  ],
+  [
+    "setStatistics",
+    {
+      "avg_response_time": 0,
+      "avg_results_per_search": 0,
+      "query_complexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "success_rate": 0,
+      "total_results": 0,
+      "total_searches": 0,
+      "unique_organizations": 0,
+      "unique_search_terms": 0,
+      "unique_users": 0,
+    },
+  ],
+  [
+    "setPopularTerms",
+    {
+      "results": [],
+    },
+  ],
+  [
+    "setActivity",
+    {
+      "daily": {
+        "activity": [],
+      },
+    },
+  ],
+]
+`;
+
+exports[`DashboardIndex mount falls back to empty search data when statistics fail 1`] = `
+[
+  [
+    "preload",
+  ],
+  [
+    "fetchAllChartData",
+  ],
+  [
+    "refreshRegisterList",
+  ],
+  [
+    "refreshSchemaList",
+  ],
+  [
+    "setDateRange",
+    null,
+    null,
+  ],
+  [
+    "setStatistics",
+    {
+      "avg_response_time": 0,
+      "avg_results_per_search": 0,
+      "query_complexity": {
+        "complex": 0,
+        "medium": 0,
+        "simple": 0,
+      },
+      "success_rate": 0,
+      "total_results": 0,
+      "total_searches": 0,
+      "unique_organizations": 0,
+      "unique_search_terms": 0,
+      "unique_users": 0,
+    },
+  ],
+  [
+    "setPopularTerms",
+    {
+      "results": [],
+    },
+  ],
+  [
+    "setActivity",
+    {
+      "daily": {
+        "activity": [],
+      },
+    },
+  ],
+]
+`;
+
+exports[`DashboardIndex mount fetches everything for all time 1`] = `
+[
+  [
+    "preload",
+  ],
+  [
+    "fetchAllChartData",
+  ],
+  [
+    "refreshRegisterList",
+  ],
+  [
+    "refreshSchemaList",
+  ],
+  [
+    "setDateRange",
+    null,
+    null,
+  ],
+  [
+    "fetchStatistics",
+    {
+      "from": null,
+      "to": null,
+    },
+  ],
+  [
+    "fetchPopularTerms",
+  ],
+]
+`;
+
+exports[`DashboardIndex mount restores a stored range and fetches for it 1`] = `
+{
+  "from": "2025-12-15",
+  "preset": "90d",
+  "till": "2026-03-15",
+}
+`;
+
+exports[`DashboardIndex mount restores a stored range and fetches for it 2`] = `
+[
+  [
+    "preload",
+  ],
+  [
+    "fetchAllChartData",
+  ],
+  [
+    "refreshRegisterList",
+  ],
+  [
+    "refreshSchemaList",
+  ],
+  [
+    "setDateRange",
+    "2025-12-15",
+    "2026-03-15",
+  ],
+  [
+    "fetchStatistics",
+    {
+      "from": "2025-12-15",
+      "to": "2026-03-15",
+    },
+  ],
+  [
+    "fetchPopularTerms",
+  ],
+]
+`;
+
+exports[`DashboardIndex range picker applies menu item 0 1`] = `
+{
+  "from": null,
+  "preset": "all",
+  "till": null,
+}
+`;
+
+exports[`DashboardIndex range picker applies menu item 0 2`] = `
+[
+  [
+    "setDateRange",
+    null,
+    null,
+  ],
+  [
+    "fetchStatistics",
+    {
+      "from": null,
+      "to": null,
+    },
+  ],
+  [
+    "fetchPopularTerms",
+  ],
+]
+`;
+
+exports[`DashboardIndex range picker applies menu item 1 1`] = `
+{
+  "from": "2026-03-08",
+  "preset": "7d",
+  "till": "2026-03-15",
+}
+`;
+
+exports[`DashboardIndex range picker applies menu item 1 2`] = `
+[
+  [
+    "setDateRange",
+    "2026-03-08",
+    "2026-03-15",
+  ],
+  [
+    "fetchStatistics",
+    {
+      "from": "2026-03-08",
+      "to": "2026-03-15",
+    },
+  ],
+  [
+    "fetchPopularTerms",
+  ],
+]
+`;
+
+exports[`DashboardIndex range picker applies menu item 2 1`] = `
+{
+  "from": "2026-02-13",
+  "preset": "30d",
+  "till": "2026-03-15",
+}
+`;
+
+exports[`DashboardIndex range picker applies menu item 2 2`] = `
+[
+  [
+    "setDateRange",
+    "2026-02-13",
+    "2026-03-15",
+  ],
+  [
+    "fetchStatistics",
+    {
+      "from": "2026-02-13",
+      "to": "2026-03-15",
+    },
+  ],
+  [
+    "fetchPopularTerms",
+  ],
+]
+`;
+
+exports[`DashboardIndex range picker applies menu item 3 1`] = `
+{
+  "from": "2025-12-15",
+  "preset": "90d",
+  "till": "2026-03-15",
+}
+`;
+
+exports[`DashboardIndex range picker applies menu item 3 2`] = `
+[
+  [
+    "setDateRange",
+    "2025-12-15",
+    "2026-03-15",
+  ],
+  [
+    "fetchStatistics",
+    {
+      "from": "2025-12-15",
+      "to": "2026-03-15",
+    },
+  ],
+  [
+    "fetchPopularTerms",
+  ],
+]
+`;
+
+exports[`DashboardIndex range picker applies menu item 4 1`] = `
+{
+  "from": "2025-03-15",
+  "preset": "12m",
+  "till": "2026-03-15",
+}
+`;
+
+exports[`DashboardIndex range picker applies menu item 4 2`] = `
+[
+  [
+    "setDateRange",
+    "2025-03-15",
+    "2026-03-15",
+  ],
+  [
+    "fetchStatistics",
+    {
+      "from": "2025-03-15",
+      "to": "2026-03-15",
+    },
+  ],
+  [
+    "fetchPopularTerms",
+  ],
+]
+`;
+
+exports[`DashboardIndex range picker marks the active preset in both menus after a pick 1`] = `
+"<x-ncappcontent>
+  <slot-default>
+    <x-cndashboardpage title="Dashboard" widgets="[{&quot;id&quot;:&quot;count-objects&quot;,&quot;title&quot;:&quot;Objects&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-registers&quot;,&quot;title&quot;:&quot;Registers&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-schemas&quot;,&quot;title&quot;:&quot;Schemas&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-searches&quot;,&quot;title&quot;:&quot;Searches&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;count-events&quot;,&quot;title&quot;:&quot;Events&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;popular-terms&quot;,&quot;title&quot;:&quot;Popular Search Terms&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-register&quot;,&quot;title&quot;:&quot;Objects by Register&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-by-schema&quot;,&quot;title&quot;:&quot;Objects by Schema&quot;,&quot;type&quot;:&quot;custom&quot;,&quot;flush&quot;:true},{&quot;id&quot;:&quot;objects-chart&quot;,&quot;title&quot;:&quot;Objects Distribution&quot;,&quot;type&quot;:&quot;custom&quot;},{&quot;id&quot;:&quot;my-tasks&quot;,&quot;title&quot;:&quot;Tasks&quot;,&quot;type&quot;:&quot;tasks&quot;,&quot;content&quot;:{&quot;scope&quot;:&quot;assigned&quot;,&quot;limit&quot;:6,&quot;pollSeconds&quot;:30}}]" layout="[{&quot;id&quot;:1,&quot;widgetId&quot;:&quot;count-objects&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:2,&quot;widgetId&quot;:&quot;count-registers&quot;,&quot;gridX&quot;:4,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:3,&quot;widgetId&quot;:&quot;count-schemas&quot;,&quot;gridX&quot;:8,&quot;gridY&quot;:0,&quot;gridWidth&quot;:4,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:4,&quot;widgetId&quot;:&quot;count-searches&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:5,&quot;widgetId&quot;:&quot;count-events&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:2,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:2,&quot;showTitle&quot;:false},{&quot;id&quot;:6,&quot;widgetId&quot;:&quot;popular-terms&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:7,&quot;widgetId&quot;:&quot;objects-by-register&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:4,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:8,&quot;widgetId&quot;:&quot;objects-by-schema&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4,&quot;flush&quot;:true},{&quot;id&quot;:9,&quot;widgetId&quot;:&quot;objects-chart&quot;,&quot;gridX&quot;:6,&quot;gridY&quot;:8,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4},{&quot;id&quot;:10,&quot;widgetId&quot;:&quot;my-tasks&quot;,&quot;gridX&quot;:0,&quot;gridY&quot;:12,&quot;gridWidth&quot;:6,&quot;gridHeight&quot;:4}]" loading="false" emptylabel="No data available" showrefresh="false" data-on="onLayoutChange">
+      <slot-actions>
+        <x-ncbutton disabled="false" aria-label="Refresh dashboard" data-on="onClick">
+          <slot-icon>
+            <x-refresh size="20"></x-refresh>
+          </slot-icon>
+        </x-ncbutton>
+      </slot-actions>
+      <slot-widget-count-objects>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-cubeoutline size="24"></x-cubeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Objects</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-objects>
+      <slot-widget-count-registers>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-databaseoutline size="24"></x-databaseoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Registers</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-registers>
+      <slot-widget-count-schemas>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-filetreeoutline size="24"></x-filetreeoutline>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Schemas</span><span class="kpi-value">0</span></div>
+        </div>
+      </slot-widget-count-schemas>
+      <slot-widget-count-searches>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-magnify size="24"></x-magnify>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Searches</span><span class="kpi-value">0</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">Last 30 days</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-searches>
+      <slot-widget-count-events>
+        <div class="kpi-card">
+          <div class="kpi-icon">
+            <x-history size="24"></x-history>
+          </div>
+          <div class="kpi-content"><span class="kpi-label">Events</span><span class="kpi-value">0</span></div>
+          <div class="kpi-chip">
+            <x-ncactions forcemenu="true" container="body" menutitle="Change date range">
+              <slot-icon><span class="kpi-chip-label">Last 30 days</span></slot-icon>
+              <slot-default>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> All time</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 7 days</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 30 days</slot-default>
+                  <slot-icon>
+                    <x-calendarrange size="16"></x-calendarrange>
+                  </slot-icon>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 3 months</slot-default>
+                </x-ncactionbutton>
+                <x-ncactionbutton closeafterclick="true" data-on="onClick">
+                  <slot-default> Last 12 months</slot-default>
+                </x-ncactionbutton>
+              </slot-default>
+            </x-ncactions>
+          </div>
+        </div>
+      </slot-widget-count-events>
+      <slot-widget-popular-terms>
+        <div class="widget-empty">No search terms data available</div>
+      </slot-widget-popular-terms>
+      <slot-widget-objects-by-register>
+        <div class="widget-empty">No register data available</div>
+      </slot-widget-objects-by-register>
+      <slot-widget-objects-by-schema>
+        <div class="widget-empty">No schema data available</div>
+      </slot-widget-objects-by-schema>
+      <slot-widget-objects-chart>
+        <div class="widget-empty">No data available for chart</div>
+      </slot-widget-objects-chart>
+    </x-cndashboardpage>
+  </slot-default>
+</x-ncappcontent>"
+`;

@@ -35,7 +35,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Export
  *
- * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 class ExportValueRenderer {
 
@@ -50,7 +50,7 @@ class ExportValueRenderer {
 	 *
 	 * @return string The cell.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function stored($value): string {
 		if ($value === null) {
@@ -75,53 +75,85 @@ class ExportValueRenderer {
 	/**
 	 * A value written as a surface would show it.
 	 *
-	 * @param mixed                 $value    The raw value.
-	 * @param array<string, mixed>  $property The schema property, when the schema resolved.
-	 * @param array<string, string> $names    Uuid to object name map.
+	 * @param mixed           $value  The raw value.
+	 * @param ColumnRendering $column The column's schema property and the uuid to name map.
 	 *
 	 * @return string The cell.
 	 *
-	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	public function rendered($value, array $property, array $names): string {
+	public function rendered($value, ColumnRendering $column): string {
 		if ($value === null) {
 			return '';
 		}
 
 		if (is_bool($value) === true) {
-			if ($value === true) {
-				return 'yes';
-			}
-
-			return 'no';
+			return $this->yesOrNo(value: $value);
 		}
 
 		if (is_array($value) === true) {
-			$parts = [];
-			foreach ($value as $item) {
-				$parts[] = $this->rendered(value: $item, property: $property, names: $names);
-			}
-
-			return implode('; ', $parts);
+			return $this->renderedList(values: $value, column: $column);
 		}
 
 		if (is_object($value) === true) {
 			return (string)json_encode($value);
 		}
 
-		$scalar = (string)$value;
+		return $this->renderedScalar(scalar: (string)$value, column: $column);
+	}//end rendered()
 
-		if (isset($names[$scalar]) === true) {
-			return $names[$scalar];
+	/**
+	 * A boolean as a surface shows it.
+	 *
+	 * @param bool $value The value.
+	 *
+	 * @return string `yes` or `no`.
+	 */
+	private function yesOrNo(bool $value): string {
+		if ($value === true) {
+			return 'yes';
 		}
 
-		$label = $this->enumLabel(value: $scalar, property: $property);
+		return 'no';
+	}//end yesOrNo()
+
+	/**
+	 * A list, each item rendered and joined with semicolons.
+	 *
+	 * @param array           $values The items.
+	 * @param ColumnRendering $column The column's schema property and the uuid to name map.
+	 *
+	 * @return string The cell.
+	 */
+	private function renderedList(array $values, ColumnRendering $column): string {
+		$parts = [];
+		foreach ($values as $item) {
+			$parts[] = $this->rendered(value: $item, column: $column);
+		}
+
+		return implode('; ', $parts);
+	}//end renderedList()
+
+	/**
+	 * A scalar as its resolved name, its enum label, or its written-out date or text.
+	 *
+	 * @param string          $scalar The value as text.
+	 * @param ColumnRendering $column The column's schema property and the uuid to name map.
+	 *
+	 * @return string The cell.
+	 */
+	private function renderedScalar(string $scalar, ColumnRendering $column): string {
+		if (isset($column->names[$scalar]) === true) {
+			return $column->names[$scalar];
+		}
+
+		$label = $this->enumLabel(value: $scalar, property: $column->property);
 		if ($label !== null) {
 			return $label;
 		}
 
 		return $this->formatDate(value: $scalar);
-	}//end rendered()
+	}//end renderedScalar()
 
 	/**
 	 * The administered label for a code list value, when the schema names one.

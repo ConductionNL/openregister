@@ -1,0 +1,1032 @@
+// SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+// SPDX-License-Identifier: EUPL-1.2
+// Style rules shared verbatim by several components under src/modals.
+// Each mixin emits complete rules; a component includes it where the rules belong.
+
+@mixin tab-container-deep-nav-link {
+	.tabContainer :deep(.nav-link) {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		justify-content: center;
+	}
+}
+
+@mixin form-editor {
+	.form-editor {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 16px 0;
+	}
+}
+
+@mixin groups-select-container {
+	.groups-select-container {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+}
+
+@mixin groups-label {
+	.groups-label {
+		font-weight: 500;
+		color: var(--color-main-text);
+		font-size: 14px;
+	}
+}
+
+@mixin field-hint {
+	.field-hint {
+		font-size: 12px;
+		color: var(--color-text-lighter);
+		margin: 0;
+	}
+}
+
+@mixin group-option {
+	.group-option {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+}
+
+@mixin security-section {
+	.security-section {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 16px 0;
+	}
+}
+
+@mixin rbac-table-frame {
+	width: 100%;
+	border-collapse: collapse;
+	border: 1px solid var(--color-border-dark);
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+@mixin rbac-table-head-cell {
+	color: var(--color-text-dark);
+	font-weight: 600;
+	padding: 12px 16px;
+	text-align: left;
+	border-bottom: 2px solid var(--color-border-dark);
+}
+
+@mixin rbac-section {
+	.rbac-section {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+}
+
+@mixin rbac-description {
+	.rbac-description {
+		font-size: 14px;
+		color: var(--color-text-lighter);
+		margin: 0 0 16px 0;
+	}
+}
+
+@mixin loading-groups {
+	.loading-groups {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		color: var(--color-text-lighter);
+		padding: 16px;
+	}
+}
+
+@mixin groups-list {
+	.groups-list {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+}
+
+@mixin groups-list-h3 {
+	.groups-list h3 {
+		margin: 0;
+		font-size: 16px;
+		font-weight: 500;
+		color: var(--color-main-text);
+	}
+}
+
+@mixin group-items {
+	.group-items {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+}
+
+@mixin group-item {
+	.group-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 8px 12px;
+		background-color: var(--color-background-hover);
+		border-radius: var(--border-radius);
+	}
+}
+
+@mixin group-badge {
+	.group-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 4px 12px;
+		background-color: var(--color-primary-element-light);
+		color: var(--color-primary-element-text);
+		border-radius: 16px;
+		font-size: 13px;
+		font-weight: 500;
+	}
+}
+
+@mixin no-groups {
+	.no-groups {
+		padding: 16px;
+		text-align: center;
+		color: var(--color-text-lighter);
+		font-style: italic;
+	}
+}
+
+@mixin form-container {
+	.formContainer {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+}
+
+@mixin property-item {
+	.propertyItem {
+		display: flex;
+		gap: 0.5rem;
+	}
+}
+
+@mixin property-item-strong {
+	.propertyItem strong {
+		min-width: 120px;
+		color: var(--color-text-lighter);
+	}
+}
+
+@mixin tab-headers {
+	.tabHeaders {
+		display: flex;
+		border-bottom: 1px solid var(--color-border);
+		margin-bottom: 1rem;
+	}
+}
+
+@mixin tab-header {
+	.tabHeader {
+		padding: 0.75rem 1rem;
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: var(--color-text-lighter);
+		border-bottom: 2px solid transparent;
+		transition: all 0.2s ease;
+	}
+}
+
+@mixin tab-header-hover {
+	.tabHeader:hover {
+		color: var(--color-main-text);
+		background-color: var(--color-background-hover);
+	}
+}
+
+@mixin tab-header-active {
+	.tabHeader.active {
+		color: var(--color-primary);
+		border-bottom-color: var(--color-primary);
+	}
+}
+
+@mixin empty-tab-content {
+	.emptyTabContent {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		min-height: 200px;
+	}
+}
+
+@mixin media-prefers-reduced-motion-reduce {
+	@media (prefers-reduced-motion: reduce) {
+		.tabHeader {
+			transition: none;
+		}
+	}
+}
+
+@mixin step-title {
+	.step-title {
+		margin-top: 0 !important;
+		margin-bottom: 16px;
+		color: var(--color-main-text);
+	}
+}
+
+@mixin selected-objects-list {
+	.selected-objects-list {
+		max-height: 300px;
+		overflow-y: auto;
+		border: 1px solid var(--color-border);
+		border-radius: 4px;
+	}
+}
+
+@mixin selected-object-item {
+	.selected-object-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 12px;
+		border-bottom: 1px solid var(--color-border);
+		background-color: var(--color-background-hover);
+	}
+}
+
+@mixin object-info-strong {
+	.object-info strong {
+		display: block;
+		margin-bottom: 4px;
+		color: var(--color-main-text);
+	}
+}
+
+@mixin object-id {
+	.object-id {
+		color: var(--color-text-maxcontrast);
+		font-size: 0.9em;
+		margin: 0;
+	}
+}
+
+@mixin action-badge {
+	.action-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 8px;
+		border-radius: 12px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: white;
+		background: var(--color-text-maxcontrast);
+	}
+}
+
+@mixin detail-item {
+	.detail-item {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+}
+
+@mixin form-group-label {
+	.form-group label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-weight: bold;
+	}
+}
+
+@mixin code-mirror-container-deep-cm-content {
+	.codeMirrorContainer :deep(.cm-content) {
+		border-radius: 0 !important;
+		border: none !important;
+	}
+}
+
+// Token colours and selection colours of a CodeMirror editor, for light and dark.
+@mixin code-mirror-theme {
+	/* value text color */
+	/* string */
+	.codeMirrorContainer.light :deep(.ͼe) {
+		color: #448c27;
+	}
+
+	.codeMirrorContainer.dark :deep(.ͼe) {
+		color: #88c379;
+	}
+
+	/* boolean */
+	.codeMirrorContainer.light :deep(.ͼc) {
+		color: #221199;
+	}
+
+	.codeMirrorContainer.dark :deep(.ͼc) {
+		color: #8d64f7;
+	}
+
+	/* null */
+	.codeMirrorContainer.light :deep(.ͼb) {
+		color: #770088;
+	}
+
+	.codeMirrorContainer.dark :deep(.ͼb) {
+		color: #be55cd;
+	}
+
+	/* number */
+	.codeMirrorContainer.light :deep(.ͼd) {
+		color: #d19a66;
+	}
+
+	.codeMirrorContainer.dark :deep(.ͼd) {
+		color: #9d6c3a;
+	}
+
+	/* text cursor */
+	.codeMirrorContainer :deep(.cm-content) * {
+		cursor: text !important;
+	}
+
+	/* selection color */
+	.codeMirrorContainer.light :deep(.cm-line)::selection,
+	.codeMirrorContainer.light :deep(.cm-line) ::selection {
+		background-color: #d7eaff !important;
+		color: black;
+	}
+
+	.codeMirrorContainer.dark :deep(.cm-line)::selection,
+	.codeMirrorContainer.dark :deep(.cm-line) ::selection {
+		background-color: #8fb3e6 !important;
+		color: black;
+	}
+
+	/* string */
+	.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
+		color: #2d770f;
+	}
+
+	.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
+		color: #104e0c;
+	}
+
+	/* boolean */
+	.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
+		color: #221199;
+	}
+
+	.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
+		color: #4026af;
+	}
+
+	/* null */
+	.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
+		color: #770088;
+	}
+
+	.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
+		color: #770088;
+	}
+
+	/* number */
+	.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
+		color: #8c5c2c;
+	}
+
+	.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
+		color: #623907;
+	}
+}
+
+@mixin report-title {
+	.report-title {
+		margin-top: 0 !important;
+		margin-bottom: 16px;
+		color: var(--color-main-text);
+	}
+}
+
+@mixin loading-container {
+	.loading-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 16px;
+		padding: 40px;
+	}
+}
+
+@mixin report-section {
+	.report-section {
+		margin-bottom: 20px;
+		padding: 16px;
+		background-color: var(--color-background-hover);
+		border-radius: 4px;
+	}
+}
+
+@mixin report-section-h4 {
+	.report-section h4 {
+		margin-bottom: 12px;
+		color: var(--color-main-text);
+	}
+}
+
+@mixin report-section-ul {
+	.report-section ul {
+		margin: 0;
+		padding-left: 20px;
+	}
+}
+
+@mixin loading-container-2 {
+	.loading-container {
+		text-align: center;
+		padding: 2rem;
+	}
+}
+
+@mixin loading-subtitle {
+	.loading-subtitle {
+		color: var(--color-text-lighter);
+		font-size: 0.9rem;
+		margin-top: 0.5rem;
+	}
+}
+
+@mixin object-breakdown {
+	.object-breakdown {
+		margin-top: 1rem;
+		padding: 1rem;
+		background: var(--color-background-hover);
+		border-radius: var(--border-radius);
+		border: 1px solid var(--color-border);
+	}
+}
+
+@mixin breakdown-item {
+	.breakdown-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.5rem;
+	}
+}
+
+@mixin breakdown-label {
+	.breakdown-label {
+		font-weight: 500;
+		color: var(--color-text);
+	}
+}
+
+@mixin breakdown-value {
+	.breakdown-value {
+		font-weight: 600;
+		padding: 0.25rem 0.5rem;
+		border-radius: var(--border-radius);
+		background: var(--color-background-hover);
+	}
+}
+
+@mixin breakdown-value-invalid {
+	.breakdown-value.invalid {
+		color: var(--color-warning);
+		background: var(--color-warning-light);
+	}
+}
+
+@mixin breakdown-value-deleted {
+	.breakdown-value.deleted {
+		color: var(--color-error);
+		background: var(--color-error-light);
+	}
+}
+
+@mixin object-count-section {
+	.object-count-section {
+		background: var(--color-background-hover);
+		border-radius: var(--border-radius);
+		padding: 1rem;
+		margin-bottom: 2rem;
+	}
+}
+
+@mixin object-count-section-h4 {
+	.object-count-section h4 {
+		margin-top: 0;
+		margin-bottom: 1rem;
+		color: var(--color-text);
+	}
+}
+
+@mixin object-count-centered {
+	.object-count-centered {
+		display: flex;
+		align-items: baseline;
+		justify-content: center;
+		gap: 0.5rem;
+		font-size: 1.2rem;
+	}
+}
+
+@mixin count-value {
+	.count-value {
+		font-size: 2rem;
+		font-weight: bold;
+		color: var(--color-primary-element);
+	}
+}
+
+@mixin loading-count {
+	.loading-count {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		color: var(--color-text-lighter);
+	}
+}
+
+@mixin steps-section-h4 {
+	.steps-section h4 {
+		margin-bottom: 1rem;
+		color: var(--color-text);
+	}
+}
+
+@mixin steps-list {
+	.steps-list {
+		margin: 0;
+		padding-left: 1.5rem;
+		color: var(--color-text);
+	}
+}
+
+@mixin steps-list-li {
+	.steps-list li {
+		margin-bottom: 0.5rem;
+		line-height: 1.5;
+	}
+}
+
+@mixin info-box {
+	.info-box {
+		display: flex;
+		gap: 12px;
+		padding: 16px;
+		background: var(--color-background-hover);
+		border-radius: 8px;
+		margin-bottom: 24px;
+		align-items: flex-start;
+
+		p {
+			margin: 0;
+			color: var(--color-text-maxcontrast);
+		}
+
+		ul {
+			margin: 8px 0 0 0;
+			padding-left: 20px;
+			color: var(--color-text-maxcontrast);
+
+			li {
+				margin: 4px 0;
+			}
+		}
+
+		&.warning {
+			background: var(--color-warning-light);
+			border-left: 4px solid var(--color-warning);
+
+			strong {
+				color: var(--color-main-text);
+				display: block;
+				margin-bottom: 8px;
+			}
+		}
+	}
+}
+
+// One option of a select: its name in bold above a muted line of detail.
+@mixin stacked-select-option {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+
+	strong {
+		font-size: 14px;
+	}
+
+	small {
+		color: var(--color-text-maxcontrast);
+		font-size: 12px;
+	}
+}
+
+@mixin form-group {
+	.form-group {
+		margin-bottom: 20px;
+
+		label {
+			display: block;
+			margin-bottom: 8px;
+			font-weight: 500;
+		}
+
+		.input-field {
+			width: 100%;
+			padding: 10px 12px;
+			border: 1px solid var(--color-border);
+			border-radius: 6px;
+			font-size: 14px;
+			background: var(--color-main-background);
+			color: var(--color-main-text);
+
+			&:focus {
+				outline: none;
+				border-color: var(--color-primary-element);
+			}
+		}
+
+		small {
+			display: block;
+			margin-top: 6px;
+			color: var(--color-text-maxcontrast);
+			font-size: 12px;
+		}
+	}
+}
+
+@mixin info-grid {
+	.info-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		gap: 16px;
+		margin-bottom: 16px;
+	}
+}
+
+@mixin info-item {
+	.info-item {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 12px;
+		background: var(--color-background-hover);
+		border-radius: 6px;
+
+		.info-label {
+			font-size: 12px;
+			color: var(--color-text-maxcontrast);
+			font-weight: 500;
+		}
+
+		.info-value {
+			font-size: 14px;
+			color: var(--color-main-text);
+			font-weight: 600;
+		}
+	}
+}
+
+@mixin info-note {
+	.info-note {
+		padding: 12px;
+		background: var(--color-background-dark);
+		border-radius: 6px;
+		margin-top: 16px;
+
+		small {
+			color: var(--color-text-maxcontrast);
+			font-size: 13px;
+		}
+	}
+}
+
+@mixin deep-dialog-actions {
+	:deep(.dialog__actions) {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 16px;
+		flex-wrap: wrap;
+	}
+}
+
+@mixin actions-right {
+	.actions-right {
+		display: flex;
+		gap: 8px;
+		margin-left: auto;
+	}
+}
+
+@mixin media-max-width-768px {
+	@media (max-width: 768px) {
+		:deep(.dialog__actions) {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.actions-left,
+		.actions-right {
+			width: 100%;
+			justify-content: center;
+		}
+	}
+}
+
+@mixin breakdown-label-rules {
+	@include breakdown-label;
+	@include breakdown-value;
+	@include breakdown-value-invalid;
+	@include breakdown-value-deleted;
+}
+
+@mixin object-info-strong-rules {
+	@include object-info-strong;
+	@include object-id;
+}
+
+@mixin loading-groups-rules {
+	@include loading-groups;
+	@include groups-list;
+	@include groups-list-h3;
+	@include group-items;
+	@include group-item;
+	@include group-badge;
+	@include no-groups;
+}
+
+@mixin groups-select-container-rules {
+	@include groups-select-container;
+	@include groups-label;
+	@include field-hint;
+}
+
+@mixin selected-objects-list-rules {
+	@include selected-objects-list;
+	@include selected-object-item;
+}
+
+@mixin tab-headers-rules {
+	@include tab-headers;
+	@include tab-header;
+	@include tab-header-hover;
+	@include tab-header-active;
+}
+
+@mixin tab-container-deep-nav-link-rules {
+	@include tab-container-deep-nav-link;
+	@include form-editor;
+}
+
+@mixin loading-count-rules {
+	@include loading-count;
+	@include object-breakdown;
+	@include breakdown-item;
+}
+
+@mixin steps-section-h4-rules {
+	@include steps-section-h4;
+	@include steps-list;
+	@include steps-list-li;
+}
+
+@mixin info-grid-rules {
+	@include info-grid;
+	@include info-item;
+	@include info-note;
+}
+
+@mixin groups-select-container-rules-2 {
+	@include groups-select-container-rules;
+	@include group-option;
+}
+
+@mixin property-item-rules {
+	@include property-item;
+	@include property-item-strong;
+}
+
+@mixin empty-tab-content-rules {
+	@include empty-tab-content;
+	@include media-prefers-reduced-motion-reduce;
+}
+
+@mixin step-title-rules {
+	@include step-title;
+	@include report-title;
+}
+
+@mixin report-section-h4-rules {
+	@include report-section-h4;
+	@include report-section-ul;
+}
+
+@mixin loading-container-2-rules {
+	@include loading-container-2;
+	@include loading-subtitle;
+}
+
+@mixin object-count-section-rules {
+	@include object-count-section;
+	@include object-count-section-h4;
+}
+
+@mixin object-count-centered-rules {
+	@include object-count-centered;
+	@include count-value;
+}
+// The scrolling content area of a settings modal, `.#{$name}-content`.
+@mixin config-content($name) {
+	.#{$name}-content {
+		padding: 20px;
+		max-height: 70vh;
+		overflow-y: auto;
+	}
+}
+
+@mixin config-section {
+	.config-section {
+		margin-bottom: 32px;
+
+		h3 {
+			margin: 0 0 8px 0;
+			font-size: 16px;
+			font-weight: 600;
+		}
+
+		.section-description {
+			margin: 0 0 16px 0;
+			color: var(--color-text-maxcontrast);
+			font-size: 14px;
+			line-height: 1.5;
+		}
+	}
+}
+
+@mixin tab-container-column {
+	.tabContainer {
+		width: 100%;
+	}
+
+	.form-editor {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		padding: 1rem 0;
+	}
+
+	.selectField {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.selectField label {
+		font-weight: 500;
+		color: var(--color-text-maxcontrast);
+	}
+
+	.checkboxField {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.field-hint {
+		font-size: 0.875rem;
+		color: var(--color-text-maxcontrast);
+		margin: 0;
+	}
+}
+
+@mixin code-mirror-editor {
+	.codeMirrorContainer :deep(.cm-editor) {
+		outline: none !important;
+	}
+
+	.codeMirrorContainer.light > .vue-codemirror {
+		border: 1px dotted silver;
+	}
+
+	.codeMirrorContainer.dark > .vue-codemirror {
+		border: 1px dotted grey;
+	}
+}
+
+@mixin code-mirror-frame {
+	.codeMirrorContainer {
+		margin-block-start: 6px;
+	}
+
+	.prettifyButton {
+		margin-block-start: 10px;
+	}
+}
+
+@mixin action-badge-colours {
+	.action-badge.action-create {
+		background: var(--color-success);
+	}
+
+	.action-badge.action-update {
+		background: var(--color-warning);
+	}
+
+	.action-badge.action-delete {
+		background: var(--color-error);
+	}
+
+	.action-badge.action-read {
+		background: var(--color-info);
+	}
+}
+
+@mixin nav-tabs-link {
+	.nav-tabs .nav-link {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+	}
+
+	.nav-tabs .nav-link span {
+		display: inline-flex;
+		align-items: center;
+	}
+}
+
+@mixin error-text-rules {
+	.error-text {
+		color: var(--color-error);
+	}
+
+	.warning-text {
+		color: var(--color-warning);
+	}
+}
+
+// The details head of a view modal: the dialog column, the title and
+// description block, and the shaded property list. $name prefixes the
+// classes, as in .view#{Name}Dialog and .#{name}Properties.
+@mixin view-dialog-details($name, $Name) {
+	.view#{$Name}Dialog {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.#{$name}DetailsGrid {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.#{$name}MainInfo h2 {
+		margin: 0 0 0.5rem 0;
+		color: var(--color-main-text);
+	}
+
+	.#{$name}Description {
+		color: var(--color-text-lighter);
+		margin: 0;
+	}
+
+	.#{$name}Properties {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 1rem;
+		background-color: var(--color-background-hover);
+		border-radius: var(--border-radius);
+	}
+
+	@include property-item-rules;
+}
+
+// The tab area of a view modal around ViewDialogTabs.
+@mixin view-dialog-tab-panels {
+	.tabContainer {
+		margin-top: 1rem;
+	}
+
+	.tabPanel {
+		padding: 1rem 0;
+	}
+}

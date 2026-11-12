@@ -1,0 +1,1571 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`register card schema actions golden deleteSchemaObjects hard active only 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "total": 4,
+        },
+      },
+      "title": "Live",
+    },
+    true,
+  ],
+  "mockLog": [
+    [
+      "confirm",
+      "⚠️ PERMANENT DELETION WARNING ⚠️
+
+You are about to PERMANENTLY delete {count} soft-deleted objects for schema "{schema}".
+
+These objects will be completely removed from the database and CANNOT be recovered.
+
+Are you absolutely sure? {"count":0,"schema":"Live"}",
+    ],
+    [
+      "success",
+      "Starting {action} for {schema}... {"action":"permanently deleting","schema":"Live"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/bulk/7/3/delete-objects",
+      {
+        "hardDelete": true,
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Objects deletion completed for {schema} {"schema":"Live"}",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "fetchRegisters",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden deleteSchemaObjects hard deleted only 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 2,
+        },
+      },
+      "title": "Gone",
+    },
+    true,
+  ],
+  "mockLog": [
+    [
+      "confirm",
+      "⚠️ PERMANENT DELETION WARNING ⚠️
+
+You are about to PERMANENTLY delete {count} soft-deleted objects for schema "{schema}".
+
+These objects will be completely removed from the database and CANNOT be recovered.
+
+Are you absolutely sure? {"count":2,"schema":"Gone"}",
+    ],
+    [
+      "success",
+      "Starting {action} for {schema}... {"action":"permanently deleting","schema":"Gone"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/bulk/7/3/delete-objects",
+      {
+        "hardDelete": true,
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Successfully deleted {count} objects for {schema} {"count":0,"schema":"Gone"}",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "fetchRegisters",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden deleteSchemaObjects hard fails 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+    true,
+  ],
+  "mockLog": [
+    [
+      "confirm",
+      "⚠️ PERMANENT DELETION WARNING ⚠️
+
+You are about to PERMANENTLY delete ALL objects for schema "{schema}":
+
+• Active objects: {active}
+• Soft-deleted objects: {deleted}
+• Total: {total}
+
+These objects will be completely removed from the database and CANNOT be recovered.
+
+Are you absolutely sure? {"active":3,"deleted":2,"total":5,"schema":"Schema three"}",
+    ],
+    [
+      "success",
+      "Starting {action} for {schema}... {"action":"permanently deleting","schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/bulk/7/3/delete-objects",
+      {
+        "hardDelete": true,
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "console.error",
+      "Error deleting schema objects:",
+      "Error: network down",
+    ],
+    [
+      "error",
+      "Failed to delete objects for {schema}: {error} {"schema":"Schema three","error":"no"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden deleteSchemaObjects hard mixed 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+    true,
+  ],
+  "mockLog": [
+    [
+      "confirm",
+      "⚠️ PERMANENT DELETION WARNING ⚠️
+
+You are about to PERMANENTLY delete ALL objects for schema "{schema}":
+
+• Active objects: {active}
+• Soft-deleted objects: {deleted}
+• Total: {total}
+
+These objects will be completely removed from the database and CANNOT be recovered.
+
+Are you absolutely sure? {"active":3,"deleted":2,"total":5,"schema":"Schema three"}",
+    ],
+    [
+      "success",
+      "Starting {action} for {schema}... {"action":"permanently deleting","schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/bulk/7/3/delete-objects",
+      {
+        "hardDelete": true,
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Successfully deleted {count} objects for {schema} {"count":5,"schema":"Schema three"}",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "fetchRegisters",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden deleteSchemaObjects nothing to delete 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "title": "Empty",
+    },
+  ],
+  "mockLog": [
+    [
+      "error",
+      "No objects to delete for schema {schema} {"schema":"Empty"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden deleteSchemaObjects soft 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "confirm",
+      "Are you sure you want to soft-delete {count} active objects for schema "{schema}"?
+
+They will be marked as deleted but can be permanently removed later. {"count":3,"schema":"Schema three"}",
+    ],
+    [
+      "success",
+      "Starting {action} for {schema}... {"action":"soft-deleting","schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/bulk/7/3/delete-objects",
+      {
+        "hardDelete": false,
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Successfully deleted {count} objects for {schema} {"count":3,"schema":"Schema three"}",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "fetchRegisters",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden deleteSchemaObjects soft declined 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "confirm",
+      "Are you sure you want to soft-delete {count} active objects for schema "{schema}"?
+
+They will be marked as deleted but can be permanently removed later. {"count":3,"schema":"Schema three"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden deleteSchemaObjects soft no count 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "confirm",
+      "Are you sure you want to soft-delete {count} active objects for schema "{schema}"?
+
+They will be marked as deleted but can be permanently removed later. {"count":3,"schema":"Schema three"}",
+    ],
+    [
+      "success",
+      "Starting {action} for {schema}... {"action":"soft-deleting","schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/bulk/7/3/delete-objects",
+      {
+        "hardDelete": false,
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Successfully deleted {count} objects for {schema} {"count":0,"schema":"Schema three"}",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "fetchRegisters",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden deleteSchemaObjects soft no success 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "confirm",
+      "Are you sure you want to soft-delete {count} active objects for schema "{schema}"?
+
+They will be marked as deleted but can be permanently removed later. {"count":3,"schema":"Schema three"}",
+    ],
+    [
+      "success",
+      "Starting {action} for {schema}... {"action":"soft-deleting","schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/bulk/7/3/delete-objects",
+      {
+        "hardDelete": false,
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Objects deletion completed for {schema} {"schema":"Schema three"}",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "fetchRegisters",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden deleteSchemaObjects soft none active 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 2,
+        },
+      },
+      "title": "Gone",
+    },
+  ],
+  "mockLog": [
+    [
+      "error",
+      "No active objects to soft-delete for schema {schema}. Use "Permanently Delete" to remove soft-deleted objects. {"schema":"Gone"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden removeSchemaFromRegister declined 1`] = `
+{
+  "input": [
+    {
+      "id": 4,
+      "stats": {
+        "objects": {
+          "total": 0,
+        },
+      },
+      "title": "Empty",
+    },
+  ],
+  "mockLog": [
+    [
+      "confirm",
+      "Are you sure you want to remove the schema "{schema}" from register "{register}"? This action cannot be undone. {"schema":"Empty","register":"Register seven"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden removeSchemaFromRegister empty 1`] = `
+{
+  "input": [
+    {
+      "id": 4,
+      "title": "Empty",
+    },
+  ],
+  "mockLog": [
+    [
+      "confirm",
+      "Are you sure you want to remove the schema "{schema}" from register "{register}"? This action cannot be undone. {"schema":"Empty","register":"Register seven"}",
+    ],
+    [
+      "success",
+      "Removing schema {schema}... {"schema":"Empty"}",
+    ],
+    [
+      "delete",
+      "http://localhost/index.php/apps/openregister/api/schemas/4",
+      {
+        "headers": {
+          "Accept": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Schema {schema} removed successfully {"schema":"Empty"}",
+    ],
+    [
+      "emit",
+      "refresh",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden removeSchemaFromRegister fails 1`] = `
+{
+  "input": [
+    {
+      "id": 4,
+      "title": "Empty",
+    },
+  ],
+  "mockLog": [
+    [
+      "confirm",
+      "Are you sure you want to remove the schema "{schema}" from register "{register}"? This action cannot be undone. {"schema":"Empty","register":"Register seven"}",
+    ],
+    [
+      "success",
+      "Removing schema {schema}... {"schema":"Empty"}",
+    ],
+    [
+      "delete",
+      "http://localhost/index.php/apps/openregister/api/schemas/4",
+      {
+        "headers": {
+          "Accept": "application/json",
+        },
+      },
+    ],
+    [
+      "console.error",
+      "Error removing schema:",
+      "Error: network down",
+    ],
+    [
+      "error",
+      "Failed to remove schema {schema}: {error} {"schema":"Empty","error":"in use"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden removeSchemaFromRegister has objects 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "error",
+      "Cannot remove schema {schema} because it contains {count} objects {"schema":"Schema three","count":3}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden setSchemaConfiguration blob 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+    "blob",
+  ],
+  "mockLog": [
+    [
+      "get",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "headers": {
+          "Accept": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Converting {schema} to blob storage... {"schema":"Schema three"}",
+    ],
+    [
+      "put",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "description": "",
+        "properties": {
+          "a": {},
+          "b": {
+            "type": "string",
+          },
+        },
+        "required": [],
+        "title": "S",
+        "type": "object",
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Schema configuration updated successfully for {schema} {"schema":"Schema three"}",
+    ],
+    [
+      "emit",
+      "refresh",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden setSchemaConfiguration blob bare schema 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+    "blob",
+  ],
+  "mockLog": [
+    [
+      "get",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "headers": {
+          "Accept": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Converting {schema} to blob storage... {"schema":"Schema three"}",
+    ],
+    [
+      "put",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "description": "",
+        "properties": {},
+        "required": [],
+        "title": "S",
+        "type": "object",
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Schema configuration updated successfully for {schema} {"schema":"Schema three"}",
+    ],
+    [
+      "emit",
+      "refresh",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden setSchemaConfiguration fetch fails 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+    "magic",
+  ],
+  "mockLog": [
+    [
+      "get",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "headers": {
+          "Accept": "application/json",
+        },
+      },
+    ],
+    [
+      "console.error",
+      "Error updating schema configuration:",
+      "Error: network down",
+    ],
+    [
+      "error",
+      "Failed to update schema configuration for {schema}: {error} {"schema":"Schema three","error":"gone"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden setSchemaConfiguration magic 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+    "magic",
+  ],
+  "mockLog": [
+    [
+      "get",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "headers": {
+          "Accept": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Converting {schema} to magic table... {"schema":"Schema three"}",
+    ],
+    [
+      "put",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "description": "d",
+        "properties": {
+          "a": {
+            "table": {
+              "enabled": true,
+              "indexed": false,
+              "searchable": false,
+            },
+          },
+          "b": {
+            "table": {
+              "enabled": false,
+            },
+          },
+        },
+        "required": [
+          "a",
+        ],
+        "title": "S",
+        "type": "array",
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Schema configuration updated successfully for {schema} {"schema":"Schema three"}",
+    ],
+    [
+      "emit",
+      "refresh",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden setSchemaConfiguration magic bare schema 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+    "magic",
+  ],
+  "mockLog": [
+    [
+      "get",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "headers": {
+          "Accept": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Converting {schema} to magic table... {"schema":"Schema three"}",
+    ],
+    [
+      "put",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "description": "",
+        "properties": {},
+        "required": [],
+        "title": "S",
+        "type": "object",
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Schema configuration updated successfully for {schema} {"schema":"Schema three"}",
+    ],
+    [
+      "emit",
+      "refresh",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden setSchemaConfiguration magic null properties 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+    "magic",
+  ],
+  "mockLog": [
+    [
+      "get",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "headers": {
+          "Accept": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Converting {schema} to magic table... {"schema":"Schema three"}",
+    ],
+    [
+      "put",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "description": "",
+        "properties": {},
+        "required": [],
+        "title": "S",
+        "type": "object",
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Schema configuration updated successfully for {schema} {"schema":"Schema three"}",
+    ],
+    [
+      "emit",
+      "refresh",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden setSchemaConfiguration save fails 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+    "blob",
+  ],
+  "mockLog": [
+    [
+      "get",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "headers": {
+          "Accept": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Converting {schema} to blob storage... {"schema":"Schema three"}",
+    ],
+    [
+      "put",
+      "http://localhost/index.php/apps/openregister/api/schemas/3",
+      {
+        "description": "",
+        "properties": {},
+        "required": [],
+        "title": "S",
+        "type": "object",
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "console.error",
+      "Error updating schema configuration:",
+      "Error: network down",
+    ],
+    [
+      "error",
+      "Failed to update schema configuration for {schema}: {error} {"schema":"Schema three","error":"network down"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden syncMagicTable columns only 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Syncing magic table for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/tables/sync/7/3",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Magic table synced: Columns: 2 removed",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden syncMagicTable empty error 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Syncing magic table for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/tables/sync/7/3",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "console.error",
+      "Error syncing magic table:",
+      "Error",
+    ],
+    [
+      "error",
+      "Failed to sync magic table for {schema}: {error} {"schema":"Schema three","error":"Unknown error"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden syncMagicTable full stats 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Syncing magic table for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/tables/sync/7/3",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Magic table synced: 4 metadata columns, 6 property columns • Columns: 1 added, 2 de-required, 3 unchanged",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden syncMagicTable network error 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Syncing magic table for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/tables/sync/7/3",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "console.error",
+      "Error syncing magic table:",
+      "Error: network down",
+    ],
+    [
+      "error",
+      "Failed to sync magic table for {schema}: {error} {"schema":"Schema three","error":"network down"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden syncMagicTable no data 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Syncing magic table for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/tables/sync/7/3",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Magic table sync completed for {schema} {"schema":"Schema three"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden syncMagicTable no details 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Syncing magic table for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/tables/sync/7/3",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Magic table synced successfully for Schema three",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden syncMagicTable no success 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Syncing magic table for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/tables/sync/7/3",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Magic table sync completed for {schema} {"schema":"Schema three"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden syncMagicTable server message 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Syncing magic table for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/tables/sync/7/3",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "console.error",
+      "Error syncing magic table:",
+      "Error: network down",
+    ],
+    [
+      "error",
+      "Failed to sync magic table for {schema}: {error} {"schema":"Schema three","error":"locked"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden syncMagicTable unchanged columns 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Syncing magic table for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/tables/sync/7/3",
+      {},
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Magic table synced successfully for Schema three",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden validateSchemaObjects fails 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Starting validation for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/objects/validate",
+      {
+        "register": 7,
+        "schema": 3,
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "console.error",
+      "Error validating schema objects:",
+      "Error: network down",
+    ],
+    [
+      "error",
+      "Failed to validate {schema}: {error} {"schema":"Schema three","error":"bad"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden validateSchemaObjects no success 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Starting validation for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/objects/validate",
+      {
+        "register": 7,
+        "schema": 3,
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Validation completed for {schema} {"schema":"Schema three"}",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden validateSchemaObjects success 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Starting validation for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/objects/validate",
+      {
+        "register": 7,
+        "schema": 3,
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Validation completed for {schema}: {processed} processed, {updated} updated, {failed} failed {"schema":"Schema three","processed":5,"updated":2,"failed":1}",
+    ],
+    [
+      "console.warn",
+      "Validation errors:",
+      [
+        "e",
+      ],
+    ],
+    [
+      "emit",
+      "refresh",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden validateSchemaObjects success errors missing 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Starting validation for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/objects/validate",
+      {
+        "register": 7,
+        "schema": 3,
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Validation completed for {schema}: {processed} processed, {updated} updated, {failed} failed {"schema":"Schema three","processed":1,"updated":0,"failed":0}",
+    ],
+    [
+      "emit",
+      "refresh",
+    ],
+  ],
+}
+`;
+
+exports[`register card schema actions golden validateSchemaObjects success no errors 1`] = `
+{
+  "input": [
+    {
+      "id": 3,
+      "stats": {
+        "objects": {
+          "deleted": 2,
+          "total": 5,
+        },
+      },
+      "title": "Schema three",
+    },
+  ],
+  "mockLog": [
+    [
+      "success",
+      "Starting validation for {schema}... {"schema":"Schema three"}",
+    ],
+    [
+      "post",
+      "http://localhost/index.php/apps/openregister/api/objects/validate",
+      {
+        "register": 7,
+        "schema": 3,
+      },
+      {
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    ],
+    [
+      "success",
+      "Validation completed for {schema}: {processed} processed, {updated} updated, {failed} failed {"schema":"Schema three","processed":5,"updated":2,"failed":0}",
+    ],
+    [
+      "emit",
+      "refresh",
+    ],
+  ],
+}
+`;

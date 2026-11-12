@@ -80,16 +80,10 @@ class TransitionEngineInvisibleSubjectTest extends TestCase {
 	 */
 	private function engine(): TransitionEngine {
 		return new TransitionEngine(
-			$this->objectService,
-			$this->schemaMapper,
-			$this->createMock(IEventDispatcher::class),
-			$this->createMock(IUserSession::class),
-			$this->permission,
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(IAppConfig::class),
-			$this->createMock(LoggerInterface::class),
-			new LifecycleWriteBoundary(new LifecycleActionContext()),
-			$this->createMock(LifecycleActionProviderRegistry::class)
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionSubjects($this->objectService, new \OCA\OpenRegister\Db\SchemaCatalog($this->createMock(RegisterMapper::class), $this->schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class))),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionDispatch($this->createMock(IEventDispatcher::class), new LifecycleWriteBoundary(new LifecycleActionContext()), $this->createMock(LifecycleActionProviderRegistry::class)),
+			new \OCA\OpenRegister\Service\Lifecycle\TransitionPlatform($this->createMock(IUserSession::class), $this->createMock(IAppConfig::class), $this->createMock(LoggerInterface::class)),
+			$this->permission
 		);
 	}//end engine()
 

@@ -1,0 +1,149 @@
+{
+    "entity-generated-name": {
+        "result": {
+            "path": "~",
+            "filename": "object_obj-uuid_files_DATE.zip",
+            "size": "~",
+            "mimeType": "application/zip"
+        },
+        "entries": {
+            "a.txt": "alpha"
+        },
+        "trace": [
+            "debug: [FilePublishingHandler] Creating ZIP archive for object: 17",
+            "debug: [FilePublishingHandler] Found 1 files for object 17",
+            "debug: [FilePublishingHandler] Added file to ZIP: a.txt",
+            "debug: [FilePublishingHandler] ZIP creation completed. Added: 1 files, Skipped: 0 files"
+        ]
+    },
+    "entity-generated-name-no-uuid": {
+        "result": {
+            "path": "~",
+            "filename": "object_17_files_DATE.zip",
+            "size": "~",
+            "mimeType": "application/zip"
+        },
+        "entries": {
+            "a.txt": "alpha"
+        },
+        "trace": [
+            "debug: [FilePublishingHandler] Creating ZIP archive for object: 17",
+            "debug: [FilePublishingHandler] Found 1 files for object 17",
+            "debug: [FilePublishingHandler] Added file to ZIP: a.txt",
+            "debug: [FilePublishingHandler] ZIP creation completed. Added: 1 files, Skipped: 0 files"
+        ]
+    },
+    "entity-name-other-extension": {
+        "result": {
+            "path": "~",
+            "filename": "golden-other-b4b.tar.zip",
+            "size": "~",
+            "mimeType": "application/zip"
+        },
+        "entries": {
+            "a.txt": "alpha"
+        },
+        "trace": [
+            "debug: [FilePublishingHandler] Creating ZIP archive for object: 17",
+            "debug: [FilePublishingHandler] Found 1 files for object 17",
+            "debug: [FilePublishingHandler] Added file to ZIP: a.txt",
+            "debug: [FilePublishingHandler] ZIP creation completed. Added: 1 files, Skipped: 0 files"
+        ]
+    },
+    "entity-name-without-extension": {
+        "result": {
+            "path": "~",
+            "filename": "golden-noext-b4b.zip",
+            "size": "~",
+            "mimeType": "application/zip"
+        },
+        "entries": {
+            "a.txt": "alpha"
+        },
+        "trace": [
+            "debug: [FilePublishingHandler] Creating ZIP archive for object: 17",
+            "debug: [FilePublishingHandler] Found 1 files for object 17",
+            "debug: [FilePublishingHandler] Added file to ZIP: a.txt",
+            "debug: [FilePublishingHandler] ZIP creation completed. Added: 1 files, Skipped: 0 files"
+        ]
+    },
+    "entity-named": {
+        "result": {
+            "path": "~",
+            "filename": "golden-named-b4b.zip",
+            "size": "~",
+            "mimeType": "application/zip"
+        },
+        "entries": {
+            "a.txt": "alpha",
+            "b.txt": "beta"
+        },
+        "trace": [
+            "debug: [FilePublishingHandler] Creating ZIP archive for object: 17",
+            "debug: [FilePublishingHandler] Found 2 files for object 17",
+            "debug: [FilePublishingHandler] Added file to ZIP: a.txt",
+            "debug: [FilePublishingHandler] Added file to ZIP: b.txt",
+            "debug: [FilePublishingHandler] ZIP creation completed. Added: 2 files, Skipped: 0 files"
+        ]
+    },
+    "mixed-nodes": {
+        "result": {
+            "path": "~",
+            "filename": "golden-mixed-b4b.zip",
+            "size": "~",
+            "mimeType": "application/zip"
+        },
+        "entries": {
+            "a.txt": "alpha",
+            "b.txt": "beta"
+        },
+        "trace": [
+            "debug: [FilePublishingHandler] Creating ZIP archive for object: 17",
+            "debug: [FilePublishingHandler] Found 5 files for object 17",
+            "debug: [FilePublishingHandler] Added file to ZIP: a.txt",
+            "warning: [FilePublishingHandler] Skipping non-file node: folder",
+            "error: [FilePublishingHandler] Error processing file owner.txt: not the owner",
+            "error: [FilePublishingHandler] Error processing file content.txt: storage gone",
+            "debug: [FilePublishingHandler] Added file to ZIP: b.txt",
+            "debug: [FilePublishingHandler] ZIP creation completed. Added: 2 files, Skipped: 3 files"
+        ]
+    },
+    "no-files": {
+        "exception": "No files found for this object",
+        "trace": [
+            "debug: [FilePublishingHandler] Creating ZIP archive for object: 17"
+        ]
+    },
+    "only-skipped": {
+        "exception": "ZIP file was not created successfully",
+        "trace": [
+            "debug: [FilePublishingHandler] Creating ZIP archive for object: 17",
+            "debug: [FilePublishingHandler] Found 2 files for object 17",
+            "warning: [FilePublishingHandler] Skipping non-file node: folder",
+            "error: [FilePublishingHandler] Error processing file owner.txt: not the owner",
+            "debug: [FilePublishingHandler] ZIP creation completed. Added: 0 files, Skipped: 2 files"
+        ]
+    },
+    "string-id": {
+        "result": {
+            "path": "~",
+            "filename": "golden-byid-b4b.zip",
+            "size": "~",
+            "mimeType": "application/zip"
+        },
+        "entries": {
+            "a.txt": "alpha"
+        },
+        "trace": [
+            "find: obj-uuid",
+            "debug: [FilePublishingHandler] Creating ZIP archive for object: 17",
+            "debug: [FilePublishingHandler] Found 1 files for object 17",
+            "debug: [FilePublishingHandler] Added file to ZIP: a.txt",
+            "debug: [FilePublishingHandler] ZIP creation completed. Added: 1 files, Skipped: 0 files"
+        ]
+    },
+    "string-id-missing": {
+        "exception": "Object not found: no such row",
+        "trace": []
+    }
+}

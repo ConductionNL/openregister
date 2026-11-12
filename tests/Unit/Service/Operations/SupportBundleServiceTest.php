@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -76,7 +76,7 @@ final class SupportBundleServiceTest extends TestCase {
 	/**
 	 * A configured credential does not travel, and the key that held it does.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
 	 *
 	 * @return void
 	 */
@@ -105,7 +105,7 @@ final class SupportBundleServiceTest extends TestCase {
 	 * A setting that is not a secret is carried as it stands, because a bundle
 	 * that redacts everything answers nothing.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
 	 *
 	 * @return void
 	 */
@@ -119,7 +119,7 @@ final class SupportBundleServiceTest extends TestCase {
 	 * The redaction is a key rule, so a key nobody thought of is covered as
 	 * long as it looks like a secret.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
 	 *
 	 * @return void
 	 */
@@ -136,7 +136,7 @@ final class SupportBundleServiceTest extends TestCase {
 	 * The bundle carries the recent failed runs, which is what a support call
 	 * opens with.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
 	 *
 	 * @return void
 	 */
@@ -157,7 +157,7 @@ final class SupportBundleServiceTest extends TestCase {
 	/**
 	 * The facts page names the version, the build and the licence.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
+	 * @spec openspec/specs/operations-console/spec.md#requirement-a-support-bundle-and-the-instances-own-facts-are-readable-req-aoc-007
 	 *
 	 * @return void
 	 */

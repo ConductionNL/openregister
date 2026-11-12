@@ -35,24 +35,56 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
-use OCA\OpenRegister\Db\FlowLinkMapper;
+use OCA\OpenRegister\Db\FlowLink;
+use OCA\OpenRegister\Db\FlowLinkMapperInterface;
+use OCA\OpenRegister\Service\FlowJsonColumn;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IL10N;
-use Throwable;
 
 class FlowProvider extends AbstractIntegrationProvider {
 
+	use NcAppLinkRowsProvider;
+	use FirstRowQuery;
+
 	private const REQUIRED_APP = 'workflowengine';
 
+	/**
+	 * NC DB connection.
+	 *
+	 * @var IDBConnection
+	 */
+	private IDBConnection $db;
+
+	/**
+	 * NC app manager.
+	 *
+	 * @var IAppManager
+	 */
+	private IAppManager $appManager;
+
+	/**
+	 * Localisation.
+	 *
+	 * @var IL10N
+	 */
+	private IL10N $l10n;
+
+	/**
+	 * Constructor.
+	 *
+	 * @param LeafProviderPlatform    $platform       The DB connection, app manager and localisation.
+	 * @param FlowLinkMapperInterface $flowLinkMapper Flow-link mapper (Tier-2 link table).
+	 */
 	public function __construct(
-		private FlowLinkMapper $flowLinkMapper,
-		private IDBConnection $db,
-		private IAppManager $appManager,
-		private IL10N $l10n,
+		LeafProviderPlatform $platform,
+		private FlowLinkMapperInterface $flowLinkMapper,
 	) {
+		$this->db = $platform->db;
+		$this->appManager = $platform->appManager;
+		$this->l10n = $platform->l10n;
 	}//end __construct()
 
 	public function getId(): string {
@@ -71,75 +103,61 @@ class FlowProvider extends AbstractIntegrationProvider {
 		return 'workflow';
 	}//end getGroup()
 
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
+	/**
+	 * The link mapper this provider reads.
+	 *
+	 * @return FlowLinkMapperInterface
+	 */
+	protected function linkMapper(): FlowLinkMapperInterface {
+		return $this->flowLinkMapper;
+	}//end linkMapper()
 
 	/**
-	 * List Flow operations linked to an OR object.
+	 * One Flow link, hydrated with the current name/class/entity/events/checks
+	 * from `oc_flow_operations`. When the operation has been deleted from NC Flow
+	 * the cached link-row columns are used and the row carries `enabled=false`.
 	 *
-	 * Reads link rows from `openregister_flow_links`, then hydrates each
-	 * row with the current name/class/entity/events/checks from
-	 * `oc_flow_operations`. Falls back to the cached link-row columns
-	 * when the operation has been deleted from NC Flow (the row still
-	 * surfaces in the sidebar but is flagged with `enabled=false`).
+	 * @param FlowLink $link Link row from the mapper.
 	 *
-	 * @param string $register Register slug or numeric id (unused).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
-	 * @param array<string,mixed> $filters Optional filters (unused).
-	 *
-	 * @return array<int,array<string,mixed>>
+	 * @return array<string,mixed>
 	 *
 	 * @spec openspec/specs/integration-flow/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
-		if ($this->isEnabled() === false) {
-			return [];
-		}
+	protected function rowFromLink(FlowLink $link): array {
+		$operationId = (int)$link->getOperationId();
+		$onRow = $this->fetchOperationRow(operationId: $operationId);
 
-		$links = $this->flowLinkMapper->findByObjectUuid($objectId);
-		if ($links === []) {
-			return [];
-		}
-
-		$out = [];
-		foreach ($links as $link) {
-			$operationId = (int)$link->getOperationId();
-			$onRow = $this->fetchOperationRow(operationId: $operationId);
-
-			$name = (string)($onRow['name'] ?? $link->getOperationName() ?? '');
-			$class = (string)($onRow['class'] ?? $link->getOperationClass() ?? '');
-			$entity = (string)($onRow['entity'] ?? $link->getEntityType() ?? '');
-			$operation = (string)($onRow['operation'] ?? '');
-			$events = $this->decodeJsonField(value: $onRow['events'] ?? null);
-			$checks = $this->decodeJsonField(value: $onRow['checks'] ?? null);
-
-			$out[] = [
-				'id' => (string)$operationId,
-				'title' => $name,
-				'class' => $class,
-				'entity' => $entity,
-				'operation' => $operation,
-				'events' => $events,
-				'checks' => $checks,
+		return array_merge(
+			$this->operationFields(link: $link, onRow: $onRow),
+			[
 				'enabled' => $onRow !== null,
 				'url' => '/index.php/settings/admin/workflow#' . $operationId,
 				'linkId' => $link->getId(),
 				'data' => $onRow ?? [],
-			];
-		}//end foreach
+			]
+		);
+	}//end rowFromLink()
 
-		return $out;
-	}//end list()
+	/**
+	 * The operation's id, title, class, entity, operation, events and checks:
+	 * the live row first, the cached link columns second.
+	 *
+	 * @param FlowLink                 $link  Link row.
+	 * @param array<string,mixed>|null $onRow Live `oc_flow_operations` row, if any.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function operationFields(FlowLink $link, ?array $onRow): array {
+		return [
+			'id' => (string)(int)$link->getOperationId(),
+			'title' => (string)($onRow['name'] ?? $link->getOperationName() ?? ''),
+			'class' => (string)($onRow['class'] ?? $link->getOperationClass() ?? ''),
+			'entity' => (string)($onRow['entity'] ?? $link->getEntityType() ?? ''),
+			'operation' => (string)($onRow['operation'] ?? ''),
+			'events' => FlowJsonColumn::decode(value: $onRow['events'] ?? null),
+			'checks' => FlowJsonColumn::decode(value: $onRow['checks'] ?? null),
+		];
+	}//end operationFields()
 
 	/**
 	 * Fetch an operation row from `oc_flow_operations`.
@@ -149,53 +167,15 @@ class FlowProvider extends AbstractIntegrationProvider {
 	 * @return array<string,mixed>|null
 	 */
 	private function fetchOperationRow(int $operationId): ?array {
-		try {
-			$qb = $this->db->getQueryBuilder();
-			$qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
-				->from('flow_operations')
-				->where($qb->expr()->eq('id', $qb->createNamedParameter($operationId, IQueryBuilder::PARAM_INT)));
-
-			$row = $qb->executeQuery()->fetch();
-			if ($row === false) {
-				return null;
+		return $this->firstRowOf(
+			query: function () use ($operationId): IQueryBuilder {
+				$qb = $this->db->getQueryBuilder();
+				return $qb->select('id', 'class', 'name', 'entity', 'operation', 'events', 'checks')
+					->from('flow_operations')
+					->where($qb->expr()->eq('id', $qb->createNamedParameter($operationId, IQueryBuilder::PARAM_INT)));
 			}
-
-			return $row;
-		} catch (Throwable $e) {
-			return null;
-		}
+		);
 	}//end fetchOperationRow()
-
-	/**
-	 * Decode a JSON-serialised array column (`events`, `checks`).
-	 *
-	 * NC Flow stores these as JSON strings. Tolerates already-decoded
-	 * arrays so callers can pass raw row values from either source.
-	 *
-	 * @param mixed $value Raw column value.
-	 *
-	 * @return array<int,mixed>
-	 */
-	private function decodeJsonField(mixed $value): array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		if (is_string($value) === false || $value === '') {
-			return [];
-		}
-
-		try {
-			$decoded = json_decode($value, true);
-			if (is_array($decoded) === true) {
-				return $decoded;
-			}
-		} catch (Throwable $e) {
-			// Fall through.
-		}
-
-		return [];
-	}//end decodeJsonField()
 
 	/**
 	 * Provider health descriptor (enabled/disabled echo).
@@ -206,21 +186,6 @@ class FlowProvider extends AbstractIntegrationProvider {
 	 *              the health/OCS contract is owned by pluggable-integration-registry task-2.
 	 */
 	public function health(): array {
-		$available = $this->isEnabled();
-		$status = 'unavailable';
-		if ($available === true) {
-			$status = 'ok';
-		}
-
-		$message = 'NC Flow (workflowengine) app is not installed';
-		if ($available === true) {
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->isEnabled(), missing: 'NC Flow (workflowengine) app is not installed');
 	}//end health()
 }//end class

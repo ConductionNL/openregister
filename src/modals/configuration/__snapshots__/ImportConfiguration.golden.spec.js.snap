@@ -1,0 +1,1143 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports both, failing exists 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "main",
+        "owner": "o",
+        "path": "x.json",
+        "repo": "r",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports both, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported successfully!","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported successfully!","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "main",
+        "owner": "o",
+        "path": "x.json",
+        "repo": "r",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports both, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "main",
+        "owner": "o",
+        "path": "x.json",
+        "repo": "r",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports both, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "main",
+        "owner": "o",
+        "path": "x.json",
+        "repo": "r",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports github, failing exists 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "dev",
+        "owner": "owner",
+        "path": "c.json",
+        "repo": "repo",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports github, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported successfully!","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported successfully!","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "dev",
+        "owner": "owner",
+        "path": "c.json",
+        "repo": "repo",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports github, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "dev",
+        "owner": "owner",
+        "path": "c.json",
+        "repo": "repo",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports github, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "dev",
+        "owner": "owner",
+        "path": "c.json",
+        "repo": "repo",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports githubNoRef, failing exists 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "main",
+        "owner": "owner",
+        "path": "c.json",
+        "repo": "repo",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports githubNoRef, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported successfully!","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported successfully!","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "main",
+        "owner": "owner",
+        "path": "c.json",
+        "repo": "repo",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports githubNoRef, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "main",
+        "owner": "owner",
+        "path": "c.json",
+        "repo": "repo",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports githubNoRef, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "main",
+        "owner": "owner",
+        "path": "c.json",
+        "repo": "repo",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports gitlab, failing exists 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": "ns",
+        "path": "g.json",
+        "project": "p",
+        "ref": "feature",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports gitlab, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported successfully!","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported successfully!","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": "ns",
+        "path": "g.json",
+        "project": "p",
+        "ref": "feature",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports gitlab, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": "ns",
+        "path": "g.json",
+        "project": "p",
+        "ref": "feature",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports gitlab, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": "ns",
+        "path": "g.json",
+        "project": "p",
+        "ref": "feature",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports gitlabNoRef, failing exists 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": "ns",
+        "path": "g.json",
+        "project": "p",
+        "ref": "main",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports gitlabNoRef, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported successfully!","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported successfully!","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": "ns",
+        "path": "g.json",
+        "project": "p",
+        "ref": "main",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports gitlabNoRef, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": "ns",
+        "path": "g.json",
+        "project": "p",
+        "ref": "main",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports gitlabNoRef, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": "ns",
+        "path": "g.json",
+        "project": "p",
+        "ref": "main",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports neither, failing exists 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": undefined,
+        "path": "y.json",
+        "project": undefined,
+        "ref": "main",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports neither, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported successfully!","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported successfully!","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": undefined,
+        "path": "y.json",
+        "project": undefined,
+        "ref": "main",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports neither, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": undefined,
+        "path": "y.json",
+        "project": undefined,
+        "ref": "main",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.importDiscoveredConfiguration imports neither, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": undefined,
+        "path": "y.json",
+        "project": undefined,
+        "ref": "main",
+        "syncEnabled": true,
+        "syncInterval": 24,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports badUrl, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":"Please enter a valid URL"}",
+  "before": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":"Please enter a valid URL"}",
+  "log": [],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports badUrl, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":"Please enter a valid URL"}",
+  "before": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":"Please enter a valid URL"}",
+  "log": [],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports badUrl, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":"Please enter a valid URL"}",
+  "before": "{"loading":false,"error":null,"success":false,"successMessage":"","urlError":"Please enter a valid URL"}",
+  "log": [],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports file, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported from file!","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported from file!","urlError":null}",
+  "log": [
+    [
+      "importFromFile",
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports file, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported from file!","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported from file!","urlError":null}",
+  "log": [
+    [
+      "importFromFile",
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports file, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported from file!","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported from file!","urlError":null}",
+  "log": [
+    [
+      "importFromFile",
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports fileFails, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":"Bad file","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Bad file","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromFile",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports fileFails, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":"Bad file","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Bad file","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromFile",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports fileFails, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":"Bad file","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Bad file","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromFile",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports github, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported from GitHub!","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported from GitHub!","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "main",
+        "owner": "o",
+        "path": "a.json",
+        "repo": "r",
+        "syncEnabled": true,
+        "syncInterval": 12,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports github, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "main",
+        "owner": "o",
+        "path": "a.json",
+        "repo": "r",
+        "syncEnabled": true,
+        "syncInterval": 12,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports github, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitHub",
+      {
+        "branch": "main",
+        "owner": "o",
+        "path": "a.json",
+        "repo": "r",
+        "syncEnabled": true,
+        "syncInterval": 12,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports gitlab, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported from GitLab!","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported from GitLab!","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": "ns",
+        "path": "b.json",
+        "project": "r",
+        "ref": "dev",
+        "syncEnabled": false,
+        "syncInterval": 7,
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports gitlab, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": "ns",
+        "path": "b.json",
+        "project": "r",
+        "ref": "dev",
+        "syncEnabled": false,
+        "syncInterval": 7,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports gitlab, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromGitLab",
+      {
+        "namespace": "ns",
+        "path": "b.json",
+        "project": "r",
+        "ref": "dev",
+        "syncEnabled": false,
+        "syncInterval": 7,
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports otherTab, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports otherTab, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports otherTab, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports url, failing none 1`] = `
+{
+  "after": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported from URL!","urlError":null}",
+  "before": "{"loading":false,"error":null,"success":true,"successMessage":"Configuration imported from URL!","urlError":null}",
+  "log": [
+    [
+      "importFromUrl",
+      {
+        "syncEnabled": true,
+        "syncInterval": 24,
+        "url": "https://example.com/c.json",
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+    [
+      "closeModal",
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports url, failing other 1`] = `
+{
+  "after": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Server error","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromUrl",
+      {
+        "syncEnabled": true,
+        "syncInterval": 24,
+        "url": "https://example.com/c.json",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport imports url, failing silent 1`] = `
+{
+  "after": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "before": "{"loading":false,"error":"Failed to import configuration","success":false,"successMessage":"","urlError":null}",
+  "log": [
+    [
+      "importFromUrl",
+      {
+        "syncEnabled": true,
+        "syncInterval": 24,
+        "url": "https://example.com/c.json",
+      },
+    ],
+  ],
+}
+`;
+
+exports[`ImportConfiguration.performImport reports a failing refresh 1`] = `
+{
+  "after": "{"loading":false,"error":"Refresh failed","success":true,"successMessage":"Configuration imported from URL!","urlError":null}",
+  "before": "{"loading":false,"error":"Refresh failed","success":true,"successMessage":"Configuration imported from URL!","urlError":null}",
+  "log": [
+    [
+      "importFromUrl",
+      {
+        "syncEnabled": true,
+        "syncInterval": 24,
+        "url": "https://example.com/c.json",
+      },
+    ],
+    [
+      "refreshConfigurationList",
+    ],
+    [
+      "refreshRegisterList",
+    ],
+    [
+      "refreshSchemaList",
+    ],
+  ],
+}
+`;

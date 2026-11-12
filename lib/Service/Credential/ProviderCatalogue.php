@@ -36,7 +36,7 @@ use Psr\Log\LoggerInterface;
 /**
  * In-memory, read-only accessor for the shipped provider catalogue.
  */
-class ProviderCatalogue {
+class ProviderCatalogue implements ProviderCatalogueInterface {
 	/**
 	 * App-relative path to the shipped catalogue file.
 	 *
@@ -119,14 +119,8 @@ class ProviderCatalogue {
 	private function load(): array {
 		$path = $this->appManager->getAppPath('openregister') . self::CATALOGUE_PATH;
 
-		if (is_file($path) === false || is_readable($path) === false) {
-			$this->logger->warning('[ProviderCatalogue] catalogue file missing or unreadable: ' . $path);
-			return [];
-		}
-
-		$raw = file_get_contents($path);
-		if ($raw === false) {
-			$this->logger->warning('[ProviderCatalogue] catalogue file could not be read: ' . $path);
+		$raw = $this->readCatalogue(path: $path);
+		if ($raw === null) {
 			return [];
 		}
 
@@ -138,4 +132,26 @@ class ProviderCatalogue {
 
 		return $decoded['providers'];
 	}//end load()
+
+	/**
+	 * The catalogue file's contents, or null (logged) when it is missing or unreadable.
+	 *
+	 * @param string $path The catalogue file.
+	 *
+	 * @return string|null The contents.
+	 */
+	private function readCatalogue(string $path): ?string {
+		if (is_file($path) === false || is_readable($path) === false) {
+			$this->logger->warning('[ProviderCatalogue] catalogue file missing or unreadable: ' . $path);
+			return null;
+		}
+
+		$raw = file_get_contents($path);
+		if ($raw === false) {
+			$this->logger->warning('[ProviderCatalogue] catalogue file could not be read: ' . $path);
+			return null;
+		}
+
+		return $raw;
+	}//end readCatalogue()
 }//end class

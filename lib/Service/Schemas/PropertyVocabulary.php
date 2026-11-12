@@ -38,9 +38,9 @@ namespace OCA\OpenRegister\Service\Schemas;
  * drift apart, which is what makes "generated from the validator's own list" a
  * claim a build can refute.
  *
- * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
-final class PropertyVocabulary {
+final class PropertyVocabulary implements PropertyVocabularyInterface {
 
 	/**
 	 * Every type, in a shape a property editor can render.
@@ -48,32 +48,44 @@ final class PropertyVocabulary {
 	 * @return array<int, array{type: string, category: string, constraints: array<int, string>,
 	 *   formats: array<int, string>, conversion: string, conversionNote: string, description: string}> The type rows.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function types(): array {
 		$rows = [];
 		foreach (PropertyValidatorHandler::TYPES as $type => $descriptor) {
-			$name = (string)$type;
-			$rows[] = [
-				'type' => $name,
-				'category' => $descriptor['category'],
-				'constraints' => $this->constraintsFor(type: $name),
-				'formats' => $this->formatsFor(type: $name),
-				'conversion' => $descriptor['conversion'],
-				'conversionNote' => $descriptor['conversionNote'],
-				'description' => $descriptor['description'],
-			];
+			$rows[] = $this->typeRow(name: (string)$type, descriptor: $descriptor);
 		}
 
 		return $rows;
 	}//end types()
 
 	/**
+	 * One type, in the shape a property editor renders.
+	 *
+	 * @param string               $name       The type name.
+	 * @param array<string, mixed> $descriptor The type's descriptor.
+	 *
+	 * @return array{type: string, category: string, constraints: array<int, string>,
+	 *   formats: array<int, string>, conversion: string, conversionNote: string, description: string} The row.
+	 */
+	private function typeRow(string $name, array $descriptor): array {
+		return [
+			'type'           => $name,
+			'category'       => $descriptor['category'],
+			'constraints'    => $this->constraintsFor(type: $name),
+			'formats'        => $this->formatsFor(type: $name),
+			'conversion'     => $descriptor['conversion'],
+			'conversionNote' => $descriptor['conversionNote'],
+			'description'    => $descriptor['description'],
+		];
+	}//end typeRow()
+
+	/**
 	 * The type names alone.
 	 *
 	 * @return array<int, string> Type names in declaration order.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function typeNames(): array {
 		return array_map('strval', array_keys(PropertyValidatorHandler::TYPES));
@@ -86,7 +98,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return bool True when the validator accepts this type.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function hasType(string $type): bool {
 		return array_key_exists($type, PropertyValidatorHandler::TYPES);
@@ -99,7 +111,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return array<int, string> The constraint keys, in declaration order.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function constraintsFor(string $type): array {
 		$keys = [];
@@ -125,7 +137,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return array<int, string> The formats, empty for every type but string.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function formatsFor(string $type): array {
 		if ($type !== 'string') {
@@ -141,7 +153,7 @@ final class PropertyVocabulary {
 	 * @return array<int, array{key: string, appliesTo: array<int, string>, value: string,
 	 *   enforced: bool, breaking: bool, description: string}> The constraint rows.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function constraints(): array {
 		$rows = [];
@@ -168,35 +180,47 @@ final class PropertyVocabulary {
 	 * @return array<int, array{key: string, value: string, enforced: bool, description: string,
 	 *   allowedValues?: array<int, string>}> The modifier rows.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function modifiers(): array {
 		$rows = [];
-		$closed = PropertyValidatorHandler::CLOSED_MODIFIER_VALUES;
 		foreach (PropertyValidatorHandler::MODIFIERS as $key => $descriptor) {
-			$row = [
-				'key' => (string)$key,
-				'value' => $descriptor['value'],
-				'enforced' => true,
-				'description' => $descriptor['description'],
-			];
-			if (array_key_exists((string)$key, $closed) === true) {
-				$row['allowedValues'] = $closed[(string)$key];
-			}
-
-			$rows[] = $row;
+			$rows[] = self::modifierRow(key: (string)$key, descriptor: $descriptor);
 		}
 
 		return $rows;
 	}//end modifiers()
 
 	/**
+	 * One modifier key, with its closed list of values when the save path checks one.
+	 *
+	 * @param string               $key        The modifier key.
+	 * @param array<string, mixed> $descriptor The modifier's descriptor.
+	 *
+	 * @return array{key: string, value: string, enforced: bool, description: string,
+	 *   allowedValues?: array<int, string>} The row.
+	 */
+	private static function modifierRow(string $key, array $descriptor): array {
+		$row = [
+			'key'         => $key,
+			'value'       => $descriptor['value'],
+			'enforced'    => true,
+			'description' => $descriptor['description'],
+		];
+		if (array_key_exists($key, PropertyValidatorHandler::CLOSED_MODIFIER_VALUES) === true) {
+			$row['allowedValues'] = PropertyValidatorHandler::CLOSED_MODIFIER_VALUES[$key];
+		}
+
+		return $row;
+	}//end modifierRow()
+
+	/**
 	 * The keys the layer stores and hands on without checking them.
 	 *
 	 * @return array<int, array{key: string, enforced: bool, description: string}> The pass-through rows.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function passthrough(): array {
 		$rows = [];
@@ -219,7 +243,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return array<int, string> The accepted property keys.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) The validator owns the four tables and merges them
 	 *                                       once. Re-merging them here would be the second list
@@ -236,7 +260,7 @@ final class PropertyVocabulary {
 	 *
 	 * @return bool True when a property may carry this key.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) The validator owns the localisation rule because it is
 	 *                                       the thing that enforces it. Spelling the suffix check
@@ -264,7 +288,7 @@ final class PropertyVocabulary {
 	 * @return array{keys: array<int, string>, separator: string, languageTagPattern: string,
 	 *   example: string, description: string} The localisation rule.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	private function localisation(): array {
 		return [
@@ -281,17 +305,10 @@ final class PropertyVocabulary {
 	 *
 	 * @return array<int, string> Unique category names in declaration order.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function categories(): array {
-		$categories = [];
-		foreach (PropertyValidatorHandler::TYPES as $descriptor) {
-			if (in_array($descriptor['category'], $categories, true) === false) {
-				$categories[] = $descriptor['category'];
-			}
-		}
-
-		return $categories;
+		return array_values(array_unique(array_column(PropertyValidatorHandler::TYPES, 'category')));
 	}//end categories()
 
 	/**
@@ -299,31 +316,50 @@ final class PropertyVocabulary {
 	 *
 	 * @return array<string, mixed> Types, constraints, modifiers, pass-through keys and the counts.
 	 *
-	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
 	public function all(): array {
-		$types = $this->types();
-		$constraints = $this->constraints();
-		$modifiers = $this->modifiers();
-		$passthrough = $this->passthrough();
+		$sections = $this->sections();
 
 		return [
-			'types' => $types,
-			'categories' => $this->categories(),
-			'constraints' => $constraints,
-			'modifiers' => $modifiers,
-			'passthrough' => $passthrough,
-			'keys' => $this->keys(),
-			'localisation' => $this->localisation(),
+			'types'                 => $sections['types'],
+			'categories'            => $this->categories(),
+			'constraints'           => $sections['constraints'],
+			'modifiers'             => $sections['modifiers'],
+			'passthrough'           => $sections['passthrough'],
+			'keys'                  => $this->keys(),
+			'localisation'          => $this->localisation(),
 			'vendorExtensionPrefix' => 'x-',
-			'counts' => [
-				'types' => count($types),
-				'constraints' => count($constraints),
-				'modifiers' => count($modifiers),
-				'passthrough' => count($passthrough),
-				'formats' => count($this->formatsFor(type: 'string')),
-				'keys' => count($this->keys()),
-			],
+			'counts'                => $this->counts(sections: $sections),
 		];
 	}//end all()
+
+	/**
+	 * The counts the endpoint reports: one per section, then the string formats and the keys.
+	 *
+	 * @param array<string, array<int, mixed>> $sections The types, constraints, modifiers and pass-through rows.
+	 *
+	 * @return array<string, int> The counts.
+	 */
+	private function counts(array $sections): array {
+		$counts            = array_map('count', $sections);
+		$counts['formats'] = count($this->formatsFor(type: 'string'));
+		$counts['keys']    = count($this->keys());
+
+		return $counts;
+	}//end counts()
+
+	/**
+	 * The four row sections of the vocabulary, keyed as the endpoint names them.
+	 *
+	 * @return array<string, array<int, mixed>> The types, constraints, modifiers and pass-through rows.
+	 */
+	private function sections(): array {
+		return [
+			'types'       => $this->types(),
+			'constraints' => $this->constraints(),
+			'modifiers'   => $this->modifiers(),
+			'passthrough' => $this->passthrough(),
+		];
+	}//end sections()
 }//end class

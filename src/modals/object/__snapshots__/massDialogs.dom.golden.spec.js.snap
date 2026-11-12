@@ -1,0 +1,493 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MassDeleteObject markup renders an empty selection 1`] = `
+"<x-ncdialog name="Delete 0 objects" noclose="" size="normal">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Cancel</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton disabled="true" variant="error">
+<slot-default>Delete</slot-default>
+<slot-icon>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="delete-step">
+<h3 class="step-title">Confirm Object Deletion</h3>
+<x-ncnotecard type="info">
+<slot-default>Review the selected objects below. You can remove any objects you don't want to delete by clicking the remove button.<br>
+<br>Objects will be soft deleted and moved to the <a href="#" class="deleted-link">deleted objects section</a>. They will be retained according to their schema's configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema's settings.</slot-default>
+</x-ncnotecard>
+<div class="selected-objects-container">
+<h4>Selected Objects (0)</h4>
+<x-ncemptycontent name="No objects selected">
+<slot-description>No objects are currently selected for deletion.</slot-description>
+</x-ncemptycontent>
+</div>
+</div>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`MassDeleteObject markup renders the failed state 1`] = `
+"<x-ncdialog name="Delete 3 objects" noclose="" size="normal">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Close</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<x-ncnotecard type="error">
+<slot-default>
+<p>true</p>
+</slot-default>
+</x-ncnotecard>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`MassDeleteObject markup renders the partlyFailed state 1`] = `
+"<x-ncdialog name="Delete 3 objects" noclose="" size="normal">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Close</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<x-ncnotecard type="success">
+<slot-default>
+<p>Objects successfully deleted</p>
+</slot-default>
+</x-ncnotecard>
+<x-ncnotecard type="error">
+<slot-default>
+<p>Two failed</p>
+</slot-default>
+</x-ncnotecard>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`MassDeleteObject markup renders the review state 1`] = `
+"<x-ncdialog name="Delete 3 objects" noclose="" size="normal">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Cancel</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton disabled="false" variant="error">
+<slot-default>Delete</slot-default>
+<slot-icon>
+<x-trashcanoutline size="20">
+</x-trashcanoutline>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="delete-step">
+<h3 class="step-title">Confirm Object Deletion</h3>
+<x-ncnotecard type="info">
+<slot-default>Review the selected objects below. You can remove any objects you don't want to delete by clicking the remove button.<br>
+<br>Objects will be soft deleted and moved to the <a href="#" class="deleted-link">deleted objects section</a>. They will be retained according to their schema's configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema's settings.</slot-default>
+</x-ncnotecard>
+<div class="selected-objects-container">
+<h4>Selected Objects (3)</h4>
+<div class="selected-objects-list">
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Named</strong>
+<p class="object-id">ID: a</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Named">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Titled</strong>
+<p class="object-id">ID: b</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Titled">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Unnamed Object</strong>
+<p class="object-id">ID: c</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove c">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+</div>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`MassDeleteObject markup renders the running state 1`] = `
+"<x-ncdialog name="Delete 3 objects" noclose="" size="normal">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Cancel</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton disabled="true" variant="error">
+<slot-default>Delete</slot-default>
+<slot-icon>
+<x-ncloadingicon size="20">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="delete-step">
+<h3 class="step-title">Confirm Object Deletion</h3>
+<x-ncnotecard type="info">
+<slot-default>Review the selected objects below. You can remove any objects you don't want to delete by clicking the remove button.<br>
+<br>Objects will be soft deleted and moved to the <a href="#" class="deleted-link">deleted objects section</a>. They will be retained according to their schema's configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema's settings.</slot-default>
+</x-ncnotecard>
+<div class="selected-objects-container">
+<h4>Selected Objects (3)</h4>
+<div class="selected-objects-list">
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Named</strong>
+<p class="object-id">ID: a</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Named">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Titled</strong>
+<p class="object-id">ID: b</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Titled">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Unnamed Object</strong>
+<p class="object-id">ID: c</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove c">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+</div>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`MassDeleteObject markup renders the succeeded state 1`] = `
+"<x-ncdialog name="Delete 3 objects" noclose="" size="normal">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Close</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<x-ncnotecard type="success">
+<slot-default>
+<p>Objects successfully deleted</p>
+</slot-default>
+</x-ncnotecard>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`MassValidateObjects markup renders an empty selection 1`] = `
+"<x-ncdialog name="Validate 0 objects" noclose="" size="normal">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Cancel</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton disabled="true" variant="primary">
+<slot-default>Validate</slot-default>
+<slot-icon>
+<x-checkcircle size="20">
+</x-checkcircle>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="validate-step">
+<h3 class="step-title">Confirm validation</h3>
+<x-ncnotecard type="info">
+<slot-default>Remove any object you want to skip. Use this after you change a schema, to apply new rules and refresh generated fields.<br>
+<br>We save each object unchanged, which checks it against the current schema.</slot-default>
+</x-ncnotecard>
+<div class="selected-objects-container">
+<h4>Selected Objects (0)</h4>
+<x-ncemptycontent name="No objects selected">
+<slot-description>Select objects in the list to validate them.</slot-description>
+</x-ncemptycontent>
+</div>
+</div>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`MassValidateObjects markup renders the failed state 1`] = `
+"<x-ncdialog name="Validate 3 objects" noclose="" size="normal">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Close</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<x-ncnotecard type="error">
+<slot-default>
+<p>true</p>
+</slot-default>
+</x-ncnotecard>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`MassValidateObjects markup renders the partlyFailed state 1`] = `
+"<x-ncdialog name="Validate 3 objects" noclose="" size="normal">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Close</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<x-ncnotecard type="success">
+<slot-default>
+<p>1 object validated</p>
+</slot-default>
+</x-ncnotecard>
+<x-ncnotecard type="error">
+<slot-default>
+<p>Two failed</p>
+</slot-default>
+</x-ncnotecard>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`MassValidateObjects markup renders the review state 1`] = `
+"<x-ncdialog name="Validate 3 objects" noclose="" size="normal">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Cancel</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton disabled="false" variant="primary">
+<slot-default>Validate</slot-default>
+<slot-icon>
+<x-checkcircle size="20">
+</x-checkcircle>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="validate-step">
+<h3 class="step-title">Confirm validation</h3>
+<x-ncnotecard type="info">
+<slot-default>Remove any object you want to skip. Use this after you change a schema, to apply new rules and refresh generated fields.<br>
+<br>We save each object unchanged, which checks it against the current schema.</slot-default>
+</x-ncnotecard>
+<div class="selected-objects-container">
+<h4>Selected Objects (3)</h4>
+<div class="selected-objects-list">
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Named</strong>
+<p class="object-id">ID: a</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Named">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Titled</strong>
+<p class="object-id">ID: b</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Titled">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Unnamed Object</strong>
+<p class="object-id">ID: c</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove c">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+</div>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`MassValidateObjects markup renders the running state 1`] = `
+"<x-ncdialog name="Validate 3 objects" noclose="" size="normal">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Cancel</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+<x-ncbutton disabled="true" variant="primary">
+<slot-default>Validate</slot-default>
+<slot-icon>
+<x-ncloadingicon size="20">
+</x-ncloadingicon>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<div class="validate-step">
+<h3 class="step-title">Confirm validation</h3>
+<x-ncnotecard type="info">
+<slot-default>Remove any object you want to skip. Use this after you change a schema, to apply new rules and refresh generated fields.<br>
+<br>We save each object unchanged, which checks it against the current schema.</slot-default>
+</x-ncnotecard>
+<div class="selected-objects-container">
+<h4>Selected Objects (3)</h4>
+<div class="selected-objects-list">
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Named</strong>
+<p class="object-id">ID: a</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Named">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Titled</strong>
+<p class="object-id">ID: b</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove Titled">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+<div class="selected-object-item">
+<div class="object-info">
+<strong>Unnamed Object</strong>
+<p class="object-id">ID: c</p>
+</div>
+<x-ncbutton variant="tertiary" aria-label="Remove c">
+<slot-icon>
+<x-close size="20">
+</x-close>
+</slot-icon>
+</x-ncbutton>
+</div>
+</div>
+</div>
+</div>
+</slot-default>
+</x-ncdialog>"
+`;
+
+exports[`MassValidateObjects markup renders the succeeded state 1`] = `
+"<x-ncdialog name="Validate 3 objects" noclose="" size="normal">
+<slot-actions>
+<x-ncbutton>
+<slot-default>Close</slot-default>
+<slot-icon>
+<x-cancel size="20">
+</x-cancel>
+</slot-icon>
+</x-ncbutton>
+</slot-actions>
+<slot-default>
+<x-ncnotecard type="success">
+<slot-default>
+<p>3 objects validated</p>
+</slot-default>
+</x-ncnotecard>
+</slot-default>
+</x-ncdialog>"
+`;

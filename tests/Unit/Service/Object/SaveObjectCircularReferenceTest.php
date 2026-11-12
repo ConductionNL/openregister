@@ -24,9 +24,12 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CircularReferenceException;
+use OCA\OpenRegister\Exception\ReferenceCycle;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveCallFrame;
+use OCA\OpenRegister\Service\Object\SaveObject\SaveCallStack;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
@@ -40,7 +43,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
-use Twig\Loader\ArrayLoader;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 
 /**
  * Unit tests for SaveObject's per-save call stack + circular-reference
@@ -61,44 +64,82 @@ class SaveObjectCircularReferenceTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		return new SaveObject(
-			objectEntityMapper: $this->createMock(MagicMapper::class),
-			unifiedObjectMapper: $unifiedObjectMapper ?? $this->createMock(MagicMapper::class),
-			metaHydrationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler::class),
-			filePropertyHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler::class),
-			linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
-			userSession: $session,
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			schemaMapper: $schemaMapper ?? $this->createMock(SchemaMapper::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			urlGenerator: $this->createMock(IURLGenerator::class),
-			organisationService: $this->createMock(OrganisationService::class),
-			cacheHandler: $this->createMock(CacheHandler::class),
-			settingsService: $this->createMock(SettingsService::class),
+			services: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectServices(
+				persistence: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPersistence(
+					mappers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers(
+						catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $schemaMapper ?? $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapper::class)),
+						unifiedObjectMapper: $unifiedObjectMapper ?? $this->createMock(MagicMapper::class)
+					),
+					records: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRecords(
+						auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+						settingsService: $this->createMock(SettingsService::class),
+						tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class)
+					),
+					runtime: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectRuntime(
+						cacheHandler: $this->createMock(CacheHandler::class)
+					)
+				),
+				handlers: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers(
+					properties: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPropertyHandlers(
+						metaHydrationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler::class),
+						filePropertyHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler::class),
+						linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
+						computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class)
+					),
+					values: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectValueHandlers(
+						translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+						translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+						translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+					)
+				),
+				platform: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectPlatform(
+					userSession: $session,
+					urlGenerator: $this->createMock(IURLGenerator::class),
+					logger: $this->createMock(LoggerInterface::class),
+					eventDispatcher: $this->createMock(IEventDispatcher::class)
+				),
+				tenancy: new \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectTenancy(
+					organisationService: $this->createMock(OrganisationService::class),
+					groupManager: $this->createMock(IGroupManager::class),
+					appConfig: $this->createMock(IAppConfig::class)
+				)
+			),
 			propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
-			computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-			translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
-			translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
-			logger: $this->createMock(LoggerInterface::class),
-			tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
-			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
-			arrayLoader: new ArrayLoader(),
-			groupManager: $this->createMock(IGroupManager::class),
-			appConfig: $this->createMock(IAppConfig::class),
-			eventDispatcher: $this->createMock(IEventDispatcher::class),
+			permissionHandler: $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class),
+			folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class)
 		);
 	}
 
 	private function invoke(SaveObject $handler, string $methodName, array $args): mixed {
-		$reflection = new ReflectionMethod(SaveObject::class, $methodName);
-		$reflection->setAccessible(true);
-		return $reflection->invokeArgs($handler, array_values($args));
+		$args = array_values($args);
+		$calls = $this->saveCalls(handler: $handler);
+		return match ($methodName) {
+			'validateReferences', 'validateReferenceExists' => ReferenceValidationCalls::{$methodName}($handler, $args),
+			'pushSaveCallFrame' => $calls->push(new SaveCallFrame($args[0], $args[1], $args[2])),
+			'popSaveCallFrame' => $calls->pop($args[0]),
+			'detectCircularReference' => self::frameArrays(frames: $calls->cycleThrough($args[0])),
+			default => (new ReflectionMethod(SaveObject::class, $methodName))->invokeArgs($handler, $args),
+		};
+	}
+
+	private function saveCalls(SaveObject $handler): SaveCallStack {
+		return (new ReflectionMethod(SaveObject::class, 'saveCalls'))->invoke($handler);
+	}
+
+	private static function frameArrays(?array $frames): ?array {
+		if ($frames === null) {
+			return null;
+		}
+
+		return array_map(
+			static fn (SaveCallFrame $frame): array => ['schemaSlug' => $frame->schemaSlug, 'uuid' => $frame->uuid, 'register' => $frame->register],
+			$frames
+		);
 	}
 
 	private function readStack(SaveObject $handler): array {
-		$reflection = new ReflectionProperty(SaveObject::class, 'saveCallStack');
-		$reflection->setAccessible(true);
-		return (array)$reflection->getValue($handler);
+		$frames = (new ReflectionProperty(SaveCallStack::class, 'frames'))->getValue($this->saveCalls(handler: $handler));
+		return (array)self::frameArrays(frames: $frames);
 	}
 
 	private function buildSchemaWithReference(): Schema {
@@ -239,6 +280,17 @@ class SaveObjectCircularReferenceTest extends TestCase {
 		}
 	}
 
+	public function testAFramePoppedWithItsParentCanBePushedAgain(): void {
+		$handler = $this->buildHandler();
+		$parent = $this->invoke($handler, 'pushSaveCallFrame', ['parent', 'p-1', null]);
+		$this->invoke($handler, 'pushSaveCallFrame', ['child', 'c-1', null]);
+
+		$this->invoke($handler, 'popSaveCallFrame', [$parent]);
+
+		$this->assertSame([], $this->readStack($handler));
+		$this->assertSame('child:c-1', $this->invoke($handler, 'pushSaveCallFrame', ['child', 'c-1', null]));
+	}
+
 	public function testCircularExceptionIsValidationButNotReferenceValidationSubclass(): void {
 		// Make sure the catch block in `validateReferences()` that
 		// catches `ReferenceValidationException` does NOT also catch
@@ -246,9 +298,11 @@ class SaveObjectCircularReferenceTest extends TestCase {
 		// even in warn-mode because a cycle would cause infinite
 		// recursion if swallowed.
 		$exception = new CircularReferenceException(
-			referencedUuid: 'p-1',
-			targetSchemaSlug: 'parent',
-			cycle: [['schema' => 'parent', 'uuid' => 'p-1', 'register' => 'r1']],
+			referenceCycle: new ReferenceCycle(
+				referencedUuid: 'p-1',
+				targetSchemaSlug: 'parent',
+				cycle: [['schema' => 'parent', 'uuid' => 'p-1', 'register' => 'r1']],
+			),
 		);
 		$this->assertInstanceOf(\OCA\OpenRegister\Exception\ValidationException::class, $exception);
 		$this->assertNotInstanceOf(ReferenceValidationException::class, $exception);

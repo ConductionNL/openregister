@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Search\SearchIndexMaintenance;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexMaintenance;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IAppConfig;
@@ -47,6 +47,7 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Search\Service\Search\SearchIndexPass;
 
 /**
  * Locks the rebuild, the snapshot and the restore.
@@ -142,14 +143,50 @@ class SearchIndexMaintenanceTest extends TestCase {
 			->willReturn('openregister_table_1_2');
 
 		return new SearchIndexMaintenance(
-			db: $this->db,
-			registerMapper: $this->registerMapper,
-			magicMapper: $this->magicMapper,
+			stores: new \OCA\OpenRegister\Search\Service\Search\SearchIndexStores($this->db, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->magicMapper)),
 			appConfig: $this->appConfig,
 			config: $this->config,
 			logger: $this->createMock(\Psr\Log\LoggerInterface::class)
 		);
 	}//end makeService()
+
+	/**
+	 * The status reads every table's index names in one query, not one per table.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 *
+	 * @return void
+	 */
+	public function testIndexNamesOfManyTablesAreReadInOneQuery(): void {
+		$this->db->method('getDatabasePlatform')->willReturn($this->createMock(PostgreSQLPlatform::class));
+		$statement = $this->createMock(IPreparedStatement::class);
+		$statement->expects($this->once())->method('execute')
+			->with(['oc_openregister_table_1_2', 'oc_openregister_table_1_3', 'oc_openregister_table_1_4'])
+			->willReturn($this->createMock(IResult::class));
+		$statement->method('fetch')->willReturnOnConsecutiveCalls(
+			['tablename' => 'oc_openregister_table_1_2', 'indexname' => 'idx_a'],
+			['tablename' => 'oc_openregister_table_1_2', 'indexname' => 'idx_b'],
+			['tablename' => 'oc_openregister_table_1_3', 'indexname' => 'idx_c'],
+			false
+		);
+		$this->db->expects($this->once())->method('prepare')->willReturn($statement);
+
+		$service = new SearchIndexMaintenance(
+			stores: new \OCA\OpenRegister\Search\Service\Search\SearchIndexStores($this->db, new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->magicMapper)),
+			appConfig: $this->appConfig,
+			config: $this->config,
+			logger: $this->createMock(\Psr\Log\LoggerInterface::class)
+		);
+
+		$this->assertSame(
+			expected: [
+				'openregister_table_1_2' => ['idx_a', 'idx_b'],
+				'openregister_table_1_3' => ['idx_c'],
+				'openregister_table_1_4' => [],
+			],
+			actual: $service->indexNamesFor(tableNames: ['openregister_table_1_2', 'openregister_table_1_3', 'openregister_table_1_4'])
+		);
+	}//end testIndexNamesOfManyTablesAreReadInOneQuery()
 
 	/**
 	 * The scenario the design turns on: search keeps answering, because the
@@ -163,7 +200,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 			indexes: ['t_uuid_idx' => 'CREATE UNIQUE INDEX t_uuid_idx ON oc_t (_uuid)']
 		);
 
-		$report = $service->rebuild(apply: true);
+		$report = $service->rebuild(pass: new SearchIndexPass(apply: true, progress: null));
 
 		$this->assertSame('completed', $report['state']);
 		$this->assertSame(1, $report['rebuilt']);
@@ -185,7 +222,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 	public function testAPlatformWithoutConcurrentReindexIsRefused(): void {
 		$service = $this->makeService(isPostgres: false);
 
-		$report = $service->rebuild(apply: true);
+		$report = $service->rebuild(pass: new SearchIndexPass(apply: true, progress: null));
 
 		$this->assertSame('refused', $report['state']);
 		$this->assertStringContainsString('concurrent reindex', $report['reason']);
@@ -204,7 +241,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 			indexes: ['t_uuid_idx' => 'CREATE INDEX t_uuid_idx ON oc_t (_uuid)']
 		);
 
-		$report = $service->rebuild(apply: false);
+		$report = $service->rebuild(pass: new SearchIndexPass(apply: false, progress: null));
 
 		$this->assertSame('planned', $report['state']);
 		$this->assertSame(1, $report['indexes']);
@@ -228,7 +265,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 		);
 		$this->failOn = ['"b_idx"'];
 
-		$report = $service->rebuild(apply: true);
+		$report = $service->rebuild(pass: new SearchIndexPass(apply: true, progress: null));
 
 		$this->assertSame('failed', $report['state']);
 		$this->assertSame(1, $report['rebuilt']);
@@ -255,7 +292,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 			isPostgres: true,
 			indexes: ['t_idx' => 'CREATE INDEX t_idx ON oc_t (a)']
 		);
-		$service->rebuild(apply: false);
+		$service->rebuild(pass: new SearchIndexPass(apply: false, progress: null));
 	}//end testADryRunIsNotStoredAsTheLastRun()
 
 	/**
@@ -273,7 +310,7 @@ class SearchIndexMaintenanceTest extends TestCase {
 			isPostgres: true,
 			indexes: ['t_idx' => 'CREATE INDEX t_idx ON oc_t (a)']
 		);
-		$service->rebuild(apply: true);
+		$service->rebuild(pass: new SearchIndexPass(apply: true, progress: null));
 	}//end testARealRunIsStored()
 
 	/**

@@ -1,0 +1,1515 @@
+{
+    "empty save result": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "flags off": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    false,
+                    false,
+                    false,
+                    true,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "header only": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 0,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "sheet": "Things",
+                        "row": 1,
+                        "object": [],
+                        "error": "No data rows found in sheet"
+                    }
+                ],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "invalid reported without validation": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "sheet": "Things",
+                        "object": [],
+                        "error": "bad",
+                        "type": "ValidationException"
+                    }
+                ],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "multitenancy off only": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    false,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "no headers": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 0,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "sheet": "Things",
+                        "row": 1,
+                        "object": [],
+                        "error": "No valid headers found in sheet"
+                    }
+                ],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "no queue": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "logger.debug",
+                "args": [
+                    "[ImportService] notify_push IQueue not available; skipping batch flush",
+                    {
+                        "error": "no notify_push"
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "no register": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "no schema": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": null
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": null,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": null
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": null
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [],
+                "updated": [],
+                "errors": [],
+                "schema": {
+                    "id": null,
+                    "title": null,
+                    "slug": null
+                },
+                "debug": {
+                    "headers": [],
+                    "schemaProperties": [],
+                    "processableHeaders": []
+                },
+                "unchanged": []
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "nothing saved": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [],
+                "updated": [],
+                "unchanged": [
+                    "n"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "100% operations avoided",
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "only created": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [
+                    "a"
+                ],
+                "updated": [],
+                "unchanged": [],
+                "errors": [],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "only empty rows": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 0,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "sheet": "Things",
+                        "row": 1,
+                        "object": [],
+                        "error": "No data rows found in sheet"
+                    }
+                ],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "only updated": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [],
+                "updated": [
+                    "u"
+                ],
+                "unchanged": [],
+                "errors": [],
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "plain": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "publish flag": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "logger.warning",
+                "args": [
+                    "[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.",
+                    []
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "save throws": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "threw": "Exception",
+        "message": "Bulk save failed",
+        "code": 0
+    },
+    "slugless target": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "25% operations avoided",
+                "schema": {
+                    "id": 9,
+                    "title": "Schema ",
+                    "slug": ""
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "unchanged without others": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    false,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [],
+                "updated": [],
+                "unchanged": [
+                    "a",
+                    "b",
+                    "c"
+                ],
+                "errors": [],
+                "deduplication_efficiency": "100% operations avoided",
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    },
+    "validation errors": {
+        "calls": [
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "objectService.saveObjects",
+                "args": [
+                    [
+                        {
+                            "title": "One",
+                            "status": "open",
+                            "name": "First",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        },
+                        {
+                            "title": "Two",
+                            "status": "closed",
+                            "name": "Second",
+                            "id": "7",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9,
+                                "id": "7"
+                            }
+                        },
+                        {
+                            "title": "Three",
+                            "name": "Third",
+                            "@self": {
+                                "register": 4,
+                                "schema": 9
+                            }
+                        }
+                    ],
+                    {
+                        "register": 4
+                    },
+                    {
+                        "schema": 9
+                    },
+                    true,
+                    true,
+                    true,
+                    false,
+                    true
+                ]
+            },
+            {
+                "method": "queue.push",
+                "args": [
+                    "notify_custom",
+                    {
+                        "message": "or-collection-reg-4-things",
+                        "body": {
+                            "action": "batch",
+                            "register": "reg-4",
+                            "schema": "things"
+                        }
+                    }
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
+            }
+        ],
+        "result": {
+            "Things": {
+                "found": 3,
+                "created": [
+                    "s-1",
+                    "s-2"
+                ],
+                "updated": [
+                    "u-1"
+                ],
+                "unchanged": [
+                    "n-1"
+                ],
+                "errors": [
+                    {
+                        "sheet": "Things",
+                        "object": {
+                            "title": "Two"
+                        },
+                        "error": "bad",
+                        "type": "X"
+                    },
+                    {
+                        "sheet": "Things",
+                        "object": {
+                            "title": "raw"
+                        },
+                        "error": "Validation failed",
+                        "type": "ValidationException"
+                    }
+                ],
+                "deduplication_efficiency": "25% operations avoided",
+                "schema": {
+                    "id": 9,
+                    "title": "Schema things",
+                    "slug": "things"
+                }
+            },
+            "importJobId": "<uuid>"
+        }
+    }
+}

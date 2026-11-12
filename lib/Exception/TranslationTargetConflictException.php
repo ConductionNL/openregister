@@ -90,13 +90,22 @@ class TranslationTargetConflictException extends CustomValidationException {
 				$property,
 				$targetLanguage
 			),
-			errors: [
-				'code' => self::ERROR_CODE,
-				'property' => $property,
-				'targetLanguage' => $targetLanguage,
-			]
+			errors: $this->conflictErrors()
 		);
 	}//end __construct()
+
+	/**
+	 * The machine-readable errors: the error code, the property and the target language.
+	 *
+	 * @return array{code: string, property: string, targetLanguage: string}
+	 */
+	private function conflictErrors(): array {
+		return [
+			'code' => self::ERROR_CODE,
+			'property' => $this->property,
+			'targetLanguage' => $this->targetLanguage,
+		];
+	}//end conflictErrors()
 
 	/**
 	 * Get the property whose value conflicted.

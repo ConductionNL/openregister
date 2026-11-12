@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Notification;
 
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
  * address nobody, every night, with nothing in any log to say so. Catching it
  * at save time is the whole point of the check.
  *
- * @coversDefaultClass \OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator
+ * @coversDefaultClass \OCA\OpenRegister\Notifications\Service\Notification\NotificationAnnotationValidator
  */
 class NotificationAnnotationValidatorWatchersTest extends TestCase {
 

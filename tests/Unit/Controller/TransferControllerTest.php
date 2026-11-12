@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\TransferControllerFactory;
 use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
 use OCA\OpenRegister\Controller\TransferController;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
@@ -64,7 +65,7 @@ class TransferControllerTest extends TestCase {
 		$session = $this->createMock(\OCP\IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
-		$this->controller = new TransferController(
+		$this->controller = TransferControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->recordService,
@@ -139,7 +140,7 @@ class TransferControllerTest extends TestCase {
 	 */
 	public function testRejectingWithoutAReasonIsRefused(): void {
 		$this->request->method('getParam')->willReturn('');
-		$this->listService->expects($this->never())->method('rejectTransferList');
+		$this->listService->expects($this->never())->method('reject');
 
 		$response = $this->controller->reject(id: 'tl-1');
 
@@ -155,8 +156,8 @@ class TransferControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturn('incomplete metadata');
 		$this->recordService->method('loadTransferList')->willReturn(['uuid' => 'tl-1', 'status' => 'in_review']);
 		$this->listService->expects($this->once())
-			->method('rejectTransferList')
-			->with($this->anything(), 'archivist-1', 'incomplete metadata')
+			->method('reject')
+			->with($this->anything(), new \OCA\OpenRegister\Service\Edepot\TransferRejection(archivistId: 'archivist-1', reason: 'incomplete metadata'))
 			->willReturn(['uuid' => 'tl-1', 'status' => 'rejected']);
 
 		$this->assertSame('rejected', $this->controller->reject(id: 'tl-1')->getData()['status']);

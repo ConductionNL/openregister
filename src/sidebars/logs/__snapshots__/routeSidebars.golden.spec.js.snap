@@ -1,0 +1,1492 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`route sidebars golden audit: applies the route query empty 1`] = `
+{
+  "log": [
+    [
+      "applyFiltersToStore",
+    ],
+  ],
+  "query": {},
+  "state": {
+    "actionDistribution": [],
+    "actionOptions": [
+      {
+        "label": "Create",
+        "value": "create",
+      },
+      {
+        "label": "Read",
+        "value": "read",
+      },
+      {
+        "label": "Update",
+        "value": "update",
+      },
+      {
+        "label": "Delete",
+        "value": "delete",
+      },
+    ],
+    "activeTab": "filters-tab",
+    "createCount": 0,
+    "dateFrom": null,
+    "dateTo": null,
+    "deleteCount": 0,
+    "filterTimeout": null,
+    "filteredCount": 0,
+    "objectFilter": "",
+    "selectedActions": [],
+    "selectedUsers": [],
+    "showOnlyWithChanges": false,
+    "topObjects": [],
+    "totalAuditTrails": 0,
+    "updateCount": 0,
+  },
+}
+`;
+
+exports[`route sidebars golden audit: applies the route query emptyStrings 1`] = `
+{
+  "log": [
+    [
+      "applyFiltersToStore",
+    ],
+  ],
+  "query": {},
+  "state": {
+    "actionDistribution": [],
+    "actionOptions": [
+      {
+        "label": "Create",
+        "value": "create",
+      },
+      {
+        "label": "Read",
+        "value": "read",
+      },
+      {
+        "label": "Update",
+        "value": "update",
+      },
+      {
+        "label": "Delete",
+        "value": "delete",
+      },
+    ],
+    "activeTab": "filters-tab",
+    "createCount": 0,
+    "dateFrom": null,
+    "dateTo": null,
+    "deleteCount": 0,
+    "filterTimeout": null,
+    "filteredCount": 0,
+    "objectFilter": "",
+    "selectedActions": [],
+    "selectedUsers": [],
+    "showOnlyWithChanges": false,
+    "topObjects": [],
+    "totalAuditTrails": 0,
+    "updateCount": 0,
+  },
+}
+`;
+
+exports[`route sidebars golden audit: applies the route query full 1`] = `
+{
+  "log": [
+    [
+      "setRegisterItem",
+      2,
+    ],
+    [
+      "setSchemaItem",
+      11,
+    ],
+    [
+      "applyFiltersToStore",
+    ],
+  ],
+  "query": {
+    "action": "create,update",
+    "dateFrom": "2026-01-02T00:00:00.000Z",
+    "object": "o-1",
+    "onlyWithChanges": "1",
+    "register": "2",
+    "schema": "11",
+    "user": "alice,bob",
+  },
+  "state": {
+    "actionDistribution": [],
+    "actionOptions": [
+      {
+        "label": "Create",
+        "value": "create",
+      },
+      {
+        "label": "Read",
+        "value": "read",
+      },
+      {
+        "label": "Update",
+        "value": "update",
+      },
+      {
+        "label": "Delete",
+        "value": "delete",
+      },
+    ],
+    "activeTab": "filters-tab",
+    "createCount": 0,
+    "dateFrom": "2026-01-02T00:00:00.000Z",
+    "dateTo": null,
+    "deleteCount": 0,
+    "filterTimeout": null,
+    "filteredCount": 0,
+    "objectFilter": "o-1",
+    "selectedActions": [
+      {
+        "label": "Create",
+        "value": "create",
+      },
+      {
+        "label": "Update",
+        "value": "update",
+      },
+    ],
+    "selectedUsers": [
+      {
+        "label": "alice",
+        "value": "alice",
+      },
+      {
+        "label": "bob",
+        "value": "bob",
+      },
+    ],
+    "showOnlyWithChanges": true,
+    "topObjects": [],
+    "totalAuditTrails": 0,
+    "updateCount": 0,
+  },
+}
+`;
+
+exports[`route sidebars golden audit: applies the route query unknownIds 1`] = `
+{
+  "log": [
+    [
+      "applyFiltersToStore",
+    ],
+  ],
+  "query": {},
+  "state": {
+    "actionDistribution": [],
+    "actionOptions": [
+      {
+        "label": "Create",
+        "value": "create",
+      },
+      {
+        "label": "Read",
+        "value": "read",
+      },
+      {
+        "label": "Update",
+        "value": "update",
+      },
+      {
+        "label": "Delete",
+        "value": "delete",
+      },
+    ],
+    "activeTab": "filters-tab",
+    "createCount": 0,
+    "dateFrom": null,
+    "dateTo": null,
+    "deleteCount": 0,
+    "filterTimeout": null,
+    "filteredCount": 0,
+    "objectFilter": "",
+    "selectedActions": [],
+    "selectedUsers": [],
+    "showOnlyWithChanges": false,
+    "topObjects": [],
+    "totalAuditTrails": 0,
+    "updateCount": 0,
+  },
+}
+`;
+
+exports[`route sidebars golden audit: compares queries 1`] = `
+[
+  true,
+  true,
+  true,
+  false,
+  true,
+  false,
+  true,
+]
+`;
+
+exports[`route sidebars golden audit: gives up after ten retries 1`] = `[]`;
+
+exports[`route sidebars golden audit: picker changes 1`] = `
+[
+  [
+    "setRegisterItem",
+    2,
+  ],
+  [
+    "setSchemaItem",
+    null,
+  ],
+  [
+    "applyFilters",
+  ],
+  [
+    "setSchemaItem",
+    12,
+  ],
+  [
+    "applyFilters",
+  ],
+]
+`;
+
+exports[`route sidebars golden audit: register and schema pickers 1`] = `
+[
+  [
+    "none",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "options": [],
+    },
+    null,
+    null,
+  ],
+  [
+    "register",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "Eleven",
+        "",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "Eleven",
+          "schema": 11,
+          "title": "Eleven",
+          "value": 11,
+        },
+        {
+          "label": "",
+          "schema": 12,
+          "title": "",
+          "value": 12,
+        },
+      ],
+      "reduced": [
+        11,
+        12,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "Two",
+      "register": 2,
+      "title": "Two",
+      "value": 2,
+    },
+    null,
+  ],
+  [
+    "both",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "Ten",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "Ten",
+          "schema": 10,
+          "title": "Ten",
+          "value": 10,
+        },
+      ],
+      "reduced": [
+        10,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "One",
+      "register": 1,
+      "title": "One",
+      "value": 1,
+    },
+    {
+      "label": "Ten",
+      "schema": 10,
+      "title": "Ten",
+      "value": 10,
+    },
+  ],
+]
+`;
+
+exports[`route sidebars golden audit: user options 1`] = `
+[
+  [],
+  [],
+  [
+    {
+      "label": "Ann",
+      "value": "Ann",
+    },
+    {
+      "label": "bob",
+      "value": "bob",
+    },
+  ],
+]
+`;
+
+exports[`route sidebars golden audit: waits for the lists before applying the route scope 1`] = `
+[
+  [
+    "setRegisterItem",
+    1,
+  ],
+  [
+    "setRegisterItem",
+    1,
+  ],
+  [
+    "setSchemaItem",
+    10,
+  ],
+  [
+    "applyFiltersToStore",
+  ],
+]
+`;
+
+exports[`route sidebars golden audit: writes the route query 1`] = `
+[
+  [
+    "router.replace",
+    {
+      "path": "/audit-trails",
+      "query": {
+        "register": "1",
+        "schema": "10",
+      },
+    },
+  ],
+]
+`;
+
+exports[`route sidebars golden deleted: applies the route query empty 1`] = `
+{
+  "log": [
+    [
+      "applyFiltersToStore",
+    ],
+  ],
+  "query": {},
+  "state": {
+    "activeTab": "filters-tab",
+    "dateFrom": null,
+    "dateTo": null,
+    "filteredCount": 0,
+    "selectedDeletedBy": null,
+  },
+}
+`;
+
+exports[`route sidebars golden deleted: applies the route query emptyStrings 1`] = `
+{
+  "log": [
+    [
+      "applyFiltersToStore",
+    ],
+  ],
+  "query": {},
+  "state": {
+    "activeTab": "filters-tab",
+    "dateFrom": null,
+    "dateTo": null,
+    "filteredCount": 0,
+    "selectedDeletedBy": null,
+  },
+}
+`;
+
+exports[`route sidebars golden deleted: applies the route query full 1`] = `
+{
+  "log": [
+    [
+      "setRegisterItem",
+      2,
+    ],
+    [
+      "setSchemaItem",
+      11,
+    ],
+    [
+      "applyFiltersToStore",
+    ],
+  ],
+  "query": {
+    "dateFrom": "2026-01-02T00:00:00.000Z",
+    "deletedBy": "carol",
+    "register": "2",
+    "schema": "11",
+  },
+  "state": {
+    "activeTab": "filters-tab",
+    "dateFrom": "2026-01-02T00:00:00.000Z",
+    "dateTo": null,
+    "filteredCount": 0,
+    "selectedDeletedBy": {
+      "label": "carol",
+      "value": "carol",
+    },
+  },
+}
+`;
+
+exports[`route sidebars golden deleted: applies the route query unknownIds 1`] = `
+{
+  "log": [
+    [
+      "applyFiltersToStore",
+    ],
+  ],
+  "query": {},
+  "state": {
+    "activeTab": "filters-tab",
+    "dateFrom": null,
+    "dateTo": null,
+    "filteredCount": 0,
+    "selectedDeletedBy": null,
+  },
+}
+`;
+
+exports[`route sidebars golden deleted: compares queries 1`] = `
+[
+  true,
+  true,
+  true,
+  false,
+  true,
+  false,
+  true,
+]
+`;
+
+exports[`route sidebars golden deleted: gives up after ten retries 1`] = `[]`;
+
+exports[`route sidebars golden deleted: picker changes 1`] = `
+[
+  [
+    "setRegisterItem",
+    2,
+  ],
+  [
+    "setSchemaItem",
+    null,
+  ],
+  [
+    "applyFilters",
+  ],
+  [
+    "setSchemaItem",
+    12,
+  ],
+  [
+    "applyFilters",
+  ],
+]
+`;
+
+exports[`route sidebars golden deleted: register and schema pickers 1`] = `
+[
+  [
+    "none",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "options": [],
+    },
+    null,
+    null,
+  ],
+  [
+    "register",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "Eleven",
+        "",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "Eleven",
+          "schema": 11,
+          "title": "Eleven",
+          "value": 11,
+        },
+        {
+          "label": "",
+          "schema": 12,
+          "title": "",
+          "value": 12,
+        },
+      ],
+      "reduced": [
+        11,
+        12,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "Two",
+      "register": 2,
+      "title": "Two",
+      "value": 2,
+    },
+    null,
+  ],
+  [
+    "both",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "Ten",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "Ten",
+          "schema": 10,
+          "title": "Ten",
+          "value": 10,
+        },
+      ],
+      "reduced": [
+        10,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "One",
+      "register": 1,
+      "title": "One",
+      "value": 1,
+    },
+    {
+      "label": "Ten",
+      "schema": 10,
+      "title": "Ten",
+      "value": 10,
+    },
+  ],
+]
+`;
+
+exports[`route sidebars golden deleted: waits for the lists before applying the route scope 1`] = `
+[
+  [
+    "setRegisterItem",
+    1,
+  ],
+  [
+    "setRegisterItem",
+    1,
+  ],
+  [
+    "setSchemaItem",
+    10,
+  ],
+  [
+    "applyFiltersToStore",
+  ],
+]
+`;
+
+exports[`route sidebars golden deleted: writes the route query 1`] = `
+[
+  [
+    "router.replace",
+    {
+      "path": "/deleted",
+      "query": {
+        "register": "1",
+        "schema": "10",
+      },
+    },
+  ],
+]
+`;
+
+exports[`route sidebars golden search: applies the route query empty 1`] = `
+{
+  "log": [
+    [
+      "applyFilters",
+    ],
+    [
+      "loadActivityData",
+    ],
+  ],
+  "query": {},
+  "state": {
+    "activeTab": "filters-tab",
+    "activityPeriodOptions": [
+      {
+        "label": "Hourly",
+        "value": "hourly",
+      },
+      {
+        "label": "Daily",
+        "value": "daily",
+      },
+      {
+        "label": "Weekly",
+        "value": "weekly",
+      },
+      {
+        "label": "Monthly",
+        "value": "monthly",
+      },
+    ],
+    "averageExecutionTime": 0,
+    "averageResultsPerSearch": 0,
+    "avgObjectViewsPerSession": 0,
+    "avgSearchesPerSession": 0,
+    "currentActivityData": [],
+    "dateFrom": null,
+    "dateTo": null,
+    "executionTimeFrom": "",
+    "executionTimeTo": "",
+    "filterTimeout": null,
+    "filteredCount": 0,
+    "popularTerms": [],
+    "queryComplexity": {
+      "complex": 0,
+      "medium": 0,
+      "simple": 0,
+    },
+    "registerSchemaStats": [],
+    "resultCountFrom": "",
+    "resultCountTo": "",
+    "searchTermFilter": "",
+    "selectedActivityPeriod": {
+      "label": "Daily",
+      "value": "daily",
+    },
+    "selectedSuccessStatus": null,
+    "selectedUsers": [],
+    "successOptions": [
+      {
+        "label": "Successful",
+        "value": "true",
+      },
+      {
+        "label": "Failed",
+        "value": "false",
+      },
+    ],
+    "successRate": 0,
+    "totalResults": 0,
+    "totalSearchTrails": 0,
+    "uniqueOrganizations": 0,
+    "uniqueSearchTerms": 0,
+    "uniqueUsers": 0,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`route sidebars golden search: applies the route query emptyStrings 1`] = `
+{
+  "log": [
+    [
+      "applyFilters",
+    ],
+    [
+      "loadActivityData",
+    ],
+  ],
+  "query": {},
+  "state": {
+    "activeTab": "filters-tab",
+    "activityPeriodOptions": [
+      {
+        "label": "Hourly",
+        "value": "hourly",
+      },
+      {
+        "label": "Daily",
+        "value": "daily",
+      },
+      {
+        "label": "Weekly",
+        "value": "weekly",
+      },
+      {
+        "label": "Monthly",
+        "value": "monthly",
+      },
+    ],
+    "averageExecutionTime": 0,
+    "averageResultsPerSearch": 0,
+    "avgObjectViewsPerSession": 0,
+    "avgSearchesPerSession": 0,
+    "currentActivityData": [],
+    "dateFrom": null,
+    "dateTo": null,
+    "executionTimeFrom": "",
+    "executionTimeTo": "",
+    "filterTimeout": null,
+    "filteredCount": 0,
+    "popularTerms": [],
+    "queryComplexity": {
+      "complex": 0,
+      "medium": 0,
+      "simple": 0,
+    },
+    "registerSchemaStats": [],
+    "resultCountFrom": "",
+    "resultCountTo": "",
+    "searchTermFilter": "",
+    "selectedActivityPeriod": {
+      "label": "Daily",
+      "value": "daily",
+    },
+    "selectedSuccessStatus": null,
+    "selectedUsers": [],
+    "successOptions": [
+      {
+        "label": "Successful",
+        "value": "true",
+      },
+      {
+        "label": "Failed",
+        "value": "false",
+      },
+    ],
+    "successRate": 0,
+    "totalResults": 0,
+    "totalSearchTrails": 0,
+    "uniqueOrganizations": 0,
+    "uniqueSearchTerms": 0,
+    "uniqueUsers": 0,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`route sidebars golden search: applies the route query full 1`] = `
+{
+  "log": [
+    [
+      "setRegisterItem",
+      2,
+    ],
+    [
+      "setSchemaItem",
+      11,
+    ],
+    [
+      "applyFilters",
+    ],
+    [
+      "loadActivityData",
+    ],
+  ],
+  "query": {
+    "dateFrom": "2026-01-02T00:00:00.000Z",
+    "executionTimeFrom": "1",
+    "executionTimeTo": "9",
+    "register": "2",
+    "resultCountFrom": "2",
+    "resultCountTo": "8",
+    "schema": "11",
+    "searchTerm": "term",
+    "success": "true",
+    "user": "alice,bob",
+  },
+  "state": {
+    "activeTab": "filters-tab",
+    "activityPeriodOptions": [
+      {
+        "label": "Hourly",
+        "value": "hourly",
+      },
+      {
+        "label": "Daily",
+        "value": "daily",
+      },
+      {
+        "label": "Weekly",
+        "value": "weekly",
+      },
+      {
+        "label": "Monthly",
+        "value": "monthly",
+      },
+    ],
+    "averageExecutionTime": 0,
+    "averageResultsPerSearch": 0,
+    "avgObjectViewsPerSession": 0,
+    "avgSearchesPerSession": 0,
+    "currentActivityData": [],
+    "dateFrom": "2026-01-02T00:00:00.000Z",
+    "dateTo": null,
+    "executionTimeFrom": "1",
+    "executionTimeTo": "9",
+    "filterTimeout": null,
+    "filteredCount": 0,
+    "popularTerms": [],
+    "queryComplexity": {
+      "complex": 0,
+      "medium": 0,
+      "simple": 0,
+    },
+    "registerSchemaStats": [],
+    "resultCountFrom": "2",
+    "resultCountTo": "8",
+    "searchTermFilter": "term",
+    "selectedActivityPeriod": {
+      "label": "Daily",
+      "value": "daily",
+    },
+    "selectedSuccessStatus": {
+      "label": "Successful",
+      "value": "true",
+    },
+    "selectedUsers": [
+      {
+        "label": "alice",
+        "value": "alice",
+      },
+      {
+        "label": "bob",
+        "value": "bob",
+      },
+    ],
+    "successOptions": [
+      {
+        "label": "Successful",
+        "value": "true",
+      },
+      {
+        "label": "Failed",
+        "value": "false",
+      },
+    ],
+    "successRate": 0,
+    "totalResults": 0,
+    "totalSearchTrails": 0,
+    "uniqueOrganizations": 0,
+    "uniqueSearchTerms": 0,
+    "uniqueUsers": 0,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`route sidebars golden search: applies the route query unknownIds 1`] = `
+{
+  "log": [
+    [
+      "applyFilters",
+    ],
+    [
+      "loadActivityData",
+    ],
+  ],
+  "query": {},
+  "state": {
+    "activeTab": "filters-tab",
+    "activityPeriodOptions": [
+      {
+        "label": "Hourly",
+        "value": "hourly",
+      },
+      {
+        "label": "Daily",
+        "value": "daily",
+      },
+      {
+        "label": "Weekly",
+        "value": "weekly",
+      },
+      {
+        "label": "Monthly",
+        "value": "monthly",
+      },
+    ],
+    "averageExecutionTime": 0,
+    "averageResultsPerSearch": 0,
+    "avgObjectViewsPerSession": 0,
+    "avgSearchesPerSession": 0,
+    "currentActivityData": [],
+    "dateFrom": null,
+    "dateTo": null,
+    "executionTimeFrom": "",
+    "executionTimeTo": "",
+    "filterTimeout": null,
+    "filteredCount": 0,
+    "popularTerms": [],
+    "queryComplexity": {
+      "complex": 0,
+      "medium": 0,
+      "simple": 0,
+    },
+    "registerSchemaStats": [],
+    "resultCountFrom": "",
+    "resultCountTo": "",
+    "searchTermFilter": "",
+    "selectedActivityPeriod": {
+      "label": "Daily",
+      "value": "daily",
+    },
+    "selectedSuccessStatus": null,
+    "selectedUsers": [],
+    "successOptions": [
+      {
+        "label": "Successful",
+        "value": "true",
+      },
+      {
+        "label": "Failed",
+        "value": "false",
+      },
+    ],
+    "successRate": 0,
+    "totalResults": 0,
+    "totalSearchTrails": 0,
+    "uniqueOrganizations": 0,
+    "uniqueSearchTerms": 0,
+    "uniqueUsers": 0,
+    "userAgentStats": [],
+  },
+}
+`;
+
+exports[`route sidebars golden search: compares queries 1`] = `
+[
+  true,
+  true,
+  true,
+  false,
+  true,
+  false,
+  true,
+]
+`;
+
+exports[`route sidebars golden search: gives up after ten retries 1`] = `[]`;
+
+exports[`route sidebars golden search: picker changes 1`] = `
+[
+  [
+    "setRegisterItem",
+    2,
+  ],
+  [
+    "setSchemaItem",
+    null,
+  ],
+  [
+    "applyFilters",
+  ],
+  [
+    "setSchemaItem",
+    12,
+  ],
+  [
+    "applyFilters",
+  ],
+]
+`;
+
+exports[`route sidebars golden search: register and schema pickers 1`] = `
+[
+  [
+    "none",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "options": [],
+    },
+    null,
+    null,
+  ],
+  [
+    "register",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "Eleven",
+        "",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "Eleven",
+          "schema": 11,
+          "title": "Eleven",
+          "value": 11,
+        },
+        {
+          "label": "",
+          "schema": 12,
+          "title": "",
+          "value": 12,
+        },
+      ],
+      "reduced": [
+        11,
+        12,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "Two",
+      "register": 2,
+      "title": "Two",
+      "value": 2,
+    },
+    null,
+  ],
+  [
+    "both",
+    {
+      "label": "title",
+      "labels": [
+        "One",
+        "Two",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "One",
+          "register": 1,
+          "title": "One",
+          "value": 1,
+        },
+        {
+          "label": "Two",
+          "register": 2,
+          "title": "Two",
+          "value": 2,
+        },
+      ],
+      "reduced": [
+        1,
+        2,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "title",
+      "labels": [
+        "Ten",
+        "nested",
+        "labelled",
+        "",
+      ],
+      "options": [
+        {
+          "label": "Ten",
+          "schema": 10,
+          "title": "Ten",
+          "value": 10,
+        },
+      ],
+      "reduced": [
+        10,
+        {
+          "title": "nested",
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      "label": "One",
+      "register": 1,
+      "title": "One",
+      "value": 1,
+    },
+    {
+      "label": "Ten",
+      "schema": 10,
+      "title": "Ten",
+      "value": 10,
+    },
+  ],
+]
+`;
+
+exports[`route sidebars golden search: user options 1`] = `
+[
+  [],
+  [],
+  [
+    {
+      "label": "Ann",
+      "value": "Ann",
+    },
+    {
+      "label": "bob",
+      "value": "bob",
+    },
+  ],
+]
+`;
+
+exports[`route sidebars golden search: waits for the lists before applying the route scope 1`] = `
+[
+  [
+    "setRegisterItem",
+    1,
+  ],
+  [
+    "setRegisterItem",
+    1,
+  ],
+  [
+    "setSchemaItem",
+    10,
+  ],
+  [
+    "applyFilters",
+  ],
+  [
+    "loadActivityData",
+  ],
+]
+`;
+
+exports[`route sidebars golden search: writes the route query 1`] = `
+[
+  [
+    "router.replace",
+    {
+      "path": "/search-trails",
+      "query": {
+        "register": "1",
+        "schema": "10",
+      },
+    },
+  ],
+]
+`;

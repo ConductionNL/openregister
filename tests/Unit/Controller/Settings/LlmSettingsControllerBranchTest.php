@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\LlmSettingsControllerFactory;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\VectorizationService;
+use OCA\OpenRegister\Search\Service\VectorizationService;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -17,7 +18,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Branch coverage tests for LlmSettingsController — targets remaining uncovered
  * branches in updateLLMSettings, testEmbedding, testChat, clearAllEmbeddings,
- * getVectorStats, checkEmbeddingModelMismatch, patchLLMSettings.
+ * checkEmbeddingModelMismatch, patchLLMSettings.
  */
 class LlmSettingsControllerBranchTest extends TestCase {
 	private LlmSettingsController $controller;
@@ -38,7 +39,7 @@ class LlmSettingsControllerBranchTest extends TestCase {
 		$this->vectorizationService = $this->createMock(VectorizationService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new LlmSettingsController(
+		$this->controller = LlmSettingsControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->db,
@@ -299,17 +300,5 @@ class LlmSettingsControllerBranchTest extends TestCase {
 
 		$response = $this->controller->clearAllEmbeddings();
 		$this->assertSame(500, $response->getStatus());
-	}
-
-	// =========================================================================
-	// getVectorStats
-	// =========================================================================
-
-	public function testGetVectorStatsSuccess(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
-	}
-
-	public function testGetVectorStatsException(): void {
-		$this->markTestSkipped('getVectorStats() removed from LlmSettingsController.');
 	}
 }

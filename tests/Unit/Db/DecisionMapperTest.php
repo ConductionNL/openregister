@@ -25,6 +25,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\Decision
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
+ * @uses \OCA\OpenRegister\Db\EntityRelation
  */
 class DecisionMapperTest extends TestCase {
 

@@ -1,0 +1,2414 @@
+{
+    "empty dashboard xlsx": [
+        {
+            "title": "Overview",
+            "cells": {
+                "A1": "Dashboard",
+                "A4": "Generated",
+                "A5": "Category",
+                "A6": "Widgets",
+                "A8": "#",
+                "B4": "<generated>",
+                "B6": 0,
+                "B8": "Widget",
+                "C8": "Type",
+                "D8": "Source",
+                "E8": "Headline"
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 16,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "E5E5E5"
+                },
+                "E8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "E5E5E5"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        }
+    ],
+    "empty dashboard ods": [
+        {
+            "title": "Overview",
+            "cells": {
+                "A1": "Dashboard",
+                "A4": "Generated",
+                "A5": "Category",
+                "A6": "Widgets",
+                "A8": "#",
+                "B4": "<generated>",
+                "B5": "",
+                "B6": 0,
+                "B8": "Widget",
+                "C8": "Type",
+                "D8": "Source",
+                "E8": "Headline"
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 16,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "e5e5e5"
+                },
+                "E8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "e5e5e5"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        }
+    ],
+    "empty dashboard unknown format": [
+        {
+            "title": "Overview",
+            "cells": {
+                "A1": "Dashboard",
+                "A4": "Generated",
+                "A5": "Category",
+                "A6": "Widgets",
+                "A8": "#",
+                "B4": "<generated>",
+                "B6": 0,
+                "B8": "Widget",
+                "C8": "Type",
+                "D8": "Source",
+                "E8": "Headline"
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 16,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "E5E5E5"
+                },
+                "E8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "E5E5E5"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        }
+    ],
+    "empty dashboard csv": [
+        "\r",
+        "# Sheet: Overview\r",
+        "﻿\"Dashboard\",\"\",\"\",\"\",\"\"",
+        "\"\",\"\",\"\",\"\",\"\"",
+        "\"\",\"\",\"\",\"\",\"\"",
+        "\"Generated\",\"<generated>\",\"\",\"\",\"\"",
+        "\"Category\",\"\",\"\",\"\",\"\"",
+        "\"Widgets\",\"0\",\"\",\"\",\"\"",
+        "\"\",\"\",\"\",\"\",\"\"",
+        "\"#\",\"Widget\",\"Type\",\"Source\",\"Headline\"",
+        ""
+    ],
+    "full dashboard xlsx": [
+        {
+            "title": "Overview",
+            "cells": {
+                "A1": "Zaken overzicht",
+                "A10": 2,
+                "A11": 3,
+                "A12": 4,
+                "A13": 5,
+                "A14": 6,
+                "A15": 7,
+                "A16": 8,
+                "A2": "Alle zaken",
+                "A4": "Generated",
+                "A5": "Category",
+                "A6": "Widgets",
+                "A8": "#",
+                "A9": 1,
+                "B10": "Totaal",
+                "B12": "Lang: a/b\\c?d*e[f]g:h en dan nog veel meer tekst",
+                "B13": "   ",
+                "B14": "Leeg",
+                "B15": "Geen waarde",
+                "B16": "Aggregatie zonder velden",
+                "B4": "<generated>",
+                "B5": "ops",
+                "B6": 8,
+                "B8": "Widget",
+                "B9": "Per status",
+                "C10": "kpi",
+                "C11": "kpi",
+                "C8": "Type",
+                "C9": "bar",
+                "D10": "graphql",
+                "D11": "static",
+                "D16": "//",
+                "D8": "Source",
+                "D9": "zaken/zaak/perStatus",
+                "E10": 10,
+                "E11": "—",
+                "E12": 42,
+                "E13": 5,
+                "E14": "0 group(s)",
+                "E15": "—",
+                "E16": 1,
+                "E8": "Headline",
+                "E9": "5 group(s)"
+            },
+            "merged": [
+                "A1:D1",
+                "A2:D2"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 16,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "E5E5E5"
+                },
+                "E8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "E5E5E5"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Per status",
+            "cells": {
+                "A1": "Per status",
+                "A2": "open en dicht",
+                "A4": "Key",
+                "A5": "open",
+                "A6": "dicht",
+                "A7": "x",
+                "B4": "Value",
+                "B5": 3,
+                "B6": 7,
+                "B7": "n/a",
+                "B8": 1.5
+            },
+            "merged": [
+                "A1:D1",
+                "A2:D2"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Totaal",
+            "cells": {
+                "A1": "Totaal",
+                "A10": "min",
+                "A4": "Metric",
+                "A5": "name",
+                "A6": "metric",
+                "A7": "value",
+                "A8": "count",
+                "A9": "avg",
+                "B10": 0,
+                "B4": "Value",
+                "B5": "totaal",
+                "B6": "count",
+                "B7": 10,
+                "B8": 10,
+                "B9": 2.5
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Widget 3",
+            "cells": {
+                "A1": "Widget 3",
+                "A4": "No data available (data source did not resolve)."
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Lang_ a_b_c_d_e_f_g_h en dan no",
+            "cells": {
+                "A1": "Lang: a/b\\c?d*e[f]g:h en dan nog veel meer tekst",
+                "A4": "Metric",
+                "A5": "count",
+                "A6": "sum",
+                "B4": "Value",
+                "B5": 1,
+                "B6": 42
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Widget 5",
+            "cells": {
+                "A1": "   ",
+                "A4": "Metric",
+                "A5": "count",
+                "B4": "Value",
+                "B5": 5
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Leeg",
+            "cells": {
+                "A1": "Leeg",
+                "A4": "Metric",
+                "B4": "Value"
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Geen waarde",
+            "cells": {
+                "A1": "Geen waarde",
+                "A4": "Metric",
+                "A5": "metric",
+                "B4": "Value",
+                "B5": "sum"
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Aggregatie zonder velden",
+            "cells": {
+                "A1": "Aggregatie zonder velden",
+                "A4": "Metric",
+                "A5": "value",
+                "B4": "Value",
+                "B5": 1
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        }
+    ],
+    "full dashboard ods": [
+        {
+            "title": "Overview",
+            "cells": {
+                "A1": "Zaken overzicht",
+                "A10": 2,
+                "A11": 3,
+                "A12": 4,
+                "A13": 5,
+                "A14": 6,
+                "A15": 7,
+                "A16": 8,
+                "A2": "Alle zaken",
+                "A4": "Generated",
+                "A5": "Category",
+                "A6": "Widgets",
+                "A8": "#",
+                "A9": 1,
+                "B10": "Totaal",
+                "B11": "",
+                "B12": "Lang: a/b\\c?d*e[f]g:h en dan nog veel meer tekst",
+                "B13": "   ",
+                "B14": "Leeg",
+                "B15": "Geen waarde",
+                "B16": "Aggregatie zonder velden",
+                "B4": "<generated>",
+                "B5": "ops",
+                "B6": 8,
+                "B8": "Widget",
+                "B9": "Per status",
+                "C10": "kpi",
+                "C11": "kpi",
+                "C12": "",
+                "C13": "",
+                "C14": "",
+                "C15": "",
+                "C16": "",
+                "C8": "Type",
+                "C9": "bar",
+                "D10": "graphql",
+                "D11": "static",
+                "D12": "",
+                "D13": "",
+                "D14": "",
+                "D15": "",
+                "D16": "//",
+                "D8": "Source",
+                "D9": "zaken/zaak/perStatus",
+                "E10": 10,
+                "E11": "—",
+                "E12": 42,
+                "E13": 5,
+                "E14": "0 group(s)",
+                "E15": "—",
+                "E16": 1,
+                "E8": "Headline",
+                "E9": "5 group(s)"
+            },
+            "merged": [
+                "A1:D1",
+                "A2:D2"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 16,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "e5e5e5"
+                },
+                "E8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "e5e5e5"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Per status",
+            "cells": {
+                "A1": "Per status",
+                "A2": "open en dicht",
+                "A4": "Key",
+                "A5": "open",
+                "A6": "dicht",
+                "A7": "x",
+                "A8": "",
+                "A9": "",
+                "B4": "Value",
+                "B5": 3,
+                "B6": 7,
+                "B7": "n/a",
+                "B8": 1.5,
+                "B9": ""
+            },
+            "merged": [
+                "A1:D1",
+                "A2:D2"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Totaal",
+            "cells": {
+                "A1": "Totaal",
+                "A10": "min",
+                "A4": "Metric",
+                "A5": "name",
+                "A6": "metric",
+                "A7": "value",
+                "A8": "count",
+                "A9": "avg",
+                "B10": 0,
+                "B4": "Value",
+                "B5": "totaal",
+                "B6": "count",
+                "B7": 10,
+                "B8": 10,
+                "B9": 2.5
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Widget 3",
+            "cells": {
+                "A1": "Widget 3",
+                "A4": "No data available (data source did not resolve)."
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Lang_ a_b_c_d_e_f_g_h en dan no",
+            "cells": {
+                "A1": "Lang: a/b\\c?d*e[f]g:h en dan nog veel meer tekst",
+                "A4": "Metric",
+                "A5": "count",
+                "A6": "sum",
+                "B4": "Value",
+                "B5": 1,
+                "B6": 42
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Widget 5",
+            "cells": {
+                "A1": "   ",
+                "A4": "Metric",
+                "A5": "count",
+                "B4": "Value",
+                "B5": 5
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Leeg",
+            "cells": {
+                "A1": "Leeg",
+                "A4": "Metric",
+                "B4": "Value"
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Geen waarde",
+            "cells": {
+                "A1": "Geen waarde",
+                "A4": "Metric",
+                "A5": "metric",
+                "B4": "Value",
+                "B5": "sum"
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Aggregatie zonder velden",
+            "cells": {
+                "A1": "Aggregatie zonder velden",
+                "A4": "Metric",
+                "A5": "value",
+                "B4": "Value",
+                "B5": 1
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        }
+    ],
+    "full dashboard unknown format": [
+        {
+            "title": "Overview",
+            "cells": {
+                "A1": "Zaken overzicht",
+                "A10": 2,
+                "A11": 3,
+                "A12": 4,
+                "A13": 5,
+                "A14": 6,
+                "A15": 7,
+                "A16": 8,
+                "A2": "Alle zaken",
+                "A4": "Generated",
+                "A5": "Category",
+                "A6": "Widgets",
+                "A8": "#",
+                "A9": 1,
+                "B10": "Totaal",
+                "B12": "Lang: a/b\\c?d*e[f]g:h en dan nog veel meer tekst",
+                "B13": "   ",
+                "B14": "Leeg",
+                "B15": "Geen waarde",
+                "B16": "Aggregatie zonder velden",
+                "B4": "<generated>",
+                "B5": "ops",
+                "B6": 8,
+                "B8": "Widget",
+                "B9": "Per status",
+                "C10": "kpi",
+                "C11": "kpi",
+                "C8": "Type",
+                "C9": "bar",
+                "D10": "graphql",
+                "D11": "static",
+                "D16": "//",
+                "D8": "Source",
+                "D9": "zaken/zaak/perStatus",
+                "E10": 10,
+                "E11": "—",
+                "E12": 42,
+                "E13": 5,
+                "E14": "0 group(s)",
+                "E15": "—",
+                "E16": 1,
+                "E8": "Headline",
+                "E9": "5 group(s)"
+            },
+            "merged": [
+                "A1:D1",
+                "A2:D2"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 16,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "E5E5E5"
+                },
+                "E8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "E5E5E5"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Per status",
+            "cells": {
+                "A1": "Per status",
+                "A2": "open en dicht",
+                "A4": "Key",
+                "A5": "open",
+                "A6": "dicht",
+                "A7": "x",
+                "B4": "Value",
+                "B5": 3,
+                "B6": 7,
+                "B7": "n/a",
+                "B8": 1.5
+            },
+            "merged": [
+                "A1:D1",
+                "A2:D2"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Totaal",
+            "cells": {
+                "A1": "Totaal",
+                "A10": "min",
+                "A4": "Metric",
+                "A5": "name",
+                "A6": "metric",
+                "A7": "value",
+                "A8": "count",
+                "A9": "avg",
+                "B10": 0,
+                "B4": "Value",
+                "B5": "totaal",
+                "B6": "count",
+                "B7": 10,
+                "B8": 10,
+                "B9": 2.5
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Widget 3",
+            "cells": {
+                "A1": "Widget 3",
+                "A4": "No data available (data source did not resolve)."
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Lang_ a_b_c_d_e_f_g_h en dan no",
+            "cells": {
+                "A1": "Lang: a/b\\c?d*e[f]g:h en dan nog veel meer tekst",
+                "A4": "Metric",
+                "A5": "count",
+                "A6": "sum",
+                "B4": "Value",
+                "B5": 1,
+                "B6": 42
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Widget 5",
+            "cells": {
+                "A1": "   ",
+                "A4": "Metric",
+                "A5": "count",
+                "B4": "Value",
+                "B5": 5
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Leeg",
+            "cells": {
+                "A1": "Leeg",
+                "A4": "Metric",
+                "B4": "Value"
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Geen waarde",
+            "cells": {
+                "A1": "Geen waarde",
+                "A4": "Metric",
+                "A5": "metric",
+                "B4": "Value",
+                "B5": "sum"
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Aggregatie zonder velden",
+            "cells": {
+                "A1": "Aggregatie zonder velden",
+                "A4": "Metric",
+                "A5": "value",
+                "B4": "Value",
+                "B5": 1
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        }
+    ],
+    "full dashboard csv": [
+        "\r",
+        "# Sheet: Overview\r",
+        "﻿\"Zaken overzicht\",\"\",\"\",\"\",\"\"",
+        "\"Alle zaken\",\"\",\"\",\"\",\"\"",
+        "\"\",\"\",\"\",\"\",\"\"",
+        "\"Generated\",\"<generated>\",\"\",\"\",\"\"",
+        "\"Category\",\"ops\",\"\",\"\",\"\"",
+        "\"Widgets\",\"8\",\"\",\"\",\"\"",
+        "\"\",\"\",\"\",\"\",\"\"",
+        "\"#\",\"Widget\",\"Type\",\"Source\",\"Headline\"",
+        "\"1\",\"Per status\",\"bar\",\"zaken/zaak/perStatus\",\"5 group(s)\"",
+        "\"2\",\"Totaal\",\"kpi\",\"graphql\",\"10\"",
+        "\"3\",\"\",\"kpi\",\"static\",\"—\"",
+        "\"4\",\"Lang: a/b\\c?d*e[f]g:h en dan nog veel meer tekst\",\"\",\"\",\"42\"",
+        "\"5\",\"   \",\"\",\"\",\"5\"",
+        "\"6\",\"Leeg\",\"\",\"\",\"0 group(s)\"",
+        "\"7\",\"Geen waarde\",\"\",\"\",\"—\"",
+        "\"8\",\"Aggregatie zonder velden\",\"\",\"//\",\"1\"",
+        "\r",
+        "# Sheet: Per status\r",
+        "﻿\"Per status\",\"\"",
+        "\"open en dicht\",\"\"",
+        "\"\",\"\"",
+        "\"Key\",\"Value\"",
+        "\"open\",\"3\"",
+        "\"dicht\",\"7\"",
+        "\"x\",\"n/a\"",
+        "\"\",\"1.5\"",
+        "\"\",\"\"",
+        "\r",
+        "# Sheet: Totaal\r",
+        "﻿\"Totaal\",\"\"",
+        "\"\",\"\"",
+        "\"\",\"\"",
+        "\"Metric\",\"Value\"",
+        "\"name\",\"totaal\"",
+        "\"metric\",\"count\"",
+        "\"value\",\"10\"",
+        "\"count\",\"10\"",
+        "\"avg\",\"2.5\"",
+        "\"min\",\"0\"",
+        "\r",
+        "# Sheet: Widget 3\r",
+        "﻿\"Widget 3\"",
+        "\"\"",
+        "\"\"",
+        "\"No data available (data source did not resolve).\"",
+        "\r",
+        "# Sheet: Lang_ a_b_c_d_e_f_g_h en dan no\r",
+        "﻿\"Lang: a/b\\c?d*e[f]g:h en dan nog veel meer tekst\",\"\"",
+        "\"\",\"\"",
+        "\"\",\"\"",
+        "\"Metric\",\"Value\"",
+        "\"count\",\"1\"",
+        "\"sum\",\"42\"",
+        "\r",
+        "# Sheet: Widget 5\r",
+        "﻿\"   \",\"\"",
+        "\"\",\"\"",
+        "\"\",\"\"",
+        "\"Metric\",\"Value\"",
+        "\"count\",\"5\"",
+        "\r",
+        "# Sheet: Leeg\r",
+        "﻿\"Leeg\",\"\"",
+        "\"\",\"\"",
+        "\"\",\"\"",
+        "\"Metric\",\"Value\"",
+        "\r",
+        "# Sheet: Geen waarde\r",
+        "﻿\"Geen waarde\",\"\"",
+        "\"\",\"\"",
+        "\"\",\"\"",
+        "\"Metric\",\"Value\"",
+        "\"metric\",\"sum\"",
+        "\r",
+        "# Sheet: Aggregatie zonder velden\r",
+        "﻿\"Aggregatie zonder velden\",\"\"",
+        "\"\",\"\"",
+        "\"\",\"\"",
+        "\"Metric\",\"Value\"",
+        "\"value\",\"1\"",
+        ""
+    ],
+    "description empty, numeric title xlsx": [
+        {
+            "title": "Overview",
+            "cells": {
+                "A1": 12,
+                "A4": "Generated",
+                "A5": "Category",
+                "A6": "Widgets",
+                "A8": "#",
+                "A9": 1,
+                "B4": "<generated>",
+                "B5": 3,
+                "B6": 1,
+                "B8": "Widget",
+                "B9": "Een",
+                "C8": "Type",
+                "D8": "Source",
+                "E8": "Headline",
+                "E9": 0
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 16,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "E5E5E5"
+                },
+                "E8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "E5E5E5"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Een",
+            "cells": {
+                "A1": "Een",
+                "A4": "Metric",
+                "A5": "value",
+                "B4": "Value",
+                "B5": 0
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        }
+    ],
+    "description empty, numeric title ods": [
+        {
+            "title": "Overview",
+            "cells": {
+                "A1": 12,
+                "A4": "Generated",
+                "A5": "Category",
+                "A6": "Widgets",
+                "A8": "#",
+                "A9": 1,
+                "B4": "<generated>",
+                "B5": 3,
+                "B6": 1,
+                "B8": "Widget",
+                "B9": "Een",
+                "C8": "Type",
+                "C9": "",
+                "D8": "Source",
+                "D9": "",
+                "E8": "Headline",
+                "E9": 0
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 16,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "e5e5e5"
+                },
+                "E8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "e5e5e5"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Een",
+            "cells": {
+                "A1": "Een",
+                "A4": "Metric",
+                "A5": "value",
+                "B4": "Value",
+                "B5": 0
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        }
+    ],
+    "description empty, numeric title unknown format": [
+        {
+            "title": "Overview",
+            "cells": {
+                "A1": 12,
+                "A4": "Generated",
+                "A5": "Category",
+                "A6": "Widgets",
+                "A8": "#",
+                "A9": 1,
+                "B4": "<generated>",
+                "B5": 3,
+                "B6": 1,
+                "B8": "Widget",
+                "B9": "Een",
+                "C8": "Type",
+                "D8": "Source",
+                "E8": "Headline",
+                "E9": 0
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 16,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "E5E5E5"
+                },
+                "E8": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "solid",
+                    "rgb": "E5E5E5"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        },
+        {
+            "title": "Een",
+            "cells": {
+                "A1": "Een",
+                "A4": "Metric",
+                "A5": "value",
+                "B4": "Value",
+                "B5": 0
+            },
+            "merged": [
+                "A1:D1"
+            ],
+            "styles": {
+                "A1": {
+                    "bold": true,
+                    "size": 14,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A2": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "B4": {
+                    "bold": true,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "E8": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                },
+                "A9": {
+                    "bold": false,
+                    "size": 11,
+                    "fill": "none",
+                    "rgb": "FFFFFF"
+                }
+            }
+        }
+    ],
+    "description empty, numeric title csv": [
+        "\r",
+        "# Sheet: Overview\r",
+        "﻿\"12\",\"\",\"\",\"\",\"\"",
+        "\"\",\"\",\"\",\"\",\"\"",
+        "\"\",\"\",\"\",\"\",\"\"",
+        "\"Generated\",\"<generated>\",\"\",\"\",\"\"",
+        "\"Category\",\"3\",\"\",\"\",\"\"",
+        "\"Widgets\",\"1\",\"\",\"\",\"\"",
+        "\"\",\"\",\"\",\"\",\"\"",
+        "\"#\",\"Widget\",\"Type\",\"Source\",\"Headline\"",
+        "\"1\",\"Een\",\"\",\"\",\"0\"",
+        "\r",
+        "# Sheet: Een\r",
+        "﻿\"Een\",\"\"",
+        "\"\",\"\"",
+        "\"\",\"\"",
+        "\"Metric\",\"Value\"",
+        "\"value\",\"0\"",
+        ""
+    ]
+}

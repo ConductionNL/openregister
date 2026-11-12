@@ -82,19 +82,41 @@ final class PrincipalReference implements JsonSerializable {
 	 */
 	public static function from(mixed $value): ?self {
 		if (is_string($value) === true) {
-			$id = trim($value);
-
-			if ($id === '') {
-				return null;
-			}
-
-			return new self(type: self::DEFAULT_TYPE, id: $id);
+			return self::fromId(value: $value);
 		}
 
 		if (is_array($value) === false) {
 			return null;
 		}
 
+		return self::fromMap(value: $value);
+
+	}//end from()
+
+	/**
+	 * A reference of the default type from a bare id, or null when it is blank.
+	 *
+	 * @param string $value The id.
+	 *
+	 * @return self|null The reference.
+	 */
+	private static function fromId(string $value): ?self {
+		$id = trim($value);
+		if ($id === '') {
+			return null;
+		}
+
+		return new self(type: self::DEFAULT_TYPE, id: $id);
+	}//end fromId()
+
+	/**
+	 * A reference from a `{type, id}` (or `{type, value}`) map, or null when it names no id.
+	 *
+	 * @param array<string, mixed> $value The map.
+	 *
+	 * @return self|null The reference; the type defaults when blank.
+	 */
+	private static function fromMap(array $value): ?self {
 		$id = trim((string)($value['id'] ?? $value['value'] ?? ''));
 		if ($id === '') {
 			return null;
@@ -106,8 +128,7 @@ final class PrincipalReference implements JsonSerializable {
 		}
 
 		return new self(type: $type, id: $id);
-
-	}//end from()
+	}//end fromMap()
 
 	/**
 	 * Read a list, which may mix types and spellings.
@@ -126,16 +147,8 @@ final class PrincipalReference implements JsonSerializable {
 			return [];
 		}
 
-		// A `{type, id}` map is itself an array, so a list is only a list when
-		// its keys are sequential. Treating the map as a list would read its
-		// two VALUES as two references.
-		$candidates = $value;
-		if (is_array($value) === false || array_is_list($value) === false) {
-			$candidates = [$value];
-		}
-
 		$references = [];
-		foreach ($candidates as $candidate) {
+		foreach (self::candidatesIn(value: $value) as $candidate) {
 			$reference = self::from(value: $candidate);
 			if ($reference !== null) {
 				$references[] = $reference;
@@ -145,6 +158,24 @@ final class PrincipalReference implements JsonSerializable {
 		return $references;
 
 	}//end listFrom()
+
+	/**
+	 * The values to read as references: the list's items, or the single value as a list of one.
+	 *
+	 * @param mixed $value A reference, or a list of them.
+	 *
+	 * @return array<int, mixed> The candidates.
+	 */
+	private static function candidatesIn(mixed $value): array {
+		// A `{type, id}` map is itself an array, so a list is only a list when
+		// its keys are sequential. Treating the map as a list would read its
+		// two VALUES as two references.
+		if (is_array($value) === false || array_is_list($value) === false) {
+			return [$value];
+		}
+
+		return $value;
+	}//end candidatesIn()
 
 	/**
 	 * Read a list and stamp every bare entry with one type.

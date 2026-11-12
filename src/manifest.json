@@ -35,10 +35,10 @@
       "id": "Store",
       "route": "/store",
       "type": "store",
-      "title": "Store",
+      "title": "Marketplace",
       "config": {
         "app": "openregister",
-        "title": "Store",
+        "title": "Marketplace",
         "description": "Install registers, schemas and flows that other organisations have published."
       },
       "_note": "ADR-114 Decision 4 / ADR-080. Declarative: openregister hosts the store plane itself, so this page writes no controller and the app ships no store backend of its own. With no registry configured it renders openregister's own items and makes NO network call."
@@ -730,7 +730,7 @@
     },
     {
       "id": "StoreMenu",
-      "label": "Store",
+      "label": "Marketplace",
       "icon": "StoreOutline",
       "route": "Store",
       "section": "footer",

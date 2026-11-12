@@ -29,6 +29,8 @@ namespace Unit\Controller;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ImportPreviewControllerFactory;
 use OCA\OpenRegister\Controller\ImportPreviewController;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapper;
@@ -153,7 +155,7 @@ final class ImportPreviewControllerTest extends TestCase {
 	}
 
 	private function controller(): ImportPreviewController {
-		return new ImportPreviewController(
+		return ImportPreviewControllerFactory::create(
 			'openregister',
 			$this->request,
 			$this->service,
@@ -280,14 +282,14 @@ final class ImportPreviewControllerTest extends TestCase {
 
 		$refused = new ImportPreviewRow();
 		$refused->setPreviewId(7);
-		$refused->setRowNumber(2);
+		$refused->setSourceRow(2);
 		$refused->setDecision(ImportPreviewRow::DECISION_REFUSE);
 		$refused->setReason('The match key hits more than one object: object-a, object-b.');
 		$refused->setCandidates(['object-a', 'object-b']);
 
 		$this->rowMapper->expects($this->once())
 			->method('findByPreview')
-			->with(7, 'refuse', 100, 0)
+			->with(7, new ListQuery(100, 0, ['decision' => 'refuse']))
 			->willReturn([$refused]);
 
 		$response = $this->controller()->rows(7);
@@ -318,7 +320,7 @@ final class ImportPreviewControllerTest extends TestCase {
 
 		$this->rowMapper->expects($this->once())
 			->method('findByPreview')
-			->with(7, null, 100, 0)
+			->with(7, new ListQuery(100, 0, ['decision' => null]))
 			->willReturn([]);
 
 		$this->assertSame(200, $this->controller()->rows(7)->getStatus());

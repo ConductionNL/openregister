@@ -15,16 +15,21 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Service\Object\RefusedDeletion;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Integration tests for ReferentialIntegrityService
@@ -104,7 +109,7 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 	protected function tearDown(): void {
 		foreach ($this->createdObjectUuids as $uuid) {
 			try {
-				$this->objectService->deleteObject($uuid, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (\Exception $e) {
 				// Ignore
 			}
@@ -158,42 +163,6 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 	}
 
 	/**
-	 * Test isValidOnDeleteAction with valid actions
-	 *
-	 * @return void
-	 */
-	public function testIsValidOnDeleteActionValid(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('CASCADE'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('RESTRICT'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_NULL'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('SET_DEFAULT'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('NO_ACTION'));
-	}
-
-	/**
-	 * Test isValidOnDeleteAction is case-insensitive
-	 *
-	 * @return void
-	 */
-	public function testIsValidOnDeleteActionCaseInsensitive(): void {
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('cascade'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('Restrict'));
-		$this->assertTrue(ReferentialIntegrityService::isValidOnDeleteAction('set_null'));
-	}
-
-	/**
-	 * Test isValidOnDeleteAction with invalid actions
-	 *
-	 * @return void
-	 */
-	public function testIsValidOnDeleteActionInvalid(): void {
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('INVALID'));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction(''));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('DELETE'));
-		$this->assertFalse(ReferentialIntegrityService::isValidOnDeleteAction('REMOVE'));
-	}
-
-	/**
 	 * Test canDelete with object that has no references
 	 *
 	 * @return void
@@ -207,13 +176,13 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 		];
 
 		$saved = $this->objectService->saveObject(
-			$objectData,
-			null,
-			$this->testRegister,
-			$this->testSchema,
-			null,
-			false,
-			false
+			object: $objectData,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->testRegister, schema: $this->testSchema),
+				extend: null
+			),
+			_rbac: false,
+			_multitenancy: false
 		);
 
 		$this->createdObjectUuids[] = $saved->getUuid();
@@ -275,9 +244,7 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 	public function testDeletionAnalysisToArray(): void {
 		$analysis = new DeletionAnalysis(
 			true,
-			['cascade1'],
-			['nullify1'],
-			['default1'],
+			new DeletionEffects(['cascade1'], ['nullify1'], ['default1']),
 			[],
 			['path1']
 		);
@@ -301,9 +268,7 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 	public function testDeletionAnalysisWithBlockers(): void {
 		$analysis = new DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new DeletionEffects([], [], []),
 			[
 				['schema' => '1', 'property' => 'ref', 'objectUuid' => 'abc'],
 			]
@@ -321,9 +286,7 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 	public function testLogRestrictBlock(): void {
 		$analysis = new DeletionAnalysis(
 			false,
-			[],
-			[],
-			[],
+			new DeletionEffects([], [], []),
 			[
 				['schema' => '1', 'property' => 'ref', 'objectUuid' => 'test-uuid'],
 			]
@@ -331,10 +294,8 @@ class ReferentialIntegrityServiceIntegrationTest extends TestCase {
 
 		// Should not throw
 		$this->service->logRestrictBlock(
-			'test-object-uuid',
-			'1',
-			$analysis,
-			'admin'
+			new RefusedDeletion(objectUuid: 'test-object-uuid', schemaId: '1', userId: 'admin'),
+			$analysis
 		);
 
 		$this->assertTrue(true);

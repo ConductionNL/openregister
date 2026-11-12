@@ -40,7 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
-use OCA\OpenRegister\Service\MigrationPackService;
+use OCA\OpenRegister\Service\MigrationPackServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -55,13 +55,13 @@ class SeedZgwZakenMigrationPack implements IRepairStep {
 	/**
 	 * Constructor.
 	 *
-	 * @param MigrationPackService $migrationPackService Migration pack business logic.
+	 * @param MigrationPackServiceInterface $migrationPackService Migration pack business logic.
 	 * @param LoggerInterface $logger Logger for seed diagnostics.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly MigrationPackService $migrationPackService,
+		private readonly MigrationPackServiceInterface $migrationPackService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -99,7 +99,7 @@ class SeedZgwZakenMigrationPack implements IRepairStep {
 		}
 
 		try {
-			$this->migrationPackService->create(definition: $this->definition(), ownerUid: null, builtin: true);
+			$this->migrationPackService->seedBuiltin(definition: $this->definition());
 			$output->info('Seeded built-in migration pack "zgw-zaken-json"');
 		} catch (Throwable $e) {
 			$this->logger->warning('[SeedZgwZakenMigrationPack] seed failed: ' . $e->getMessage());
@@ -108,75 +108,82 @@ class SeedZgwZakenMigrationPack implements IRepairStep {
 	}//end run()
 
 	/**
+	 * The built-in pack definition.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private const DEFINITION = [
+		'id' => 'zgw-zaken-json',
+		'name' => 'ZGW Zaken (JSON) — template',
+		'description' => 'TEMPLATE, not a ready-to-run pack. Maps a ZGW ("Zaakgericht Werken") Zaken API '
+			. 'export (JSON) onto a generic case-like target schema. Before running a real import: (1) select or '
+			. 'create a target schema whose properties match the mapping targets below (caseNumber, title, '
+			. 'startDate, endDate, status, zaakTypeCode, confidentialityLevel), or edit the targets to match your '
+			. 'own schema; (2) replace the placeholder zaaktype-URL lookup map with your own catalogue\'s zaaktype '
+			. 'URL to code mapping — rows whose zaaktype URL is not in the map will fail import by design (the '
+			. 'mapping engine never passes an unresolved reference through as a literal value).',
+		'sourceFormat' => 'json',
+		'version' => '1.0.0',
+		'idStrategy' => ['type' => 'generate'],
+		'fieldMappings' => [
+			[
+				'source' => '/identificatie',
+				'target' => 'caseNumber',
+				'required' => true,
+				'transform' => ['type' => 'trim'],
+			],
+			[
+				'source' => '/omschrijving',
+				'target' => 'title',
+				'required' => true,
+				'transform' => ['type' => 'trim'],
+			],
+			[
+				'source' => '/startdatum',
+				'target' => 'startDate',
+				'required' => false,
+				'transform' => ['type' => 'date', 'sourceFormat' => 'Y-m-d', 'targetFormat' => 'Y-m-d'],
+			],
+			[
+				'source' => '/einddatum',
+				'target' => 'endDate',
+				'required' => false,
+				'transform' => ['type' => 'date', 'sourceFormat' => 'Y-m-d', 'targetFormat' => 'Y-m-d'],
+			],
+			[
+				'source' => '/status',
+				'target' => 'status',
+				'required' => false,
+				'transform' => ['type' => 'trim'],
+			],
+			[
+				'source' => '/zaaktype',
+				'target' => 'zaakTypeCode',
+				'required' => false,
+				'transform' => [
+					'type' => 'lookup',
+					'map' => [
+						'https://example.com/catalogi/api/v1/zaaktypen/00000000-0000-0000-0000-000000000000' => 'VOORBEELD',
+					],
+				],
+			],
+			[
+				'source' => '/vertrouwelijkheidaanduiding',
+				'target' => 'confidentialityLevel',
+				'required' => false,
+				'transform' => ['type' => 'trim'],
+			],
+		],
+		'defaults' => [],
+		'skipRows' => [],
+	];
+
+	/**
 	 * The built-in `zgw-zaken-json` pack definition.
 	 *
 	 * @return array<string, mixed>
 	 */
 	private function definition(): array {
-		return [
-			'id' => 'zgw-zaken-json',
-			'name' => 'ZGW Zaken (JSON) — template',
-			'description' => 'TEMPLATE, not a ready-to-run pack. Maps a ZGW ("Zaakgericht Werken") Zaken API '
-				. 'export (JSON) onto a generic case-like target schema. Before running a real import: (1) select or '
-				. 'create a target schema whose properties match the mapping targets below (caseNumber, title, '
-				. 'startDate, endDate, status, zaakTypeCode, confidentialityLevel), or edit the targets to match your '
-				. 'own schema; (2) replace the placeholder zaaktype-URL lookup map with your own catalogue\'s zaaktype '
-				. 'URL to code mapping — rows whose zaaktype URL is not in the map will fail import by design (the '
-				. 'mapping engine never passes an unresolved reference through as a literal value).',
-			'sourceFormat' => 'json',
-			'version' => '1.0.0',
-			'idStrategy' => ['type' => 'generate'],
-			'fieldMappings' => [
-				[
-					'source' => '/identificatie',
-					'target' => 'caseNumber',
-					'required' => true,
-					'transform' => ['type' => 'trim'],
-				],
-				[
-					'source' => '/omschrijving',
-					'target' => 'title',
-					'required' => true,
-					'transform' => ['type' => 'trim'],
-				],
-				[
-					'source' => '/startdatum',
-					'target' => 'startDate',
-					'required' => false,
-					'transform' => ['type' => 'date', 'sourceFormat' => 'Y-m-d', 'targetFormat' => 'Y-m-d'],
-				],
-				[
-					'source' => '/einddatum',
-					'target' => 'endDate',
-					'required' => false,
-					'transform' => ['type' => 'date', 'sourceFormat' => 'Y-m-d', 'targetFormat' => 'Y-m-d'],
-				],
-				[
-					'source' => '/status',
-					'target' => 'status',
-					'required' => false,
-					'transform' => ['type' => 'trim'],
-				],
-				[
-					'source' => '/zaaktype',
-					'target' => 'zaakTypeCode',
-					'required' => false,
-					'transform' => [
-						'type' => 'lookup',
-						'map' => [
-							'https://example.com/catalogi/api/v1/zaaktypen/00000000-0000-0000-0000-000000000000' => 'VOORBEELD',
-						],
-					],
-				],
-				[
-					'source' => '/vertrouwelijkheidaanduiding',
-					'target' => 'confidentialityLevel',
-					'required' => false,
-					'transform' => ['type' => 'trim'],
-				],
-			],
-			'defaults' => [],
-			'skipRows' => [],
-		];
+		return self::DEFINITION;
 	}//end definition()
 }//end class

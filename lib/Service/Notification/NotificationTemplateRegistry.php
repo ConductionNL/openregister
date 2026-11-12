@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+ * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
  */
 
 declare(strict_types=1);
@@ -37,12 +37,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Notification;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
+use OCA\OpenRegister\Kernel\Contracts\TemplateRendering;
 use OCP\IConfig;
 
 /**
  * Lists, renders and edits the templates for platform-raised events.
  */
-class NotificationTemplateRegistry {
+class NotificationTemplateRegistry implements NotificationTemplatesInterface {
 	/**
 	 * App id used for the config namespace.
 	 */
@@ -341,17 +343,15 @@ class NotificationTemplateRegistry {
 	 * nobody wrote a template for and watch the gap list name it — a gap list
 	 * that can only ever be empty proves nothing.
 	 *
-	 * @param IConfig $config Nextcloud config, holding administrators' edits.
-	 * @param array<string, array{group: string, variables: array<string, string>}>|null $events The inventory, or null for the platform's own.
-	 * @param array<string, array<string, array{subject: string, body: string}>>|null $shipped The texts, or null for the shipped ones.
+	 * @param IConfig                $config    Nextcloud config, holding administrators' edits.
+	 * @param TemplateCatalogue|null $catalogue The inventory and texts, or null for the platform's own.
 	 */
 	public function __construct(
 		private readonly IConfig $config,
-		?array $events = null,
-		?array $shipped = null,
+		?TemplateCatalogue $catalogue = null,
 	) {
-		$this->events = ($events ?? self::EVENTS);
-		$this->shipped = ($shipped ?? self::SHIPPED);
+		$this->events = ($catalogue->events ?? self::EVENTS);
+		$this->shipped = ($catalogue->shipped ?? self::SHIPPED);
 	}//end __construct()
 
 	/**
@@ -359,7 +359,7 @@ class NotificationTemplateRegistry {
 	 *
 	 * @return array<int, array<string, mixed>> One entry per event, event name first.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function listAll(): array {
 		$rows = [];
@@ -389,7 +389,7 @@ class NotificationTemplateRegistry {
 	 *
 	 * @return array<int, string> The event names, in inventory order.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function gaps(): array {
 		$missing = [];
@@ -409,7 +409,7 @@ class NotificationTemplateRegistry {
 	 *
 	 * @return boolean True when the event is in the inventory.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function knows(string $event): bool {
 		return array_key_exists($event, $this->events);
@@ -425,7 +425,7 @@ class NotificationTemplateRegistry {
 	 *
 	 * @return boolean True when an edit is stored for this event.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function hasEdit(string $event): bool {
 		return ($this->editedTemplate(event: $event) !== null);
@@ -438,34 +438,49 @@ class NotificationTemplateRegistry {
 	 *
 	 * @return array<string, array{subject: string, body: string}>|null The per-locale template, or null when there is none.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function templateFor(string $event): ?array {
 		return ($this->editedTemplate(event: $event) ?? $this->shipped[$event] ?? null);
 	}//end templateFor()
 
 	/**
-	 * Render one event's subject and body in a locale, or nothing.
+	 * Render one event's subject and body for a rendering request, or nothing.
 	 *
-	 * Returns null rather than a generic line when the event has no template.
-	 * A caller that gets null must say so or fall back to something it wrote
-	 * itself; what it must never do is print a sentence that reads like the
-	 * template somebody forgot to write, because then nobody finds out.
+	 * Null, never a generic line, when the event has no template.
 	 *
-	 * @param string $event The event name.
-	 * @param string|null $locale The reader's locale, or null for the default.
-	 * @param array<string, mixed> $variables Values for the template's variables.
+	 * @param TemplateRendering $rendering The event, the reader's locale and the variable values.
 	 *
 	 * @return array{subject: string, body: string}|null The rendered text, or null when the event has no template.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
-	public function render(string $event, ?string $locale, array $variables = []): ?array {
-		$template = $this->templateFor(event: $event);
+	public function renderFor(TemplateRendering $rendering): ?array {
+		$template = $this->templateFor(event: $rendering->event);
 		if ($template === null) {
 			return null;
 		}
 
+		$chosen = $this->localised(template: $template, locale: $rendering->locale);
+		if ($chosen === null) {
+			return null;
+		}
+
+		return [
+			'subject' => $this->interpolate(template: (string)($chosen['subject'] ?? ''), variables: $rendering->variables),
+			'body' => $this->interpolate(template: (string)($chosen['body'] ?? ''), variables: $rendering->variables),
+		];
+	}//end renderFor()
+
+	/**
+	 * The text of a template for a locale: that locale, else the default, else whichever one it has.
+	 *
+	 * @param array<string, mixed> $template The per-locale template.
+	 * @param string|null          $locale   The reader's locale, or null for the default.
+	 *
+	 * @return array<string, mixed>|null The chosen text, or null when the template holds none.
+	 */
+	private function localised(array $template, ?string $locale): ?array {
 		$chosen = ($template[(string)$locale] ?? $template[self::DEFAULT_LOCALE] ?? null);
 		if (is_array($chosen) === false) {
 			// A template with locales but not this one and not the default is
@@ -478,11 +493,8 @@ class NotificationTemplateRegistry {
 			return null;
 		}
 
-		return [
-			'subject' => $this->interpolate(template: (string)($chosen['subject'] ?? ''), variables: $variables),
-			'body' => $this->interpolate(template: (string)($chosen['body'] ?? ''), variables: $variables),
-		];
-	}//end render()
+		return $chosen;
+	}//end localised()
 
 	/**
 	 * Record or clear an administrator's edit of one event's template.
@@ -494,7 +506,7 @@ class NotificationTemplateRegistry {
 	 *
 	 * @throws InvalidArgumentException When the event is not one the platform raises.
 	 *
-	 * @spec openspec/changes/notification-routing-per-group-and-scope/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-every-platform-event-ships-an-editable-template-req-nrg-006
 	 */
 	public function edit(string $event, ?array $template): void {
 		if ($this->knows(event: $event) === false) {

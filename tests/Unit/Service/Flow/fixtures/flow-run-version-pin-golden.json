@@ -1,0 +1,660 @@
+{
+    "testDispatchMatchesTheRecording version mapper unresolvable": {
+        "outcome": {
+            "thrown": "OCA\\OpenRegister\\Service\\Flow\\FlowLifecycleRefused",
+            "message": "This flow has no published version, so it cannot back a run. Publish a version first. (flow flow-1)"
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "log.error": "[FlowRunVersionPin] Could not resolve the version mapper for flow \"flow-1\"; the dispatch is refused rather than run unpinned.",
+                "context": {
+                    "flow": "flow-1"
+                }
+            },
+            {
+                "log.warning": "[FlowRunVersionPin] Refused to queue a run of an unpublished flow",
+                "context": {
+                    "flow": "flow-1",
+                    "trigger": "manual"
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording version mapper unresolvable, test run": {
+        "outcome": {
+            "version": null
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "log.error": "[FlowRunVersionPin] Could not resolve the version mapper for flow \"flow-1\"; the dispatch is refused rather than run unpinned.",
+                "context": {
+                    "flow": "flow-1"
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording version mapper of the wrong type": {
+        "outcome": {
+            "thrown": "OCA\\OpenRegister\\Service\\Flow\\FlowLifecycleRefused",
+            "message": "This flow has no published version, so it cannot back a run. Publish a version first. (flow flow-1)"
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "log.warning": "[FlowRunVersionPin] Refused to queue a run of an unpublished flow",
+                "context": {
+                    "flow": "flow-1",
+                    "trigger": "manual"
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording reading the published version fails": {
+        "outcome": {
+            "thrown": "OCA\\OpenRegister\\Service\\Flow\\FlowLifecycleRefused",
+            "message": "This flow has no published version, so it cannot back a run. Publish a version first. (flow flow-1)"
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "log.error": "[FlowRunVersionPin] Could not read the published version of flow \"flow-1\": database gone",
+                "context": {
+                    "flow": "flow-1"
+                }
+            },
+            {
+                "log.warning": "[FlowRunVersionPin] Refused to queue a run of an unpublished flow",
+                "context": {
+                    "flow": "flow-1",
+                    "trigger": "manual"
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording nothing published, test run": {
+        "outcome": {
+            "version": null
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording nothing published, manual": {
+        "outcome": {
+            "thrown": "OCA\\OpenRegister\\Service\\Flow\\FlowLifecycleRefused",
+            "message": "This flow has no published version, so it cannot back a run. Publish a version first. (flow flow-1)"
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "log.warning": "[FlowRunVersionPin] Refused to queue a run of an unpublished flow",
+                "context": {
+                    "flow": "flow-1",
+                    "trigger": "manual"
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording nothing published, schedule": {
+        "outcome": {
+            "thrown": "OCA\\OpenRegister\\Service\\Flow\\FlowLifecycleRefused",
+            "message": "This flow has no published version, so it cannot back a run. Publish a version first. (flow flow-1)"
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "log.warning": "[FlowRunVersionPin] Refused to queue a run of an unpublished flow",
+                "context": {
+                    "flow": "flow-1",
+                    "trigger": "schedule"
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording definition unreadable": {
+        "outcome": {
+            "version": 3
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            },
+            {
+                "log.error": "[FlowRunVersionPin] Could not read the definition of version 3 of flow \"flow-1\": definition unreadable",
+                "context": []
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording definition missing": {
+        "outcome": {
+            "version": 3
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording flow mapper unresolvable": {
+        "outcome": {
+            "version": 3
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording preflight unresolvable": {
+        "outcome": {
+            "version": 3
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording flow not found": {
+        "outcome": {
+            "version": 3
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
+            },
+            {
+                "flows.findByUuid": "flow-1"
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording sound, flow ok": {
+        "outcome": {
+            "version": 3
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
+            },
+            {
+                "flows.findByUuid": "flow-1"
+            },
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        {
+                            "id": "a"
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording sound, flow in error is cleared": {
+        "outcome": {
+            "version": 3
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
+            },
+            {
+                "flows.findByUuid": "flow-1"
+            },
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        {
+                            "id": "a"
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a"
+                        }
+                    ]
+                }
+            },
+            {
+                "flows.update": {
+                    "status": "ok",
+                    "message": null
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording sound, flow with no status": {
+        "outcome": {
+            "version": 3
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
+            },
+            {
+                "flows.findByUuid": "flow-1"
+            },
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        {
+                            "id": "a"
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording sound, findings without warnings": {
+        "outcome": {
+            "version": 3
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
+            },
+            {
+                "flows.findByUuid": "flow-1"
+            },
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        {
+                            "id": "a"
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording sound, graph without nodes or edges": {
+        "outcome": {
+            "version": 3
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
+            },
+            {
+                "flows.findByUuid": "flow-1"
+            },
+            {
+                "preflight.inspect": {
+                    "nodes": [],
+                    "edges": []
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording dead end": {
+        "outcome": {
+            "thrown": "OCA\\OpenRegister\\Service\\Flow\\FlowDeadEnd",
+            "message": "This flow is not runnable: nodes \"b\", \"\" have no outgoing edge and does not end the flow, so a run would stop there and still be reported as completed. Connect them, give them a terminal step type, or mark them \"exit\": true if stopping there is deliberate."
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
+            },
+            {
+                "flows.findByUuid": "flow-1"
+            },
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        {
+                            "id": "a"
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a"
+                        }
+                    ]
+                }
+            },
+            {
+                "flows.update": {
+                    "status": "error",
+                    "message": "This flow is not runnable: nodes \"b\", \"\" have no outgoing edge and does not end the flow, so a run would stop there and still be reported as completed. Connect them, give them a terminal step type, or mark them \"exit\": true if stopping there is deliberate."
+                }
+            },
+            {
+                "log.warning": "[FlowRunVersionPin] Refused to queue a flow with a dead end",
+                "context": {
+                    "flow": "flow-1",
+                    "nodes": [
+                        "b",
+                        ""
+                    ]
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording dead end, flow already in error": {
+        "outcome": {
+            "thrown": "OCA\\OpenRegister\\Service\\Flow\\FlowDeadEnd",
+            "message": "This flow is not runnable: nodes \"b\", \"\" have no outgoing edge and does not end the flow, so a run would stop there and still be reported as completed. Connect them, give them a terminal step type, or mark them \"exit\": true if stopping there is deliberate."
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
+            },
+            {
+                "flows.findByUuid": "flow-1"
+            },
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        {
+                            "id": "a"
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a"
+                        }
+                    ]
+                }
+            },
+            {
+                "flows.update": {
+                    "status": "error",
+                    "message": "This flow is not runnable: nodes \"b\", \"\" have no outgoing edge and does not end the flow, so a run would stop there and still be reported as completed. Connect them, give them a terminal step type, or mark them \"exit\": true if stopping there is deliberate."
+                }
+            },
+            {
+                "log.warning": "[FlowRunVersionPin] Refused to queue a flow with a dead end",
+                "context": {
+                    "flow": "flow-1",
+                    "nodes": [
+                        "b",
+                        ""
+                    ]
+                }
+            }
+        ]
+    },
+    "testDispatchMatchesTheRecording dead end, test run of a published flow": {
+        "outcome": {
+            "thrown": "OCA\\OpenRegister\\Service\\Flow\\FlowDeadEnd",
+            "message": "This flow is not runnable: nodes \"b\", \"\" have no outgoing edge and does not end the flow, so a run would stop there and still be reported as completed. Connect them, give them a terminal step type, or mark them \"exit\": true if stopping there is deliberate."
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowVersionMapperInterface"
+            },
+            {
+                "versions.findPublished": "flow-1"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Db\\FlowMapper"
+            },
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowNodePreflight"
+            },
+            {
+                "flows.findByUuid": "flow-1"
+            },
+            {
+                "preflight.inspect": {
+                    "nodes": [
+                        {
+                            "id": "a"
+                        }
+                    ],
+                    "edges": [
+                        {
+                            "from": "a"
+                        }
+                    ]
+                }
+            },
+            {
+                "flows.update": {
+                    "status": "error",
+                    "message": "This flow is not runnable: nodes \"b\", \"\" have no outgoing edge and does not end the flow, so a run would stop there and still be reported as completed. Connect them, give them a terminal step type, or mark them \"exit\": true if stopping there is deliberate."
+                }
+            },
+            {
+                "log.warning": "[FlowRunVersionPin] Refused to queue a flow with a dead end",
+                "context": {
+                    "flow": "flow-1",
+                    "nodes": [
+                        "b",
+                        ""
+                    ]
+                }
+            }
+        ]
+    },
+    "testGraphOfMatchesTheRecording ": {
+        "outcome": {
+            "none": null,
+            "one": {
+                "nodes": []
+            }
+        },
+        "calls": [
+            {
+                "container.get": "OCA\\OpenRegister\\Service\\Flow\\FlowDefinitionPin"
+            },
+            {
+                "definitions.graphFor": "hash-3"
+            }
+        ]
+    }
+}

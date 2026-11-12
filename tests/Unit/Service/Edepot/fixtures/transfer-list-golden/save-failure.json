@@ -1,0 +1,77 @@
+[
+    [
+        "info",
+        "[TransferListService] Transfer list approved",
+        {
+            "uuid": "l1",
+            "approvedBy": "archivist-2"
+        }
+    ],
+    [
+        "save",
+        {
+            "uuid": "l1",
+            "status": "approved",
+            "objectReferences": [
+                {
+                    "uuid": "a"
+                },
+                {
+                    "uuid": "b"
+                },
+                {
+                    "uuid": "c"
+                }
+            ],
+            "exclusions": [
+                {
+                    "uuid": "z",
+                    "reason": "earlier",
+                    "excludedAt": "then"
+                }
+            ],
+            "objectCount": 3,
+            "approvalMetadata": {
+                "approvedBy": "archivist-2",
+                "approvedAt": "<now>"
+            }
+        }
+    ],
+    [
+        "warning",
+        "[TransferListService] Could not persist transfer list: store down",
+        {
+            "uuid": "l1"
+        }
+    ],
+    [
+        "returned",
+        {
+            "uuid": "l1",
+            "status": "approved",
+            "objectReferences": [
+                {
+                    "uuid": "a"
+                },
+                {
+                    "uuid": "b"
+                },
+                {
+                    "uuid": "c"
+                }
+            ],
+            "exclusions": [
+                {
+                    "uuid": "z",
+                    "reason": "earlier",
+                    "excludedAt": "then"
+                }
+            ],
+            "objectCount": 3,
+            "approvalMetadata": {
+                "approvedBy": "archivist-2",
+                "approvedAt": "<now>"
+            }
+        }
+    ]
+]

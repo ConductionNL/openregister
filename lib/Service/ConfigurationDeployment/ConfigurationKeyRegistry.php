@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Service\ConfigurationDeployment;
  * asking it; injecting it would let a caller supply the answer to the question
  * being asked.
  */
-class ConfigurationKeyRegistry {
+class ConfigurationKeyRegistry implements ConfigurationKeyRegistryInterface {
 
 	/**
 	 * The value is a JSON object.
@@ -100,11 +100,8 @@ class ConfigurationKeyRegistry {
 		'llm' => self::TYPE_OBJECT,
 		'fileManagement' => self::TYPE_OBJECT,
 		'objectManagement' => self::TYPE_OBJECT,
-		'solr' => self::TYPE_OBJECT,
-		'search_backend' => self::TYPE_OBJECT,
 		'flow_run_retention_days' => self::TYPE_STRING,
 		'flow_audit_enabled' => self::TYPE_BOOLEAN,
-		'flow_oversight_enabled' => self::TYPE_BOOLEAN,
 		'flow_kill_switch' => self::TYPE_BOOLEAN,
 		'party_query_cap' => self::TYPE_INTEGER,
 	];
@@ -157,6 +154,19 @@ class ConfigurationKeyRegistry {
 			return null;
 		}
 
+		return $this->declaredKeyRefusal(layer: $layer, configKey: $configKey);
+
+	}//end refusalFor()
+
+	/**
+	 * Why a key outside the open prefixes cannot be set at a layer: it is not declared, or it is an instance setting.
+	 *
+	 * @param string $layer     A known layer.
+	 * @param string $configKey The configuration key, not reserved and not open.
+	 *
+	 * @return string|null The refusal, or null when the address may be set.
+	 */
+	private function declaredKeyRefusal(string $layer, string $configKey): ?string {
 		if (isset(self::DECLARED[$configKey]) === false) {
 			return sprintf(
 				'"%s" is not a declared configuration key and matches no open prefix',
@@ -164,6 +174,19 @@ class ConfigurationKeyRegistry {
 			);
 		}
 
+		return $this->instanceOnlyRefusal(layer: $layer, configKey: $configKey);
+
+	}//end declaredKeyRefusal()
+
+	/**
+	 * Why a declared (instance) setting cannot be set at a lower layer.
+	 *
+	 * @param string $layer     A known layer.
+	 * @param string $configKey The declared configuration key.
+	 *
+	 * @return string|null The refusal, or null at the instance layer.
+	 */
+	private function instanceOnlyRefusal(string $layer, string $configKey): ?string {
 		if ($layer !== ConfigurationLayer::INSTANCE) {
 			return sprintf(
 				'"%s" is an instance setting and cannot be set at the %s layer',
@@ -174,7 +197,7 @@ class ConfigurationKeyRegistry {
 
 		return null;
 
-	}//end refusalFor()
+	}//end instanceOnlyRefusal()
 
 	/**
 	 * The declared shape of a key.
@@ -202,15 +225,7 @@ class ConfigurationKeyRegistry {
 	 */
 	public function valueRefusalFor(string $configKey, mixed $value): ?string {
 		$type = $this->typeOf(configKey: $configKey);
-		$fits = match ($type) {
-			self::TYPE_OBJECT => is_array($value),
-			self::TYPE_STRING => is_string($value),
-			self::TYPE_BOOLEAN => is_bool($value),
-			self::TYPE_INTEGER => is_int($value),
-			default => true,
-		};
-
-		if ($fits === false) {
+		if (self::fitsType(type: $type, value: $value) === false) {
 			return sprintf(
 				'"%s" is declared as %s and the value is %s',
 				$configKey,
@@ -226,6 +241,25 @@ class ConfigurationKeyRegistry {
 		return null;
 
 	}//end valueRefusalFor()
+
+	/**
+	 * Whether a value has the shape a declared type asks for; any shape fits an open type.
+	 *
+	 * @param string $type  The declared type.
+	 * @param mixed  $value The value.
+	 *
+	 * @return bool True when it fits.
+	 */
+	private static function fitsType(string $type, mixed $value): bool {
+		return match ($type) {
+			self::TYPE_OBJECT => is_array($value),
+			self::TYPE_STRING => is_string($value),
+			self::TYPE_BOOLEAN => is_bool($value),
+			self::TYPE_INTEGER => is_int($value),
+			default => true,
+		};
+
+	}//end fitsType()
 
 	/**
 	 * The vocabulary a caller may draft against.

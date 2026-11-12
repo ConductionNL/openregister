@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\FieldDecryptionScope;
 use OCA\OpenRegister\Exception\FieldDecryptionException;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCP\Security\ICrypto;
@@ -177,7 +178,7 @@ class FieldEncryptionHandlerTest extends TestCase {
 		$schema = $this->schemaWithEncrypted(['bsn']);
 		$encoded = $this->handler->encryptProperties(['bsn' => '123456789'], $schema);
 
-		$result = $this->handler->decryptProperties($encoded, $schema);
+		$result = $this->handler->decryptInScope($encoded, new FieldDecryptionScope(schema: $schema, throwOnFailure: false));
 
 		$this->assertSame('123456789', $result['bsn']);
 	}
@@ -187,7 +188,7 @@ class FieldEncryptionHandlerTest extends TestCase {
 		$schema = $this->schemaWithEncrypted(['bsn']);
 		$data = ['bsn' => '123456789'];
 
-		$result = $this->handler->decryptProperties($data, $schema);
+		$result = $this->handler->decryptInScope($data, new FieldDecryptionScope(schema: $schema, throwOnFailure: false));
 
 		$this->assertSame('123456789', $result['bsn']);
 	}
@@ -199,7 +200,7 @@ class FieldEncryptionHandlerTest extends TestCase {
 		$schema = $this->schemaWithEncrypted(['bsn']);
 		$data = ['name' => 'Jan Jansen'];
 
-		$result = $this->handler->decryptProperties($data, $schema);
+		$result = $this->handler->decryptInScope($data, new FieldDecryptionScope(schema: $schema, throwOnFailure: false));
 
 		$this->assertArrayNotHasKey('bsn', $result);
 		$this->assertSame(['name' => 'Jan Jansen'], $result);
@@ -211,7 +212,7 @@ class FieldEncryptionHandlerTest extends TestCase {
 
 		$this->logger->expects($this->once())->method('error');
 
-		$result = $this->handler->decryptProperties($data, $schema);
+		$result = $this->handler->decryptInScope($data, new FieldDecryptionScope(schema: $schema, throwOnFailure: false));
 
 		$this->assertIsArray($result['bsn']);
 		$this->assertTrue($result['bsn']['@openregister_decryption_error']);
@@ -222,7 +223,7 @@ class FieldEncryptionHandlerTest extends TestCase {
 		$data = ['bsn' => FieldEncryptionHandler::ENVELOPE_PREFIX . 'corrupted'];
 
 		$this->expectException(FieldDecryptionException::class);
-		$this->handler->decryptProperties($data, $schema, throwOnFailure: true);
+		$this->handler->decryptInScope($data, new FieldDecryptionScope(schema: $schema, throwOnFailure: true));
 	}
 
 	public function testDecryptPropertiesNoOpWhenSchemaHasNoEncryptedProperties(): void {
@@ -230,6 +231,6 @@ class FieldEncryptionHandlerTest extends TestCase {
 		$schema->setProperties(['name' => ['type' => 'string']]);
 		$data = ['name' => 'unchanged'];
 
-		$this->assertSame($data, $this->handler->decryptProperties($data, $schema));
+		$this->assertSame($data, $this->handler->decryptInScope($data, new FieldDecryptionScope(schema: $schema, throwOnFailure: false)));
 	}
 }

@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+ * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 /**
  * Classify a magic-table column as metadata or as a schema property.
  *
- * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+ * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
  */
 final class MagicMetadataColumn {
 
@@ -49,14 +49,15 @@ final class MagicMetadataColumn {
 	 * the table holds one column of that name and the metadata is what it was
 	 * made for.
 	 *
-	 * @param string                $column              The column name.
+	 * @param int|string            $column              The column name; PHP keeps a numeric row key as an int.
 	 * @param array<string, string> $columnToPropertyMap The schema's column-to-property map.
 	 *
 	 * @return string|null The metadata field without its prefix (`schema_version`), or null.
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
-	public function field(string $column, array $columnToPropertyMap): ?string {
+	public function field(int|string $column, array $columnToPropertyMap): ?string {
+		$column = (string)$column;
 		if (str_starts_with($column, self::PREFIX) === false) {
 			return null;
 		}
@@ -86,7 +87,7 @@ final class MagicMetadataColumn {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	public function skippedOnWrite(string $key, array $schemaProperties): bool {
 		if ($key === '@self') {
@@ -113,7 +114,7 @@ final class MagicMetadataColumn {
 	 *
 	 * @return bool True when writing the property would write a metadata column.
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	public function shadowsMetadata(string $key): bool {
 		$column = $this->columnFor(key: $key);
@@ -151,7 +152,7 @@ final class MagicMetadataColumn {
 	 *
 	 * @return string|null The attribute name (`uuid`, `schemaVersion`), or null.
 	 *
-	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 * @spec openspec/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	public function attribute(string $field): ?string {
 		$attribute = lcfirst(str_replace('_', '', ucwords($field, '_')));

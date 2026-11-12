@@ -1,0 +1,1085 @@
+{
+    "membership, lazy registers": {
+        "events": [
+            {
+                "registerFind": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    2,
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "count": [
+                    {
+                        "_search": "zaak",
+                        "@self": {
+                            "schema": 2,
+                            "register": 1
+                        },
+                        "_rbac": true,
+                        "_multitenancy": true
+                    },
+                    1,
+                    2
+                ]
+            },
+            {
+                "registerFind": [
+                    7,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Failed to load owning register for multi-schema search",
+                "context": {
+                    "registerId": 7,
+                    "error": "no register 7"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Skipping schema with no resolvable owning register",
+                "context": {
+                    "schemaId": 4
+                }
+            },
+            {
+                "registerFind": [
+                    8,
+                    false,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    5,
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Failed to load schema for multi-schema search",
+                "context": {
+                    "schemaId": 5,
+                    "error": "no schema 5"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Skipping schema with no resolvable owning register",
+                "context": {
+                    "schemaId": 6
+                }
+            },
+            {
+                "schemaFind": [
+                    3,
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "count": [
+                    {
+                        "_search": "zaak",
+                        "@self": {
+                            "schema": 3,
+                            "register": 1
+                        },
+                        "_rbac": true,
+                        "_multitenancy": true
+                    },
+                    1,
+                    3
+                ]
+            },
+            {
+                "searchAcross": [
+                    {
+                        "_search": "zaak",
+                        "@self": {
+                            "schema": [
+                                2,
+                                4,
+                                5,
+                                6
+                            ]
+                        },
+                        "_rbac": true,
+                        "_multitenancy": true
+                    },
+                    [
+                        [
+                            1,
+                            2
+                        ],
+                        [
+                            1,
+                            3
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "result": {
+            "results": [
+                "union-row"
+            ],
+            "total": 25,
+            "registers": {
+                "1": {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": null,
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        2,
+                        3
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": [],
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                "8": {
+                    "id": 8,
+                    "uuid": null,
+                    "slug": null,
+                    "title": null,
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        5
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": [],
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                }
+            },
+            "schemas": {
+                "2": {
+                    "id": 2,
+                    "uuid": null,
+                    "uri": null,
+                    "slug": null,
+                    "title": null,
+                    "description": null,
+                    "version": null,
+                    "summary": null,
+                    "icon": null,
+                    "required": [],
+                    "properties": [],
+                    "archive": [],
+                    "source": null,
+                    "hardValidation": true,
+                    "immutable": false,
+                    "appendOnly": false,
+                    "searchable": true,
+                    "smartPickerEnabled": false,
+                    "updated": null,
+                    "created": null,
+                    "maxDepth": 0,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "sharedWith": [],
+                    "deleted": null,
+                    "configuration": null,
+                    "exportable": false,
+                    "allOf": null,
+                    "oneOf": null,
+                    "anyOf": null,
+                    "facets": null,
+                    "hooks": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "draft": null
+                },
+                "3": {
+                    "id": 3,
+                    "uuid": null,
+                    "uri": null,
+                    "slug": null,
+                    "title": null,
+                    "description": null,
+                    "version": null,
+                    "summary": null,
+                    "icon": null,
+                    "required": [],
+                    "properties": [],
+                    "archive": [],
+                    "source": null,
+                    "hardValidation": true,
+                    "immutable": false,
+                    "appendOnly": false,
+                    "searchable": true,
+                    "smartPickerEnabled": false,
+                    "updated": null,
+                    "created": null,
+                    "maxDepth": 0,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "sharedWith": [],
+                    "deleted": null,
+                    "configuration": null,
+                    "exportable": false,
+                    "allOf": null,
+                    "oneOf": null,
+                    "anyOf": null,
+                    "facets": null,
+                    "hooks": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "draft": null
+                }
+            },
+            "ignoredFilters": [],
+            "source": "magic_mapper"
+        }
+    },
+    "membership, no rbac": {
+        "events": [
+            {
+                "registerFind": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    2,
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "count": [
+                    {
+                        "_search": "zaak",
+                        "@self": {
+                            "schema": 2,
+                            "register": 1
+                        },
+                        "_rbac": false,
+                        "_multitenancy": false
+                    },
+                    1,
+                    2
+                ]
+            },
+            {
+                "schemaFind": [
+                    3,
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "count": [
+                    {
+                        "_search": "zaak",
+                        "@self": {
+                            "schema": 3,
+                            "register": 1
+                        },
+                        "_rbac": false,
+                        "_multitenancy": false
+                    },
+                    1,
+                    3
+                ]
+            },
+            {
+                "searchAcross": [
+                    {
+                        "_search": "zaak",
+                        "@self": {
+                            "schema": [
+                                2,
+                                4,
+                                5,
+                                6
+                            ]
+                        },
+                        "_rbac": false,
+                        "_multitenancy": false
+                    },
+                    [
+                        [
+                            1,
+                            2
+                        ],
+                        [
+                            1,
+                            3
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "result": {
+            "results": [
+                "union-row"
+            ],
+            "total": 25,
+            "registers": {
+                "1": {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": null,
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        2,
+                        3
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": [],
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                }
+            },
+            "schemas": {
+                "2": {
+                    "id": 2,
+                    "uuid": null,
+                    "uri": null,
+                    "slug": null,
+                    "title": null,
+                    "description": null,
+                    "version": null,
+                    "summary": null,
+                    "icon": null,
+                    "required": [],
+                    "properties": [],
+                    "archive": [],
+                    "source": null,
+                    "hardValidation": true,
+                    "immutable": false,
+                    "appendOnly": false,
+                    "searchable": true,
+                    "smartPickerEnabled": false,
+                    "updated": null,
+                    "created": null,
+                    "maxDepth": 0,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "sharedWith": [],
+                    "deleted": null,
+                    "configuration": null,
+                    "exportable": false,
+                    "allOf": null,
+                    "oneOf": null,
+                    "anyOf": null,
+                    "facets": null,
+                    "hooks": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "draft": null
+                },
+                "3": {
+                    "id": 3,
+                    "uuid": null,
+                    "uri": null,
+                    "slug": null,
+                    "title": null,
+                    "description": null,
+                    "version": null,
+                    "summary": null,
+                    "icon": null,
+                    "required": [],
+                    "properties": [],
+                    "archive": [],
+                    "source": null,
+                    "hardValidation": true,
+                    "immutable": false,
+                    "appendOnly": false,
+                    "searchable": true,
+                    "smartPickerEnabled": false,
+                    "updated": null,
+                    "created": null,
+                    "maxDepth": 0,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "sharedWith": [],
+                    "deleted": null,
+                    "configuration": null,
+                    "exportable": false,
+                    "allOf": null,
+                    "oneOf": null,
+                    "anyOf": null,
+                    "facets": null,
+                    "hooks": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "draft": null
+                }
+            },
+            "ignoredFilters": [],
+            "source": "magic_mapper"
+        }
+    },
+    "given registers": {
+        "events": [
+            {
+                "registerFind": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "registerFind": [
+                    8,
+                    false,
+                    false
+                ]
+            },
+            {
+                "registerFind": [
+                    404,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Failed to find register for multi-schema search",
+                "context": {
+                    "registerId": 404,
+                    "error": "no register 404"
+                }
+            },
+            {
+                "schemaFind": [
+                    2,
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "count": [
+                    {
+                        "_search": "zaak",
+                        "@self": {
+                            "schema": 2,
+                            "register": 1
+                        },
+                        "_rbac": true,
+                        "_multitenancy": false
+                    },
+                    1,
+                    2
+                ]
+            },
+            {
+                "schemaFind": [
+                    5,
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Failed to load schema for multi-schema search",
+                "context": {
+                    "schemaId": 5,
+                    "error": "no schema 5"
+                }
+            },
+            {
+                "schemaFind": [
+                    3,
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "count": [
+                    {
+                        "_search": "zaak",
+                        "@self": {
+                            "schema": 3,
+                            "register": 1
+                        },
+                        "_rbac": true,
+                        "_multitenancy": false
+                    },
+                    1,
+                    3
+                ]
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Skipping schema with no resolvable owning register",
+                "context": {
+                    "schemaId": 4
+                }
+            },
+            {
+                "searchAcross": [
+                    {
+                        "_search": "zaak",
+                        "@self": {
+                            "schema": [
+                                2,
+                                4,
+                                5,
+                                6
+                            ]
+                        },
+                        "_rbac": true,
+                        "_multitenancy": false
+                    },
+                    [
+                        [
+                            1,
+                            2
+                        ],
+                        [
+                            1,
+                            3
+                        ]
+                    ]
+                ]
+            }
+        ],
+        "result": {
+            "results": [
+                "union-row"
+            ],
+            "total": 25,
+            "registers": {
+                "1": {
+                    "id": 1,
+                    "uuid": null,
+                    "slug": null,
+                    "title": null,
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        2,
+                        3
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": [],
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                },
+                "8": {
+                    "id": 8,
+                    "uuid": null,
+                    "slug": null,
+                    "title": null,
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        5
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": [],
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                }
+            },
+            "schemas": {
+                "2": {
+                    "id": 2,
+                    "uuid": null,
+                    "uri": null,
+                    "slug": null,
+                    "title": null,
+                    "description": null,
+                    "version": null,
+                    "summary": null,
+                    "icon": null,
+                    "required": [],
+                    "properties": [],
+                    "archive": [],
+                    "source": null,
+                    "hardValidation": true,
+                    "immutable": false,
+                    "appendOnly": false,
+                    "searchable": true,
+                    "smartPickerEnabled": false,
+                    "updated": null,
+                    "created": null,
+                    "maxDepth": 0,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "sharedWith": [],
+                    "deleted": null,
+                    "configuration": null,
+                    "exportable": false,
+                    "allOf": null,
+                    "oneOf": null,
+                    "anyOf": null,
+                    "facets": null,
+                    "hooks": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "draft": null
+                },
+                "3": {
+                    "id": 3,
+                    "uuid": null,
+                    "uri": null,
+                    "slug": null,
+                    "title": null,
+                    "description": null,
+                    "version": null,
+                    "summary": null,
+                    "icon": null,
+                    "required": [],
+                    "properties": [],
+                    "archive": [],
+                    "source": null,
+                    "hardValidation": true,
+                    "immutable": false,
+                    "appendOnly": false,
+                    "searchable": true,
+                    "smartPickerEnabled": false,
+                    "updated": null,
+                    "created": null,
+                    "maxDepth": 0,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "groups": [],
+                    "authorization": [],
+                    "sharedWith": [],
+                    "deleted": null,
+                    "configuration": null,
+                    "exportable": false,
+                    "allOf": null,
+                    "oneOf": null,
+                    "anyOf": null,
+                    "facets": null,
+                    "hooks": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null,
+                    "draft": null
+                }
+            },
+            "ignoredFilters": [],
+            "source": "magic_mapper"
+        }
+    },
+    "no owners": {
+        "events": [
+            {
+                "registerFind": [
+                    404,
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Failed to find register for multi-schema search",
+                "context": {
+                    "registerId": 404,
+                    "error": "no register 404"
+                }
+            }
+        ],
+        "result": {
+            "results": [],
+            "total": 0,
+            "registers": [],
+            "schemas": []
+        }
+    },
+    "no schema survives": {
+        "events": [
+            {
+                "registerFind": [
+                    8,
+                    false,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    5,
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Failed to load schema for multi-schema search",
+                "context": {
+                    "schemaId": 5,
+                    "error": "no schema 5"
+                }
+            },
+            {
+                "log": "debug",
+                "message": "[MagicMapper] Skipping schema with no resolvable owning register",
+                "context": {
+                    "schemaId": 6
+                }
+            }
+        ],
+        "result": {
+            "results": [],
+            "total": 0,
+            "registers": {
+                "8": {
+                    "id": 8,
+                    "uuid": null,
+                    "slug": null,
+                    "title": null,
+                    "version": null,
+                    "description": null,
+                    "schemas": [
+                        5
+                    ],
+                    "source": null,
+                    "tablePrefix": null,
+                    "folder": null,
+                    "updated": null,
+                    "created": null,
+                    "owner": null,
+                    "application": null,
+                    "organisation": null,
+                    "authorization": [],
+                    "sharedWith": [],
+                    "groups": [],
+                    "type": null,
+                    "languages": null,
+                    "configuration": [],
+                    "quota": {
+                        "storage": null,
+                        "bandwidth": null,
+                        "requests": null,
+                        "users": null,
+                        "groups": null
+                    },
+                    "usage": {
+                        "storage": 0,
+                        "bandwidth": 0,
+                        "requests": 0,
+                        "users": 0,
+                        "groups": 0
+                    },
+                    "deleted": null,
+                    "_mail": null,
+                    "_contacts": null,
+                    "_notes": null,
+                    "_todos": null,
+                    "_calendar": null,
+                    "_talk": null,
+                    "_deck": null
+                }
+            },
+            "schemas": [],
+            "ignoredFilters": [],
+            "source": "magic_mapper"
+        }
+    },
+    "membership fails": {
+        "events": [
+            {
+                "log": "warning",
+                "message": "[MagicMapper] Failed to build schema->register map for multi-schema search",
+                "context": {
+                    "error": "membership refused"
+                }
+            }
+        ],
+        "result": {
+            "results": [],
+            "total": 0,
+            "registers": [],
+            "schemas": []
+        }
+    },
+    "encrypted filter": {
+        "events": [
+            {
+                "registerFind": [
+                    1,
+                    false,
+                    false
+                ]
+            },
+            {
+                "schemaFind": [
+                    2,
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "count": [
+                    {
+                        "_search": "zaak",
+                        "@self": {
+                            "schema": 2,
+                            "register": 1
+                        },
+                        "_rbac": true,
+                        "_multitenancy": true
+                    },
+                    1,
+                    2
+                ]
+            },
+            {
+                "schemaFind": [
+                    3,
+                    [],
+                    false,
+                    false
+                ]
+            },
+            {
+                "count": [
+                    {
+                        "_search": "zaak",
+                        "@self": {
+                            "schema": 3,
+                            "register": 1
+                        },
+                        "_rbac": true,
+                        "_multitenancy": true
+                    },
+                    1,
+                    3
+                ]
+            }
+        ],
+        "exception": "OCA\\OpenRegister\\Exception\\EncryptedFieldFilterException"
+    }
+}

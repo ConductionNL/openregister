@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
+use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -34,6 +35,7 @@ use OCA\OpenRegister\Service\BulkTranslationService;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationCsvCodec;
+use OCA\OpenRegister\Service\Translation\LanguagePair;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -42,6 +44,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\ObjectTranslationRequest;
 
 /**
  * @group DB
@@ -142,7 +145,10 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 	public function testLanguageMiddlewareAddsContentLanguageHeader(): void {
 		// Drive the middleware directly via a stub IRequest.
 		$request = $this->createMock(IRequest::class);
-		$request->method('getHeader')->with('Accept-Language')->willReturn('nl-NL, nl;q=0.9, en;q=0.8');
+		// The middleware also reads X-Translation-Target-Language; that one is absent.
+		$request->method('getHeader')->willReturnCallback(
+			static fn (string $name): string => ($name === 'Accept-Language') ? 'nl-NL, nl;q=0.9, en;q=0.8' : ''
+		);
 		// The middleware asks for several query parameters now (_lang before
 		// _translations), so the stub answers "not given" to all of them rather
 		// than pinning one name.
@@ -191,7 +197,7 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 
 	public function testIdentityProviderReturnsInputVerbatim(): void {
 		$provider = new IdentityTranslationProvider();
-		$this->assertSame('Hello world', $provider->translate('Hello world', 'en', 'nl'));
+		$this->assertSame('Hello world', $provider->translate('Hello world', new LanguagePair('en', 'nl')));
 		$this->assertSame('identity', $provider->getIdentifier());
 	}
 
@@ -212,18 +218,14 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 		]);
 		$this->objectMapper->update($this->testObject);
 
-		$result = $this->bulkService->translateObject(
-			object: $this->testObject,
-			fromLong: 'nl',
-			toLong: 'en'
-		);
+		$result = $this->bulkService->translate(request: new ObjectTranslationRequest(object: $this->testObject, fromLong: 'nl', toLong: 'en'));
 
 		$this->assertArrayHasKey('title', $result['translated']);
 		$this->assertArrayHasKey('body', $result['translated']);
 		$this->assertSame('Hoi wereld', $result['translated']['title'], 'identity provider returns source verbatim');
 
 		// Sidecar should now have EN slots with machine_translated status.
-		$titleEn = $this->translationMapper->findOne((string)$this->testObject->getUuid(), 'title', 'en');
+		$titleEn = $this->translationMapper->findOne(new TranslationSlot((string)$this->testObject->getUuid(), 'title', 'en'));
 		$this->assertNotNull($titleEn);
 		$this->assertSame(Translation::STATUS_MACHINE_TRANSLATED, $titleEn->getStatus());
 		$this->assertSame('provider:identity', $titleEn->getTranslator());
@@ -237,11 +239,7 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 		]);
 		$this->objectMapper->update($this->testObject);
 
-		$result = $this->bulkService->translateObject(
-			object: $this->testObject,
-			fromLong: 'nl',
-			toLong: 'en'
-		);
+		$result = $this->bulkService->translate(request: new ObjectTranslationRequest(object: $this->testObject, fromLong: 'nl', toLong: 'en'));
 
 		$this->assertArrayNotHasKey('title', $result['translated']);
 		$this->assertSame('target-slot-already-filled', $result['skipped']['title'] ?? null);
@@ -256,22 +254,14 @@ class RegisterI18nPhase2IntegrationTest extends TestCase {
 		]);
 		$this->objectMapper->update($this->testObject);
 
-		$result = $this->bulkService->translateObject(
-			object: $this->testObject,
-			fromLong: 'nl',
-			toLong: 'fr'
-		);
+		$result = $this->bulkService->translate(request: new ObjectTranslationRequest(object: $this->testObject, fromLong: 'nl', toLong: 'fr'));
 
 		$this->assertSame('no-source-value', $result['skipped']['title'] ?? null);
 		$this->assertArrayNotHasKey('title', $result['translated']);
 	}
 
 	public function testBulkTranslateRejectsSameLanguagePair(): void {
-		$result = $this->bulkService->translateObject(
-			object: $this->testObject,
-			fromLong: 'nl',
-			toLong: 'nl'
-		);
+		$result = $this->bulkService->translate(request: new ObjectTranslationRequest(object: $this->testObject, fromLong: 'nl', toLong: 'nl'));
 		$this->assertSame([], $result['translated']);
 		$this->assertArrayHasKey('_global', $result['skipped']);
 	}

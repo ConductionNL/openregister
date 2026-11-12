@@ -59,16 +59,14 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/common.scss' as *;
+
 .section__field {
 	margin-bottom: 12px;
 }
 
-.section__field label {
-	display: block;
-	margin-bottom: 4px;
-	font-weight: bold;
-}
+@include section-field-label;
 
 .account-section__modal {
 	padding: 24px;

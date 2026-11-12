@@ -42,8 +42,8 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
-use OCA\OpenRegister\Service\CalendarEventService;
-use OCA\OpenRegister\Service\CalendarLinkService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -54,6 +54,7 @@ use Throwable;
  * Calendar (CalDAV / Meetings) integration provider.
  */
 class CalendarProvider extends AbstractIntegrationProvider {
+	use LinkTableAppDescriptor;
 
 	/**
 	 * NC app id that must be installed/enabled for this integration.
@@ -65,17 +66,15 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalendarEventService $calendarEventService Legacy X-OR-* CalDAV service.
-	 * @param CalendarLinkService $calendarLinkService Tier-2 link-table service (UNION read path).
-	 * @param IAppManager $appManager NC app manager.
-	 * @param IL10N $l10n Localisation.
-	 * @param LoggerInterface $logger PSR-3 logger for surfacing CalDAV failures.
+	 * @param CalendarProviderServices $calendar   The calendar event and link services.
+	 * @param IAppManager              $appManager NC app manager.
+	 * @param IL10N                    $l10n       Localisation.
+	 * @param LoggerInterface          $logger     PSR-3 logger for surfacing CalDAV failures.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private CalendarEventService $calendarEventService,
-		private CalendarLinkService $calendarLinkService,
+		private CalendarProviderServices $calendar,
 		private IAppManager $appManager,
 		private IL10N $l10n,
 		private LoggerInterface $logger,
@@ -127,39 +126,6 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	}//end getGroup()
 
 	/**
-	 * Nextcloud app that must be installed for this integration.
-	 *
-	 * @return string|null
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function getRequiredApp(): ?string {
-		return self::REQUIRED_APP;
-	}//end getRequiredApp()
-
-	/**
-	 * Registry routing classification (not literal physical storage — see class docblock).
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function getStorageStrategy(): string {
-		return 'link-table';
-	}//end getStorageStrategy()
-
-	/**
-	 * Whether the required NC app is installed.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/specs/calendar-integration/spec.md
-	 */
-	public function isEnabled(): bool {
-		return $this->appManager->isInstalled(self::REQUIRED_APP);
-	}//end isEnabled()
-
-	/**
 	 * List VEVENTs linked to an OR object.
 	 *
 	 * Filters are accepted but currently ignored — CalendarEventService
@@ -182,19 +148,28 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	 * user. Events written to a different calendar are not discovered.
 	 * Multi-calendar awareness is tracked as a fleet-wide follow-up.
 	 *
-	 * @param string $register Register slug or numeric id (unused — CalDAV scope is per-user).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param array<string,mixed> $filters Optional filters (currently ignored).
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
-	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
+	public function list(ObjectRef $ref, array $filters = []): array {
+		return $this->linkedEventsOf(ref: $ref);
+	}//end list()
+
+	/**
+	 * The object's linked events; none, logged, when the calendar cannot be read.
+	 *
+	 * @param ObjectRef $ref The owning object; register and schema only name it in the log line.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function linkedEventsOf(ObjectRef $ref): array {
 		try {
 			// Tier-2: UNION read across link-table + legacy X-OR-* scan.
-			return $this->calendarLinkService->getLinkedEvents(objectUuid: $objectId);
+			return $this->calendar->calendarLinkService->getLinkedEvents(objectUuid: $ref->id);
 		} catch (Throwable $e) {
 			// CalDAV failures (no user, no VEVENT calendar) degrade to
 			// an empty list rather than breaking the tab — AD-23 covers
@@ -202,21 +177,14 @@ class CalendarProvider extends AbstractIntegrationProvider {
 			// for link-table providers) but does NOT mandate silent
 			// failure: surface the cause so an empty Meetings tab can
 			// be diagnosed from nextcloud.log instead of guessing.
+			$scope = ['objectId' => $ref->id, 'register' => $ref->register, 'schema' => $ref->schema, 'exception' => $e];
 			$this->logger->warning(
 				'CalendarProvider::list() failed; degrading to empty list',
-				[
-					'app' => 'openregister',
-					'provider' => self::class,
-					'method' => 'list',
-					'objectId' => $objectId,
-					'register' => $register,
-					'schema' => $schema,
-					'exception' => $e,
-				]
+				['app' => 'openregister', 'provider' => self::class, 'method' => 'list'] + $scope
 			);
 			return [];
 		}//end try
-	}//end list()
+	}//end linkedEventsOf()
 
 	/**
 	 * Unlink a VEVENT.
@@ -225,16 +193,26 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	 * CalendarEventsController emits in its responses); both segments
 	 * are required for CalDAV addressing.
 	 *
-	 * @param string $register Register slug or numeric id (unused).
-	 * @param string $schema Schema slug or numeric id (unused).
-	 * @param string $objectId Object uuid.
+	 * @param ObjectRef $ref The owning object: register, schema and uuid.
 	 * @param string $entityId Composite `"calendarId/eventUri"`.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
-	public function delete(string $register, string $schema, string $objectId, string $entityId): void {
+	public function delete(ObjectRef $ref, string $entityId): void {
+		$this->unlinkEventOf(objectId: $ref->id, entityId: $entityId);
+	}//end delete()
+
+	/**
+	 * Unlink one of an object's events, in either entity-id shape.
+	 *
+	 * @param string $objectId Owning object uuid.
+	 * @param string $entityId `{calendarId}/{eventUri}` (legacy) or a bare event uid.
+	 *
+	 * @return void
+	 */
+	private function unlinkEventOf(string $objectId, string $entityId): void {
 		// New shape: simple eventUid (Tier-2 link-table). Legacy shape:
 		// "{calendarId}/{eventUri}" (CalendarProvider Phase B-2). We accept
 		// both — if the entityId contains a slash, treat as legacy and
@@ -242,13 +220,15 @@ class CalendarProvider extends AbstractIntegrationProvider {
 		$parts = explode('/', $entityId, 2);
 		if (count($parts) === 2) {
 			[$calendarId, $eventUri] = $parts;
-			$this->calendarEventService->unlinkEvent(calendarId: $calendarId, eventUri: $eventUri);
+			$event = new CalendarObjectAddress(calendarId: $calendarId, uri: $eventUri);
+			$this->calendar->calendarEventService->requireEventOf(objectUuid: $objectId, event: $event);
+			$this->calendar->calendarEventService->unlinkEvent(calendarId: $calendarId, eventUri: $eventUri);
 			return;
 		}
 
 		// EntityId is a bare eventUid — Tier-2 link-only removal.
-		$this->calendarLinkService->unlinkEvent(objectUuid: $objectId, eventUid: $entityId);
-	}//end delete()
+		$this->calendar->calendarLinkService->unlinkEvent(objectUuid: $objectId, eventUid: $entityId);
+	}//end unlinkEventOf()
 
 	/**
 	 * Health descriptor.
@@ -262,18 +242,6 @@ class CalendarProvider extends AbstractIntegrationProvider {
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
 	public function health(): array {
-		$installed = $this->appManager->isInstalled(self::REQUIRED_APP);
-		$status = 'unavailable';
-		$message = 'NC Calendar app is not installed';
-		if ($installed === true) {
-			$status = 'ok';
-			$message = null;
-		}
-
-		return [
-			'status' => $status,
-			'authStatus' => 'configured',
-			'message' => $message,
-		];
+		return $this->installedHealth(available: $this->appManager->isInstalled(self::REQUIRED_APP) === true, missing: 'NC Calendar app is not installed');
 	}//end health()
 }//end class

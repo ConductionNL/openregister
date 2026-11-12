@@ -8,21 +8,23 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+ * @spec openspec/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
+
 /**
- * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
+ * @covers \OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
- * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Search\Db\View
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
@@ -36,6 +38,30 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppointments
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetArchival
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAuditEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCasePlans
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCollectivesPages
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetDeckCards
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEmailLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetExportRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetLock
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetParties
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTalkConversations
+ * @uses \OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers
+ * @uses \OCA\OpenRegister\Service\WriteCause
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAccessLinks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFlowRuns
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCastShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetConfigShape
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentFile
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetFragmentShape
  */
 class ExampleSetViewsTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -80,7 +106,7 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame(['alpha/zoek-lindelaan' => 'created'], $report['views']);
-		$view = $this->savedViews['view-1'];
+		$view = $this->savedViews[ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan')];
 		$this->assertSame('esra.demir', $view->getOwner());
 		$this->assertTrue($view->getIsPublic());
 		$this->assertSame('Lindelaan', $view->getQuery()['search']);
@@ -116,9 +142,102 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 
 		$this->assertSame(
 			expected: [['group' => 'demo-staff', 'mode' => 'read'], ['user' => 'sanne.devries', 'mode' => 'write']],
-			actual: $this->savedViews['view-1']->getSharedWith()
+			actual: $this->savedViews[ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan')]->getSharedWith()
 		);
 	}//end testAViewIsWrittenWithItsShares()
+
+	/**
+	 * A user preference may quote a view the same fragment declares, as
+	 * board DqFilterInMenu has Pieter's "Termijn deze week" in his menu: the
+	 * check accepts the placeholder before the view exists, and the install
+	 * writes the preference after the view, with its uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
+	 */
+	public function testAPreferenceQuotesAViewOfItsFragment(): void {
+		$this->app(app: 'alpha', fragment: [
+			'views'           => [$this->savedSearch()],
+			'userPreferences' => [[
+				'user'  => '{{cast:esra.uid}}',
+				'key'   => 'pref_cn_saved_view_menu',
+				'value' => '[{"id":"{{view:zoek-lindelaan.uuid}}","page":"Search","name":"Lindelaan"}]',
+			]],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame(expected: [], actual: $this->savedViews, message: 'the check writes no view');
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertSame(
+			expected: '[{"id":"'.ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan').'","page":"Search","name":"Lindelaan"}]',
+			actual: $this->userValues['esra.demir']['alpha']['pref_cn_saved_view_menu']
+		);
+	}//end testAPreferenceQuotesAViewOfItsFragment()
+
+	/**
+	 * A preference quoting a view the fragment does not declare refuses the set.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
+	 */
+	public function testAPreferenceQuotingAnUnknownViewIsRefused(): void {
+		$this->app(app: 'alpha', fragment: [
+			'views'           => [$this->savedSearch()],
+			'userPreferences' => [[
+				'user'  => '{{cast:esra.uid}}',
+				'key'   => 'pref_cn_saved_view_menu',
+				'value' => '[{"id":"{{view:nope.uuid}}","page":"Search","name":"Nope"}]',
+			]],
+		]);
+
+		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$this->assertCount(expectedCount: 1, haystack: $refusals);
+		$this->assertStringContainsString(needle: 'cannot resolve', haystack: $refusals[0]);
+	}//end testAPreferenceQuotingAnUnknownViewIsRefused()
+
+	/**
+	 * A refresh updates a view where it is, so its uuid, and every link and menu entry that names it, stays.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 */
+	public function testARefreshUpdatesAViewInPlace(): void {
+		$this->withViews([$this->savedSearch()]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$before = array_keys($this->savedViews);
+
+		$this->withViews([['key' => 'zoek-lindelaan', 'data' => ['name' => 'Lindelaan en Parkweg'] + $this->savedSearch()['data']]]);
+		$report = $this->installer->install(plan: ($this->catalogue->gather(set: 'demo') + ['refresh' => true]), today: $this->today());
+
+		$this->assertTrue($report['ok'], (string) json_encode($report));
+		$this->assertSame($before, array_keys($this->savedViews));
+		$this->assertSame('Lindelaan en Parkweg', $this->savedViews[$before[0]]->getName());
+	}//end testARefreshUpdatesAViewInPlace()
+
+	/**
+	 * A seeded view's uuid comes from its app and key, so a remove and a new install give it the same uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-seeded-view-keeps-its-uuid
+	 */
+	public function testAViewKeepsItsUuidAcrossARemove(): void {
+		$this->withViews([$this->savedSearch()]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->remover->remove(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertSame([ExampleSetViews::uuidFor(app: 'alpha', key: 'zoek-lindelaan')], array_keys($this->savedViews));
+	}//end testAViewKeepsItsUuidAcrossARemove()
 
 	public function testAViewThatDisappearedIsReportedMissing(): void {
 		$this->withViews([$this->savedSearch()]);

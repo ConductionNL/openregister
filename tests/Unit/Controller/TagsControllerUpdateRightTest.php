@@ -19,10 +19,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Controller\Support\TagsControllerServices;
 use OCA\OpenRegister\Controller\TagsController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\File\TaggingHandler;
+use OCA\OpenRegister\Files\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -85,11 +86,9 @@ class TagsControllerUpdateRightTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$this->controller = new TagsController(
-			'openregister',
 			$this->request,
 			$this->objectService,
-			$this->createMock(FileService::class),
-			$this->taggingHandler,
+			new TagsControllerServices($this->createMock(FileService::class), $this->taggingHandler),
 			$session
 		);
 	}//end setUp()

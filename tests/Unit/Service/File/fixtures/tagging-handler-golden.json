@@ -1,0 +1,590 @@
+{
+    "add-object-tag": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getAllTags(NULL, 'beta')",
+            "assignTags(u-1, openregister, [\"2\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "add-object-tag-allowed": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getAllTags(NULL, 'beta')",
+            "canUserAssignTag(2)",
+            "assignTags(u-1, openregister, [\"2\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "add-object-tag-forbidden": {
+        "result": {
+            "threw": "OCA\\OpenRegister\\Exception\\NotAuthorizedException: You may not create the tag 'gamma'."
+        },
+        "calls": [
+            "getAllTags(NULL, 'gamma')",
+            "createTag(gamma, true, true)",
+            "end"
+        ],
+        "log": []
+    },
+    "add-object-tag-new": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getAllTags(NULL, 'gamma')",
+            "createTag(gamma, true, true)",
+            "assignTags(u-1, openregister, [\"n7\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "add-object-tag-refused": {
+        "result": {
+            "threw": "OCA\\OpenRegister\\Exception\\NotAuthorizedException: You may not assign or remove the tag 'beta'."
+        },
+        "calls": [
+            "getAllTags(NULL, 'beta')",
+            "canUserAssignTag(2)",
+            "end"
+        ],
+        "log": []
+    },
+    "all-tags": {
+        "result": {
+            "returned": [
+                "alpha",
+                "beta",
+                "object:hidden",
+                "object:shown",
+                "object:assignable",
+                "alphabet"
+            ]
+        },
+        "calls": [
+            "getAllTags(NULL, NULL)",
+            "end"
+        ],
+        "log": []
+    },
+    "all-tags-empty": {
+        "result": {
+            "returned": []
+        },
+        "calls": [
+            "getAllTags(NULL, NULL)",
+            "end"
+        ],
+        "log": []
+    },
+    "all-tags-throws": {
+        "result": {
+            "returned": []
+        },
+        "calls": [
+            "getAllTags(NULL, NULL)",
+            "end"
+        ],
+        "log": [
+            "error: [TaggingHandler] Error getting all tags: store down [file,line]"
+        ]
+    },
+    "attach-by-id": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getTagsByIds([\"2\"])",
+            "unassignTags(12, files, [\"1\"])",
+            "assignTags(12, files, [\"2\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-by-id-same": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getTagsByIds([\"1\"])",
+            "getAllTags(NULL, 'beta')",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-by-name-prefix-match": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'alpha')",
+            "getAllTags(NULL, 'alph')",
+            "createTag(alph, true, true)",
+            "assignTags(12, files, [\"1\",\"n7\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-create-throws": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'delta')",
+            "createTag(delta, true, true)",
+            "getAllTags(NULL, 'delta')",
+            "createTag(delta, true, true)",
+            "getAllTags(NULL, 'alpha')",
+            "unassignTags(12, files, [\"2\"])",
+            "assignTags(12, files, [\"1\"])",
+            "end"
+        ],
+        "log": [
+            "error: [TaggingHandler] Error processing tag delta: create broke [file,line,trace]",
+            "error: [TaggingHandler] Failed to create tag delta: create broke [file,line]"
+        ]
+    },
+    "attach-id-empty-result": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getTagsByIds([\"99\"])",
+            "getAllTags(NULL, '99')",
+            "createTag(99, true, true)",
+            "assignTags(12, files, [\"n7\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-id-lookup-throws": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getTagsByIds([\"99\"])",
+            "getAllTags(NULL, '99')",
+            "createTag(99, true, true)",
+            "assignTags(12, files, [\"n7\"])",
+            "end"
+        ],
+        "log": [
+            "error: [TaggingHandler] Error processing tag 99: lookup broke [file,line,trace]"
+        ]
+    },
+    "attach-id-lookup-throws-create-fails": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getTagsByIds([\"99\"])",
+            "getAllTags(NULL, '99')",
+            "createTag(99, true, true)",
+            "getAllTags(NULL, 'alpha')",
+            "assignTags(12, files, [\"1\"])",
+            "end"
+        ],
+        "log": [
+            "error: [TaggingHandler] Error processing tag 99: lookup broke [file,line,trace]",
+            "error: [TaggingHandler] Failed to create tag 99: create broke [file,line]"
+        ]
+    },
+    "attach-id-not-found": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getTagsByIds([\"99\"])",
+            "getAllTags(NULL, '99')",
+            "createTag(99, true, true)",
+            "assignTags(12, files, [\"n7\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-id-not-found-create-fails": {
+        "result": {
+            "threw": "RuntimeException: create broke"
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getTagsByIds([\"99\"])",
+            "getAllTags(NULL, '99')",
+            "createTag(99, true, true)",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-internal-assignable": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'object:assignable')",
+            "isUserVisible(5)",
+            "isUserAssignable(5)",
+            "updateTag(5, object:assignable, false, false, '#00ff00')",
+            "assignTags(12, files, [\"5\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-internal-hidden": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'object:hidden')",
+            "isUserVisible(3)",
+            "isUserAssignable(3)",
+            "assignTags(12, files, [\"3\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-internal-shown": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'object:shown')",
+            "isUserVisible(4)",
+            "updateTag(4, object:shown, false, false, '#00ff00')",
+            "assignTags(12, files, [\"4\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-internal-update-throws": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'object:shown')",
+            "isUserVisible(4)",
+            "updateTag(4, object:shown, false, false, '#00ff00')",
+            "assignTags(12, files, [\"4\"])",
+            "end"
+        ],
+        "log": [
+            "warning: [TaggingHandler] Could not hide the internal tag object:shown: update refused [file,line]"
+        ]
+    },
+    "attach-mapper-throws": {
+        "result": {
+            "threw": "RuntimeException: mapper down"
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-new-object-tag": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'object:new')",
+            "createTag(object:new, false, false)",
+            "assignTags(12, files, [\"n7\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-new-user-tag": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'gamma')",
+            "createTag(gamma, true, true)",
+            "assignTags(12, files, [\"n7\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-nothing": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-nothing-removes-old": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "unassignTags(12, files, [\"1\",\"2\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-old-entry-empty": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'alpha')",
+            "assignTags(12, files, [\"1\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-old-other-file": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'alpha')",
+            "assignTags(12, files, [\"1\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-race-found": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'delta')",
+            "createTag(delta, true, true)",
+            "getAllTags(NULL, 'delta')",
+            "assignTags(12, files, [\"n7\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-race-internal": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'object:race')",
+            "createTag(object:race, false, false)",
+            "getAllTags(NULL, 'object:race')",
+            "isUserVisible(n7)",
+            "updateTag(n7, object:race, false, false, '#00ff00')",
+            "assignTags(12, files, [\"n7\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "attach-race-missing": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'delta')",
+            "createTag(delta, true, true)",
+            "getAllTags(NULL, 'delta')",
+            "getAllTags(NULL, 'delta')",
+            "createTag(delta, true, true)",
+            "getAllTags(NULL, 'delta')",
+            "getAllTags(NULL, 'beta')",
+            "assignTags(12, files, [\"2\"])",
+            "end"
+        ],
+        "log": [
+            "error: [TaggingHandler] Error processing tag delta: Tag exists but could not be found: delta [file,line,trace]",
+            "error: [TaggingHandler] Failed to create tag delta: Tag exists but could not be found: delta [file,line]"
+        ]
+    },
+    "attach-race-missing-twice": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getAllTags(NULL, 'delta')",
+            "createTag(delta, true, true)",
+            "getAllTags(NULL, 'delta')",
+            "getAllTags(NULL, 'delta')",
+            "createTag(delta, true, true)",
+            "getAllTags(NULL, 'delta')",
+            "unassignTags(12, files, [\"1\"])",
+            "end"
+        ],
+        "log": [
+            "error: [TaggingHandler] Error processing tag delta: Tag exists but could not be found: delta [file,line,trace]",
+            "error: [TaggingHandler] Failed to create tag delta: Tag exists but could not be found: delta [file,line]"
+        ]
+    },
+    "file-tags": {
+        "result": {
+            "returned": [
+                "beta",
+                "alpha"
+            ]
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getTagsByIds([\"2\",\"1\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "file-tags-empty": {
+        "result": {
+            "returned": []
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "end"
+        ],
+        "log": []
+    },
+    "file-tags-ids-throw": {
+        "result": {
+            "returned": []
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "getTagsByIds([\"1\"])",
+            "end"
+        ],
+        "log": [
+            "error: [TaggingHandler] Error getting tags for file 12: lookup broke [file,line]"
+        ]
+    },
+    "file-tags-none": {
+        "result": {
+            "returned": []
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "end"
+        ],
+        "log": []
+    },
+    "file-tags-throws": {
+        "result": {
+            "returned": []
+        },
+        "calls": [
+            "getTagIdsForObjects([\"12\"], files)",
+            "end"
+        ],
+        "log": [
+            "error: [TaggingHandler] Error getting tags for file 12: mapper down [file,line]"
+        ]
+    },
+    "object-tag-generate": {
+        "result": {
+            "returned": "object:u-9"
+        },
+        "calls": [
+            "end"
+        ],
+        "log": []
+    },
+    "object-tags": {
+        "result": {
+            "returned": [
+                "alpha",
+                "alphabet",
+                "beta"
+            ]
+        },
+        "calls": [
+            "getTagIdsForObjects([\"u-1\"], openregister)",
+            "getTagsByIds([\"2\",\"1\",\"6\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "object-tags-empty": {
+        "result": {
+            "returned": []
+        },
+        "calls": [
+            "getTagIdsForObjects([\"u-1\"], openregister)",
+            "end"
+        ],
+        "log": []
+    },
+    "object-tags-none": {
+        "result": {
+            "returned": []
+        },
+        "calls": [
+            "getTagIdsForObjects([\"u-1\"], openregister)",
+            "end"
+        ],
+        "log": []
+    },
+    "object-tags-throws": {
+        "result": {
+            "returned": []
+        },
+        "calls": [
+            "getTagIdsForObjects([\"u-1\"], openregister)",
+            "end"
+        ],
+        "log": [
+            "error: [TaggingHandler] Error getting tags for object u-1: mapper down [file,line]"
+        ]
+    },
+    "remove-object-tag": {
+        "result": {
+            "returned": null
+        },
+        "calls": [
+            "getAllTags(NULL, 'alpha')",
+            "unassignTags(u-1, openregister, [\"1\"])",
+            "end"
+        ],
+        "log": []
+    },
+    "remove-object-tag-missing": {
+        "result": {
+            "threw": "Exception: Tag not found: alph"
+        },
+        "calls": [
+            "getAllTags(NULL, 'alph')",
+            "end"
+        ],
+        "log": []
+    },
+    "remove-object-tag-refused": {
+        "result": {
+            "threw": "OCA\\OpenRegister\\Exception\\NotAuthorizedException: You may not assign or remove the tag 'alpha'."
+        },
+        "calls": [
+            "getAllTags(NULL, 'alpha')",
+            "canUserAssignTag(1)",
+            "end"
+        ],
+        "log": []
+    }
+}

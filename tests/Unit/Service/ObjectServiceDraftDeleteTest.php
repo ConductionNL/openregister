@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\LockHandler;
@@ -78,6 +79,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests that a stored draft can be deleted on every schema, for good, and that nothing else gets past the archival gate.
@@ -157,7 +161,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 			}
 		);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -196,7 +200,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 	}//end setUp()
@@ -255,9 +259,8 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 	 */
 	private function recordHandler(array &$asked): void {
 		$this->deleteHandler->method('deleteObject')->willReturnCallback(
-			static function (mixed ...$args) use (&$asked): bool {
-				// Position 8 is `permanent` in DeleteObject::deleteObject().
-				$asked[] = ($args[8] ?? false);
+			static function (DeletionRequest $request) use (&$asked): bool {
+				$asked[] = $request->options->permanent;
 
 				return true;
 			}
@@ -275,7 +278,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 		$asked = [];
 		$this->recordHandler(asked: $asked);
 
-		$result = $this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+		$result = $this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'draft-1', target: new ObjectFindTarget(register: $register, schema: $schema)), _rbac: false, _multitenancy: false);
 
 		$this->assertTrue($result);
 		$this->assertSame([true], $asked, 'The draft was not handed to the delete handler as a permanent delete.');
@@ -297,7 +300,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 
 		$this->expectException(ArchivalImmutableException::class);
 
-		$this->service->deleteObject(uuid: 'record-1', register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'record-1', target: new ObjectFindTarget(register: $register, schema: $schema)), _rbac: false, _multitenancy: false);
 	}//end testARecordOnAnArchivalSchemaIsStillRefused()
 
 	/**
@@ -325,7 +328,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 
 		$this->expectException(ArchivalImmutableException::class);
 
-		$this->service->deleteObject(uuid: 'somebody-elses-draft', register: $register, schema: $schema);
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'somebody-elses-draft', target: new ObjectFindTarget(register: $register, schema: $schema)));
 	}//end testAnUnreachableObjectOnAnArchivalSchemaIsStillRefused()
 
 	/**
@@ -339,7 +342,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 		$asked = [];
 		$this->recordHandler(asked: $asked);
 
-		$this->assertTrue($this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: false, _multitenancy: false));
+		$this->assertTrue($this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'draft-1', target: new ObjectFindTarget(register: $register, schema: $schema)), _rbac: false, _multitenancy: false));
 		$this->assertSame([true], $asked);
 	}//end testADraftIsDeletedForGoodOnAnySchema()
 
@@ -359,7 +362,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 			// The stored draft belongs to 'agent'; the caller (no session user) is not that owner.
 			// Judged as an anonymous web caller: a userless command-line caller is the system, which no draft is kept from.
 			\OCA\OpenRegister\Service\AnonymousEvaluationContext::run(
-				fn () => $this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: true, _multitenancy: false)
+				fn () => $this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'draft-1', target: new ObjectFindTarget(register: $register, schema: $schema)), _rbac: true, _multitenancy: false)
 			);
 		} finally {
 			$this->assertSame([], $asked);
@@ -394,7 +397,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 
 		// The stored draft belongs to 'agent'.
 		$this->signIn(uid: 'agent', groups: ['staff']);
-		$this->assertTrue($this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: true, _multitenancy: false));
+		$this->assertTrue($this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'draft-1', target: new ObjectFindTarget(register: $register, schema: $schema)), _rbac: true, _multitenancy: false));
 		$this->assertSame([true], $asked, "the owner's own draft is deleted for good");
 	}//end testTheOwnerMayDeleteTheirOwnDraft()
 
@@ -410,7 +413,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 		$this->recordHandler(asked: $asked);
 
 		$this->signIn(uid: 'root', groups: ['admin']);
-		$this->assertTrue($this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: true, _multitenancy: false));
+		$this->assertTrue($this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'draft-1', target: new ObjectFindTarget(register: $register, schema: $schema)), _rbac: true, _multitenancy: false));
 		$this->assertSame([true], $asked);
 	}//end testAnAdministratorMayDeleteSomebodyElsesDraft()
 
@@ -428,7 +431,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 		$this->signIn(uid: 'mallory', groups: ['staff']);
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
 		try {
-			$this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: true, _multitenancy: false);
+			$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'draft-1', target: new ObjectFindTarget(register: $register, schema: $schema)), _rbac: true, _multitenancy: false);
 		} finally {
 			$this->assertSame([], $asked);
 		}
@@ -445,7 +448,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 		$asked = [];
 		$this->recordHandler(asked: $asked);
 
-		$this->assertTrue($this->service->deleteObject(uuid: 'record-1', register: $register, schema: $schema, _rbac: false, _multitenancy: false));
+		$this->assertTrue($this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'record-1', target: new ObjectFindTarget(register: $register, schema: $schema)), _rbac: false, _multitenancy: false));
 		$this->assertSame([false], $asked, 'A delete of an object that is not a draft became permanent.');
 	}//end testAnOrdinaryDeleteStaysSoft()
 }//end class

@@ -1,0 +1,7 @@
+- [x] T01 Decide how a seeded waiting run stays out of the flow worker's way (design D-1: it is a live wait, so no exception is needed)
+- [x] T02 ExampleSetFlows accepts a waiting run (`status: suspended`, `key`, `node`) on an `openregister.user-task` step and writes it as a live wait; the record entry carries the run uuids by key; a refresh keeps them
+- [x] T03 ExampleSetValues gives the flow stand-ins a stand-in uuid per run key, so `{{flow:<flow>.runs.<run>}}` fills at check time
+- [x] T04 ExampleSetTasks accepts `runUuid` and `nodeId` (together), fills the run's resume slot with the task uuid and sets the heartbeat
+- [x] T05 The check refuses a waiting run no task in its fragment names, and a task whose `nodeId` is not the step its run waits on
+- [x] T06 ExampleSetTasks accepts `claimedBy` and `claimedAt` and appends one `claim` audit entry
+- [x] T07 PHPUnit for each, red first, including the refusals and remove order

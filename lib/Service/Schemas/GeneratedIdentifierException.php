@@ -53,17 +53,7 @@ class GeneratedIdentifierException extends PropertyVocabularyException {
 	 * @return void
 	 */
 	public function __construct(string $message, string $path = '') {
-		parent::__construct(
-			message: $message,
-			errors: [
-				[
-					'code' => 'generated-identifier-invalid',
-					'key' => GeneratedIdentifierDeclaration::ANNOTATION,
-					'path' => $path,
-					'message' => $message,
-				],
-			]
-		);
-
+		$where = ['code' => 'generated-identifier-invalid', 'key' => GeneratedIdentifierDeclaration::ANNOTATION, 'path' => $path];
+		parent::__construct(message: $message, errors: self::oneError(message: $message, where: $where));
 	}//end __construct()
 }//end class

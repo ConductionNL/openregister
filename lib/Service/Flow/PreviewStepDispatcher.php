@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+ * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
  */
 
 declare(strict_types=1);
@@ -45,10 +45,10 @@ class PreviewStepDispatcher implements FlowStepDispatcher {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowNodeRegistry $registry The node registry.
+	 * @param FlowNodeRegistryInterface $registry The node registry.
 	 */
 	public function __construct(
-		private readonly FlowNodeRegistry $registry,
+		private readonly FlowNodeRegistryInterface $registry,
 	) {
 	}//end __construct()
 
@@ -61,7 +61,9 @@ class PreviewStepDispatcher implements FlowStepDispatcher {
 	 *
 	 * @return array The output items: the node's for a performed step, the input otherwise.
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 * @throws \UnexpectedValueException When the step refuses its configuration.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
 	 */
 	public function dispatch(array $step, array $items, array $context): array {
 		$type = trim((string)($step['type'] ?? ''));
@@ -69,34 +71,64 @@ class PreviewStepDispatcher implements FlowStepDispatcher {
 			return $items;
 		}
 
-		$nodeId = (string)($step['id'] ?? $type);
 		$node = $this->registry->get(type: $type);
-		$config = (array)($step['config'] ?? []);
 
-		if ($node instanceof IFlowSideEffectFree) {
-			$this->previews[$nodeId] = ['performed' => true, 'summary' => $node->getDisplayName()];
-			return $node->execute(items: $items, config: $config, context: $context);
-		}
-
-		if ($node instanceof IFlowNodePreview) {
-			$this->previews[$nodeId] = array_merge(
-				['performed' => false],
-				$node->preview(items: $items, config: $config, context: $context)
-			);
-			return $items;
-		}
-
-		$this->previews[$nodeId] = ['performed' => false, 'summary' => $node->getDisplayName() . ' would run'];
-
-		return $items;
+		return $this->previewStep(
+			node: $node,
+			step: new DryRunStep(nodeId: (string)($step['id'] ?? $type), config: (array)($step['config'] ?? []), items: $items, context: $context)
+		);
 	}//end dispatch()
+
+	/**
+	 * Perform a side-effect-free step and record it; validate and describe any other.
+	 *
+	 * @param IFlowNode  $node The step's node.
+	 * @param DryRunStep $step The node id, configuration, input items and run context.
+	 *
+	 * @return array The output items: the node's for a performed step, the input otherwise.
+	 *
+	 * @throws \UnexpectedValueException When the step refuses its configuration.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 */
+	private function previewStep(IFlowNode $node, DryRunStep $step): array {
+		if ($node instanceof IFlowSideEffectFree) {
+			$this->previews[$step->nodeId] = ['performed' => true, 'summary' => $node->getDisplayName()];
+			return $node->execute(call: $step->nodeCall());
+		}
+
+		// A described step is never executed, so its own check has to run here
+		// for a configuration the real run refuses to fail in the dry run too.
+		$node->validateConfig($step->config);
+		$this->previews[$step->nodeId] = $this->describe(node: $node, step: $step);
+
+		return $step->items;
+	}//end previewStep()
+
+	/**
+	 * What a step that is not performed would do.
+	 *
+	 * @param IFlowNode  $node The step's node.
+	 * @param DryRunStep $step The node id, configuration, input items and run context.
+	 *
+	 * @return array<string, mixed> The preview: `performed` false and the node's summary.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 */
+	private function describe(IFlowNode $node, DryRunStep $step): array {
+		if ($node instanceof IFlowNodePreview) {
+			return array_merge(['performed' => false], $node->preview(call: $step->nodeCall()));
+		}
+
+		return ['performed' => false, 'summary' => $node->getDisplayName() . ' would run'];
+	}//end describe()
 
 	/**
 	 * What each step reached would do, by node id.
 	 *
 	 * @return array<string, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
+	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-flow-can-be-tried-against-an-object-without-effect
 	 */
 	public function previews(): array {
 		return $this->previews;

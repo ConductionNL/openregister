@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -106,10 +107,12 @@ class ObjectSearchResultFormatterTest extends TestCase {
 		$previewFormatter = new ObjectPreviewFormatter(
 			$this->urlGenerator,
 			$l10n,
-			$objectService,
-			$this->deepLinkRegistry,
-			$this->schemaMapper,
-			$registerMapper,
+			new ObjectPreviewSources(
+				objectService: $objectService,
+				deepLinkRegistry: $this->deepLinkRegistry,
+				schemaMapper: $this->schemaMapper,
+				registerMapper: $registerMapper
+			),
 			$logger
 		);
 

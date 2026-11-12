@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers take positional args by convention.
 
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
+use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\BrpPersonProvider;
@@ -88,10 +89,13 @@ class BrpPersonProviderResidentCountTest extends TestCase {
 			->method('callWithMeta')
 			->with(
 				$this->identicalTo($this->provider),
-				'POST',
-				'personen',
 				$this->callback(
-					static function (array $options): bool {
+					static function (UpstreamRequest $request): bool {
+						if ($request->method !== 'POST' || $request->path !== 'personen') {
+							return false;
+						}
+
+						$options = $request->options;
 						return $options['body'] === [
 							'type' => 'ZoekMetAdresseerbaarObjectIdentificatie',
 							'adresseerbaarObjectIdentificatie' => self::ADDRESS,

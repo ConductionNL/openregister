@@ -290,21 +290,34 @@ function objectFromEntryRows(rows) {
  */
 export function transformFromStored(transform) {
 	const base = isPlainObject(transform) ? clone(transform) : {}
-	let defaultMode = 'none'
-	if (has(base, 'default')) {
-		defaultMode = base.default === null ? 'empty' : 'value'
-	}
 	return {
 		base,
 		type: str(base.type),
 		sourceFormat: str(base.sourceFormat),
 		targetFormat: str(base.targetFormat),
 		mapRows: entryRowsFrom(base.map),
-		defaultMode,
-		defaultCell: cellFromValue(defaultMode === 'value' ? base.default : ''),
+		...defaultFields(base),
 		fields: Array.isArray(base.fields) ? base.fields.map((f) => String(f)) : [],
 		separator: typeof base.separator === 'string' ? base.separator : ' ',
 		valueCell: cellFromValue(has(base, 'value') ? base.value : ''),
+	}
+}
+
+/**
+ * How a stored transform treats an unmapped value: its default mode (no
+ * `default` key, `null`, or a value) and the cell holding that value.
+ *
+ * @param {object} base The stored transform.
+ * @return {{defaultMode: string, defaultCell: {text: string, json: boolean}}} The fields.
+ */
+function defaultFields(base) {
+	let defaultMode = 'none'
+	if (has(base, 'default')) {
+		defaultMode = base.default === null ? 'empty' : 'value'
+	}
+	return {
+		defaultMode,
+		defaultCell: cellFromValue(defaultMode === 'value' ? base.default : ''),
 	}
 }
 
@@ -345,6 +358,66 @@ export function withTransformType(draft, type) {
 }
 
 /**
+ * The date formats to store. A cleared format is left out, so the engine's
+ * default applies: it would store every date as '' for an empty
+ * targetFormat. A format stored as '' stays as it is.
+ *
+ * @param {object} draft The transform draft.
+ * @param {object} base The stored transform block.
+ * @return {object} The format values.
+ */
+function dateValues(draft, base) {
+	const values = {}
+	for (const key of ['sourceFormat', 'targetFormat']) {
+		if (draft[key] !== '' || base[key] === '') {
+			values[key] = draft[key]
+		}
+	}
+	return values
+}
+
+/**
+ * The table and the value for other values of a lookup or yes/no table.
+ *
+ * @param {object} draft The transform draft.
+ * @return {object} The map and, unless other values are an error, the default.
+ */
+function mapValues(draft) {
+	const values = { map: objectFromEntryRows(draft.mapRows) }
+	if (draft.defaultMode === 'empty') {
+		values.default = null
+	} else if (draft.defaultMode === 'value') {
+		values.default = valueFromCell(draft.defaultCell)
+	}
+	return values
+}
+
+/**
+ * The joined columns and, unless it is the default space and none is
+ * stored, the separator.
+ *
+ * @param {object} draft The transform draft.
+ * @param {object} base The stored transform block.
+ * @return {object} The fields and the separator.
+ */
+function concatValues(draft, base) {
+	const values = { fields: draft.fields.slice() }
+	if (draft.separator !== ' ' || has(base, 'separator')) {
+		values.separator = draft.separator
+	}
+	return values
+}
+
+/** The values each transform type stores besides its type. */
+const TRANSFORM_VALUES = {
+	date: dateValues,
+	lookup: mapValues,
+	'bool-map': mapValues,
+	concat: concatValues,
+	const: (draft) => ({ value: valueFromCell(draft.valueCell) }),
+}
+
+/**
  * The stored form of a transform draft.
  *
  * @param {object} draft The transform draft.
@@ -360,34 +433,8 @@ export function transformPayload(draft) {
 		// A type this editor does not know: keep the stored block as it is.
 		return { ...clone(base), type }
 	}
-	const values = { type }
-	if (type === 'date') {
-		// A cleared format is left out, so the engine's default applies: it
-		// would store every date as '' for an empty targetFormat. A format
-		// stored as '' stays as it is.
-		for (const key of ['sourceFormat', 'targetFormat']) {
-			if (draft[key] !== '' || base[key] === '') {
-				values[key] = draft[key]
-			}
-		}
-	}
-	if (type === 'lookup' || type === 'bool-map') {
-		values.map = objectFromEntryRows(draft.mapRows)
-		if (draft.defaultMode === 'empty') {
-			values.default = null
-		} else if (draft.defaultMode === 'value') {
-			values.default = valueFromCell(draft.defaultCell)
-		}
-	}
-	if (type === 'concat') {
-		values.fields = draft.fields.slice()
-		if (draft.separator !== ' ' || has(base, 'separator')) {
-			values.separator = draft.separator
-		}
-	}
-	if (type === 'const') {
-		values.value = valueFromCell(draft.valueCell)
-	}
+	const valuesOf = TRANSFORM_VALUES[type]
+	const values = { type, ...(valuesOf ? valuesOf(draft, base) : {}) }
 	return ordered(base, values, TRANSFORM_KEYS)
 }
 
@@ -421,10 +468,21 @@ export function rowFromMapping(mapping) {
 		source: str(base.source),
 		target: str(base.target),
 		required: base.required === true,
-		transform: isPlainObject(base.transform)
-			? transformFromStored(base.transform)
-			: null,
+		transform: storedTransform(base),
 	}
+}
+
+/**
+ * The editable form of a mapping's stored transform, or null when it has none.
+ *
+ * @param {object} base The stored mapping.
+ * @return {object|null} The transform draft.
+ */
+function storedTransform(base) {
+	if (!isPlainObject(base.transform)) {
+		return null
+	}
+	return transformFromStored(base.transform)
 }
 
 /**
@@ -512,7 +570,6 @@ export function parseSkipRows(text) {
  */
 export function draftFromStored(definition) {
 	const base = isPlainObject(definition) ? clone(definition) : {}
-	const idStrategy = isPlainObject(base.idStrategy) ? base.idStrategy : {}
 	return {
 		base,
 		slug: str(base.id),
@@ -520,14 +577,65 @@ export function draftFromStored(definition) {
 		description: str(base.description),
 		version: str(base.version),
 		sourceFormat: str(base.sourceFormat),
-		idStrategyType: str(idStrategy.type) || 'generate',
-		idStrategyField: str(idStrategy.field),
-		rows: Array.isArray(base.fieldMappings)
-			? base.fieldMappings.map(rowFromMapping)
-			: [],
+		...idStrategyFields(base.idStrategy),
+		rows: mappingRowsFrom(base.fieldMappings),
 		defaults: entryRowsFrom(base.defaults),
 		skipRows: Array.isArray(base.skipRows) ? base.skipRows.join(', ') : '',
 	}
+}
+
+/**
+ * The editable mapping rows of the stored field mappings, in order.
+ *
+ * @param {unknown} fieldMappings The stored field mappings.
+ * @return {Array<object>} The rows; none when the mappings are not a list.
+ */
+function mappingRowsFrom(fieldMappings) {
+	return Array.isArray(fieldMappings) ? fieldMappings.map(rowFromMapping) : []
+}
+
+/**
+ * The draft fields of a stored idStrategy: its type (generate by default)
+ * and its source field.
+ *
+ * @param {unknown} stored The stored idStrategy.
+ * @return {{idStrategyType: string, idStrategyField: string}} The fields.
+ */
+function idStrategyFields(stored) {
+	const idStrategy = isPlainObject(stored) ? stored : {}
+	return {
+		idStrategyType: str(idStrategy.type) || 'generate',
+		idStrategyField: str(idStrategy.field),
+	}
+}
+
+/**
+ * The defaults to store when the draft maps none but the stored pack has
+ * them: the stored empty shape (PHP stores an empty object as []), else an
+ * empty object.
+ *
+ * @param {unknown} stored The stored defaults.
+ * @return {object|Array} The defaults to store.
+ */
+function storedEmptyDefaults(stored) {
+	const keepable = isPlainObject(stored) || Array.isArray(stored)
+	return keepable && Object.keys(stored).length === 0 ? clone(stored) : {}
+}
+
+/**
+ * The idStrategy block to store.
+ *
+ * @param {object} draft The draft.
+ * @param {object} base The stored definition.
+ * @return {object} The block, with the stored keys the editor does not model.
+ */
+function idStrategyPayload(draft, base) {
+	const idBase = isPlainObject(base.idStrategy) ? base.idStrategy : {}
+	const idValues = { type: draft.idStrategyType }
+	if (draft.idStrategyType === 'sourceField' || has(idBase, 'field')) {
+		idValues.field = draft.idStrategyField
+	}
+	return ordered(idBase, idValues, ID_STRATEGY_KEYS)
 }
 
 /**
@@ -541,35 +649,67 @@ export function draftFromStored(definition) {
  */
 export function payloadFromDraft(draft) {
 	const base = draft.base || {}
-	const values = { id: draft.slug, name: draft.name }
+	const values = {
+		id: draft.slug,
+		name: draft.name,
+		...descriptionPayload(draft, base),
+		sourceFormat: draft.sourceFormat,
+		version: draft.version,
+		fieldMappings: draft.rows.map(mappingPayload),
+		...defaultsPayload(draft, base),
+		...skipRowsPayload(draft, base),
+		idStrategy: idStrategyPayload(draft, base),
+	}
+	return ordered(base, values, TOP_LEVEL_KEYS)
+}
+
+/**
+ * The description to save: only when the draft has one or the stored
+ * definition had the key.
+ *
+ * @param {object} draft The draft.
+ * @param {object} base The stored definition.
+ * @return {object} `{description}`, or nothing.
+ */
+function descriptionPayload(draft, base) {
 	if (draft.description !== '' || has(base, 'description')) {
-		values.description = draft.description
+		return { description: draft.description }
 	}
-	values.sourceFormat = draft.sourceFormat
-	values.version = draft.version
-	values.fieldMappings = draft.rows.map(mappingPayload)
+	return {}
+}
+
+/**
+ * The defaults to save: the draft's rows, else the stored empty defaults
+ * when the stored definition had the key.
+ *
+ * @param {object} draft The draft.
+ * @param {object} base The stored definition.
+ * @return {object} `{defaults}`, or nothing.
+ */
+function defaultsPayload(draft, base) {
 	if (draft.defaults.length > 0) {
-		values.defaults = objectFromEntryRows(draft.defaults)
-	} else if (has(base, 'defaults')) {
-		// Nothing to map, so keep the stored shape: PHP stores an empty object as [].
-		values.defaults =
-			isPlainObject(base.defaults) || Array.isArray(base.defaults)
-				? Object.keys(base.defaults).length === 0
-					? clone(base.defaults)
-					: {}
-				: {}
+		return { defaults: objectFromEntryRows(draft.defaults) }
 	}
+	if (has(base, 'defaults')) {
+		return { defaults: storedEmptyDefaults(base.defaults) }
+	}
+	return {}
+}
+
+/**
+ * The rows to skip: only when the draft names some or the stored definition
+ * had the key.
+ *
+ * @param {object} draft The draft.
+ * @param {object} base The stored definition.
+ * @return {object} `{skipRows}`, or nothing.
+ */
+function skipRowsPayload(draft, base) {
 	const skip = parseSkipRows(draft.skipRows).rows
 	if (skip.length > 0 || has(base, 'skipRows')) {
-		values.skipRows = skip
+		return { skipRows: skip }
 	}
-	const idBase = isPlainObject(base.idStrategy) ? base.idStrategy : {}
-	const idValues = { type: draft.idStrategyType }
-	if (draft.idStrategyType === 'sourceField' || has(idBase, 'field')) {
-		idValues.field = draft.idStrategyField
-	}
-	values.idStrategy = ordered(idBase, idValues, ID_STRATEGY_KEYS)
-	return ordered(base, values, TOP_LEVEL_KEYS)
+	return {}
 }
 
 /**
@@ -697,21 +837,43 @@ export function sampleRowFrom(columns, sample) {
 			setOwn(row, column, value)
 			continue
 		}
-		const segments = column
-			.replace(/^\/+/, '')
-			.split('/')
-			.map((segment) => segment.replace(/~1/g, '/').replace(/~0/g, '~'))
-		let cursor = row
-		segments.slice(0, -1).forEach((segment) => {
-			const next = Object.hasOwn(cursor, segment) ? cursor[segment] : null
-			if (next === null || typeof next !== 'object') {
-				setOwn(cursor, segment, {})
-			}
-			cursor = cursor[segment]
-		})
-		setOwn(cursor, segments[segments.length - 1], value)
+		const segments = pointerSegments(column)
+		setOwn(parentAt(row, segments), segments[segments.length - 1], value)
 	}
 	return row
+}
+
+/**
+ * The unescaped segments of a JSON pointer column (`~1` is `/`, `~0` is `~`).
+ *
+ * @param {string} column The column, starting with `/`.
+ * @return {Array<string>} The segments.
+ */
+function pointerSegments(column) {
+	return column
+		.replace(/^\/+/, '')
+		.split('/')
+		.map((segment) => segment.replace(/~1/g, '/').replace(/~0/g, '~'))
+}
+
+/**
+ * The object the last segment is set on, creating the objects on the way
+ * where the row holds none.
+ *
+ * @param {object} row The row being built.
+ * @param {Array<string>} segments The pointer segments.
+ * @return {object} The parent object.
+ */
+function parentAt(row, segments) {
+	let cursor = row
+	segments.slice(0, -1).forEach((segment) => {
+		const next = Object.hasOwn(cursor, segment) ? cursor[segment] : null
+		if (next === null || typeof next !== 'object') {
+			setOwn(cursor, segment, {})
+		}
+		cursor = cursor[segment]
+	})
+	return cursor
 }
 
 /**
@@ -738,6 +900,121 @@ function setOwn(target, key, value) {
 }
 
 /**
+ * The problem with one lookup or yes/no table row's result, if any.
+ *
+ * @param {object} row The table row.
+ * @param {string} type The transform type.
+ * @return {string|null} A readable message, or null.
+ */
+function mapCellError(row, type) {
+	if (!cellIsValid(row)) {
+		return t('openregister', 'The result for "{key}" is not valid JSON.', {
+			key: row.key,
+		})
+	}
+	if (type === 'bool-map' && !isBooleanCell(row)) {
+		return t('openregister', 'Choose yes or no as the result for "{key}".', {
+			key: row.key,
+		})
+	}
+	return null
+}
+
+/**
+ * The problem with a table's value for other values, if any.
+ *
+ * @param {object} draft The lookup or yes/no transform draft.
+ * @return {string|null} A readable message, or null.
+ */
+function mapDefaultError(draft) {
+	if (draft.defaultMode !== 'value') {
+		return null
+	}
+	if (!cellIsValid(draft.defaultCell)) {
+		return t('openregister', 'The value for other values is not valid JSON.')
+	}
+	if (draft.type === 'bool-map' && !isBooleanCell(draft.defaultCell)) {
+		return t(
+			'openregister',
+			'Choose yes or no for values that are not in the table.',
+		)
+	}
+	return null
+}
+
+/**
+ * Problems in a lookup or yes/no table.
+ *
+ * @param {object} draft The transform draft.
+ * @return {Array<string>} Readable messages.
+ */
+function mapTableErrors(draft) {
+	const errors = []
+	if (draft.mapRows.length === 0) {
+		errors.push(t('openregister', 'Add at least one value to the table.'))
+	}
+	errors.push(...mapRowErrors(draft))
+	const defaultError = mapDefaultError(draft)
+	if (defaultError) {
+		errors.push(defaultError)
+	}
+	return errors
+}
+
+/**
+ * Problems in the rows of a lookup or yes/no table: repeated values and
+ * cells that do not fit the table.
+ *
+ * @param {object} draft The transform draft.
+ * @return {Array<string>} Readable messages.
+ */
+function mapRowErrors(draft) {
+	const errors = []
+	const keys = new Set()
+	for (const row of draft.mapRows) {
+		errors.push(...repeatedValueErrors(row, keys))
+		keys.add(row.key)
+		errors.push(...[mapCellError(row, draft.type)].filter(Boolean))
+	}
+	return errors
+}
+
+/**
+ * The message for a table value that an earlier row already has.
+ *
+ * @param {object} row The table row.
+ * @param {Set<string>} seen The values of the rows before it.
+ * @return {Array<string>} Readable messages.
+ */
+function repeatedValueErrors(row, seen) {
+	if (!seen.has(row.key)) {
+		return []
+	}
+	return [
+		t('openregister', 'The value "{key}" is in the table twice.', {
+			key: row.key,
+		}),
+	]
+}
+
+/**
+ * Problems in a join of columns.
+ *
+ * @param {object} draft The concat transform draft.
+ * @return {Array<string>} Readable messages.
+ */
+function concatErrors(draft) {
+	const errors = []
+	if (draft.fields.length === 0) {
+		errors.push(t('openregister', 'Add at least one column to join.'))
+	}
+	if (draft.fields.some((field) => field === '')) {
+		errors.push(t('openregister', 'A column to join has no name.'))
+	}
+	return errors
+}
+
+/**
  * Problems in one transform draft that would make the server refuse the pack.
  *
  * @param {object} draft The transform draft.
@@ -746,68 +1023,152 @@ function setOwn(target, key, value) {
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
  */
 export function validateTransform(draft) {
-	const errors = []
 	if (draft.type === 'lookup' || draft.type === 'bool-map') {
-		if (draft.mapRows.length === 0) {
-			errors.push(t('openregister', 'Add at least one value to the table.'))
-		}
-		const keys = new Set()
-		for (const row of draft.mapRows) {
-			if (keys.has(row.key)) {
-				errors.push(
-					t('openregister', 'The value "{key}" is in the table twice.', {
-						key: row.key,
-					}),
-				)
-			}
-			keys.add(row.key)
-			if (!cellIsValid(row)) {
-				errors.push(
-					t('openregister', 'The result for "{key}" is not valid JSON.', {
-						key: row.key,
-					}),
-				)
-			} else if (draft.type === 'bool-map' && !isBooleanCell(row)) {
-				errors.push(
-					t(
-						'openregister',
-						'Choose yes or no as the result for "{key}".',
-						{
-							key: row.key,
-						},
-					),
-				)
-			}
-		}
-		if (draft.defaultMode === 'value' && !cellIsValid(draft.defaultCell)) {
-			errors.push(
-				t('openregister', 'The value for other values is not valid JSON.'),
-			)
-		} else if (
-			draft.type === 'bool-map'
-			&& draft.defaultMode === 'value'
-			&& !isBooleanCell(draft.defaultCell)
-		) {
-			errors.push(
-				t(
-					'openregister',
-					'Choose yes or no for values that are not in the table.',
-				),
-			)
-		}
+		return mapTableErrors(draft)
 	}
 	if (draft.type === 'concat') {
-		if (draft.fields.length === 0) {
-			errors.push(t('openregister', 'Add at least one column to join.'))
-		}
-		if (draft.fields.some((field) => field === '')) {
-			errors.push(t('openregister', 'A column to join has no name.'))
-		}
+		return concatErrors(draft)
 	}
 	if (draft.type === 'const' && !cellIsValid(draft.valueCell)) {
-		errors.push(t('openregister', 'The fixed value is not valid JSON.'))
+		return [t('openregister', 'The fixed value is not valid JSON.')]
 	}
-	return errors
+	return []
+}
+
+// The checks of the pack's own fields, in the order their messages are shown.
+const PACK_FIELD_CHECKS = [
+	[
+		(draft) => !SLUG_PATTERN.test(draft.slug),
+		() =>
+			t(
+				'openregister',
+				'The slug must start with a lowercase letter or digit and contain only lowercase letters, digits and hyphens.',
+			),
+	],
+	[
+		(draft) => draft.name.trim() === '',
+		() => t('openregister', 'The name is required.'),
+	],
+	[
+		(draft) => !SEMVER_PATTERN.test(draft.version),
+		() =>
+			t(
+				'openregister',
+				'The version must look like 1.0.0 (major.minor.patch).',
+			),
+	],
+	[
+		(draft) => !SOURCE_FORMATS.includes(draft.sourceFormat),
+		() => t('openregister', 'Choose a source format.'),
+	],
+	[
+		(draft) =>
+			draft.idStrategyType === 'sourceField' && draft.idStrategyField === '',
+		() => t('openregister', 'Name the column that holds the id.'),
+	],
+	[
+		(draft) => draft.rows.length === 0,
+		() => t('openregister', 'Add at least one field mapping.'),
+	],
+]
+
+/**
+ * Problems in the pack's own fields: slug, name, version, source format,
+ * id column and whether it maps anything.
+ *
+ * @param {object} draft The draft.
+ * @return {Array<string>} Readable messages.
+ */
+function packFieldErrors(draft) {
+	return PACK_FIELD_CHECKS.filter(([fails]) => fails(draft)).map(([, message]) =>
+		message(),
+	)
+}
+
+// The checks of one field mapping row, in the order their messages are shown.
+const MAPPING_ROW_CHECKS = [
+	[
+		(row) => row.source === '',
+		(number) =>
+			t('openregister', 'Row {number} has no source column.', { number }),
+	],
+	[
+		(row) => row.target === '',
+		(number) =>
+			t('openregister', 'Row {number} has no target field.', { number }),
+	],
+]
+
+/**
+ * Problems in one field mapping row.
+ *
+ * @param {object} row The mapping row.
+ * @param {number} index Its position, from 0.
+ * @return {Array<string>} Readable messages.
+ */
+function mappingRowErrors(row, index) {
+	const number = index + 1
+	const transformErrors = row.transform ? validateTransform(row.transform) : []
+	return MAPPING_ROW_CHECKS.filter(([fails]) => fails(row))
+		.map(([, message]) => message(number))
+		.concat(
+			transformErrors.map((message) =>
+				t('openregister', 'Row {number}: {message}', { number, message }),
+			),
+		)
+}
+
+/**
+ * Problems in the pack defaults.
+ *
+ * @param {Array<object>} defaults The default rows.
+ * @return {Array<string>} Readable messages.
+ */
+function defaultErrors(defaults) {
+	const defaultKeys = new Set()
+	return defaults.flatMap((row) => {
+		const errors = defaultKeyErrors(row, defaultKeys)
+		defaultKeys.add(row.key)
+		return errors.concat(defaultValueErrors(row))
+	})
+}
+
+/**
+ * Problems in the target field of one pack default: missing, or set twice.
+ *
+ * @param {object} row The default row.
+ * @param {Set<string>} seen The target fields of the rows before it.
+ * @return {Array<string>} Readable messages.
+ */
+function defaultKeyErrors(row, seen) {
+	if (row.key === '') {
+		return [t('openregister', 'A default value has no target field.')]
+	}
+	if (seen.has(row.key)) {
+		return [
+			t('openregister', 'The default for "{key}" is set twice.', {
+				key: row.key,
+			}),
+		]
+	}
+	return []
+}
+
+/**
+ * Problems in the value of one pack default.
+ *
+ * @param {object} row The default row.
+ * @return {Array<string>} Readable messages.
+ */
+function defaultValueErrors(row) {
+	if (cellIsValid(row)) {
+		return []
+	}
+	return [
+		t('openregister', 'The default for "{key}" is not valid JSON.', {
+			key: row.key,
+		}),
+	]
 }
 
 /**
@@ -822,91 +1183,78 @@ export function validateTransform(draft) {
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
  */
 export function validateDraft(draft) {
-	const errors = []
-	if (!SLUG_PATTERN.test(draft.slug)) {
-		errors.push(
-			t(
-				'openregister',
-				'The slug must start with a lowercase letter or digit and contain only lowercase letters, digits and hyphens.',
-			),
-		)
-	}
-	if (draft.name.trim() === '') {
-		errors.push(t('openregister', 'The name is required.'))
-	}
-	if (!SEMVER_PATTERN.test(draft.version)) {
-		errors.push(
-			t(
-				'openregister',
-				'The version must look like 1.0.0 (major.minor.patch).',
-			),
-		)
-	}
-	if (!SOURCE_FORMATS.includes(draft.sourceFormat)) {
-		errors.push(t('openregister', 'Choose a source format.'))
-	}
-	if (draft.idStrategyType === 'sourceField' && draft.idStrategyField === '') {
-		errors.push(t('openregister', 'Name the column that holds the id.'))
-	}
-	if (draft.rows.length === 0) {
-		errors.push(t('openregister', 'Add at least one field mapping.'))
-	}
-	draft.rows.forEach((row, index) => {
-		const number = index + 1
-		if (row.source === '') {
-			errors.push(
-				t('openregister', 'Row {number} has no source column.', { number }),
-			)
-		}
-		if (row.target === '') {
-			errors.push(
-				t('openregister', 'Row {number} has no target field.', { number }),
-			)
-		}
-		if (row.transform) {
-			for (const message of validateTransform(row.transform)) {
-				errors.push(
-					t('openregister', 'Row {number}: {message}', {
-						number,
-						message,
-					}),
-				)
-			}
-		}
-	})
-	const defaultKeys = new Set()
-	for (const row of draft.defaults) {
-		if (row.key === '') {
-			errors.push(t('openregister', 'A default value has no target field.'))
-		} else if (defaultKeys.has(row.key)) {
-			errors.push(
-				t('openregister', 'The default for "{key}" is set twice.', {
-					key: row.key,
-				}),
-			)
-		}
-		defaultKeys.add(row.key)
-		if (!cellIsValid(row)) {
-			errors.push(
-				t('openregister', 'The default for "{key}" is not valid JSON.', {
-					key: row.key,
-				}),
-			)
-		}
-	}
+	return [
+		...packFieldErrors(draft),
+		...draft.rows.flatMap((row, index) => mappingRowErrors(row, index)),
+		...defaultErrors(draft.defaults),
+		...skipRowErrors(draft),
+	]
+}
+
+/**
+ * The message for rows to skip that are not whole numbers from 1 up.
+ *
+ * @param {object} draft The draft.
+ * @return {Array<string>} Readable messages.
+ */
+function skipRowErrors(draft) {
 	const invalidSkips = parseSkipRows(draft.skipRows).invalid
-	if (invalidSkips.length > 0) {
-		errors.push(
-			t(
-				'openregister',
-				'Rows to skip must be whole numbers from 1 up: {values}',
-				{
-					values: invalidSkips.join(', '),
-				},
-			),
-		)
+	if (invalidSkips.length === 0) {
+		return []
 	}
-	return errors
+	return [
+		t('openregister', 'Rows to skip must be whole numbers from 1 up: {values}', {
+			values: invalidSkips.join(', '),
+		}),
+	]
+}
+
+/**
+ * What a lookup or yes/no table does with a value that is not in it.
+ *
+ * @param {object} draft The transform draft.
+ * @return {string|undefined} The readable phrase.
+ */
+function unmappedText(draft) {
+	if (draft.defaultMode === 'empty') {
+		// A yes/no table stores its default as true or false.
+		return draft.type === 'bool-map'
+			? t('openregister', 'other values are stored as false')
+			: t('openregister', 'other values stay empty')
+	}
+	return {
+		none: t('openregister', 'other values are an error'),
+		value: t('openregister', 'other values get a default'),
+	}[draft.defaultMode]
+}
+
+/** The description of each transform type the editor knows. */
+const TRANSFORM_SUMMARIES = {
+	trim: () => t('openregister', 'Trim spaces'),
+	date: (draft) =>
+		t('openregister', 'Date {from} to {to}', {
+			from: draft.sourceFormat || t('openregister', 'any format'),
+			to: draft.targetFormat || 'Y-m-d',
+		}),
+	lookup: (draft) =>
+		t('openregister', 'Lookup table, values: {count}, {unmapped}', {
+			count: draft.mapRows.length,
+			unmapped: unmappedText(draft),
+		}),
+	'bool-map': (draft) =>
+		t('openregister', 'Yes/no table, values: {count}, {unmapped}', {
+			count: draft.mapRows.length,
+			unmapped: unmappedText(draft),
+		}),
+	concat: (draft) =>
+		t('openregister', 'Joined with {fields}, separated by "{separator}"', {
+			fields: draft.fields.join(', '),
+			separator: draft.separator,
+		}),
+	const: (draft) =>
+		t('openregister', 'Fixed value {value}', {
+			value: draft.valueCell.text,
+		}),
 }
 
 /**
@@ -921,49 +1269,13 @@ export function transformSummary(draft) {
 	if (!draft || draft.type === '') {
 		return t('openregister', 'Copied as is')
 	}
-	const unmapped = {
-		none: t('openregister', 'other values are an error'),
-		// A yes/no table stores its default as true or false.
-		empty:
-			draft.type === 'bool-map'
-				? t('openregister', 'other values are stored as false')
-				: t('openregister', 'other values stay empty'),
-		value: t('openregister', 'other values get a default'),
-	}[draft.defaultMode]
-	switch (draft.type) {
-		case 'trim':
-			return t('openregister', 'Trim spaces')
-		case 'date':
-			return t('openregister', 'Date {from} to {to}', {
-				from: draft.sourceFormat || t('openregister', 'any format'),
-				to: draft.targetFormat || 'Y-m-d',
-			})
-		case 'lookup':
-			return t('openregister', 'Lookup table, values: {count}, {unmapped}', {
-				count: draft.mapRows.length,
-				unmapped,
-			})
-		case 'bool-map':
-			return t('openregister', 'Yes/no table, values: {count}, {unmapped}', {
-				count: draft.mapRows.length,
-				unmapped,
-			})
-		case 'concat':
-			return t(
-				'openregister',
-				'Joined with {fields}, separated by "{separator}"',
-				{
-					fields: draft.fields.join(', '),
-					separator: draft.separator,
-				},
-			)
-		case 'const':
-			return t('openregister', 'Fixed value {value}', {
-				value: draft.valueCell.text,
-			})
-		default:
-			return t('openregister', 'Transform "{type}" (kept as stored)', {
-				type: draft.type,
-			})
+	const summary = has(TRANSFORM_SUMMARIES, draft.type)
+		? TRANSFORM_SUMMARIES[draft.type]
+		: null
+	if (summary) {
+		return summary(draft)
 	}
+	return t('openregister', 'Transform "{type}" (kept as stored)', {
+		type: draft.type,
+	})
 }

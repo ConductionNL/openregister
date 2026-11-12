@@ -42,15 +42,17 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\PermissionsControllerServices;
+use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -60,26 +62,37 @@ use OCP\IRequest;
 /**
  * Publishes the grantable permission set and the staged deny report.
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class PermissionsController extends Controller {
 
 	/**
+	 * The grantable set.
+	 *
+	 * @var PermissionCatalogueInterface
+	 */
+	private readonly PermissionCatalogueInterface $catalogue;
+
+	/**
+	 * The staging switch.
+	 *
+	 * @var DenyEnforcementModeInterface
+	 */
+	private readonly DenyEnforcementModeInterface $enforcement;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string              $appName        Application identifier.
-	 * @param IRequest            $request        Active HTTP request.
-	 * @param PermissionCatalogue $catalogue      The grantable set.
-	 * @param DenyEnforcementMode $enforcement    The staging switch.
+	 * @param IRequest                      $request  Active HTTP request.
+	 * @param PermissionsControllerServices $services The controller's collaborators.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly PermissionCatalogue $catalogue,
-		private readonly DenyEnforcementMode $enforcement,
+		PermissionsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->catalogue = $services->catalogue;
+		$this->enforcement = $services->enforcement;
 	}//end __construct()
 	/**
 	 * Every permission that may be granted on this instance.
@@ -103,7 +116,7 @@ class PermissionsController extends Controller {
 	 *
 	 * @return JSONResponse The catalogue.
 	 *
-	 * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Erasure;
  * @category Service
  * @package  OCA\OpenRegister\Service\Gdpr\Erasure
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+ * @spec openspec/specs/gdpr-data-subject-rights/spec.md
  */
 class SubjectPartyCounter {
 	/**
@@ -57,7 +57,7 @@ class SubjectPartyCounter {
 	 *
 	 * @return array<int, string> The needles, deduplicated.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function needles(string $subjectId, array $matched): array {
 		$needles = [];
@@ -87,7 +87,7 @@ class SubjectPartyCounter {
 	 *
 	 * @return int The number of party records naming the subject.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/gdpr-data-subject-rights/spec.md
+	 * @spec openspec/specs/gdpr-data-subject-rights/spec.md
 	 */
 	public function count(array $payload, array $needles): int {
 		if ($needles === []) {
@@ -95,12 +95,8 @@ class SubjectPartyCounter {
 		}
 
 		$count = 0;
-		foreach ($payload as $key => $value) {
-			if (is_array($value) === false) {
-				continue;
-			}
-
-			if (in_array((string)$key, self::PARTY_LIST_KEYS, true) === true) {
+		foreach (array_filter($payload, 'is_array') as $key => $value) {
+			if ($this->isPartyList(key: (string)$key) === true) {
 				$count += $this->countInList(parties: $value, needles: $needles);
 				continue;
 			}
@@ -110,6 +106,17 @@ class SubjectPartyCounter {
 
 		return $count;
 	}//end count()
+
+	/**
+	 * Whether the array under a payload key is a party list (counted) rather than a sub-payload (descended).
+	 *
+	 * @param string $key The payload key.
+	 *
+	 * @return bool True for a party list.
+	 */
+	private function isPartyList(string $key): bool {
+		return in_array($key, self::PARTY_LIST_KEYS, true) === true;
+	}//end isPartyList()
 
 	/**
 	 * Count the entries of one party list that name the subject.
@@ -140,21 +147,27 @@ class SubjectPartyCounter {
 	 */
 	private function mentions(array $data, array $needles): bool {
 		foreach ($data as $value) {
-			if (is_array($value) === true) {
-				if ($this->mentions(data: $value, needles: $needles) === true) {
-					return true;
-				}
-
-				continue;
-			}
-
-			if (is_scalar($value) === true
-				&& in_array(strtolower((string)$value), $needles, true) === true
-			) {
+			if ($this->valueMentions(value: $value, needles: $needles) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end mentions()
+
+	/**
+	 * Whether one value is, or contains, one of the subject's values.
+	 *
+	 * @param mixed              $value   A scalar or a nested sub-payload.
+	 * @param array<int, string> $needles Lower-cased subject values.
+	 *
+	 * @return bool True when it names the subject.
+	 */
+	private function valueMentions(mixed $value, array $needles): bool {
+		if (is_array($value) === true) {
+			return $this->mentions(data: $value, needles: $needles);
+		}
+
+		return (is_scalar($value) === true && in_array(strtolower((string)$value), $needles, true) === true);
+	}//end valueMentions()
 }//end class

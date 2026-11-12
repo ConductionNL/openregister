@@ -1,3 +1,5 @@
+import type { TEntityStats } from '../quotaUsage.types'
+
 export type TSchema = {
 	id?: string
 	title: string
@@ -15,6 +17,8 @@ export type TSchema = {
 		objectDescriptionField?: string // Field to use as object description
 		objectSummaryField?: string // Field to use as object summary
 		objectImageField?: string // Field to use as object image
+		objectSlugField?: string // Field (or '@schema.name') the object slug is derived from; frozen once set
+		objectSlugSuffix?: boolean // Append a date-time suffix on a slug collision instead of leaving the object without a slug
 		allowFiles?: boolean // Whether files are allowed for this schema
 		allowedTags?: string[] // Array of allowed tags for files
 		linkedTypes?: string[] // Nc entity types this schema can link to (mail, contacts, etc.)
@@ -28,21 +32,5 @@ export type TSchema = {
 	oneOf?: string[] // Schema refs where instance must validate against EXACTLY ONE (mutually exclusive options)
 	anyOf?: string[] // Schema refs where instance must validate against AT LEAST ONE (flexible composition)
 	draft?: Record<string, unknown> | null // A pending edit of the definition, not yet published (modelling-schema-draft)
-	stats?: {
-		objects: {
-			total: number
-			size: number
-			invalid: number
-			deleted: number
-			locked: number
-		}
-		logs: {
-			total: number
-			size: number
-		}
-		files: {
-			total: number
-			size: number
-		}
-	}
+	stats?: TEntityStats
 }

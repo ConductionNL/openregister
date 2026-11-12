@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md
+ * @spec openspec/specs/party-model/spec.md
  */
 
 declare(strict_types=1);
@@ -34,14 +34,15 @@ namespace OCA\OpenRegister\Service\Party;
 
 use Exception;
 use OCA\OpenRegister\Db\ContactLink;
-use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ContactLinkMapperInterface;
+use OCA\OpenRegister\Db\ObjectEntity;
 
 /**
  * Evaluates the declared effect of every indicator on every party of an object.
  *
- * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+ * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
  */
-class PartyIndicatorGuard {
+class PartyIndicatorGuard implements PartyIndicatorGuardInterface, PartySendRefusalInterface {
 
 	/**
 	 * The effect refusing a publication.
@@ -56,12 +57,12 @@ class PartyIndicatorGuard {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContactLinkMapper $links The link rows, for the parties on an object.
-	 * @param PartyService $parties The party records.
+	 * @param ContactLinkMapperInterface $links The link rows, for the parties on an object.
+	 * @param PartyServiceInterface $parties The party records.
 	 */
 	public function __construct(
-		private readonly ContactLinkMapper $links,
-		private readonly PartyService $parties,
+		private readonly ContactLinkMapperInterface $links,
+		private readonly PartyServiceInterface $parties,
 	) {
 	}//end __construct()
 
@@ -76,7 +77,7 @@ class PartyIndicatorGuard {
 	 * @return array<int, array<string, string|null>> One entry per indicator, each
 	 *         carrying `party`, `partyKind`, `role`, `key`, `label`, `effect` and `note`.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function indicatorsForObject(string $objectUuid): array {
 		$found = [];
@@ -96,7 +97,7 @@ class PartyIndicatorGuard {
 	 *
 	 * @return array<int, string> The object uuids, each once.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function objectsOfParty(string $partyUuid): array {
 		$uuids = [];
@@ -119,7 +120,7 @@ class PartyIndicatorGuard {
 	 *
 	 * @throws Exception 403 naming the indicator and the party.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function assertPublicationAllowed(string $objectUuid): void {
 		foreach ($this->indicatorsForObject(objectUuid: $objectUuid) as $indicator) {
@@ -149,7 +150,7 @@ class PartyIndicatorGuard {
 	 *
 	 * @return string|null The refusing indicator's label.
 	 *
-	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
+	 * @spec openspec/specs/party-model/spec.md#requirement-an-indicator-on-a-party-declares-its-effect-and-is-honoured-req-prm-003
 	 */
 	public function sendRefusalFor(string $partyUuid): ?string {
 		$party = $this->parties->find(partyUuid: $partyUuid);
@@ -175,21 +176,55 @@ class PartyIndicatorGuard {
 	 *         carrying `party`, `partyKind`, `role`, `key`, `label`, `effect` and `note`.
 	 */
 	private function indicatorsOfLink(ContactLink $link): array {
-		$partyUuid = (string)($link->getPartyUuid() ?? '');
-		if ($partyUuid === '') {
-			return [];
-		}
-
-		$party = $this->parties->find(partyUuid: $partyUuid);
+		$party = $this->partyOf(link: $link);
 		if ($party === null) {
 			return [];
 		}
 
+		return self::stamped(indicators: $this->parties->indicators(party: $party), link: $link);
+	}//end indicatorsOfLink()
+
+	/**
+	 * The party a link points at, or null when it names none or the party is gone.
+	 *
+	 * @param ContactLink $link The link.
+	 *
+	 * @return ObjectEntity|null The party.
+	 */
+	private function partyOf(ContactLink $link): ?ObjectEntity {
+		$partyUuid = self::partyUuidOf(link: $link);
+		if ($partyUuid === '') {
+			return null;
+		}
+
+		return $this->parties->find(partyUuid: $partyUuid);
+	}//end partyOf()
+
+	/**
+	 * The party uuid a link names, '' when none.
+	 *
+	 * @param ContactLink $link The link.
+	 *
+	 * @return string The uuid.
+	 */
+	private static function partyUuidOf(ContactLink $link): string {
+		return (string)($link->getPartyUuid() ?? '');
+	}//end partyUuidOf()
+
+	/**
+	 * Each indicator stamped with the link's party, party kind and role.
+	 *
+	 * @param array<int, array<string, string|null>> $indicators The party's indicators.
+	 * @param ContactLink                            $link       The link.
+	 *
+	 * @return array<int, array<string, string|null>> The stamped indicators.
+	 */
+	private static function stamped(array $indicators, ContactLink $link): array {
 		$found = [];
-		foreach ($this->parties->indicators(party: $party) as $indicator) {
+		foreach ($indicators as $indicator) {
 			$found[] = array_merge(
 				[
-					'party' => $partyUuid,
+					'party' => self::partyUuidOf(link: $link),
 					'partyKind' => $link->getPartyKind(),
 					'role' => $link->getRole(),
 				],
@@ -198,5 +233,5 @@ class PartyIndicatorGuard {
 		}
 
 		return $found;
-	}//end indicatorsOfLink()
+	}//end stamped()
 }//end class

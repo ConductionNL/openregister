@@ -36,8 +36,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Repair;
 
 use OCA\OpenRegister\Db\FlowRun;
-use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Service\Flow\FlowRunSubjects;
+use OCA\OpenRegister\Db\FlowRunListing;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
+use OCA\OpenRegister\Db\FlowRunViewer;
+use OCA\OpenRegister\Service\Flow\FlowRunSubjectsInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Container\ContainerInterface;
@@ -55,14 +57,16 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 * Resolved lazily from the container, like the other flow repair steps:
 	 * this runs during install, when the tables may not exist yet.
 	 *
-	 * @param ContainerInterface $container The app container.
-	 * @param LoggerInterface    $logger    Diagnostics.
+	 * @param ContainerInterface       $container The app container.
+	 * @param LoggerInterface          $logger    Diagnostics.
+	 * @param FlowRunSubjectsInterface $subjects  The subject rules.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
+		private readonly FlowRunSubjectsInterface $subjects,
 	) {
 
 	}//end __construct()
@@ -89,48 +93,82 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$runs = $this->container->get(FlowRunMapper::class);
-			$subjects = new FlowRunSubjects(logger: $this->logger);
+			$runs = $this->container->get(FlowRunMapperInterface::class);
 		} catch (Throwable $e) {
 			$output->info('Flow run trigger-subject seeding skipped: ' . $e->getMessage());
 			return;
 		}
 
-		$seeded = 0;
-		$skipped = 0;
-
-		foreach ($this->everyRun(runs: $runs) as $run) {
-			try {
-				$seeded += $this->seedOne(run: $run, runs: $runs, subjects: $subjects);
-			} catch (Throwable $e) {
-				$skipped++;
-				$this->logger->warning(
-					message: '[SeedFlowRunTriggerSubject] Could not seed run "'
-						. (string)$run->getUuid() . '": ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-		}
+		$tally = $this->seedAll(runs: $runs);
 
 		$output->info(
-			sprintf('Recorded a trigger subject on %d run(s); %d could not be read.', $seeded, $skipped)
+			sprintf('Recorded a trigger subject on %d run(s); %d could not be read.', $tally['seeded'], $tally['skipped'])
 		);
 
 	}//end run()
 
 	/**
+	 * Seed every run, counting the runs seeded and the runs that could not be read.
+	 *
+	 * @param FlowRunMapperInterface $runs The mapper.
+	 *
+	 * @return array{seeded: int, skipped: int} The counts.
+	 *
+	 * @spec openspec/specs/flow-run-subjects/spec.md
+	 */
+	private function seedAll(FlowRunMapperInterface $runs): array {
+		$tally = ['seeded' => 0, 'skipped' => 0];
+
+		foreach ($this->everyRun(runs: $runs) as $run) {
+			$outcome = $this->trySeed(run: $run, runs: $runs);
+			if ($outcome === null) {
+				$tally['skipped']++;
+				continue;
+			}
+
+			$tally['seeded'] += $outcome;
+		}
+
+		return $tally;
+
+	}//end seedAll()
+
+	/**
+	 * Seed one run, or log why it could not be read.
+	 *
+	 * @param FlowRun                $run  The run.
+	 * @param FlowRunMapperInterface $runs The mapper.
+	 *
+	 * @return int|null 1 when it was seeded, 0 when it needed nothing, null when it failed.
+	 *
+	 * @spec openspec/specs/flow-run-subjects/spec.md
+	 */
+	private function trySeed(FlowRun $run, FlowRunMapperInterface $runs): ?int {
+		try {
+			return $this->seedOne(run: $run, runs: $runs);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[SeedFlowRunTriggerSubject] Could not seed run "'
+					. (string)$run->getUuid() . '": ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return null;
+		}
+
+	}//end trySeed()
+
+	/**
 	 * Seed one run, if it has something to seed and nothing already.
 	 *
-	 * @param FlowRun         $run      The run.
-	 * @param FlowRunMapper   $runs     The mapper.
-	 * @param FlowRunSubjects $subjects The subject rules.
+	 * @param FlowRun                $run  The run.
+	 * @param FlowRunMapperInterface $runs The mapper.
 	 *
 	 * @return int 1 when it was seeded, 0 otherwise.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function seedOne(FlowRun $run, FlowRunMapper $runs, FlowRunSubjects $subjects): int {
-		if ($subjects->all(run: $run) !== []) {
+	private function seedOne(FlowRun $run, FlowRunMapperInterface $runs): int {
+		if ($this->subjects->all(run: $run) !== []) {
 			// Already declared something. A repair must not overwrite what a
 			// flow author said.
 			return 0;
@@ -141,13 +179,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 			return 0;
 		}
 
-		$subjects->record(
-			run: $run,
-			role: FlowRunSubjects::ROLE_TRIGGER,
-			uuid: $uuid,
-			register: trim((string)$run->getSubjectRegister()),
-			schema: trim((string)$run->getSubjectSchema())
-		);
+		$this->subjects->recordTrigger(run: $run);
 		$runs->update($run);
 
 		return 1;
@@ -160,13 +192,13 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 * 🔴 A MAPPER'S DEFAULT LIMIT WOULD SILENTLY SEED THE FIRST PAGE and report
 	 * success — the shape that left 119 of 219 flows unversioned once already.
 	 *
-	 * @param FlowRunMapper $runs The mapper.
+	 * @param FlowRunMapperInterface $runs The mapper.
 	 *
 	 * @return array<int, FlowRun> Every run.
 	 *
 	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
-	private function everyRun(FlowRunMapper $runs): array {
+	private function everyRun(FlowRunMapperInterface $runs): array {
 		$page = 500;
 		$offset = 0;
 		$all = [];
@@ -175,7 +207,10 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 			// 🔴 `findAllRuns()`, NOT `findAll()`. The latter does not exist;
 			// writing it once already produced a repair that threw, reported
 			// itself skipped, and let the upgrade go green having done nothing.
-			$batch = $runs->findAllRuns(limit: $page, offset: $offset);
+			$batch = $runs->findAllRuns(
+				listing: new FlowRunListing(limit: $page, offset: $offset),
+				viewer: new FlowRunViewer(requesterUid: null, ownedFlowIds: [])
+			);
 			$all = array_merge($all, $batch);
 
 			if (count($batch) < $page) {

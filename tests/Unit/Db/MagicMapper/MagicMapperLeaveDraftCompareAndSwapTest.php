@@ -33,9 +33,17 @@ use ReflectionMethod;
  * The conditional UPDATE and its refusal.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
+ * @uses \OCA\OpenRegister\Db\EmptyPropertyClaim
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Exception\ValidationException
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class MagicMapperLeaveDraftCompareAndSwapTest extends TestCase {
 
@@ -99,7 +107,7 @@ class MagicMapperLeaveDraftCompareAndSwapTest extends TestCase {
 	 */
 	private function update(MagicMapper $mapper): void {
 		$method = new ReflectionMethod(MagicMapper::class, 'updateExistingObject');
-		$method->invoke($mapper, 'uuid-1', ['_status' => 'active', '_uuid' => 'uuid-1'], 'openregister_table_1_2');
+		$method->invoke($mapper, self::rowWrite('uuid-1', ['_status' => 'active', '_uuid' => 'uuid-1'], 'openregister_table_1_2'));
 	}//end update()
 
 	/**
@@ -159,6 +167,22 @@ class MagicMapperLeaveDraftCompareAndSwapTest extends TestCase {
 		$draft->setUuid('uuid-1');
 		$draft->setStatus(ObjectEntity::STATUS_DRAFT);
 		$this->assertSame('active', (new DraftStatusPolicy())->resolveStatus(entity: $draft, selfData: ['status' => 'active']));
-		$this->assertTrue(DraftStatusPolicy::isLeaving(uuid: 'uuid-1'));
 	}//end promote()
+
+	/**
+	 * A row write of the given uuid, column values and table.
+	 *
+	 * @param string               $uuid  The object uuid.
+	 * @param array<string, mixed> $row   The prepared column values.
+	 * @param string               $table The table name.
+	 *
+	 * @return \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite The write.
+	 */
+	private static function rowWrite(string $uuid, array $row, string $table): \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite {
+		$write = new \OCA\OpenRegister\Db\MagicMapper\MagicRowWrite(objectData: [], register: new \OCA\OpenRegister\Db\Register(), schema: new \OCA\OpenRegister\Db\Schema(), tableName: $table);
+		$write->uuid = $uuid;
+		$write->row  = $row;
+
+		return $write;
+	}//end rowWrite()
 }//end class

@@ -169,6 +169,21 @@ class AuthenticationServiceGapTest extends TestCase {
 	}
 
 	/**
+	 * A non-string algorithm is refused as a bad request before any header is built.
+	 */
+	public function testFetchJWTTokenNonStringAlgorithmIsABadRequest(): void {
+		$this->expectException(BadRequestException::class);
+		$this->expectExceptionMessage('Algorithm not supported');
+
+		$this->service->fetchJWTToken([
+			'payload' => '{"sub": "test"}',
+			'secret' => 'this-is-a-32-byte-secret-key!!!-',
+			'algorithm' => ['HS256'],
+			'x5t' => ['thumbprint'],
+		]);
+	}
+
+	/**
 	 * Test fetchJWTToken with Twig template in payload.
 	 */
 	public function testFetchJWTTokenWithTwigPayload(): void {

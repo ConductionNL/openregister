@@ -9,11 +9,18 @@ import {
 </script>
 
 <template>
-	<NcDialog
+	<ConfirmDialogFrame
 		v-if="navigationStore.dialog === 'deleteSchema'"
 		name="Verwijder Schema"
-		size="normal"
-		:canClose="false">
+		:success="success"
+		:error="error"
+		:loading="loading"
+		:showConfirm="!success"
+		:confirmDisabled="!canDelete"
+		:closeLabel="success ? 'Sluiten' : 'Annuleren'"
+		confirmLabel="Verwijder"
+		@cancel="closeDialog"
+		@confirm="deleteSchema()">
 		<p v-if="!success && canDelete">
 			Wil je <b>{{ schemaStore.schemaItem?.title }}</b> permanent verwijderen?
 			Deze actie kan niet ongedaan worden gemaakt.
@@ -24,77 +31,46 @@ import {
 			register <b>{{ registerName }}</b
 			>. Je moet {{ objects.length > 1 ? 'deze' : 'dit' }} eerst verwijderen.
 		</p>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-
-		<template #actions>
-			<NcButton @click="closeDialog">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Sluiten' : 'Annuleren' }}
-			</NcButton>
-			<NcButton
-				v-if="!success"
-				:disabled="loading || !canDelete"
-				variant="error"
-				@click="deleteSchema()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<TrashCanOutline v-if="!loading" :size="20" />
-				</template>
-				Verwijder
-			</NcButton>
-		</template>
-	</NcDialog>
+	</ConfirmDialogFrame>
 </template>
 
 <script>
-import { NcButton, NcDialog, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import ConfirmDialogFrame from '../shared/ConfirmDialogFrame.vue'
+import {
+	objectUsageGuard,
+	refreshSchemaObjects,
+} from '../../composables/objectUsageGuard.js'
+import {
+	confirmDialogState,
+	settleConfirmRequest,
+} from '../shared/confirmDialogState.js'
+
+/**
+ * The first register that holds the schema being deleted.
+ *
+ * @return {object|undefined} The register
+ */
+function registerHoldingSchema() {
+	return registerStore.registerList.find((reg) =>
+		reg.schemas.includes(schemaStore.schemaItem.id),
+	)
+}
 
 export default {
 	name: 'DeleteSchema',
 	components: {
-		NcDialog,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		// Icons
-		TrashCanOutline,
-		Cancel,
+		ConfirmDialogFrame,
 	},
+
+	mixins: [
+		confirmDialogState(false),
+		objectUsageGuard(() => navigationStore.dialog === 'deleteSchema'),
+	],
 
 	data() {
 		return {
-			success: false,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
 			objects: [],
 			registerName: '',
-			isUpdated: false,
-		}
-	},
-
-	computed: {
-		/**
-		 * @spec exclude UI state helper — enables deletion only when no objects reference the schema.
-		 */
-		canDelete() {
-			return this.objects.length === 0
-		},
-	},
-
-	/**
-	 * @spec exclude Vue lifecycle hook — initializes the dialog once when it opens.
-	 */
-	updated() {
-		if (!this.isUpdated && navigationStore.dialog === 'deleteSchema') {
-			this.isUpdated = true
-			this.initDialog()
 		}
 	},
 
@@ -108,51 +84,68 @@ export default {
 				return
 			}
 
-			// Use the upgraded stats endpoint to get object count efficiently
 			try {
-				const stats = await schemaStore.getSchemaStats(
-					schemaStore.schemaItem.id,
-				)
-				const totalObjects = stats.objects?.total || 0
-
-				if (totalObjects > 0) {
-					// Find the first register that contains this schema for display purposes
-					const register = registerStore.registerList.find((reg) =>
-						reg.schemas.includes(schemaStore.schemaItem.id),
-					)
-					if (register) {
-						this.registerName = register.title
-						// Create a mock object array for display purposes
-						this.objects = Array(totalObjects).fill({
-							id: '...',
-							name: 'Object',
-						})
-					}
-				}
+				await this.countFromStats()
 			} catch (err) {
 				console.warn(
 					'Could not load schema stats, falling back to individual register checks:',
 					err,
 				)
-				// Fallback to the original method if stats endpoint fails
-				for (const reg of registerStore.registerList) {
-					if (!reg.schemas.includes(schemaStore.schemaItem.id)) {
-						continue
-					}
+				await this.collectFromRegisters()
+			}
+		},
 
-					await objectStore.refreshObjectList({
-						register: reg.id,
-						schema: schemaStore.schemaItem.id,
-						search: '',
-					})
-
-					if (objectStore.getCollection(objectStore.currentType).length) {
-						this.objects.push(
-							...objectStore.getCollection(objectStore.currentType),
-						)
-						this.registerName = reg.title
-					}
+		/**
+		 * Collect the schema's objects register by register, from every
+		 * register that holds the schema.
+		 *
+		 * @spec exclude Modal data-load plumbing — counts objects referencing the schema before delete.
+		 * @return {Promise<void>}
+		 */
+		async collectFromRegisters() {
+			for (const reg of registerStore.registerList) {
+				if (reg.schemas.includes(schemaStore.schemaItem.id)) {
+					await this.collectFromRegister(reg)
 				}
+			}
+		},
+
+		/**
+		 * Count the schema's objects through the stats endpoint and name the
+		 * first register that holds the schema. The objects are placeholders,
+		 * only their number is shown.
+		 *
+		 * @spec exclude Modal data-load plumbing — counts objects referencing the schema before delete.
+		 * @return {Promise<void>}
+		 */
+		async countFromStats() {
+			const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+			const totalObjects = stats.objects?.total || 0
+			const register = totalObjects > 0 && registerHoldingSchema()
+			if (register) {
+				this.registerName = register.title
+				this.objects = Array(totalObjects).fill({
+					id: '...',
+					name: 'Object',
+				})
+			}
+		},
+
+		/**
+		 * Load the schema's objects in one register and keep them when there
+		 * are any.
+		 *
+		 * @spec exclude Modal data-load plumbing — counts objects referencing the schema before delete.
+		 * @param {object} reg The register
+		 * @return {Promise<void>}
+		 */
+		async collectFromRegister(reg) {
+			await refreshSchemaObjects(reg)
+			if (objectStore.getCollection(objectStore.currentType).length) {
+				this.objects.push(
+					...objectStore.getCollection(objectStore.currentType),
+				)
+				this.registerName = reg.title
 			}
 		},
 
@@ -176,28 +169,11 @@ export default {
 		async deleteSchema() {
 			this.loading = true
 
-			schemaStore
-				.deleteSchema({
-					...schemaStore.schemaItem,
-				})
-				.then(({ response }) => {
-					this.success = response.ok
-					this.error = false
-					response.ok
-						&& (this.closeModalTimeout = setTimeout(
-							this.closeDialog,
-							2000,
-						))
-				})
-				.catch((error) => {
-					this.success = false
-					this.error =
-						error.message
-						|| 'An error occurred while deleting the schema'
-				})
-				.finally(() => {
-					this.loading = false
-				})
+			settleConfirmRequest(
+				this,
+				schemaStore.deleteSchema({ ...schemaStore.schemaItem }),
+				'An error occurred while deleting the schema',
+			)
 		},
 	},
 }

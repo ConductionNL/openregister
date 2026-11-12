@@ -52,17 +52,20 @@ class ImportHandlerSchemaContentDiffTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		$this->handler = new ImportHandler(
-			schemaMapper:        $this->createMock(SchemaMapper::class),
-			registerMapper:      $this->createMock(RegisterMapper::class),
-			objectEntityMapper:  $this->createMock(MagicMapper::class),
-			configurationMapper: $this->createMock(ConfigurationMapper::class),
-			mappingMapper:       $this->createMock(MappingMapper::class),
-			client:              $this->createMock(Client::class),
-			appConfig:           $this->createMock(IAppConfig::class),
-			logger:              $this->createMock(LoggerInterface::class),
-			appDataPath:         '/tmp',
-			uploadHandler:       $this->createMock(UploadHandler::class),
-			objectService:       $this->createMock(ObjectService::class)
+			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(
+				registers: $this->createMock(RegisterMapper::class),
+				schemas: $this->createMock(SchemaMapper::class),
+				tables: $this->createMock(MagicMapper::class)
+			),
+			records: new \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords(
+				configurations: $this->createMock(ConfigurationMapper::class),
+				mappings: $this->createMock(MappingMapper::class),
+				appConfig: $this->createMock(IAppConfig::class)
+			),
+			schemaSteps: new \OCA\OpenRegister\Service\Configuration\SchemaImportSteps(),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: '/tmp',
+			objectService: $this->createMock(ObjectService::class)
 		);
 
 	}//end setUp()
@@ -317,4 +320,43 @@ class ImportHandlerSchemaContentDiffTest extends TestCase {
 
 	}//end testStoredOnlyAnnotationDoesNotDiffer()
 
+	/**
+	 * A party kind the incoming schema adds is a difference, with nothing else changed.
+	 *
+	 * @return void
+	 */
+	public function testAddedPartyKindDiffers(): void {
+		$person = ['key' => 'person', 'label' => 'Person'];
+		$existing = $this->makeSchema(properties: ['naam' => ['type' => 'string']]);
+		$existing->setConfiguration(['partyKinds' => [$person]]);
+
+		$data = [
+			'properties' => ['naam' => ['type' => 'string']],
+			'configuration' => [
+				'partyKinds' => [$person, ['key' => 'colleague', 'label' => 'Colleague', 'identityShapes' => ['naturalPerson']]],
+			],
+		];
+
+		$this->assertTrue(condition: $this->differs(data: $data, existing: $existing));
+
+	}//end testAddedPartyKindDiffers()
+
+	/**
+	 * The same party kinds and link roles are not a difference.
+	 *
+	 * @return void
+	 */
+	public function testSamePartyVocabularyDoesNotDiffer(): void {
+		$configuration = [
+			'partyKinds' => [['key' => 'person', 'label' => 'Person']],
+			'linkRoles' => [['key' => 'aanvrager', 'label' => 'Requester']],
+		];
+		$existing = $this->makeSchema(properties: ['naam' => ['type' => 'string']]);
+		$existing->setConfiguration($configuration);
+
+		$data = ['properties' => ['naam' => ['type' => 'string']], 'configuration' => $configuration];
+
+		$this->assertFalse(condition: $this->differs(data: $data, existing: $existing));
+
+	}//end testSamePartyVocabularyDoesNotDiffer()
 }//end class

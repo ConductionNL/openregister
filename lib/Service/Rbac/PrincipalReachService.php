@@ -6,7 +6,7 @@
  *
  * D-5 IS THE WHOLE DESIGN. "Welke toegang had deze persoon" is the reverse of
  * the query the permission cascade already compiles, and
- * {@see \OCA\OpenRegister\Service\Object\PermissionHandler} is the one place
+ * {@see \OCA\OpenRegister\Service\Object\PermissionHandlerInterface} is the one place
  * that answers it: `permittedActionsFor()` says which verbs a principal holds
  * on a schema and `provenanceFor()` says which rule granted each one. Reading
  * those gives one answer that stays true as the rules change. Walking the
@@ -37,12 +37,10 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\DelegationGrantMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCP\IGroupManager;
-use OCP\IUserManager;
+use OCA\OpenRegister\Service\Object\PermissionExplanationInterface;
+use OCA\OpenRegister\Service\Object\ProvenanceRequest;
+use OCA\OpenRegister\Service\Object\VerbListing;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -61,29 +59,21 @@ use Throwable;
  * compile-time constants and isRevocable() derives its answer from them, so
  * injecting it would add a collaborator that can never vary.
  *
- * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+ * @spec openspec/specs/authorization-rbac/spec.md
  */
-class PrincipalReachService {
+class PrincipalReachService implements PrincipalReachListerInterface {
 	/**
 	 * Wire the authorities the listing reads.
 	 *
-	 * @param PermissionHandler     $permissions  The canonical RBAC verdict and its provenance.
-	 * @param SchemaMapper          $schemaMapper The schemas the cascade is asked about.
-	 * @param DerivedGrantStore     $derived      Grants derived from sign-in claims.
-	 * @param DelegationGrantMapper $delegations  Delegations held by this principal.
-	 * @param IGroupManager         $groupManager Group membership.
-	 * @param IUserManager          $userManager  Account lookup.
-	 * @param LoggerInterface       $logger       PSR logger.
-	 *
-	 * @return void
+	 * @param PermissionExplanationInterface $permissions The canonical RBAC verdict and its provenance.
+	 * @param ReachSources               $sources     The schemas the cascade is asked about, derived grants and delegations.
+	 * @param PrincipalDirectory         $directory   Group membership and account lookup.
+	 * @param LoggerInterface            $logger      PSR logger.
 	 */
 	public function __construct(
-		private readonly PermissionHandler $permissions,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly DerivedGrantStore $derived,
-		private readonly DelegationGrantMapper $delegations,
-		private readonly IGroupManager $groupManager,
-		private readonly IUserManager $userManager,
+		private readonly PermissionExplanationInterface $permissions,
+		private readonly ReachSources $sources,
+		private readonly PrincipalDirectory $directory,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -98,7 +88,7 @@ class PrincipalReachService {
 	 *
 	 * @return array<string, mixed> The reach listing.
 	 *
-	 * @spec openspec/changes/data-subject-rights-across-the-instance/specs/authorization-rbac/spec.md
+	 * @spec openspec/specs/authorization-rbac/spec.md
 	 */
 	public function listFor(string $principal): array {
 		$principal = trim($principal);
@@ -125,7 +115,7 @@ class PrincipalReachService {
 
 		return [
 			'principal' => $principal,
-			'exists' => $this->userManager->userExists($principal),
+			'exists' => $this->directory->userManager->userExists($principal),
 			'generatedAt' => (new DateTimeImmutable())->format(DATE_ATOM),
 			'total' => count($entries),
 			'revocable' => $revocable,
@@ -151,7 +141,7 @@ class PrincipalReachService {
 		foreach ($this->schemas() as $schema) {
 			$actions = [];
 			try {
-				$actions = $this->permissions->permittedActionsFor(schema: $schema, object: null, userId: $principal);
+				$actions = $this->permissions->permittedActionsFor(listing: new VerbListing(schema: $schema, userId: $principal));
 			} catch (Throwable $e) {
 				$this->logger->warning(
 					message: '[PrincipalReach] Could not read the permitted actions on a schema',
@@ -167,9 +157,7 @@ class PrincipalReachService {
 			$provenance = [];
 			try {
 				$provenance = $this->permissions->provenanceFor(
-					schema: $schema,
-					actions: $actions,
-					userId: $principal
+					request: new ProvenanceRequest(schema: $schema, actions: $actions, userId: $principal, object: null)
 				);
 			} catch (Throwable $e) {
 				$this->logger->warning(
@@ -204,13 +192,13 @@ class PrincipalReachService {
 	 * @return array<int, array<string, mixed>> The entries.
 	 */
 	private function fromGroups(string $principal): array {
-		$user = $this->userManager->get($principal);
+		$user = $this->directory->userManager->get($principal);
 		if ($user === null) {
 			return [];
 		}
 
 		$entries = [];
-		foreach ($this->groupManager->getUserGroupIds($user) as $groupId) {
+		foreach ($this->directory->groupManager->getUserGroupIds($user) as $groupId) {
 			$entries[] = [
 				'source' => PrincipalReach::SOURCE_GROUP,
 				'revocable' => PrincipalReach::isRevocable(PrincipalReach::SOURCE_GROUP),
@@ -234,7 +222,7 @@ class PrincipalReachService {
 		$entries = [];
 
 		try {
-			$grants = $this->derived->grantsFor(userId: $principal);
+			$grants = $this->sources->derived->grantsFor(userId: $principal);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[PrincipalReach] Could not read the derived grants',
@@ -266,7 +254,7 @@ class PrincipalReachService {
 		$now = new DateTime();
 
 		try {
-			$held = $this->delegations->findHeldBy(principal: $principal);
+			$held = $this->sources->delegations->findHeldBy(principal: $principal);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[PrincipalReach] Could not read the delegations held',
@@ -303,7 +291,7 @@ class PrincipalReachService {
 	 */
 	private function schemas(): array {
 		try {
-			return $this->schemaMapper->findAll();
+			return $this->sources->schemaMapper->findAll();
 		} catch (Throwable $e) {
 			$this->logger->error(
 				message: '[PrincipalReach] Could not list the schemas, so the reach cannot be answered',

@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
@@ -36,8 +36,8 @@ namespace OCA\OpenRegister\Service\WellKnown;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use OCA\OpenRegister\Support\AppConfigValue;
 use OCP\IAppConfig;
-use Throwable;
 
 /**
  * Renders the administered responsible-disclosure contact.
@@ -49,14 +49,7 @@ use Throwable;
  * Reason: `DateTimeImmutable::createFromFormat` and the `DateTimeImmutable`
  *         constructor are PHP's own date API, which has no instance form.
  */
-class SecurityTxtBuilder {
-
-	/**
-	 * The app the settings live under.
-	 *
-	 * @var string
-	 */
-	private const APP_ID = 'openregister';
+class SecurityTxtBuilder implements SecurityTxtBuilderInterface {
 
 	/**
 	 * Configuration key holding the contact, a mailto: or https: URI.
@@ -110,7 +103,7 @@ class SecurityTxtBuilder {
 	 *
 	 * @return string|null The file body, or null.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 */
 	public function build(?DateTimeImmutable $now = null): ?string {
 		$contact = $this->normaliseContact(value: $this->read(key: self::CONTACT_KEY));
@@ -124,8 +117,20 @@ class SecurityTxtBuilder {
 		$lines = [
 			'Contact: ' . $contact,
 			'Expires: ' . $expires->format('Y-m-d\TH:i:s\Z'),
+			...$this->optionalLines(),
 		];
 
+		return (implode("\n", $lines) . "\n");
+
+	}//end build()
+
+	/**
+	 * The Policy and Preferred-Languages lines, each only when administered.
+	 *
+	 * @return array<int, string> The lines, Policy first.
+	 */
+	private function optionalLines(): array {
+		$lines = [];
 		$policy = $this->read(key: self::POLICY_KEY);
 		if ($policy !== null && $this->isHttpUrl(value: $policy) === true) {
 			$lines[] = 'Policy: ' . $policy;
@@ -136,16 +141,15 @@ class SecurityTxtBuilder {
 			$lines[] = 'Preferred-Languages: ' . $languages;
 		}
 
-		return (implode("\n", $lines) . "\n");
-
-	}//end build()
+		return $lines;
+	}//end optionalLines()
 
 	/**
 	 * Whether a disclosure contact is administered.
 	 *
 	 * @return bool True when this instance publishes a contact.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	public function isConfigured(): bool {
 		return ($this->normaliseContact(value: $this->read(key: self::CONTACT_KEY)) !== null);
@@ -164,7 +168,7 @@ class SecurityTxtBuilder {
 	 *
 	 * @return string|null The contact URI, or null.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+	 * @spec openspec/specs/api-surface-governance/spec.md
 	 */
 	private function normaliseContact(?string $value): ?string {
 		if ($value === null) {
@@ -234,17 +238,7 @@ class SecurityTxtBuilder {
 	 * @return string|null The value, or null.
 	 */
 	private function read(string $key): ?string {
-		try {
-			$value = trim((string)$this->appConfig->getValueString(self::APP_ID, $key, ''));
-		} catch (Throwable) {
-			return null;
-		}
-
-		if ($value === '') {
-			return null;
-		}
-
-		return $value;
+		return AppConfigValue::nonEmpty(appConfig: $this->appConfig, key: $key);
 
 	}//end read()
 }//end class

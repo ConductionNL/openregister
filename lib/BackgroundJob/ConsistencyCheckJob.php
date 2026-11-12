@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -25,9 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTime;
-use OCA\OpenRegister\Service\Operations\ConsistencyCheckService;
-use OCA\OpenRegister\Service\Operations\JobRunRecorder;
-use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Service\Operations\ConsistencyCheckServiceInterface;
 use OCP\IConfig;
 
 /**
@@ -38,7 +36,7 @@ use OCP\IConfig;
  * can show the last result without re-running a full scan on every page load,
  * and so the support bundle can carry a result rather than a spinner.
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
+ * @spec openspec/specs/operations-console/spec.md#requirement-maintenance-actions-run-as-observable-jobs-req-aoc-004
  */
 class ConsistencyCheckJob extends RecordedQueuedJob {
 
@@ -59,18 +57,16 @@ class ConsistencyCheckJob extends RecordedQueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory            $time     Time factory for the parent job class.
-	 * @param JobRunRecorder          $recorder The wrapper that writes the run row.
-	 * @param ConsistencyCheckService $check    The read-only check.
+	 * @param RecordedJobRuntime $runtime The scheduler clock and the recorder that writes the run row.
+	 * @param ConsistencyCheckServiceInterface $check    The read-only check.
 	 * @param IConfig                 $config   Where the last result is stored.
 	 */
 	public function __construct(
-		ITimeFactory $time,
-		JobRunRecorder $recorder,
-		private readonly ConsistencyCheckService $check,
+		RecordedJobRuntime $runtime,
+		private readonly ConsistencyCheckServiceInterface $check,
 		private readonly IConfig $config,
 	) {
-		parent::__construct(time: $time, recorder: $recorder);
+		parent::__construct(time: $runtime->time, recorder: $runtime->recorder);
 
 	}//end __construct()
 
@@ -81,7 +77,7 @@ class ConsistencyCheckJob extends RecordedQueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+	 * @spec openspec/specs/operations-console/spec.md
 	 */
 	protected function runRecorded(mixed $argument): void {
 		$findings = $this->check->check();

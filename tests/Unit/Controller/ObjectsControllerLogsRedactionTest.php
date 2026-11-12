@@ -14,10 +14,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -32,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 
 /**
  * The legacy /logs route no longer returns the raw audit rows to a reader who is not an administrator.
@@ -57,7 +60,7 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 		$this->history = $this->createMock(ObjectHistoryForReaders::class);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			fn (string $id): ?object => ($id === ObjectHistoryForReaders::class ? $this->history : null)
+			fn (string $id): ?object => ($id === ObjectHistoryForReadersInterface::class ? $this->history : null)
 		);
 
 		$user = $this->createMock(IUser::class);
@@ -69,7 +72,7 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 		$request->method('getParams')->willReturn(['limit' => 5, '_search' => 'x', 'action' => 'update', 'order' => ['created' => 'ASC']]);
 		$this->objectService = $this->createMock(ObjectService::class);
 
-		$this->controller = new ObjectsController(
+		$this->controller = ObjectsControllerFactory::create(
 			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),
@@ -97,7 +100,7 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 		$this->groupManager->method('getUserGroupIds')->willReturn(['staff']);
 		$page = ['results' => [['action' => 'update', 'changed' => ['title' => ['old' => 'a', 'new' => 'b']]]], 'total' => 1, 'page' => null, 'pages' => 1.0, 'limit' => 5, 'offset' => null];
 		$this->history->expects($this->once())->method('page')
-			->with('reg', 'sch', 'obj-1', $this->callback(static fn (array $params): bool => $params['limit'] === 5 && $params['search'] === 'x' && ($params['filters']['action'] ?? null) === 'update' && $params['sort'] === ['created' => 'ASC']))
+			->with(new ObjectRef(register: 'reg', schema: 'sch', id: 'obj-1'), $this->callback(static fn (array $params): bool => $params['limit'] === 5 && $params['search'] === 'x' && ($params['filters']['action'] ?? null) === 'update' && $params['sort'] === ['created' => 'ASC']))
 			->willReturn($page);
 		$this->objectService->expects($this->never())->method('getLogs');
 
@@ -122,6 +125,21 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 
 		$this->assertSame(404, $response->getStatus());
 	}//end testAnUnreadableObjectIs404()
+
+	/**
+	 * A slug two objects of the register and schema hold is the 409 an administrator
+	 * gets on this route, not a 500 (#4037).
+	 *
+	 * @return void
+	 */
+	public function testAnAmbiguousSlugIs409ForAReader(): void {
+		$this->history->method('page')->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('two'));
+
+		$response = $this->controller->logs(id: 'dubbel', register: 'reg', schema: 'sch', objectService: $this->objectService);
+
+		$this->assertSame(409, $response->getStatus());
+		$this->assertSame('ambiguous-identifier', $response->getData()['error']);
+	}//end testAnAmbiguousSlugIs409ForAReader()
 
 	/**
 	 * An administrator still reads the stored history as before: the reader history is not asked.

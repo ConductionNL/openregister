@@ -14,12 +14,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\SchemaCatalog;
+use OCP\IConfig;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableSql;
 use Doctrine\DBAL\Platforms\PostgreSQL120Platform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\MagicMapper\SortRequest;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -32,6 +38,9 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
+use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
+use OCA\OpenRegister\Db\MagicMapper\TableSearch;
 
 class LastUserActivityMetadataTest extends TestCase {
 
@@ -125,21 +134,21 @@ class LastUserActivityMetadataTest extends TestCase {
 		$connection->method('quote')->willReturnCallback(static fn ($v) => "'{$v}'");
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildMetadataFilterConditionsSql');
-		$conditions = $method->invoke($this->search, ['@self' => ['lastUserActivity' => ['lt' => '2026-10-01']]], $connection, true);
+		$conditions = $method->invoke($this->search, new ConditionSqlRun(query: ['@self' => ['lastUserActivity' => ['lt' => '2026-10-01']]], table: new MagicReadTable(schema: new Schema()), connection: $connection, isPostgres: true));
 
 		$this->assertSame(['"_last_user_activity" < \'2026-10-01\''], $conditions);
 	}
 
 	public function testItSortsByItsColumn(): void {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
-		$method->invoke($this->search, $this->makeQueryBuilder(), ['@self.lastUserActivity' => 'ASC'], $this->makeSchema());
+		$method->invoke($this->search, $this->makeQueryBuilder(), new SortRequest(order: ['@self.lastUserActivity' => 'ASC'], schema: $this->makeSchema()));
 
 		$this->assertContains('order(t._last_user_activity,ASC)', $this->captured);
 	}
 
 	public function testUpdatedStillSortsByItsOwnColumn(): void {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
-		$method->invoke($this->search, $this->makeQueryBuilder(), ['@self.updated' => 'DESC'], $this->makeSchema());
+		$method->invoke($this->search, $this->makeQueryBuilder(), new SortRequest(order: ['@self.updated' => 'DESC'], schema: $this->makeSchema()));
 
 		$this->assertContains('order(t._updated,DESC)', $this->captured);
 	}
@@ -149,12 +158,7 @@ class LastUserActivityMetadataTest extends TestCase {
 		$register->setId(1);
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'convertRowToObjectEntity');
-		$entity = $method->invoke(
-			$this->search,
-			['_uuid' => 'u-1', '_updated' => '2026-10-10 08:00:00', '_last_user_activity' => '2026-09-01 10:00:00'],
-			$register,
-			$this->makeSchema()
-		);
+		$entity = $method->invoke($this->search, ['_uuid' => 'u-1', '_updated' => '2026-10-10 08:00:00', '_last_user_activity' => '2026-09-01 10:00:00'], new TableSearch(table: new RegisterSchema(register: $register, schema: $this->makeSchema()), tableName: ''));
 
 		$this->assertSame('2026-09-01 10:00:00', $entity->getLastUserActivity()->format('Y-m-d H:i:s'));
 		$this->assertSame('2026-10-10 08:00:00', $entity->getUpdated()->format('Y-m-d H:i:s'));
@@ -163,20 +167,17 @@ class LastUserActivityMetadataTest extends TestCase {
 	public function testTheFindPathReadsItBack(): void {
 		$logger = $this->createMock(LoggerInterface::class);
 		$statistics = new MagicStatisticsHandler(
-			db: $this->createMock(IDBConnection::class),
-			logger: $logger,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			schemaMapper: $this->createMock(SchemaMapper::class),
+			sql: new MagicTableSql(db: $this->createMock(IDBConnection::class), config: $this->createMock(IConfig::class), logger: $logger),
+			catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $this->createMock(MagicMapperInterface::class)),
 			dateTimeNormalizer: new DateTimeNormalizer($logger),
 			schemaTypeConverter: new SchemaTypeConverter()
 		);
 		$register = new Register();
 		$register->setId(1);
 
-		$entity = $statistics->convertRowToObjectEntity(
+		$entity = $statistics->toObjectEntity(
 			['_uuid' => 'u-1', '_id' => 1, '_last_user_activity' => '2026-09-01 10:00:00'],
-			$register,
-			$this->makeSchema()
+			new RegisterSchema($register, $this->makeSchema())
 		);
 
 		$this->assertSame('2026-09-01 10:00:00', $entity->getLastUserActivity()->format('Y-m-d H:i:s'));

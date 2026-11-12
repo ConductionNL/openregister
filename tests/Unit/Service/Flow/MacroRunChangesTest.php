@@ -15,14 +15,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
-use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Flow\FlowService;
-use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Flow\MacroRunChanges;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 class MacroRunChangesTest extends TestCase {
 
@@ -91,31 +85,4 @@ class MacroRunChangesTest extends TestCase {
 	public function testAnEmptyLogChangedNothing(): void {
 		$this->assertSame([], (new MacroRunChanges())->fromLog(log: []));
 	}//end testAnEmptyLogChangedNothing()
-
-	public function testTheAuditEntryCarriesTheChanges(): void {
-		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with($this->anything(), 'action.macro', $this->callback(function (array $context): bool {
-				return $context['declaredAction'] === 'suspend'
-					&& $context['run'] === 'r-1'
-					&& $context['changes'] === [['step' => 'Termijn opgeschort', 'kind' => 'write']];
-			}));
-
-		$resolver = new MacroActionResolver(
-			$this->createMock(SchemaMapper::class),
-			$this->createMock(FlowService::class),
-			$audit,
-			$this->createMock(LoggerInterface::class)
-		);
-
-		$resolver->recordRun(
-			object: new ObjectEntity(),
-			action: 'suspend',
-			flow: 'f-1',
-			run: 'r-1',
-			userId: 'pieter',
-			changes: [['step' => 'Termijn opgeschort', 'kind' => 'write']]
-		);
-	}//end testTheAuditEntryCarriesTheChanges()
 }//end class

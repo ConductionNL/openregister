@@ -1,0 +1,1261 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`vectorization settings modals golden file: closed 1`] = `""`;
+
+exports[`vectorization settings modals golden file: disabled 1`] = `
+"<x-ncdialog name="File Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-contentsave size="20"></x-contentsave>
+      </slot-icon>
+      <slot-default> Save Configuration</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="file-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <div>
+          <h4>Using Pre-Generated Chunks</h4>
+          <p>Text chunks are generated during file extraction and stored in the database. Vectorization reads these pre-chunked files and converts them to embeddings.</p>
+          <p><strong>To adjust chunk size or strategy, go to file configuration → processing limits.</strong></p>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>🔢 Vectorization Settings</h3>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Enable automatic file vectorization</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically generate vector embeddings from text chunks when files are uploaded and processed</small>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization settings modals golden file: fails to save, answered 1`] = `
+{
+  "data": {
+    "config": {
+      "autoRetry": true,
+      "batchSize": 25,
+      "vectorizationEnabled": true,
+    },
+    "saving": false,
+  },
+  "emitted": {},
+  "error": [
+    [
+      "Failed to save configuration: {error} {"error":"Refused"}",
+    ],
+  ],
+  "get": [],
+  "patch": [],
+  "post": [
+    [
+      "/apps/openregister/api/settings/file-vectorization",
+      {
+        "autoRetry": true,
+        "batchSize": 25,
+        "vectorizationEnabled": true,
+      },
+    ],
+  ],
+  "success": [],
+}
+`;
+
+exports[`vectorization settings modals golden file: fails to save, unanswered 1`] = `
+{
+  "data": {
+    "config": {
+      "autoRetry": true,
+      "batchSize": 25,
+      "vectorizationEnabled": true,
+    },
+    "saving": false,
+  },
+  "emitted": {},
+  "error": [
+    [
+      "Failed to save configuration: {error} {"error":"Offline"}",
+    ],
+  ],
+  "get": [],
+  "patch": [],
+  "post": [
+    [
+      "/apps/openregister/api/settings/file-vectorization",
+      {
+        "autoRetry": true,
+        "batchSize": 25,
+        "vectorizationEnabled": true,
+      },
+    ],
+  ],
+  "success": [],
+}
+`;
+
+exports[`vectorization settings modals golden file: loads 1`] = `
+{
+  "data": {
+    "config": {
+      "autoRetry": true,
+      "batchSize": 25,
+      "vectorizationEnabled": true,
+    },
+    "saving": false,
+  },
+  "emitted": {},
+  "error": [],
+  "get": [],
+  "patch": [],
+  "post": [],
+  "success": [],
+}
+`;
+
+exports[`vectorization settings modals golden file: loads an unsuccessful answer 1`] = `
+{
+  "data": {
+    "config": {
+      "autoRetry": true,
+      "batchSize": 25,
+      "vectorizationEnabled": true,
+    },
+    "saving": false,
+  },
+  "emitted": {},
+  "error": [],
+  "get": [],
+  "patch": [],
+  "post": [],
+  "success": [],
+}
+`;
+
+exports[`vectorization settings modals golden file: loads nothing 1`] = `
+{
+  "data": {
+    "config": {
+      "autoRetry": true,
+      "batchSize": 25,
+      "vectorizationEnabled": true,
+    },
+    "saving": false,
+  },
+  "emitted": {},
+  "error": [],
+  "get": [],
+  "patch": [],
+  "post": [],
+  "success": [],
+}
+`;
+
+exports[`vectorization settings modals golden file: loads nothing 2`] = `
+"<x-ncdialog name="File Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-contentsave size="20"></x-contentsave>
+      </slot-icon>
+      <slot-default> Save Configuration</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="file-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <div>
+          <h4>Using Pre-Generated Chunks</h4>
+          <p>Text chunks are generated during file extraction and stored in the database. Vectorization reads these pre-chunked files and converts them to embeddings.</p>
+          <p><strong>To adjust chunk size or strategy, go to file configuration → processing limits.</strong></p>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>🔢 Vectorization Settings</h3>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Enable automatic file vectorization</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically generate vector embeddings from text chunks when files are uploaded and processed</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>⚡ Batch Processing</h3>
+        <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" step="1" class="input-field"><small>Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Auto-retry failed vectorizations</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically retry failed vectorization attempts (max 3 retries)</small>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization settings modals golden file: open 1`] = `
+"<x-ncdialog name="File Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-contentsave size="20"></x-contentsave>
+      </slot-icon>
+      <slot-default> Save Configuration</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="file-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <div>
+          <h4>Using Pre-Generated Chunks</h4>
+          <p>Text chunks are generated during file extraction and stored in the database. Vectorization reads these pre-chunked files and converts them to embeddings.</p>
+          <p><strong>To adjust chunk size or strategy, go to file configuration → processing limits.</strong></p>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>🔢 Vectorization Settings</h3>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Enable automatic file vectorization</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically generate vector embeddings from text chunks when files are uploaded and processed</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>⚡ Batch Processing</h3>
+        <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" step="1" class="input-field"><small>Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Auto-retry failed vectorizations</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically retry failed vectorization attempts (max 3 retries)</small>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization settings modals golden file: saves 1`] = `
+{
+  "data": {
+    "config": {
+      "autoRetry": true,
+      "batchSize": 25,
+      "vectorizationEnabled": true,
+    },
+    "saving": false,
+  },
+  "emitted": {
+    "closing": [
+      [],
+    ],
+  },
+  "error": [],
+  "get": [],
+  "patch": [],
+  "post": [
+    [
+      "/apps/openregister/api/settings/file-vectorization",
+      {
+        "autoRetry": true,
+        "batchSize": 25,
+        "vectorizationEnabled": true,
+      },
+    ],
+  ],
+  "success": [
+    [
+      "File vectorization configuration saved successfully",
+    ],
+  ],
+}
+`;
+
+exports[`vectorization settings modals golden file: saving 1`] = `
+"<x-ncdialog name="File Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Saving...</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="file-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <div>
+          <h4>Using Pre-Generated Chunks</h4>
+          <p>Text chunks are generated during file extraction and stored in the database. Vectorization reads these pre-chunked files and converts them to embeddings.</p>
+          <p><strong>To adjust chunk size or strategy, go to file configuration → processing limits.</strong></p>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>🔢 Vectorization Settings</h3>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Enable automatic file vectorization</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically generate vector embeddings from text chunks when files are uploaded and processed</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>⚡ Batch Processing</h3>
+        <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" step="1" class="input-field"><small>Number of chunks to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Auto-retry failed vectorizations</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically retry failed vectorization attempts (max 3 retries)</small>
+        </div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization settings modals golden object: allViews 1`] = `
+"<x-ncdialog name="Object Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-contentsave size="20"></x-contentsave>
+      </slot-icon>
+      <slot-default> Save Configuration</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="object-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Configure how database objects are converted into vector embeddings for semantic search. Objects are directly vectorized without needing text extraction.</p>
+      </div>
+      <div class="info-box warning">
+        <x-alertcircle size="20"></x-alertcircle>
+        <div><strong>Prerequisites</strong>
+          <p>Before object vectorization can work:</p>
+          <ul>
+            <li>LLM must be enabled with an embedding provider configured</li>
+            <li>Objects will be serialized as JSON text before vectorization</li>
+          </ul>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>🔢 Vectorization Settings</h3>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Enable automatic object vectorization</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically generate vector embeddings when objects are created or updated</small>
+        </div>
+        <div class="trigger-settings">
+          <h4>Vectorization Triggers</h4>
+          <div class="form-group">
+            <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+              <slot-default>Vectorize on object creation</slot-default>
+            </x-nccheckboxradioswitch><small>Generate vectors immediately when new objects are created</small>
+          </div>
+          <div class="form-group">
+            <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+              <slot-default>Re-vectorize on object update</slot-default>
+            </x-nccheckboxradioswitch><small>Update vectors when object data changes (recommended for accurate search)</small>
+          </div>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>💰 View Selection (Cost Optimization)</h3>
+        <p class="section-description">Control which object views should be vectorized to reduce API costs. Only vectorize views that benefit from semantic search.</p>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Vectorize all views</slot-default>
+          </x-nccheckboxradioswitch><small>Enable vectorization for all existing and future views (may increase costs)</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>📄 Object Serialization</h3>
+        <p class="section-description">Configure how objects are converted to text before vectorization. These settings affect search quality and context.</p>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Include schema and register metadata</slot-default>
+          </x-nccheckboxradioswitch><small>Add schema titles, descriptions, and register information to provide richer context for search</small>
+        </div>
+        <div class="form-group"><label for="max-depth">Maximum Nesting Depth</label><input id="max-depth" type="number" min="1" max="20" class="input-field"><small>How deep to traverse nested object properties (1-20). Higher values capture more detail but increase vector size.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Include related object references</slot-default>
+          </x-nccheckboxradioswitch><small>Include ids and names of related objects for better contextual search</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>⚡ Batch Processing</h3>
+        <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" step="1" class="input-field"><small>Number of objects to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Auto-retry failed vectorizations</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically retry failed vectorization attempts (max 3 retries)</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>ℹ️ current configuration</h3>
+        <div class="info-grid">
+          <div class="info-item"><span class="info-label">Embedding Provider</span><span class="info-value">ollama</span></div>
+          <div class="info-item"><span class="info-label">Embedding Model</span><span class="info-value">nomic</span></div>
+          <div class="info-item"><span class="info-label">Vector Dimensions</span><span class="info-value">768</span></div>
+        </div>
+        <div class="info-note"><small>To change the embedding provider or model, go to LLM configuration.</small></div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization settings modals golden object: closed 1`] = `""`;
+
+exports[`vectorization settings modals golden object: disabled 1`] = `
+"<x-ncdialog name="Object Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-contentsave size="20"></x-contentsave>
+      </slot-icon>
+      <slot-default> Save Configuration</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="object-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Configure how database objects are converted into vector embeddings for semantic search. Objects are directly vectorized without needing text extraction.</p>
+      </div>
+      <div class="info-box warning">
+        <x-alertcircle size="20"></x-alertcircle>
+        <div><strong>Prerequisites</strong>
+          <p>Before object vectorization can work:</p>
+          <ul>
+            <li>LLM must be enabled with an embedding provider configured</li>
+            <li>Objects will be serialized as JSON text before vectorization</li>
+          </ul>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>🔢 Vectorization Settings</h3>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Enable automatic object vectorization</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically generate vector embeddings when objects are created or updated</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>ℹ️ current configuration</h3>
+        <div class="info-grid">
+          <div class="info-item"><span class="info-label">Embedding Provider</span><span class="info-value">ollama</span></div>
+          <div class="info-item"><span class="info-label">Embedding Model</span><span class="info-value">nomic</span></div>
+          <div class="info-item"><span class="info-label">Vector Dimensions</span><span class="info-value">768</span></div>
+        </div>
+        <div class="info-note"><small>To change the embedding provider or model, go to LLM configuration.</small></div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization settings modals golden object: fails to save, answered 1`] = `
+{
+  "data": {
+    "config": {
+      "autoRetry": true,
+      "batchSize": 50,
+      "enabledViews": [
+        2,
+      ],
+      "includeMetadata": true,
+      "includeRelations": true,
+      "maxNestingDepth": 4,
+      "vectorizationEnabled": true,
+      "vectorizeAllViews": false,
+      "vectorizeOnCreate": true,
+      "vectorizeOnUpdate": false,
+    },
+    "embeddingModelName": "nomic",
+    "embeddingProviderName": "ollama",
+    "saving": false,
+    "vectorDimensions": 768,
+    "views": [
+      {
+        "description": "The first",
+        "id": 1,
+        "name": "First view",
+      },
+      {
+        "id": 2,
+        "name": "Second view",
+      },
+    ],
+  },
+  "emitted": {},
+  "error": [
+    [
+      "Failed to save configuration: {error} {"error":"Refused"}",
+    ],
+  ],
+  "get": [],
+  "patch": [
+    [
+      "/apps/openregister/api/settings/objects/vectorize",
+      {
+        "autoRetry": true,
+        "batchSize": 50,
+        "enabledViews": [
+          2,
+        ],
+        "includeMetadata": true,
+        "includeRelations": true,
+        "maxNestingDepth": 4,
+        "vectorizationEnabled": true,
+        "vectorizeAllViews": false,
+        "vectorizeOnCreate": true,
+        "vectorizeOnUpdate": false,
+      },
+    ],
+  ],
+  "post": [],
+  "success": [],
+}
+`;
+
+exports[`vectorization settings modals golden object: fails to save, unanswered 1`] = `
+{
+  "data": {
+    "config": {
+      "autoRetry": true,
+      "batchSize": 50,
+      "enabledViews": [
+        2,
+      ],
+      "includeMetadata": true,
+      "includeRelations": true,
+      "maxNestingDepth": 4,
+      "vectorizationEnabled": true,
+      "vectorizeAllViews": false,
+      "vectorizeOnCreate": true,
+      "vectorizeOnUpdate": false,
+    },
+    "embeddingModelName": "nomic",
+    "embeddingProviderName": "ollama",
+    "saving": false,
+    "vectorDimensions": 768,
+    "views": [
+      {
+        "description": "The first",
+        "id": 1,
+        "name": "First view",
+      },
+      {
+        "id": 2,
+        "name": "Second view",
+      },
+    ],
+  },
+  "emitted": {},
+  "error": [
+    [
+      "Failed to save configuration: {error} {"error":"Offline"}",
+    ],
+  ],
+  "get": [],
+  "patch": [
+    [
+      "/apps/openregister/api/settings/objects/vectorize",
+      {
+        "autoRetry": true,
+        "batchSize": 50,
+        "enabledViews": [
+          2,
+        ],
+        "includeMetadata": true,
+        "includeRelations": true,
+        "maxNestingDepth": 4,
+        "vectorizationEnabled": true,
+        "vectorizeAllViews": false,
+        "vectorizeOnCreate": true,
+        "vectorizeOnUpdate": false,
+      },
+    ],
+  ],
+  "post": [],
+  "success": [],
+}
+`;
+
+exports[`vectorization settings modals golden object: loads 1`] = `
+{
+  "data": {
+    "config": {
+      "autoRetry": true,
+      "batchSize": 50,
+      "enabledViews": [
+        2,
+      ],
+      "includeMetadata": true,
+      "includeRelations": true,
+      "maxNestingDepth": 4,
+      "vectorizationEnabled": true,
+      "vectorizeAllViews": false,
+      "vectorizeOnCreate": true,
+      "vectorizeOnUpdate": false,
+    },
+    "embeddingModelName": "nomic",
+    "embeddingProviderName": "ollama",
+    "saving": false,
+    "vectorDimensions": 768,
+    "views": [
+      {
+        "description": "The first",
+        "id": 1,
+        "name": "First view",
+      },
+      {
+        "id": 2,
+        "name": "Second view",
+      },
+    ],
+  },
+  "emitted": {},
+  "error": [],
+  "get": [
+    [
+      "/apps/openregister/api/settings/objects/vectorize",
+    ],
+    [
+      "/apps/openregister/api/views",
+    ],
+    [
+      "/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "patch": [],
+  "post": [],
+  "success": [],
+}
+`;
+
+exports[`vectorization settings modals golden object: loads an unsuccessful answer 1`] = `
+{
+  "data": {
+    "config": {
+      "autoRetry": true,
+      "batchSize": 25,
+      "enabledViews": [],
+      "includeMetadata": true,
+      "includeRelations": true,
+      "maxNestingDepth": 10,
+      "vectorizationEnabled": true,
+      "vectorizeAllViews": true,
+      "vectorizeOnCreate": true,
+      "vectorizeOnUpdate": false,
+    },
+    "embeddingModelName": "Not configured",
+    "embeddingProviderName": "Not configured",
+    "saving": false,
+    "vectorDimensions": "N/A",
+    "views": [],
+  },
+  "emitted": {},
+  "error": [],
+  "get": [
+    [
+      "/apps/openregister/api/settings/objects/vectorize",
+    ],
+    [
+      "/apps/openregister/api/views",
+    ],
+    [
+      "/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "patch": [],
+  "post": [],
+  "success": [],
+}
+`;
+
+exports[`vectorization settings modals golden object: loads nothing 1`] = `
+{
+  "data": {
+    "config": {
+      "autoRetry": true,
+      "batchSize": 25,
+      "enabledViews": [],
+      "includeMetadata": true,
+      "includeRelations": true,
+      "maxNestingDepth": 10,
+      "vectorizationEnabled": true,
+      "vectorizeAllViews": true,
+      "vectorizeOnCreate": true,
+      "vectorizeOnUpdate": false,
+    },
+    "embeddingModelName": "Not configured",
+    "embeddingProviderName": "Not configured",
+    "saving": false,
+    "vectorDimensions": "N/A",
+    "views": [],
+  },
+  "emitted": {},
+  "error": [],
+  "get": [
+    [
+      "/apps/openregister/api/settings/objects/vectorize",
+    ],
+    [
+      "/apps/openregister/api/views",
+    ],
+    [
+      "/apps/openregister/api/settings/llm",
+    ],
+  ],
+  "patch": [],
+  "post": [],
+  "success": [],
+}
+`;
+
+exports[`vectorization settings modals golden object: loads nothing 2`] = `
+"<x-ncdialog name="Object Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-contentsave size="20"></x-contentsave>
+      </slot-icon>
+      <slot-default> Save Configuration</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="object-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Configure how database objects are converted into vector embeddings for semantic search. Objects are directly vectorized without needing text extraction.</p>
+      </div>
+      <div class="info-box warning">
+        <x-alertcircle size="20"></x-alertcircle>
+        <div><strong>Prerequisites</strong>
+          <p>Before object vectorization can work:</p>
+          <ul>
+            <li>LLM must be enabled with an embedding provider configured</li>
+            <li>Objects will be serialized as JSON text before vectorization</li>
+          </ul>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>🔢 Vectorization Settings</h3>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Enable automatic object vectorization</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically generate vector embeddings when objects are created or updated</small>
+        </div>
+        <div class="trigger-settings">
+          <h4>Vectorization Triggers</h4>
+          <div class="form-group">
+            <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+              <slot-default>Vectorize on object creation</slot-default>
+            </x-nccheckboxradioswitch><small>Generate vectors immediately when new objects are created</small>
+          </div>
+          <div class="form-group">
+            <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+              <slot-default>Re-vectorize on object update</slot-default>
+            </x-nccheckboxradioswitch><small>Update vectors when object data changes (recommended for accurate search)</small>
+          </div>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>💰 View Selection (Cost Optimization)</h3>
+        <p class="section-description">Control which object views should be vectorized to reduce API costs. Only vectorize views that benefit from semantic search.</p>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Vectorize all views</slot-default>
+          </x-nccheckboxradioswitch><small>Enable vectorization for all existing and future views (may increase costs)</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>📄 Object Serialization</h3>
+        <p class="section-description">Configure how objects are converted to text before vectorization. These settings affect search quality and context.</p>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Include schema and register metadata</slot-default>
+          </x-nccheckboxradioswitch><small>Add schema titles, descriptions, and register information to provide richer context for search</small>
+        </div>
+        <div class="form-group"><label for="max-depth">Maximum Nesting Depth</label><input id="max-depth" type="number" min="1" max="20" class="input-field"><small>How deep to traverse nested object properties (1-20). Higher values capture more detail but increase vector size.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Include related object references</slot-default>
+          </x-nccheckboxradioswitch><small>Include ids and names of related objects for better contextual search</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>⚡ Batch Processing</h3>
+        <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" step="1" class="input-field"><small>Number of objects to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Auto-retry failed vectorizations</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically retry failed vectorization attempts (max 3 retries)</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>ℹ️ current configuration</h3>
+        <div class="info-grid">
+          <div class="info-item"><span class="info-label">Embedding Provider</span><span class="info-value">Not configured</span></div>
+          <div class="info-item"><span class="info-label">Embedding Model</span><span class="info-value">Not configured</span></div>
+          <div class="info-item"><span class="info-label">Vector Dimensions</span><span class="info-value">N/A</span></div>
+        </div>
+        <div class="info-note"><small>To change the embedding provider or model, go to LLM configuration.</small></div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization settings modals golden object: noViews 1`] = `
+"<x-ncdialog name="Object Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-contentsave size="20"></x-contentsave>
+      </slot-icon>
+      <slot-default> Save Configuration</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="object-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Configure how database objects are converted into vector embeddings for semantic search. Objects are directly vectorized without needing text extraction.</p>
+      </div>
+      <div class="info-box warning">
+        <x-alertcircle size="20"></x-alertcircle>
+        <div><strong>Prerequisites</strong>
+          <p>Before object vectorization can work:</p>
+          <ul>
+            <li>LLM must be enabled with an embedding provider configured</li>
+            <li>Objects will be serialized as JSON text before vectorization</li>
+          </ul>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>🔢 Vectorization Settings</h3>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Enable automatic object vectorization</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically generate vector embeddings when objects are created or updated</small>
+        </div>
+        <div class="trigger-settings">
+          <h4>Vectorization Triggers</h4>
+          <div class="form-group">
+            <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+              <slot-default>Vectorize on object creation</slot-default>
+            </x-nccheckboxradioswitch><small>Generate vectors immediately when new objects are created</small>
+          </div>
+          <div class="form-group">
+            <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+              <slot-default>Re-vectorize on object update</slot-default>
+            </x-nccheckboxradioswitch><small>Update vectors when object data changes (recommended for accurate search)</small>
+          </div>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>💰 View Selection (Cost Optimization)</h3>
+        <p class="section-description">Control which object views should be vectorized to reduce API costs. Only vectorize views that benefit from semantic search.</p>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Vectorize all views</slot-default>
+          </x-nccheckboxradioswitch><small>Enable vectorization for all existing and future views (may increase costs)</small>
+        </div>
+        <div class="view-selection">
+          <div class="selection-header"><label>Select views to vectorize:</label>
+            <div class="selection-stats"><span class="stat-badge">1 / 0 views selected</span>
+              <x-ncbutton variant="tertiary" data-on="onClick">
+                <slot-default>Clear all</slot-default>
+              </x-ncbutton>
+            </div>
+          </div>
+          <div class="no-views">
+            <x-alertcircle size="24"></x-alertcircle>
+            <p>No views found. Create views first before configuring vectorization.</p>
+          </div>
+          <div class="cost-note">
+            <x-informationoutline size="16"></x-informationoutline><small>Tip: only enable views that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.</small>
+          </div>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>📄 Object Serialization</h3>
+        <p class="section-description">Configure how objects are converted to text before vectorization. These settings affect search quality and context.</p>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Include schema and register metadata</slot-default>
+          </x-nccheckboxradioswitch><small>Add schema titles, descriptions, and register information to provide richer context for search</small>
+        </div>
+        <div class="form-group"><label for="max-depth">Maximum Nesting Depth</label><input id="max-depth" type="number" min="1" max="20" class="input-field"><small>How deep to traverse nested object properties (1-20). Higher values capture more detail but increase vector size.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Include related object references</slot-default>
+          </x-nccheckboxradioswitch><small>Include ids and names of related objects for better contextual search</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>⚡ Batch Processing</h3>
+        <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" step="1" class="input-field"><small>Number of objects to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Auto-retry failed vectorizations</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically retry failed vectorization attempts (max 3 retries)</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>ℹ️ current configuration</h3>
+        <div class="info-grid">
+          <div class="info-item"><span class="info-label">Embedding Provider</span><span class="info-value">ollama</span></div>
+          <div class="info-item"><span class="info-label">Embedding Model</span><span class="info-value">nomic</span></div>
+          <div class="info-item"><span class="info-label">Vector Dimensions</span><span class="info-value">768</span></div>
+        </div>
+        <div class="info-note"><small>To change the embedding provider or model, go to LLM configuration.</small></div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization settings modals golden object: open 1`] = `
+"<x-ncdialog name="Object Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="false" data-on="onClick">
+      <slot-icon>
+        <x-contentsave size="20"></x-contentsave>
+      </slot-icon>
+      <slot-default> Save Configuration</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="object-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Configure how database objects are converted into vector embeddings for semantic search. Objects are directly vectorized without needing text extraction.</p>
+      </div>
+      <div class="info-box warning">
+        <x-alertcircle size="20"></x-alertcircle>
+        <div><strong>Prerequisites</strong>
+          <p>Before object vectorization can work:</p>
+          <ul>
+            <li>LLM must be enabled with an embedding provider configured</li>
+            <li>Objects will be serialized as JSON text before vectorization</li>
+          </ul>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>🔢 Vectorization Settings</h3>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Enable automatic object vectorization</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically generate vector embeddings when objects are created or updated</small>
+        </div>
+        <div class="trigger-settings">
+          <h4>Vectorization Triggers</h4>
+          <div class="form-group">
+            <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+              <slot-default>Vectorize on object creation</slot-default>
+            </x-nccheckboxradioswitch><small>Generate vectors immediately when new objects are created</small>
+          </div>
+          <div class="form-group">
+            <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+              <slot-default>Re-vectorize on object update</slot-default>
+            </x-nccheckboxradioswitch><small>Update vectors when object data changes (recommended for accurate search)</small>
+          </div>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>💰 View Selection (Cost Optimization)</h3>
+        <p class="section-description">Control which object views should be vectorized to reduce API costs. Only vectorize views that benefit from semantic search.</p>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Vectorize all views</slot-default>
+          </x-nccheckboxradioswitch><small>Enable vectorization for all existing and future views (may increase costs)</small>
+        </div>
+        <div class="view-selection">
+          <div class="selection-header"><label>Select views to vectorize:</label>
+            <div class="selection-stats"><span class="stat-badge">1 / 2 views selected</span>
+              <x-ncbutton variant="tertiary" data-on="onClick">
+                <slot-default>Clear all</slot-default>
+              </x-ncbutton>
+            </div>
+          </div>
+          <div class="view-list">
+            <div class="view-item">
+              <x-nccheckboxradioswitch modelvalue="2" type="checkbox" data-on="onUpdate:modelValue" value="1">
+                <slot-default><span class="view-name">First view</span></slot-default>
+              </x-nccheckboxradioswitch><span class="view-description">The first</span>
+            </div>
+            <div class="view-item">
+              <x-nccheckboxradioswitch modelvalue="2" type="checkbox" data-on="onUpdate:modelValue" value="2">
+                <slot-default><span class="view-name">Second view</span></slot-default>
+              </x-nccheckboxradioswitch>
+            </div>
+          </div>
+          <div class="cost-note">
+            <x-informationoutline size="16"></x-informationoutline><small>Tip: only enable views that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.</small>
+          </div>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>📄 Object Serialization</h3>
+        <p class="section-description">Configure how objects are converted to text before vectorization. These settings affect search quality and context.</p>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Include schema and register metadata</slot-default>
+          </x-nccheckboxradioswitch><small>Add schema titles, descriptions, and register information to provide richer context for search</small>
+        </div>
+        <div class="form-group"><label for="max-depth">Maximum Nesting Depth</label><input id="max-depth" type="number" min="1" max="20" class="input-field"><small>How deep to traverse nested object properties (1-20). Higher values capture more detail but increase vector size.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Include related object references</slot-default>
+          </x-nccheckboxradioswitch><small>Include ids and names of related objects for better contextual search</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>⚡ Batch Processing</h3>
+        <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" step="1" class="input-field"><small>Number of objects to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Auto-retry failed vectorizations</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically retry failed vectorization attempts (max 3 retries)</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>ℹ️ current configuration</h3>
+        <div class="info-grid">
+          <div class="info-item"><span class="info-label">Embedding Provider</span><span class="info-value">ollama</span></div>
+          <div class="info-item"><span class="info-label">Embedding Model</span><span class="info-value">nomic</span></div>
+          <div class="info-item"><span class="info-label">Vector Dimensions</span><span class="info-value">768</span></div>
+        </div>
+        <div class="info-note"><small>To change the embedding provider or model, go to LLM configuration.</small></div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;
+
+exports[`vectorization settings modals golden object: saves 1`] = `
+{
+  "data": {
+    "config": {
+      "autoRetry": true,
+      "batchSize": 50,
+      "enabledViews": [
+        2,
+      ],
+      "includeMetadata": true,
+      "includeRelations": true,
+      "maxNestingDepth": 4,
+      "vectorizationEnabled": true,
+      "vectorizeAllViews": false,
+      "vectorizeOnCreate": true,
+      "vectorizeOnUpdate": false,
+    },
+    "embeddingModelName": "nomic",
+    "embeddingProviderName": "ollama",
+    "saving": false,
+    "vectorDimensions": 768,
+    "views": [
+      {
+        "description": "The first",
+        "id": 1,
+        "name": "First view",
+      },
+      {
+        "id": 2,
+        "name": "Second view",
+      },
+    ],
+  },
+  "emitted": {
+    "closing": [
+      [],
+    ],
+  },
+  "error": [],
+  "get": [],
+  "patch": [
+    [
+      "/apps/openregister/api/settings/objects/vectorize",
+      {
+        "autoRetry": true,
+        "batchSize": 50,
+        "enabledViews": [
+          2,
+        ],
+        "includeMetadata": true,
+        "includeRelations": true,
+        "maxNestingDepth": 4,
+        "vectorizationEnabled": true,
+        "vectorizeAllViews": false,
+        "vectorizeOnCreate": true,
+        "vectorizeOnUpdate": false,
+      },
+    ],
+  ],
+  "post": [],
+  "success": [
+    [
+      "Object vectorization configuration saved successfully",
+    ],
+  ],
+}
+`;
+
+exports[`vectorization settings modals golden object: saving 1`] = `
+"<x-ncdialog name="Object Vectorization" size="large" data-on="onClosing">
+  <slot-actions>
+    <x-ncbutton data-on="onClick">
+      <slot-default>Cancel</slot-default>
+    </x-ncbutton>
+    <x-ncbutton variant="primary" disabled="true" data-on="onClick">
+      <slot-icon>
+        <x-ncloadingicon size="20"></x-ncloadingicon>
+      </slot-icon>
+      <slot-default> Saving...</slot-default>
+    </x-ncbutton>
+  </slot-actions>
+  <slot-default>
+    <div class="object-config-content">
+      <div class="info-box">
+        <x-informationoutline size="20"></x-informationoutline>
+        <p>Configure how database objects are converted into vector embeddings for semantic search. Objects are directly vectorized without needing text extraction.</p>
+      </div>
+      <div class="info-box warning">
+        <x-alertcircle size="20"></x-alertcircle>
+        <div><strong>Prerequisites</strong>
+          <p>Before object vectorization can work:</p>
+          <ul>
+            <li>LLM must be enabled with an embedding provider configured</li>
+            <li>Objects will be serialized as JSON text before vectorization</li>
+          </ul>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>🔢 Vectorization Settings</h3>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Enable automatic object vectorization</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically generate vector embeddings when objects are created or updated</small>
+        </div>
+        <div class="trigger-settings">
+          <h4>Vectorization Triggers</h4>
+          <div class="form-group">
+            <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+              <slot-default>Vectorize on object creation</slot-default>
+            </x-nccheckboxradioswitch><small>Generate vectors immediately when new objects are created</small>
+          </div>
+          <div class="form-group">
+            <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+              <slot-default>Re-vectorize on object update</slot-default>
+            </x-nccheckboxradioswitch><small>Update vectors when object data changes (recommended for accurate search)</small>
+          </div>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>💰 View Selection (Cost Optimization)</h3>
+        <p class="section-description">Control which object views should be vectorized to reduce API costs. Only vectorize views that benefit from semantic search.</p>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="false" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Vectorize all views</slot-default>
+          </x-nccheckboxradioswitch><small>Enable vectorization for all existing and future views (may increase costs)</small>
+        </div>
+        <div class="view-selection">
+          <div class="selection-header"><label>Select views to vectorize:</label>
+            <div class="selection-stats"><span class="stat-badge">1 / 2 views selected</span>
+              <x-ncbutton variant="tertiary" data-on="onClick">
+                <slot-default>Clear all</slot-default>
+              </x-ncbutton>
+            </div>
+          </div>
+          <div class="view-list">
+            <div class="view-item">
+              <x-nccheckboxradioswitch modelvalue="2" type="checkbox" data-on="onUpdate:modelValue" value="1">
+                <slot-default><span class="view-name">First view</span></slot-default>
+              </x-nccheckboxradioswitch><span class="view-description">The first</span>
+            </div>
+            <div class="view-item">
+              <x-nccheckboxradioswitch modelvalue="2" type="checkbox" data-on="onUpdate:modelValue" value="2">
+                <slot-default><span class="view-name">Second view</span></slot-default>
+              </x-nccheckboxradioswitch>
+            </div>
+          </div>
+          <div class="cost-note">
+            <x-informationoutline size="16"></x-informationoutline><small>Tip: only enable views that need semantic search to minimize embedding costs. Simple lookup tables rarely need vectorization.</small>
+          </div>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>📄 Object Serialization</h3>
+        <p class="section-description">Configure how objects are converted to text before vectorization. These settings affect search quality and context.</p>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Include schema and register metadata</slot-default>
+          </x-nccheckboxradioswitch><small>Add schema titles, descriptions, and register information to provide richer context for search</small>
+        </div>
+        <div class="form-group"><label for="max-depth">Maximum Nesting Depth</label><input id="max-depth" type="number" min="1" max="20" class="input-field"><small>How deep to traverse nested object properties (1-20). Higher values capture more detail but increase vector size.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Include related object references</slot-default>
+          </x-nccheckboxradioswitch><small>Include ids and names of related objects for better contextual search</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>⚡ Batch Processing</h3>
+        <div class="form-group"><label for="batch-size">Batch Size</label><input id="batch-size" type="number" min="1" max="100" step="1" class="input-field"><small>Number of objects to vectorize in one API call. Higher = faster but more memory. Recommended: 10-50.</small></div>
+        <div class="form-group">
+          <x-nccheckboxradioswitch modelvalue="true" type="switch" data-on="onUpdate:modelValue">
+            <slot-default>Auto-retry failed vectorizations</slot-default>
+          </x-nccheckboxradioswitch><small>Automatically retry failed vectorization attempts (max 3 retries)</small>
+        </div>
+      </div>
+      <div class="config-section">
+        <h3>ℹ️ current configuration</h3>
+        <div class="info-grid">
+          <div class="info-item"><span class="info-label">Embedding Provider</span><span class="info-value">ollama</span></div>
+          <div class="info-item"><span class="info-label">Embedding Model</span><span class="info-value">nomic</span></div>
+          <div class="info-item"><span class="info-label">Vector Dimensions</span><span class="info-value">768</span></div>
+        </div>
+        <div class="info-note"><small>To change the embedding provider or model, go to LLM configuration.</small></div>
+      </div>
+    </div>
+  </slot-default>
+</x-ncdialog>"
+`;

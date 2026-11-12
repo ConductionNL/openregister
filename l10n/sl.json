@@ -2925,7 +2925,7 @@
         "Complete: {outcome}": "Dokončaj: {outcome}",
         "Could not load the task": "Naloge ni bilo mogoče naložiti",
         "The task refused that action": "Naloga je zavrnila to dejanje",
-        "Store": "Trgovina",
+        "Marketplace": "Trgovina",
         "Install registers, schemas and flows that other organisations have published.": "Namestite registre, sheme in tokove, ki so jih objavile druge organizacije.",
         "No such run": "Ni takšnega izvajanja",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Izvajanje ne obstaja ali pa ga ne smete videti. Z brisanjem toka se izbrišejo tudi njegova izvajanja.",

@@ -91,18 +91,37 @@ class FormFieldRules {
 	];
 
 	/**
-	 * Upper bounds: a field bound above the property's, or absent, is looser.
+	 * The bounds compared, with the direction in which a field bound is looser.
 	 *
-	 * @var array<int, string>
+	 * An upper bound (1) is looser when the field's is above the property's;
+	 * a lower bound (-1) when it is below. An absent field bound is looser
+	 * either way. Upper bounds come first, which is the order findings name them.
+	 *
+	 * @var array<string, int>
 	 */
-	private const UPPER_BOUNDS = ['maxLength', 'maximum', 'maxItems'];
+	private const BOUND_DIRECTIONS = [
+		'maxLength' => 1,
+		'maximum' => 1,
+		'maxItems' => 1,
+		'minLength' => -1,
+		'minimum' => -1,
+		'minItems' => -1,
+	];
 
 	/**
-	 * Lower bounds: a field bound below the property's, or absent, is looser.
+	 * The JSON type of each PHP type a fixed value can have, by get_debug_type().
 	 *
-	 * @var array<int, string>
+	 * Anything else is an object, or an array when it is a list.
+	 *
+	 * @var array<string, string>
 	 */
-	private const LOWER_BOUNDS = ['minLength', 'minimum', 'minItems'];
+	private const JSON_TYPES = [
+		'null' => 'null',
+		'bool' => 'boolean',
+		'int' => 'integer',
+		'float' => 'number',
+		'string' => 'string',
+	];
 
 	/**
 	 * Whether the field's type can produce a value of the property's type.
@@ -121,12 +140,7 @@ class FormFieldRules {
 			return true;
 		}
 
-		if (in_array($produces, $accepts, true) === true) {
-			return true;
-		}
-
-		// An integer is a number; the reverse is the 1.5 an integer refuses.
-		return $produces === 'integer' && in_array('number', $accepts, true) === true;
+		return $this->acceptsType(type: $produces, accepts: $accepts);
 	}//end typeFits()
 
 	/**
@@ -208,17 +222,23 @@ class FormFieldRules {
 			return null;
 		}
 
-		$values = [];
-		foreach ($options as $option) {
-			if (is_array($option) === true) {
-				$option = ($option['value'] ?? null);
-			}
+		return array_map(fn (mixed $option): mixed => $this->optionValue(option: $option), array_values($options));
+	}//end optionsOf()
 
-			$values[] = $option;
+	/**
+	 * The value one option offers: a plain value, or the `value` of a `{value, label}` object.
+	 *
+	 * @param mixed $option The option.
+	 *
+	 * @return mixed The offered value.
+	 */
+	private function optionValue(mixed $option): mixed {
+		if (is_array($option) === true) {
+			return ($option['value'] ?? null);
 		}
 
-		return $values;
-	}//end optionsOf()
+		return $option;
+	}//end optionValue()
 
 	/**
 	 * The constraints on which the field is looser than the property.
@@ -237,14 +257,8 @@ class FormFieldRules {
 	 */
 	public function looserConstraints(array $field, array $property): array {
 		$looser = [];
-		foreach (self::UPPER_BOUNDS as $bound) {
-			if ($this->isLooser(field: $field, property: $property, bound: $bound, upper: true) === true) {
-				$looser[] = $bound;
-			}
-		}
-
-		foreach (self::LOWER_BOUNDS as $bound) {
-			if ($this->isLooser(field: $field, property: $property, bound: $bound, upper: false) === true) {
+		foreach (self::BOUND_DIRECTIONS as $bound => $direction) {
+			if ($this->isLooser(bounds: [($field[$bound] ?? null), ($property[$bound] ?? null)], direction: $direction) === true) {
 				$looser[] = $bound;
 			}
 		}
@@ -268,8 +282,7 @@ class FormFieldRules {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-openregister-must-judge-a-forms-mapping-against-its-destination-schema
 	 */
 	public function fixedValueFits(mixed $value, array $property): bool {
-		$enum = $this->enumOf(property: $property);
-		if ($enum !== null && is_array($value) === false && in_array($value, $enum, true) === false) {
+		if ($this->isOutsideEnum(value: $value, property: $property) === true) {
 			return false;
 		}
 
@@ -278,13 +291,39 @@ class FormFieldRules {
 			return true;
 		}
 
-		$actual = $this->jsonTypeOf(value: $value);
-		if (in_array($actual, $accepts, true) === true) {
-			return true;
-		}
-
-		return $actual === 'integer' && in_array('number', $accepts, true) === true;
+		return $this->acceptsType(type: $this->jsonTypeOf(value: $value), accepts: $accepts);
 	}//end fixedValueFits()
+
+	/**
+	 * Whether a scalar fixed value falls outside the property's enum.
+	 *
+	 * A list value is not judged against the enum here.
+	 *
+	 * @param mixed                $value    The fixed value.
+	 * @param array<string, mixed> $property The schema property.
+	 *
+	 * @return bool True when the property has an enum and the value is not in it.
+	 */
+	private function isOutsideEnum(mixed $value, array $property): bool {
+		$enum = $this->enumOf(property: $property);
+
+		return $enum !== null && is_array($value) === false && in_array($value, $enum, true) === false;
+	}//end isOutsideEnum()
+
+	/**
+	 * Whether a JSON type is one the property accepts.
+	 *
+	 * An integer is a number; the reverse is the 1.5 an integer refuses.
+	 *
+	 * @param string             $type    The JSON type produced.
+	 * @param array<int, string> $accepts The JSON types the property accepts.
+	 *
+	 * @return bool True when accepted.
+	 */
+	private function acceptsType(string $type, array $accepts): bool {
+		return in_array($type, $accepts, true) === true
+			|| ($type === 'integer' && in_array('number', $accepts, true) === true);
+	}//end acceptsType()
 
 	/**
 	 * The JSON types a property accepts, from a string or a list `type`.
@@ -309,27 +348,25 @@ class FormFieldRules {
 	/**
 	 * Whether one bound of the field is looser than the property's.
 	 *
-	 * @param array<string, mixed> $field    The mapping entry.
-	 * @param array<string, mixed> $property The schema property.
-	 * @param string               $bound    The constraint name.
-	 * @param bool                 $upper    True for an upper bound.
+	 * Both sides are multiplied by the direction, so one comparison serves an
+	 * upper bound (1) and a lower bound (-1).
+	 *
+	 * @param array{0: mixed, 1: mixed} $bounds    The field's bound and the property's bound.
+	 * @param int                       $direction 1 for an upper bound, -1 for a lower bound.
 	 *
 	 * @return bool True when looser.
 	 */
-	private function isLooser(array $field, array $property, string $bound, bool $upper): bool {
-		if (is_numeric($property[$bound] ?? null) === false) {
+	private function isLooser(array $bounds, int $direction): bool {
+		[$fieldBound, $propertyBound] = $bounds;
+		if (is_numeric($propertyBound) === false) {
 			return false;
 		}
 
-		if (is_numeric($field[$bound] ?? null) === false) {
+		if (is_numeric($fieldBound) === false) {
 			return true;
 		}
 
-		if ($upper === true) {
-			return (float)$field[$bound] > (float)$property[$bound];
-		}
-
-		return (float)$field[$bound] < (float)$property[$bound];
+		return ($direction * (float)$fieldBound) > ($direction * (float)$propertyBound);
 	}//end isLooser()
 
 	/**
@@ -340,15 +377,12 @@ class FormFieldRules {
 	 * @return string The JSON type name.
 	 */
 	private function jsonTypeOf(mixed $value): string {
-		return match (true) {
-			$value === null => 'null',
-			is_bool($value) === true => 'boolean',
-			is_int($value) === true => 'integer',
-			is_float($value) === true => 'number',
-			is_string($value) === true => 'string',
-			is_array($value) === true && array_is_list($value) === true => 'array',
-			default => 'object',
-		};
+		$type = (self::JSON_TYPES[get_debug_type($value)] ?? 'object');
+		if (is_array($value) === true && array_is_list($value) === true) {
+			return 'array';
+		}
+
+		return $type;
 	}//end jsonTypeOf()
 
 	/**

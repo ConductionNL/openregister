@@ -12,7 +12,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+ * @spec openspec/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
  */
 
 declare(strict_types=1);
@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\CauseFrame;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
@@ -48,7 +49,7 @@ class RecentLensLookupCallSitesTest extends TestCase {
 	 * @var array<string, array<int, string>>
 	 */
 	private const OPENED = [
-		'lib/Controller/ObjectsController.php' => ['show'],
+		'lib/Controller/ObjectsController.php' => ['foundForShow'],
 		'lib/Controller/TmloController.php' => ['exportSingle'],
 		'lib/Controller/ObjectShareLinkController.php' => ['show'],
 		'lib/Service/CaseTokenService.php' => ['resolve'],
@@ -63,6 +64,20 @@ class RecentLensLookupCallSitesTest extends TestCase {
 	private const NOT_OBJECT_SERVICE = [
 		'lib/Controller/ContentReportController.php' => ['create'],
 		'lib/Service/Portal/PortalPartyResolver.php' => ['resolveFromObject'],
+		'lib/Service/Object/SaveObject/InverseRelations.php' => ['relatedObject'],
+		'lib/Service/Object/SaveObject/InverseWriteBack.php' => ['writeToTarget'],
+	];
+
+	/**
+	 * Lookups whose `fn ()` sits on the line after `WriteCause::asLookup(`.
+	 *
+	 * Keyed by file, valued by the enclosing method. A listed call still has to
+	 * be wrapped in the lookup: being listed decides nothing by itself.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	private const WRAPPED_LOOKUPS = [
+		'lib/Files/Controller/FilesController.php' => ['objectUnderReadCheck'],
 	];
 
 	/**
@@ -125,8 +140,7 @@ class RecentLensLookupCallSitesTest extends TestCase {
 		);
 		$accessor->load(caseUuid: 'case-1');
 		WriteCause::runAs(
-			cause: WriteCause::SCHEDULED,
-			run: 'sweep-1',
+			frame: new CauseFrame(cause: WriteCause::SCHEDULED, run: 'sweep-1'),
 			operation: static fn () => $accessor->load(caseUuid: 'case-1')
 		);
 
@@ -137,7 +151,8 @@ class RecentLensLookupCallSitesTest extends TestCase {
 	 * Every `ObjectService::find()` in lib/ has a decision.
 	 *
 	 * Either it is a lookup (`WriteCause::asLookup`), or it writes no audit
-	 * row (`_audit: false`), or it is one of the listed opens. A new internal
+	 * row (`_audit: false`, or `audit: false` in its ObjectFindOptions), or it
+	 * is one of the listed opens. A new internal
 	 * read that is none of these would put objects in people's recent lists
 	 * without anyone deciding it should, so it fails here.
 	 *
@@ -168,9 +183,11 @@ class RecentLensLookupCallSitesTest extends TestCase {
 				$prefix = substr($source, max(0, $offset - 40), min(40, $offset));
 
 				if (str_contains($prefix, 'WriteCause::asLookup(fn () => ') === true
-					|| preg_match('/_audit:\s*false/', $call) === 1
+					|| $this->skipsTheAuditRow(call: $call) === true
 					|| in_array($method, (self::OPENED[$relative] ?? []), true) === true
 					|| in_array($method, (self::NOT_OBJECT_SERVICE[$relative] ?? []), true) === true
+					|| (in_array($method, (self::WRAPPED_LOOKUPS[$relative] ?? []), true) === true
+					&& preg_match('/WriteCause::asLookup\(\s+fn \(\) => $/', $prefix) === 1)
 				) {
 					continue;
 				}
@@ -180,8 +197,36 @@ class RecentLensLookupCallSitesTest extends TestCase {
 		}//end foreach
 
 		$this->assertGreaterThan(70, $counted, 'the scan must actually see the call sites');
-		$this->assertSame([], $undecided, 'decide each: lookup, `_audit: false`, or a person opening the object');
+		$this->assertSame([], $undecided, 'decide each: lookup, `_audit: false` (or ObjectFindOptions audit: false), or a person opening the object');
 	}//end testEveryInternalFindHasADecision()
+
+	/**
+	 * The audit-row recogniser accepts both spellings of the opt-out, and nothing else.
+	 *
+	 * @return void
+	 */
+	public function testTheAuditOptOutIsRecognisedInBothSpellings(): void {
+		$this->assertTrue($this->skipsTheAuditRow(call: '(id: $uuid, _audit: false)'));
+		$this->assertTrue($this->skipsTheAuditRow(call: '(id: $uuid, options: new ObjectFindOptions(render: false, audit: false))'));
+		$this->assertTrue(
+			$this->skipsTheAuditRow(call: '(id: $id, options: new ObjectFindOptions(register: $ref->getId(), audit: false))')
+		);
+		$this->assertFalse($this->skipsTheAuditRow(call: '(id: $uuid, options: new ObjectFindOptions(audit: true))'));
+		$this->assertFalse($this->skipsTheAuditRow(call: '(id: $uuid, options: new ObjectFindOptions(render: false))'));
+		$this->assertFalse($this->skipsTheAuditRow(call: '(id: $uuid, options: $options, audit: false)'));
+	}//end testTheAuditOptOutIsRecognisedInBothSpellings()
+
+	/**
+	 * Whether a find() call opts out of the audit row: `_audit: false`, or `audit: false` inside its ObjectFindOptions.
+	 *
+	 * @param string $call The call's arguments, parentheses included.
+	 *
+	 * @return bool True when the call writes no audit row.
+	 */
+	private function skipsTheAuditRow(string $call): bool {
+		return preg_match('/_audit:\s*false/', $call) === 1
+			|| preg_match('/new ObjectFindOptions\((?:[^()]|\([^()]*\))*\baudit:\s*false/', $call) === 1;
+	}//end skipsTheAuditRow()
 
 	/**
 	 * The argument list of the call whose `(` is at `$open`.

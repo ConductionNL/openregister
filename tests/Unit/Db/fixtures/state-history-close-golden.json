@@ -1,0 +1,19 @@
+{
+    "close": {
+        "result": 1,
+        "queries": [
+            "#1 update(openregister_state_history, NULL)",
+            "#1 param :p1 = DateTime, datetime",
+            "#1 set(left_at, :p1)",
+            "#1 param :p2 = uuid-1, 2",
+            "#1 expr.eq(object_uuid, :p2, NULL)",
+            "#1 where(eq(object_uuid, :p2, NULL))",
+            "#1 param :p3 = status, 2",
+            "#1 expr.eq(property, :p3, NULL)",
+            "#1 andWhere(eq(property, :p3, NULL))",
+            "#1 expr.isNull(left_at)",
+            "#1 andWhere(isNull(left_at))",
+            "#1 executeStatement()"
+        ]
+    }
+}

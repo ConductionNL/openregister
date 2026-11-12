@@ -1,0 +1,454 @@
+{
+    "readOnly: create": {
+        "returned": []
+    },
+    "immutable: create": {
+        "returned": []
+    },
+    "readOnly: no properties": {
+        "returned": []
+    },
+    "immutable: no properties": {
+        "returned": []
+    },
+    "readOnly: none declared": {
+        "returned": []
+    },
+    "immutable: none declared": {
+        "returned": []
+    },
+    "readOnly: omitted": {
+        "returned": []
+    },
+    "immutable: omitted": {
+        "returned": []
+    },
+    "readOnly: equal": {
+        "returned": []
+    },
+    "immutable: equal": {
+        "returned": []
+    },
+    "readOnly: changed": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": 2,
+                "stored": 1,
+                "message": "Property 'a' is declared readOnly and cannot be modified after creation."
+            },
+            {
+                "property": "c",
+                "attempted": "y",
+                "stored": "z",
+                "message": "Property 'c' is declared readOnly and cannot be modified after creation."
+            }
+        ]
+    },
+    "immutable: changed": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": 2,
+                "stored": 1,
+                "message": "Property 'a' is immutable once set and cannot be changed."
+            },
+            {
+                "property": "c",
+                "attempted": "y",
+                "stored": "z",
+                "message": "Property 'c' is immutable once set and cannot be changed."
+            }
+        ]
+    },
+    "readOnly: second changed": {
+        "returned": [
+            {
+                "property": "c",
+                "attempted": "y",
+                "stored": "z",
+                "message": "Property 'c' is declared readOnly and cannot be modified after creation."
+            }
+        ]
+    },
+    "immutable: second changed": {
+        "returned": [
+            {
+                "property": "c",
+                "attempted": "y",
+                "stored": "z",
+                "message": "Property 'c' is immutable once set and cannot be changed."
+            }
+        ]
+    },
+    "readOnly: loosely equal": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": "1",
+                "stored": 1,
+                "message": "Property 'a' is declared readOnly and cannot be modified after creation."
+            }
+        ]
+    },
+    "immutable: loosely equal": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": "1",
+                "stored": 1,
+                "message": "Property 'a' is immutable once set and cannot be changed."
+            }
+        ]
+    },
+    "readOnly: stored null": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": 5,
+                "stored": null,
+                "message": "Property 'a' is declared readOnly and cannot be modified after creation."
+            }
+        ]
+    },
+    "immutable: stored null": {
+        "returned": []
+    },
+    "readOnly: stored missing": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": 5,
+                "stored": null,
+                "message": "Property 'a' is declared readOnly and cannot be modified after creation."
+            }
+        ]
+    },
+    "immutable: stored missing": {
+        "returned": []
+    },
+    "readOnly: stored empty string": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": 5,
+                "stored": "",
+                "message": "Property 'a' is declared readOnly and cannot be modified after creation."
+            }
+        ]
+    },
+    "immutable: stored empty string": {
+        "returned": []
+    },
+    "readOnly: stored zero": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": 5,
+                "stored": 0,
+                "message": "Property 'a' is declared readOnly and cannot be modified after creation."
+            }
+        ]
+    },
+    "immutable: stored zero": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": 5,
+                "stored": 0,
+                "message": "Property 'a' is immutable once set and cannot be changed."
+            }
+        ]
+    },
+    "readOnly: stored false": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": true,
+                "stored": false,
+                "message": "Property 'a' is declared readOnly and cannot be modified after creation."
+            }
+        ]
+    },
+    "immutable: stored false": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": true,
+                "stored": false,
+                "message": "Property 'a' is immutable once set and cannot be changed."
+            }
+        ]
+    },
+    "readOnly: incoming null": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": null,
+                "stored": 3,
+                "message": "Property 'a' is declared readOnly and cannot be modified after creation."
+            }
+        ]
+    },
+    "immutable: incoming null": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": null,
+                "stored": 3,
+                "message": "Property 'a' is immutable once set and cannot be changed."
+            }
+        ]
+    },
+    "readOnly: both null": {
+        "returned": []
+    },
+    "immutable: both null": {
+        "returned": []
+    },
+    "readOnly: array values": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": [
+                    1,
+                    2
+                ],
+                "stored": [
+                    2,
+                    1
+                ],
+                "message": "Property 'a' is declared readOnly and cannot be modified after creation."
+            }
+        ]
+    },
+    "immutable: array values": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": [
+                    1,
+                    2
+                ],
+                "stored": [
+                    2,
+                    1
+                ],
+                "message": "Property 'a' is immutable once set and cannot be changed."
+            }
+        ]
+    },
+    "readOnly: truthy markers": {
+        "returned": []
+    },
+    "immutable: truthy markers": {
+        "returned": []
+    },
+    "readOnly: numeric names": {
+        "returned": [
+            {
+                "property": "0",
+                "attempted": "n",
+                "stored": "o",
+                "message": "Property '0' is declared readOnly and cannot be modified after creation."
+            }
+        ]
+    },
+    "immutable: numeric names": {
+        "returned": [
+            {
+                "property": "0",
+                "attempted": "n",
+                "stored": "o",
+                "message": "Property '0' is immutable once set and cannot be changed."
+            }
+        ]
+    },
+    "readOnly: only immutable": {
+        "returned": []
+    },
+    "immutable: only immutable": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": 2,
+                "stored": 1,
+                "message": "Property 'a' is immutable once set and cannot be changed."
+            }
+        ]
+    },
+    "readOnly: only readOnly": {
+        "returned": [
+            {
+                "property": "a",
+                "attempted": 2,
+                "stored": 1,
+                "message": "Property 'a' is declared readOnly and cannot be modified after creation."
+            }
+        ]
+    },
+    "immutable: only readOnly": {
+        "returned": []
+    },
+    "unique: not configured": {
+        "outcome": {
+            "returned": null
+        },
+        "filters": null
+    },
+    "unique: empty list": {
+        "outcome": {
+            "returned": null
+        },
+        "filters": null
+    },
+    "unique: empty string": {
+        "outcome": {
+            "returned": null
+        },
+        "filters": null
+    },
+    "unique: one field, miss": {
+        "outcome": {
+            "returned": null
+        },
+        "filters": {
+            "a": 1
+        }
+    },
+    "unique: one field, hit": {
+        "outcome": {
+            "threw": "OCA\\OpenRegister\\Exception\\CustomValidationException",
+            "message": "Fields are not unique: a (values: a=1)",
+            "errors": {
+                "a": "The identifying fields (a) are not unique. Found duplicate values: a=1"
+            }
+        },
+        "filters": {
+            "a": 1
+        }
+    },
+    "unique: one field, null hit": {
+        "outcome": {
+            "threw": "OCA\\OpenRegister\\Exception\\CustomValidationException",
+            "message": "Fields are not unique: a (values: a=null)",
+            "errors": {
+                "a": "The identifying fields (a) are not unique. Found duplicate values: a=null"
+            }
+        },
+        "filters": {
+            "a": null
+        }
+    },
+    "unique: list, miss": {
+        "outcome": {
+            "returned": null
+        },
+        "filters": {
+            "a": 1,
+            "b": "x"
+        }
+    },
+    "unique: list, hit": {
+        "outcome": {
+            "threw": "OCA\\OpenRegister\\Exception\\CustomValidationException",
+            "message": "Fields are not unique: a, b (values: a=1, b=x)",
+            "errors": {
+                "a": "The identifying fields (a, b) are not unique. Found duplicate values: a=1, b=x"
+            }
+        },
+        "filters": {
+            "a": 1,
+            "b": "x"
+        }
+    },
+    "unique: list, null value": {
+        "outcome": {
+            "threw": "OCA\\OpenRegister\\Exception\\CustomValidationException",
+            "message": "Fields are not unique: a, b (values: a=1, b=null)",
+            "errors": {
+                "a": "The identifying fields (a, b) are not unique. Found duplicate values: a=1, b=null"
+            }
+        },
+        "filters": {
+            "a": 1,
+            "b": null
+        }
+    },
+    "unique: one-item list, hit": {
+        "outcome": {
+            "threw": "OCA\\OpenRegister\\Exception\\CustomValidationException",
+            "message": "Fields are not unique: b (values: b=x)",
+            "errors": {
+                "b": "The identifying fields (b) are not unique. Found duplicate values: b=x"
+            }
+        },
+        "filters": {
+            "b": "x"
+        }
+    },
+    "unique: numeric field, hit": {
+        "outcome": {
+            "threw": "OCA\\OpenRegister\\Exception\\CustomValidationException",
+            "message": "Fields are not unique: 7 (values: 7=v)",
+            "errors": {
+                "7": "The identifying fields (7) are not unique. Found duplicate values: 7=v"
+            }
+        },
+        "filters": []
+    },
+    "response: custom, no errors": [
+        400,
+        {
+            "status": "error",
+            "message": "Validation failed",
+            "errors": []
+        }
+    ],
+    "response: custom, errors": [
+        400,
+        {
+            "status": "error",
+            "message": "Validation failed",
+            "errors": [
+                "A is bad",
+                [
+                    "x",
+                    "y"
+                ]
+            ]
+        }
+    ],
+    "response: validation, no error": [
+        400,
+        {
+            "status": "error",
+            "message": "Validation failed",
+            "errors": [
+                {
+                    "property": null,
+                    "message": "read only",
+                    "errors": []
+                }
+            ]
+        }
+    ],
+    "response: validation, with error": [
+        400,
+        {
+            "status": "error",
+            "message": "Validation failed",
+            "errors": [
+                {
+                    "property": null,
+                    "message": "Invalid object",
+                    "errors": {
+                        "/": [
+                            "The data (integer) must match the type: string"
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,378 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`upload files golden all fail 1`] = `
+{
+  "error": "first",
+  "loading": false,
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "uploadFiles",
+      "1-2",
+      "o-3",
+      [
+        [
+          "files[]",
+          "a",
+        ],
+      ],
+    ],
+    [
+      "uploadFiles",
+      "1-2",
+      "o-3",
+      [
+        [
+          "files[]",
+          "b",
+        ],
+      ],
+    ],
+    [
+      "getAllTags",
+    ],
+    [
+      "fetchFiles",
+      "1-2",
+      "o-3",
+    ],
+  ],
+  "statuses": [
+    [
+      "a",
+      "failed",
+    ],
+    [
+      "b",
+      "failed",
+    ],
+  ],
+  "success": false,
+}
+`;
+
+exports[`upload files golden known type 1`] = `
+{
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "uploadFiles",
+      "1-2",
+      "o-3",
+      [
+        [
+          "files[]",
+          "a",
+        ],
+      ],
+    ],
+    [
+      "getAllTags",
+    ],
+    [
+      "fetchFiles",
+      "1-2",
+      "o-3",
+    ],
+  ],
+  "statuses": [
+    [
+      "a",
+      "uploaded",
+    ],
+  ],
+  "success": true,
+}
+`;
+
+exports[`upload files golden no object 1`] = `
+{
+  "error": "Missing object context",
+  "loading": false,
+  "log": [],
+  "statuses": [],
+  "success": false,
+}
+`;
+
+exports[`upload files golden no register 1`] = `
+{
+  "error": "Missing object context",
+  "loading": false,
+  "log": [],
+  "statuses": [],
+  "success": false,
+}
+`;
+
+exports[`upload files golden no schema 1`] = `
+{
+  "error": "Missing object context",
+  "loading": false,
+  "log": [],
+  "statuses": [],
+  "success": false,
+}
+`;
+
+exports[`upload files golden nothing to send 1`] = `
+{
+  "error": null,
+  "loading": false,
+  "log": [],
+  "statuses": [
+    [
+      "a",
+      "uploaded",
+    ],
+    [
+      "b",
+      "uploading",
+    ],
+    [
+      "c",
+      "pending",
+    ],
+  ],
+  "success": false,
+}
+`;
+
+exports[`upload files golden one fails 1`] = `
+{
+  "error": "too slow",
+  "loading": false,
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "uploadFiles",
+      "1-2",
+      "o-3",
+      [
+        [
+          "files[]",
+          "a",
+        ],
+      ],
+    ],
+    [
+      "uploadFiles",
+      "1-2",
+      "o-3",
+      [
+        [
+          "files[]",
+          "b",
+        ],
+      ],
+    ],
+    [
+      "getAllTags",
+    ],
+    [
+      "fetchFiles",
+      "1-2",
+      "o-3",
+    ],
+  ],
+  "statuses": [
+    [
+      "a",
+      "uploaded",
+    ],
+    [
+      "b",
+      "failed",
+    ],
+  ],
+  "success": false,
+}
+`;
+
+exports[`upload files golden one specific file 1`] = `
+{
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "uploadFiles",
+      "1-2",
+      "o-3",
+      [
+        [
+          "files[]",
+          "chosen",
+        ],
+      ],
+    ],
+    [
+      "getAllTags",
+    ],
+    [
+      "fetchFiles",
+      "1-2",
+      "o-3",
+    ],
+  ],
+  "statuses": [
+    [
+      "ignored",
+      "pending",
+    ],
+    [
+      "chosen",
+      "uploaded",
+    ],
+  ],
+  "success": true,
+}
+`;
+
+exports[`upload files golden queued files 1`] = `
+{
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "uploadFiles",
+      "1-2",
+      "o-3",
+      [
+        [
+          "files[]",
+          "a",
+        ],
+        [
+          "tags[]",
+          "t1",
+        ],
+        [
+          "tags[]",
+          "t2",
+        ],
+      ],
+    ],
+    [
+      "uploadFiles",
+      "1-2",
+      "o-3",
+      [
+        [
+          "files[]",
+          "b",
+        ],
+      ],
+    ],
+    [
+      "getAllTags",
+    ],
+    [
+      "fetchFiles",
+      "1-2",
+      "o-3",
+    ],
+  ],
+  "statuses": [
+    [
+      "a",
+      "uploaded",
+    ],
+    [
+      "b",
+      "uploaded",
+    ],
+    [
+      "c",
+      "uploaded",
+    ],
+    [
+      "big",
+      "pending",
+    ],
+  ],
+  "success": true,
+}
+`;
+
+exports[`upload files golden reports an unexpected failure 1`] = `
+{
+  "error": "server says no",
+  "loading": false,
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+  ],
+}
+`;
+
+exports[`upload files golden shared upload 1`] = `
+{
+  "error": null,
+  "loading": false,
+  "log": [
+    [
+      "registerObjectType",
+      "1-2",
+      2,
+      1,
+    ],
+    [
+      "uploadFiles",
+      "1-2",
+      "o-3",
+      [
+        [
+          "files[]",
+          "a",
+        ],
+        [
+          "share",
+          "1",
+        ],
+      ],
+    ],
+    [
+      "getAllTags",
+    ],
+    [
+      "fetchFiles",
+      "1-2",
+      "o-3",
+    ],
+  ],
+  "statuses": [
+    [
+      "a",
+      "uploaded",
+    ],
+  ],
+  "success": true,
+}
+`;

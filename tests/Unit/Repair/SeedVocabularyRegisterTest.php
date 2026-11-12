@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace Unit\Repair;
 
 use OCA\OpenRegister\Repair\SeedVocabularyRegister;
+use OCA\OpenRegister\Repair\RegisterDescriptorImport;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\VocabularyImportService;
 use OCP\App\IAppManager;
@@ -67,10 +68,12 @@ class SeedVocabularyRegisterTest extends TestCase {
 		$this->appManager->method('getAppPath')->with('openregister')->willReturn($this->appPath);
 
 		$this->repairStep = new SeedVocabularyRegister(
-			configurationService: $this->configurationService,
-			importService: $this->vocabularyImportService,
-			appManager: $this->appManager,
-			logger: $logger
+			descriptors: new RegisterDescriptorImport(
+				configurationService: $this->configurationService,
+				appManager: $this->appManager,
+				logger: $logger
+			),
+			importService: $this->vocabularyImportService
 		);
 	}//end setUp()
 

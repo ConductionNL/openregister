@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -41,7 +42,7 @@ class NameCacheWarmupJobTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Register mocks into the container so run() can resolve them.
-		$this->registerService(CacheHandler::class, function () {
+		$this->registerService(ObjectNameCacheInterface::class, function () {
 			return $this->cacheHandler;
 		});
 		$this->registerService(LoggerInterface::class, function () {
@@ -127,8 +128,19 @@ class NameCacheWarmupJobTest extends TestCase {
 		$this->cacheHandler->method('warmupNameCache')->willReturn(0);
 
 		// Should not throw.
+		$loaded = null;
+		$this->logger->method('info')->willReturnCallback(
+			function (string $message, array $context = []) use (&$loaded): void {
+				if (str_contains($message, 'Warmup Job Completed') === true) {
+					$loaded = $context['names_loaded'];
+				}
+			}
+		);
+		$this->logger->expects($this->never())->method('error');
+
 		$this->runJob();
-		$this->assertTrue(true);
+
+		$this->assertSame(0, $loaded);
 	}
 
 	// -------------------------------------------------------------------------
@@ -153,8 +165,11 @@ class NameCacheWarmupJobTest extends TestCase {
 			->willThrowException(new \RuntimeException('Database offline'));
 
 		// PHPUnit will catch any uncaught exception and fail the test.
+		$this->logger->expects($this->once())
+			->method('error')
+			->with('[NameCacheWarmupJob] ❌ Name Cache Nightly Warmup Job Failed', $this->callback(fn (array $context): bool => $context['error'] === 'Database offline'));
+
 		$this->runJob();
-		$this->assertTrue(true);
 	}
 
 	public function testRunLogsExceptionMessageInErrorContext(): void {

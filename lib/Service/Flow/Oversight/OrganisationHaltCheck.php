@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Oversight;
 
-use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\Flow\IFlowOversightCheck;
 use Throwable;
@@ -36,17 +36,17 @@ use Throwable;
  *
  * @spec openspec/changes/organisation-capability-halt/specs/flow-engine/spec.md
  */
-class OrganisationHaltCheck implements IFlowOversightCheck {
+class OrganisationHaltCheck implements IFlowOversightCheck, OrganisationHaltCheckInterface {
 
 	/**
 	 * Constructor.
 	 *
 	 * @param OrganisationHaltService $halts The halts.
-	 * @param FlowRunMapper           $runs  To read a run's organisation.
+	 * @param FlowRunMapperInterface           $runs  To read a run's organisation.
 	 */
 	public function __construct(
 		private readonly OrganisationHaltService $halts,
-		private readonly FlowRunMapper $runs,
+		private readonly FlowRunMapperInterface $runs,
 	) {
 	}//end __construct()
 
@@ -81,20 +81,43 @@ class OrganisationHaltCheck implements IFlowOversightCheck {
 			return 'A halt covers this step and the run\'s organisation could not be established, so the step was refused.';
 		}
 
+		return self::refusalFor(matching: $matching, organisation: $organisation);
+	}//end veto()
+
+	/**
+	 * The refusal of the first matching halt that covers the organisation, or null.
+	 *
+	 * @param array<int, array<string, mixed>> $matching     The halts covering this step's node type.
+	 * @param string                           $organisation The run's organisation.
+	 *
+	 * @return string|null The refusal.
+	 */
+	private static function refusalFor(array $matching, string $organisation): ?string {
 		foreach ($matching as $halt) {
 			if ($halt['organisation'] === $organisation) {
-				return sprintf(
-					'%s is halted for this organisation since %s by %s: %s',
-					$halt['app'],
-					$halt['engagedAt'],
-					$halt['engagedBy'],
-					$halt['reason']
-				);
+				return self::haltMessage(halt: $halt);
 			}
 		}
 
 		return null;
-	}//end veto()
+	}//end refusalFor()
+
+	/**
+	 * What a halt that covers the run's organisation says: which app, since when, by whom and why.
+	 *
+	 * @param array<string, mixed> $halt The halt.
+	 *
+	 * @return string The refusal.
+	 */
+	private static function haltMessage(array $halt): string {
+		return sprintf(
+			'%s is halted for this organisation since %s by %s: %s',
+			$halt['app'],
+			$halt['engagedAt'],
+			$halt['engagedBy'],
+			$halt['reason']
+		);
+	}//end haltMessage()
 
 	/**
 	 * The run's organisation, or null when it cannot be established.

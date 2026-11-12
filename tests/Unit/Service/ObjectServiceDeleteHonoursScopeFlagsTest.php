@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
@@ -74,6 +74,9 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
  * Tests that deleteObject()'s own lookups use the flags the caller passed.
@@ -147,7 +150,7 @@ class ObjectServiceDeleteHonoursScopeFlagsTest extends TestCase {
 			}
 		);
 
-		$this->service = new ObjectService(
+		$this->service = new ObjectService(...ObjectServiceFactory::args(
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->createMock(GetObject::class),
@@ -186,7 +189,7 @@ class ObjectServiceDeleteHonoursScopeFlagsTest extends TestCase {
 			$this->dateTimeNormalizer,
 			$this->createMock(IAppContainer::class),
 			$this->createMock(ObjectSourceRegistry::class)
-		);
+		));
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
 	}//end setUp()
@@ -256,16 +259,17 @@ class ObjectServiceDeleteHonoursScopeFlagsTest extends TestCase {
 			->willReturnCallback(
 				function (mixed ...$args): bool {
 					// The handler still gets the caller's flags, as it always did.
-					$this->assertFalse($args[4] ?? true);
-					$this->assertFalse($args[5] ?? true);
+					$this->assertFalse($args[1] ?? true);
+					$this->assertFalse($args[2] ?? true);
 					return true;
 				}
 			);
 
 		$result = $this->service->deleteObject(
-			uuid: 'activity-state-1',
-			register: $register,
-			schema: $schema,
+			deletion: new ObjectDeletion(
+				uuid: 'activity-state-1',
+				target: new ObjectFindTarget(register: $register, schema: $schema)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -291,7 +295,7 @@ class ObjectServiceDeleteHonoursScopeFlagsTest extends TestCase {
 
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
 
-		$this->service->deleteObject(uuid: 'activity-state-1', register: $register, schema: $schema);
+		$this->service->deleteObject(deletion: new ObjectDeletion(uuid: 'activity-state-1', target: new ObjectFindTarget(register: $register, schema: $schema)));
 	}//end testADefaultCallerStillCannotSeeAnotherTenantsObject()
 
 	/**
@@ -312,9 +316,10 @@ class ObjectServiceDeleteHonoursScopeFlagsTest extends TestCase {
 		$this->expectExceptionMessageMatches('/^OBJECT_TRANSFERRED:/');
 
 		$this->service->deleteObject(
-			uuid: 'activity-state-1',
-			register: $register,
-			schema: $schema,
+			deletion: new ObjectDeletion(
+				uuid: 'activity-state-1',
+				target: new ObjectFindTarget(register: $register, schema: $schema)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

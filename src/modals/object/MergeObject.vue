@@ -9,7 +9,7 @@ import {
 </script>
 
 <template>
-	<NcDialog name="Merge Objects" size="large" :canClose="false">
+	<NcDialog name="Merge Objects" size="large" noClose>
 		<!-- Register and Schema Information -->
 		<div class="detail-grid">
 			<div class="detail-item">
@@ -560,31 +560,7 @@ import {
 					</ul>
 				</div>
 
-				<!-- Warnings -->
-				<div v-if="mergeResult.warnings?.length" class="report-section">
-					<h4>Warnings</h4>
-					<ul>
-						<li
-							v-for="warning in mergeResult.warnings"
-							:key="warning"
-							class="warning-text">
-							{{ warning }}
-						</li>
-					</ul>
-				</div>
-
-				<!-- Errors -->
-				<div v-if="mergeResult.errors?.length" class="report-section">
-					<h4>Errors</h4>
-					<ul>
-						<li
-							v-for="error in mergeResult.errors"
-							:key="error"
-							class="error-text">
-							{{ error }}
-						</li>
-					</ul>
-				</div>
+				<TransferMessages :result="mergeResult" />
 			</div>
 		</div>
 
@@ -658,6 +634,72 @@ import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Merge from 'vue-material-design-icons/Merge.vue'
+import TransferMessages from './TransferMessages.vue'
+import { refreshObjectLists } from './selectedObjectsDialog.js'
+import { failedTransfer } from './transferResult.js'
+
+/**
+ * The outgoing relations of an object, from its `@self` relations or its
+ * legacy _relations, as rows for the merge preview.
+ *
+ * @param {object} object The source object
+ * @return {Array<object>} The relation rows
+ */
+function outgoingRelations(object) {
+	const relations = object?.['@self']?.relations || object?._relations || []
+	return (Array.isArray(relations) ? relations : []).map((rel) => ({
+		id: rel,
+		title: rel,
+		relationType: 'Outgoing',
+	}))
+}
+
+/**
+ * The display title of a referring object.
+ *
+ * @param {object} obj The referring object
+ * @return {string|undefined} Its name, title or id
+ */
+function referenceTitle(obj) {
+	return (
+		obj?.['@self']?.name
+		|| obj?.['@self']?.title
+		|| obj?.['@self']?.id
+		|| obj?.id
+	)
+}
+
+/**
+ * A referring object as a row for the merge preview.
+ *
+ * @param {object} obj The referring object
+ * @return {object} The row
+ */
+function incomingReference(obj) {
+	return {
+		id: obj?.['@self']?.id || obj?.id,
+		title: referenceTitle(obj),
+		relationType: obj?.['@self']?.schema
+			? `Schema ${obj['@self'].schema}`
+			: 'Related',
+		register: obj?.['@self']?.register || 'N/A',
+		schema: obj?.['@self']?.schema || 'N/A',
+	}
+}
+
+/**
+ * The actual value of a merge choice: the `value` of a label/value option,
+ * anything else as it is.
+ *
+ * @param {*} value The chosen value
+ * @return {*} The value to save
+ */
+function optionValue(value) {
+	if (value && typeof value === 'object' && value.value !== undefined) {
+		return value.value
+	}
+	return value
+}
 
 export default {
 	name: 'MergeObject',
@@ -677,6 +719,7 @@ export default {
 		Eye,
 		ChevronDown,
 		ChevronUp,
+		TransferMessages,
 	},
 
 	data() {
@@ -763,15 +806,7 @@ export default {
 
 			this.loading = true
 			try {
-				const response = await fetch(
-					`/index.php/apps/openregister/api/objects/${registerStore.registerItem.id}/${schemaStore.schemaItem.id}?_search=${this.searchTerm}`,
-				)
-				const data = await response.json()
-
-				// Filter out the source object
-				this.availableObjects = data.results.filter(
-					(obj) => obj['@self'].id !== this.sourceObject['@self'].id,
-				)
+				this.availableObjects = await this.fetchMergeCandidates()
 			} catch (error) {
 				console.error('Error searching objects:', error)
 				this.availableObjects = []
@@ -781,7 +816,26 @@ export default {
 		},
 
 		/**
-		 * @param obj
+		 * The objects matching the search in the current register and schema,
+		 * without the source object.
+		 *
+		 * @return {Promise<Array<object>>} The candidates
+		 * @spec exclude Fetches candidate merge-target objects (excluding the source); UI search plumbing.
+		 */
+		async fetchMergeCandidates() {
+			const response = await fetch(
+				`/index.php/apps/openregister/api/objects/${registerStore.registerItem.id}/${schemaStore.schemaItem.id}?_search=${this.searchTerm}`,
+			)
+			const data = await response.json()
+
+			// Filter out the source object
+			return data.results.filter(
+				(obj) => obj['@self'].id !== this.sourceObject['@self'].id,
+			)
+		},
+
+		/**
+		 * @param {object} obj
 		 * @spec exclude Records the chosen merge target in local state; UI selection plumbing.
 		 */
 		selectTargetObject(obj) {
@@ -821,83 +875,91 @@ export default {
 					// ID always uses target value
 					this.mergedData[property] = this.selectedTargetObject[property]
 				} else {
-					// Default selection logic:
-					// 1. Target value if it exists
-					// 2. Source value if target doesn't exist but source does
-					// 3. 'custom' if neither exists
-					const targetValue = this.selectedTargetObject[property]
-					const sourceValue = this.sourceObject[property]
-
-					let selectedValue
-					// Always store the actual value, never the option object
-					if (
-						targetValue !== undefined
-						&& targetValue !== null
-						&& targetValue !== ''
-					) {
-						selectedValue = targetValue
-					} else if (
-						sourceValue !== undefined
-						&& sourceValue !== null
-						&& sourceValue !== ''
-					) {
-						selectedValue = sourceValue
-					} else {
-						selectedValue = 'custom'
-						this.customValues[property] = ''
-					}
-
-					this.mergedData[property] = selectedValue
-
-					// Set up the selection object for the dropdown
-					const options = this.getMergeOptions(property)
-					this.propertySelections[property] =
-						options.find((opt) => opt.value === selectedValue) || null
+					this.seedMergeChoice(property)
 				}
 			})
 		},
 
 		/**
-		 * @param property
+		 * Choose a property's merged value and its dropdown selection: the
+		 * target value if it exists, else the source value if that does, else
+		 * a custom value.
+		 *
+		 * @param {string} property The property
+		 * @spec exclude Seeds per-property merge defaults and dropdown selections; UI form-init plumbing.
+		 */
+		seedMergeChoice(property) {
+			const targetValue = this.selectedTargetObject[property]
+			const sourceValue = this.sourceObject[property]
+
+			let selectedValue
+			// Always store the actual value, never the option object
+			if (isFilled(targetValue)) {
+				selectedValue = targetValue
+			} else if (isFilled(sourceValue)) {
+				selectedValue = sourceValue
+			} else {
+				selectedValue = 'custom'
+				this.customValues[property] = ''
+			}
+
+			this.mergedData[property] = selectedValue
+			this.selectDefaultOption(property, selectedValue)
+		},
+
+		/**
+		 * Set up the selection object for a property's dropdown.
+		 *
+		 * @param {string} property The property
+		 * @param {unknown} selectedValue The value chosen for it
+		 * @spec exclude Seeds per-property merge defaults and dropdown selections; UI form-init plumbing.
+		 */
+		selectDefaultOption(property, selectedValue) {
+			const options = this.getMergeOptions(property)
+			this.propertySelections[property] =
+				options.find((opt) => opt.value === selectedValue) || null
+		},
+
+		/**
+		 * @param {string} property
 		 * @spec exclude Builds the source/target/custom option list for a property dropdown; UI presentation helper.
 		 */
 		getMergeOptions(property) {
 			const options = []
+			const sourceValue = this.sourceObject[property]
+			const targetValue = this.selectedTargetObject[property]
 
-			if (
-				this.sourceObject[property] !== undefined
-				&& this.sourceObject[property] !== null
-				&& this.sourceObject[property] !== ''
-			) {
-				options.push({
-					label: `From Source: ${this.displayValue(this.sourceObject[property])}`,
-					value: this.sourceObject[property],
-				})
+			if (isFilled(sourceValue)) {
+				options.push(this.mergeOption('From Source', sourceValue))
 			}
 
-			if (
-				this.selectedTargetObject[property] !== undefined
-				&& this.selectedTargetObject[property] !== null
-				&& this.selectedTargetObject[property] !== ''
-			) {
-				options.push({
-					label: `From Target: ${this.displayValue(this.selectedTargetObject[property])}`,
-					value: this.selectedTargetObject[property],
-				})
+			if (isFilled(targetValue)) {
+				options.push(this.mergeOption('From Target', targetValue))
 			}
 
 			// Always add the custom option
-			options.push({
-				label: 'Other/Custom',
-				value: 'custom',
-			})
+			options.push(customOption())
 
 			return options
 		},
 
 		/**
-		 * @param property
-		 * @param selectedOption
+		 * A dropdown option for a value from the source or the target.
+		 *
+		 * @param {string} origin Where the value comes from, as the label says it
+		 * @param {unknown} value The value
+		 * @return {{label: string, value: unknown}} The option
+		 */
+		mergeOption(origin, value) {
+			return {
+				label: `${origin}: ${this.displayValue(value)}`,
+				value,
+			}
+		},
+
+		/**
+		 * @param {string} property
+		 * @param {object|null} selectedOption
 		 * @spec exclude Updates merged-data state when a per-property dropdown changes; UI reactivity plumbing.
 		 */
 		onPropertySelectionChange(property, selectedOption) {
@@ -914,8 +976,8 @@ export default {
 		},
 
 		/**
-		 * @param value
-		 * @param maxLength
+		 * @param {unknown} value
+		 * @param {number} maxLength
 		 * @spec exclude Stringifying/truncating value formatter for property display; UI presentation helper.
 		 */
 		displayValue(value, maxLength = 100) {
@@ -923,7 +985,7 @@ export default {
 				return 'N/A'
 			}
 
-			let displayText = ''
+			let displayText
 			if (typeof value === 'object') {
 				displayText = JSON.stringify(value, null, 2)
 			} else {
@@ -939,8 +1001,8 @@ export default {
 		},
 
 		/**
-		 * @param text
-		 * @param maxLength
+		 * @param {string} text
+		 * @param {number} maxLength
 		 * @spec exclude Simple string-truncation helper for display; UI presentation helper.
 		 */
 		truncateText(text, maxLength) {
@@ -959,56 +1021,83 @@ export default {
 
 			this.loading = true
 			try {
-				// Prepare merged data with custom values resolved - ensure no ID is included
-				const finalMergedData = {}
-
-				Object.keys(this.mergedData).forEach((property) => {
-					// Skip any ID-related properties
-					if (property === 'id' || property === '@self') {
-						return
-					}
-
-					if (this.mergedData[property] === 'custom') {
-						finalMergedData[property] = this.customValues[property] || ''
-					} else {
-						// Ensure we extract the actual value if it's an object with label/value structure
-						const value = this.mergedData[property]
-						if (
-							value
-							&& typeof value === 'object'
-							&& value.value !== undefined
-						) {
-							finalMergedData[property] = value.value
-						} else {
-							finalMergedData[property] = value
-						}
-					}
-				})
-
-				// Use the object store method for consistent API handling
-				const result = await objectStore.mergeObjects({
-					register: registerStore.registerItem.id,
-					schema: schemaStore.schemaItem.id,
-					sourceObjectId: this.sourceObject['@self'].id,
-					target: this.selectedTargetObject['@self'].id,
-					object: finalMergedData,
-					fileAction: this.fileAction,
-					relationAction: this.relationAction,
-					referenceAction: this.referenceAction,
-				})
-
-				this.mergeResult = result.data
+				this.mergeResult = await this.requestMerge()
 				this.step = 3
+				refreshObjectLists()
 			} catch (error) {
-				console.error('Error performing merge:', error)
-				this.mergeResult = {
-					success: false,
-					errors: [error.message || 'An error occurred during merge'],
-				}
-				this.step = 3
+				this.showMergeFailure(error)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Ask the store to merge the source into the target.
+		 *
+		 * @return {Promise<object>} The merge result
+		 * @throws {Error} With the store's lifecycle error when the merge is refused
+		 */
+		async requestMerge() {
+			const result = await objectStore.mergeObjects(
+				objectStore.currentType,
+				this.sourceObject['@self'].id,
+				this.mergeRequest(),
+			)
+			if (!result) {
+				throw new Error(objectStore.lifecycleError?.message)
+			}
+			return result
+		},
+
+		/**
+		 * Log a failed merge and show it on the report step.
+		 *
+		 * @param {Error} error What went wrong
+		 * @return {void}
+		 */
+		showMergeFailure(error) {
+			console.error('Error performing merge:', error)
+			this.mergeResult = failedTransfer(
+				error,
+				'An error occurred during merge',
+			)
+			this.step = 3
+		},
+
+		/**
+		 * The merge the store is asked for: the target, the resolved data and
+		 * what happens to files, relations and references.
+		 *
+		 * @return {object} The merge request
+		 */
+		mergeRequest() {
+			return {
+				target: this.selectedTargetObject['@self'].id,
+				object: this.finalMergedData(),
+				fileAction: this.fileAction,
+				relationAction: this.relationAction,
+				referenceAction: this.referenceAction,
+			}
+		},
+
+		/**
+		 * The merged data with custom values resolved and no id included.
+		 *
+		 * @return {object} The data to save on the target
+		 */
+		finalMergedData() {
+			const finalMergedData = {}
+			Object.keys(this.mergedData).forEach((property) => {
+				// Skip any ID-related properties
+				if (property === 'id' || property === '@self') {
+					return
+				}
+				finalMergedData[property] =
+					this.mergedData[property] === 'custom'
+						? this.customValues[property] || ''
+						: optionValue(this.mergedData[property])
+			})
+			return finalMergedData
 		},
 
 		/**
@@ -1044,7 +1133,7 @@ export default {
 		},
 
 		/**
-		 * @param bytes
+		 * @param {number} bytes
 		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
 		 */
 		formatFileSize(bytes) {
@@ -1057,98 +1146,70 @@ export default {
 		},
 
 		/**
-		 * @param filename
+		 * @param {string} filename
 		 * @spec exclude Maps a filename extension to a friendly type label; UI presentation helper.
 		 */
 		getFileType(filename) {
 			if (!filename) return 'Unknown'
 			const ext = filename.split('.').pop()?.toLowerCase()
-			const types = {
-				pdf: 'PDF',
-				doc: 'Word',
-				docx: 'Word',
-				xls: 'Excel',
-				xlsx: 'Excel',
-				ppt: 'PowerPoint',
-				pptx: 'PowerPoint',
-				txt: 'Text',
-				jpg: 'Image',
-				jpeg: 'Image',
-				png: 'Image',
-				gif: 'Image',
-				zip: 'Archive',
-				rar: 'Archive',
-			}
-			return types[ext] || ext?.toUpperCase() || 'Unknown'
+			return fileTypeNames()[ext] || ext?.toUpperCase() || 'Unknown'
 		},
 
 		/**
 		 * @spec exclude Loads the source object's files/relations/references for the merge preview; UI form-loading plumbing.
 		 */
 		async loadSourceData() {
-			// Load files, outgoing relations, and incoming references for the source object
 			if (!this.sourceObject) return
 
 			try {
-				// Load files - check if sourceObject has attachments property
-				if (
-					this.sourceObject.attachments
-					&& Array.isArray(this.sourceObject.attachments)
-				) {
-					this.sourceFiles = this.sourceObject.attachments
-				} else {
-					this.sourceFiles = []
-				}
-
-				// Load outgoing relations from the source object's _relations
-				const relations =
-					this.sourceObject?.['@self']?.relations
-					|| this.sourceObject?._relations
-					|| []
-				this.sourceRelations = (
-					Array.isArray(relations) ? relations : []
-				).map((rel) => ({
-					id: rel,
-					title: rel,
-					relationType: 'Outgoing',
-				}))
-
-				// Load incoming references via the /used endpoint
-				const register = registerStore.registerItem?.id
-				const schema = schemaStore.schemaItem?.id
-				const objectId = this.sourceObject?.['@self']?.id
-				if (register && schema && objectId) {
-					try {
-						const response = await fetch(
-							`/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/used`,
-						)
-						const data = await response.json()
-						this.sourceIncomingReferences = (data.results || []).map(
-							(obj) => ({
-								id: obj?.['@self']?.id || obj?.id,
-								title:
-									obj?.['@self']?.name
-									|| obj?.['@self']?.title
-									|| obj?.['@self']?.id
-									|| obj?.id,
-								relationType: obj?.['@self']?.schema
-									? `Schema ${obj['@self'].schema}`
-									: 'Related',
-								register: obj?.['@self']?.register || 'N/A',
-								schema: obj?.['@self']?.schema || 'N/A',
-							}),
-						)
-					} catch (error) {
-						console.error('Error loading incoming references:', error)
-						this.sourceIncomingReferences = []
-					}
-				}
+				this.sourceFiles = Array.isArray(this.sourceObject.attachments)
+					? this.sourceObject.attachments
+					: []
+				this.sourceRelations = outgoingRelations(this.sourceObject)
+				await this.loadIncomingReferences()
 			} catch (error) {
 				console.error('Error loading source data:', error)
 				this.sourceFiles = []
 				this.sourceRelations = []
 				this.sourceIncomingReferences = []
 			}
+		},
+
+		/**
+		 * Load the objects that refer to the source object, through its /used
+		 * endpoint. Skipped when the register, schema or source id is unknown.
+		 *
+		 * @spec exclude Loads the source object's files/relations/references for the merge preview; UI form-loading plumbing.
+		 * @return {Promise<void>}
+		 */
+		async loadIncomingReferences() {
+			const url = this.usedUrl()
+			if (!url) {
+				return
+			}
+			try {
+				this.sourceIncomingReferences = await fetchIncomingReferences(url)
+			} catch (error) {
+				console.error('Error loading incoming references:', error)
+				this.sourceIncomingReferences = []
+			}
+		},
+
+		/**
+		 * The /used endpoint of the source object in the current register and
+		 * schema.
+		 *
+		 * @spec exclude Loads the source object's files/relations/references for the merge preview; UI form-loading plumbing.
+		 * @return {string} The URL, or an empty string when a part is unknown
+		 */
+		usedUrl() {
+			const register = registerStore.registerItem?.id
+			const schema = schemaStore.schemaItem?.id
+			const objectId = this.sourceObject?.['@self']?.id
+			if (register && schema && objectId) {
+				return `/index.php/apps/openregister/api/objects/${register}/${schema}/${objectId}/used`
+			}
+			return ''
 		},
 
 		/**
@@ -1159,9 +1220,88 @@ export default {
 		},
 	},
 }
+
+/**
+ * The file type named for each extension.
+ *
+ * @return {object} The type per extension
+ */
+function fileTypeNames() {
+	return { ...documentTypeNames(), ...imageAndArchiveTypeNames() }
+}
+
+/**
+ * The document file types, per extension.
+ *
+ * @return {object} The type per extension
+ */
+function documentTypeNames() {
+	return {
+		pdf: 'PDF',
+		doc: 'Word',
+		docx: 'Word',
+		xls: 'Excel',
+		xlsx: 'Excel',
+		ppt: 'PowerPoint',
+		pptx: 'PowerPoint',
+		txt: 'Text',
+	}
+}
+
+/**
+ * The image and archive file types, per extension.
+ *
+ * @return {object} The type per extension
+ */
+function imageAndArchiveTypeNames() {
+	return {
+		jpg: 'Image',
+		jpeg: 'Image',
+		png: 'Image',
+		gif: 'Image',
+		zip: 'Archive',
+		rar: 'Archive',
+	}
+}
+
+/**
+ * The dropdown option for a custom value.
+ *
+ * @return {{label: string, value: string}} The option
+ */
+function customOption() {
+	return {
+		label: 'Other/Custom',
+		value: 'custom',
+	}
+}
+
+/**
+ * The objects that refer to the source object, as the merge lists them.
+ *
+ * @param {string} url The used-by endpoint
+ * @return {Promise<Array<object>>} The references
+ */
+async function fetchIncomingReferences(url) {
+	const response = await fetch(url)
+	const data = await response.json()
+	return (data.results || []).map(incomingReference)
+}
+
+/**
+ * Whether a value is filled in: not undefined, null or empty.
+ *
+ * @param {unknown} value The value
+ * @return {boolean} True when filled in
+ */
+function isFilled(value) {
+	return value !== undefined && value !== null && value !== ''
+}
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../styles/modals.scss' as *;
+
 .merge-step {
 	padding: 0;
 }
@@ -1170,17 +1310,7 @@ export default {
 	padding-top: 0 !important;
 }
 
-.step-title {
-	margin-top: 0 !important;
-	margin-bottom: 16px;
-	color: var(--color-main-text);
-}
-
-.report-title {
-	margin-top: 0 !important;
-	margin-bottom: 16px;
-	color: var(--color-main-text);
-}
+@include step-title-rules;
 
 .merge-step h3 {
 	margin-bottom: 16px;
@@ -1191,13 +1321,7 @@ export default {
 	margin-bottom: 20px;
 }
 
-.loading-container {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 16px;
-	padding: 40px;
-}
+@include loading-container;
 
 .object-list {
 	max-height: 400px;
@@ -1217,11 +1341,7 @@ export default {
 	border-bottom: none;
 }
 
-.object-info strong {
-	display: block;
-	margin-bottom: 4px;
-	color: var(--color-main-text);
-}
+@include object-info-strong;
 
 .object-id {
 	color: var(--color-text-maxcontrast);
@@ -1402,12 +1522,7 @@ export default {
 	margin-top: 16px;
 }
 
-.report-section {
-	margin-bottom: 20px;
-	padding: 16px;
-	background-color: var(--color-background-hover);
-	border-radius: 4px;
-}
+@include report-section;
 
 .object-info {
 	display: flex;
@@ -1442,15 +1557,7 @@ export default {
 	color: var(--color-error);
 }
 
-.report-section h4 {
-	margin-bottom: 12px;
-	color: var(--color-main-text);
-}
-
-.report-section ul {
-	margin: 0;
-	padding-left: 20px;
-}
+@include report-section-h4-rules;
 
 .report-section li {
 	margin-bottom: 4px;
@@ -1474,76 +1581,7 @@ export default {
 	font-weight: bold;
 }
 
-.error-text {
-	color: var(--color-error);
-}
-
-.warning-text {
-	color: var(--color-warning);
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.ͼd) {
-	color: #d19a66;
-}
-
-.codeMirrorContainer.dark :deep(.ͼd) {
-	color: #9d6c3a;
-}
-
-/* text cursor */
-.codeMirrorContainer :deep(.cm-content) * {
-	cursor: text !important;
-}
-
-/* selection color */
-.codeMirrorContainer.light :deep(.cm-line)::selection,
-.codeMirrorContainer.light :deep(.cm-line) ::selection {
-	background-color: #d7eaff !important;
-	color: black;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line)::selection,
-.codeMirrorContainer.dark :deep(.cm-line) ::selection {
-	background-color: #8fb3e6 !important;
-	color: black;
-}
-
-/* string */
-.codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
-	color: #2d770f;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
-	color: #104e0c;
-}
-
-/* boolean */
-.codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
-	color: #221199;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
-	color: #4026af;
-}
-
-/* null */
-.codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
-	color: #770088;
-}
-
-/* number */
-.codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
-	color: #8c5c2c;
-}
-
-.codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
-	color: #623907;
-}
+@include error-text-rules;
 
 @media (prefers-reduced-motion: reduce) {
 	.object-item {

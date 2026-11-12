@@ -29,6 +29,8 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\TermsFacetTable;
+use OCA\OpenRegister\Db\MagicMapper\TermsFacetUnion;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -40,6 +42,9 @@ use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
+use Psr\Container\ContainerInterface;
+use RuntimeException;
 
 /**
  * Locks the single name lookup behind a terms facet's UUID buckets.
@@ -90,10 +95,16 @@ class MagicFacetHandlerBucketLabelTest extends TestCase {
 		$queryBuilder->method('executeQuery')->willReturn($result);
 		$db->method('getQueryBuilder')->willReturn($queryBuilder);
 
+		$services  = [ObjectNameCacheInterface::class => $cacheHandler];
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('has')->willReturnCallback(fn (string $id): bool => isset($services[$id]));
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => $services[$id] ?? throw new RuntimeException('Not in this test container: ' . $id)
+		);
 		$handler = new MagicFacetHandler(
 			db: $db,
 			logger: $this->createMock(LoggerInterface::class),
-			cacheHandler: $cacheHandler
+			container: $container
 		);
 
 		$schema = $this->createMock(Schema::class);
@@ -104,12 +115,12 @@ class MagicFacetHandlerBucketLabelTest extends TestCase {
 
 		return $method->invoke(
 			$handler,
-			'openregister_table_1_2',
-			$column,
-			[],
-			false,
-			$this->createMock(Register::class),
-			$schema
+			(new TermsFacetTable(
+				'openregister_table_1_2',
+				[],
+				$this->createMock(Register::class),
+				$schema
+			))->forPropertyField($column)
 		);
 	}//end facetOver()
 
@@ -224,10 +235,16 @@ class MagicFacetHandlerBucketLabelTest extends TestCase {
 			}
 		);
 
+		$services  = [ObjectNameCacheInterface::class => $cacheHandler];
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('has')->willReturnCallback(fn (string $id): bool => isset($services[$id]));
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => $services[$id] ?? throw new RuntimeException('Not in this test container: ' . $id)
+		);
 		$handler = new MagicFacetHandler(
 			db: $db,
 			logger: $this->createMock(LoggerInterface::class),
-			cacheHandler: $cacheHandler
+			container: $container
 		);
 
 		$tableConfigs = [];
@@ -244,7 +261,7 @@ class MagicFacetHandlerBucketLabelTest extends TestCase {
 		$method = new ReflectionMethod(MagicFacetHandler::class, 'getTermsFacetUnion');
 		$method->setAccessible(true);
 
-		return $method->invoke($handler, $tableConfigs, $column, [], $tableConfigs[0]['schema'], false);
+		return $method->invoke($handler, new TermsFacetUnion(tableConfigs: $tableConfigs, field: $column, baseQuery: []));
 	}//end unionFacetOver()
 
 	/**

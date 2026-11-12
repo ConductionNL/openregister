@@ -26,13 +26,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\CalculationsControllerServices;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableRowReaderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
-use OCA\OpenRegister\Service\Calculation\OperatorCatalogue;
+use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Service\Calculation\CalculationTrialServiceInterface;
+use OCA\OpenRegister\Service\Calculation\OperatorCatalogueInterface;
+use OCA\OpenRegister\Service\Calculation\TrialObject;
+use OCA\OpenRegister\Service\Calculation\UnresolvedTrialObject;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -44,28 +47,50 @@ use Throwable;
 class CalculationsController extends Controller {
 
 	/**
+	 * The published operator catalogue.
+	 *
+	 * @var OperatorCatalogueInterface
+	 */
+	private readonly OperatorCatalogueInterface $catalogue;
+
+	/**
+	 * Dry-run evaluation of an unsaved declaration.
+	 *
+	 * @var CalculationTrialServiceInterface
+	 */
+	private readonly CalculationTrialServiceInterface $trials;
+
+	/**
+	 * Register and schema lookups, each scoped to the caller by RBAC and tenancy.
+	 *
+	 * @var SchemaCatalogInterface
+	 */
+	private readonly SchemaCatalogInterface $schemaCatalog;
+
+	/**
+	 * Object lookup, scoped to the caller by RBAC and tenancy.
+	 *
+	 * @var MagicTableRowReaderInterface
+	 */
+	private readonly MagicTableRowReaderInterface $objectMapper;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name.
-	 * @param IRequest $request Request.
-	 * @param OperatorCatalogue $catalogue The published operator catalogue.
-	 * @param CalculationTrialService $trials Dry-run evaluation of an unsaved declaration.
-	 * @param RegisterMapper $registerMapper Register lookup, scoped to the caller.
-	 * @param SchemaMapper $schemaMapper Schema lookup, scoped to the caller.
-	 * @param MagicMapper $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
+	 * @param IRequest                       $request  Request.
+	 * @param CalculationsControllerServices $services The calculations controller services.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly OperatorCatalogue $catalogue,
-		private readonly CalculationTrialService $trials,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $objectMapper,
+		CalculationsControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->catalogue = $services->catalogue;
+		$this->trials = $services->trials;
+		$this->schemaCatalog = $services->schemaCatalog;
+		$this->objectMapper = $services->objectMapper;
 
 	}//end __construct()
 
@@ -82,7 +107,7 @@ class CalculationsController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function operators(): JSONResponse {
 		return new JSONResponse(
@@ -112,56 +137,94 @@ class CalculationsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 * @spec openspec/specs/computed-fields/spec.md
 	 */
 	public function evaluate(): JSONResponse {
 		$declaration = $this->request->getParam('calculation');
 		if (is_array($declaration) === false || isset($declaration['expression']) === false) {
-			return new JSONResponse(
-				[
-					'ok' => false,
-					'error' => [
-						'code' => 'calculation-trial-no-declaration',
-						'message' => 'A "calculation" object carrying an "expression" is required.',
-					],
-				],
-				422
-			);
+			return $this->noDeclaration();
 		}
 
 		$target = $this->objectTarget();
 		if ($target !== null) {
-			try {
-				$readable = $this->readableObject(target: $target);
-			} catch (Throwable $e) {
-				$result = $this->trials->objectNotFound(
-					declaration: $declaration,
-					objectId: $target['objectId'],
-					reason: $e->getMessage()
-				);
-
-				return new JSONResponse($result, $this->statusFor(result: $result));
-			}
-
-			$result = $this->trials->tryObject(
-				declaration: $declaration,
-				object: $readable['object'],
-				schema: $readable['schema']
-			);
-
-			return new JSONResponse($result, $this->statusFor(result: $result));
+			return $this->trialAnswer(result: $this->objectTrial(declaration: $declaration, target: $target));
 		}
 
+		return $this->trialAnswer(result: $this->sampleTrial(declaration: $declaration));
+
+	}//end evaluate()
+
+	/**
+	 * The refusal of a trial that carries no declaration with an expression.
+	 *
+	 * @return JSONResponse 422 naming what is required
+	 */
+	private function noDeclaration(): JSONResponse {
+		return new JSONResponse(
+			[
+				'ok' => false,
+				'error' => [
+					'code' => 'calculation-trial-no-declaration',
+					'message' => 'A "calculation" object carrying an "expression" is required.',
+				],
+			],
+			422
+		);
+	}//end noDeclaration()
+
+	/**
+	 * Try the declaration against the stored object the request names.
+	 *
+	 * The object is looked up with RBAC and tenancy on before anything is
+	 * evaluated; an object the caller may not read is a not-found result.
+	 *
+	 * @param array<string, mixed>  $declaration The calculation declaration
+	 * @param array<string, string> $target      The register, schema and objectId
+	 *
+	 * @return array<string, mixed> The trial result
+	 */
+	private function objectTrial(array $declaration, array $target): array {
+		try {
+			$readable = $this->readableObject(target: $target);
+		} catch (Throwable $e) {
+			return $this->trials->objectNotFound(
+				declaration: $declaration,
+				target: new UnresolvedTrialObject(objectId: $target['objectId'], reason: $e->getMessage())
+			);
+		}
+
+		return $this->trials->tryObject(
+			declaration: $declaration,
+			target: new TrialObject(object: $readable['object'], schema: $readable['schema'])
+		);
+	}//end objectTrial()
+
+	/**
+	 * Try the declaration against the sample payload of the request; no stored data is touched.
+	 *
+	 * @param array<string, mixed> $declaration The calculation declaration
+	 *
+	 * @return array<string, mixed> The trial result
+	 */
+	private function sampleTrial(array $declaration): array {
 		$sample = $this->request->getParam('object', []);
 		if (is_array($sample) === false) {
 			$sample = [];
 		}
 
-		$result = $this->trials->trySample(declaration: $declaration, sample: $sample);
+		return $this->trials->trySample(declaration: $declaration, sample: $sample);
+	}//end sampleTrial()
 
+	/**
+	 * Answer a trial result with the status it calls for.
+	 *
+	 * @param array<string, mixed> $result The trial result
+	 *
+	 * @return JSONResponse The result
+	 */
+	private function trialAnswer(array $result): JSONResponse {
 		return new JSONResponse($result, $this->statusFor(result: $result));
-
-	}//end evaluate()
+	}//end trialAnswer()
 
 	/**
 	 * The stored object a trial names, when it names one in full.
@@ -206,8 +269,8 @@ class CalculationsController extends Controller {
 	 * @throws Throwable When the register, schema or object is absent or not readable by the caller.
 	 */
 	private function readableObject(array $target): array {
-		$register = $this->registerMapper->find($target['register'], _rbac: true, _multitenancy: true);
-		$schema = $this->schemaMapper->find($target['schema'], _rbac: true, _multitenancy: true);
+		$register = $this->schemaCatalog->registers()->find($target['register'], _rbac: true, _multitenancy: true);
+		$schema = $this->schemaCatalog->schemas()->find($target['schema'], _rbac: true, _multitenancy: true);
 		$object = $this->objectMapper->findInRegisterSchemaTable(
 			identifier: $target['objectId'],
 			register: $register,

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md
+ * @spec openspec/specs/operations-console/spec.md
  */
 
 declare(strict_types=1);
@@ -102,7 +102,7 @@ final class ConsistencyCheckServiceTest extends TestCase {
 	 * after the statement ran would report a clean conscience over changed
 	 * data.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 *
 	 * @return void
 	 */
@@ -125,7 +125,7 @@ final class ConsistencyCheckServiceTest extends TestCase {
 	/**
 	 * An UPDATE is refused the same way a DELETE is.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 *
 	 * @return void
 	 */
@@ -138,7 +138,7 @@ final class ConsistencyCheckServiceTest extends TestCase {
 	/**
 	 * A reading probe reports the rows it objects to, and names them.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 *
 	 * @return void
 	 */
@@ -164,7 +164,7 @@ final class ConsistencyCheckServiceTest extends TestCase {
 	 * Zero findings and "the check did not run" must not look the same, which
 	 * is why `checked` is carried beside `inconsistent`.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 *
 	 * @return void
 	 */
@@ -180,7 +180,7 @@ final class ConsistencyCheckServiceTest extends TestCase {
 	 * The shipped probes are a real list, and each carries what a repair of it
 	 * would do.
 	 *
-	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
 	 *
 	 * @return void
 	 */

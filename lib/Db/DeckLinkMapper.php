@@ -22,15 +22,19 @@ namespace OCA\OpenRegister\Db;
 
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class DeckLinkMapper
  *
  * @template-extends QBMapper<DeckLink>
+ * @method list<DeckLink> findByObjectUuid(string $objectUuid) FindLinksByObjectUuidTrait, typed for this mapper.
  */
-class DeckLinkMapper extends QBMapper {
+class DeckLinkMapper extends QBMapper implements DeckLinkMapperInterface {
+
+	use ObjectKeyLinkTrait;
+	use FindLinksByObjectUuidTrait;
+	use DeleteLinksByObjectUuidTrait;
 	/**
 	 * Constructor.
 	 *
@@ -55,30 +59,8 @@ class DeckLinkMapper extends QBMapper {
 	 * @throws DoesNotExistException When no link has that id.
 	 */
 	public function find(int $id): DeckLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
-
-		return $this->findEntity(query: $qb);
+		return $this->findEntity(query: $this->selectWhere(column: new LinkColumn(name: 'id', value: $id)));
 	}//end find()
-
-	/**
-	 * Find deck links by object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return DeckLink[] Array of deck links.
-	 */
-	public function findByObjectUuid(string $objectUuid): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->orderBy('linked_at', 'DESC');
-
-		return $this->findEntities(query: $qb);
-	}//end findByObjectUuid()
 
 	/**
 	 * Find deck links by board ID.
@@ -88,11 +70,8 @@ class DeckLinkMapper extends QBMapper {
 	 * @return DeckLink[] Array of deck links.
 	 */
 	public function findByBoardId(int $boardId): array {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('board_id', $qb->createNamedParameter($boardId, IQueryBuilder::PARAM_INT)))
-			->orderBy('linked_at', 'DESC');
+		$qb = $this->selectWhere(column: new LinkColumn(name: 'board_id', value: $boardId));
+		$qb->orderBy('linked_at', 'DESC');
 
 		return $this->findEntities(query: $qb);
 	}//end findByBoardId()
@@ -106,33 +85,13 @@ class DeckLinkMapper extends QBMapper {
 	 * @return DeckLink|null The link or null if not found.
 	 */
 	public function findByObjectAndCard(string $objectUuid, int $cardId): ?DeckLink {
-		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('card_id', $qb->createNamedParameter($cardId, IQueryBuilder::PARAM_INT)));
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (DoesNotExistException $e) {
-			return null;
+		$link = $this->findObjectLink(objectUuid: $objectUuid, key: new LinkColumn(name: 'card_id', value: $cardId));
+		if ($link instanceof DeckLink) {
+			return $link;
 		}
+
+		return null;
 	}//end findByObjectAndCard()
-
-	/**
-	 * Delete all deck links for an object UUID.
-	 *
-	 * @param string $objectUuid The object UUID.
-	 *
-	 * @return int Number of deleted rows.
-	 */
-	public function deleteByObjectUuid(string $objectUuid): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
-
-		return $qb->executeStatement();
-	}//end deleteByObjectUuid()
 
 	/**
 	 * Delete a deck link by object UUID + card ID (Tier-2 unlink path).
@@ -146,11 +105,6 @@ class DeckLinkMapper extends QBMapper {
 	 * @return int Number of deleted rows.
 	 */
 	public function deleteByObjectAndCard(string $objectUuid, int $cardId): int {
-		$qb = $this->db->getQueryBuilder();
-		$qb->delete($this->getTableName())
-			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-			->andWhere($qb->expr()->eq('card_id', $qb->createNamedParameter($cardId, IQueryBuilder::PARAM_INT)));
-
-		return $qb->executeStatement();
+		return $this->deleteObjectLinks(objectUuid: $objectUuid, key: new LinkColumn(name: 'card_id', value: $cardId));
 	}//end deleteByObjectAndCard()
 }//end class

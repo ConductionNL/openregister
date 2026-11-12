@@ -98,6 +98,13 @@ class RevealCollector {
 	private bool $overflowed = false;
 
 	/**
+	 * The internal runs in progress, innermost last, each with its reveal count.
+	 *
+	 * @var array<int, array{run: RevealingProcess, revealed: int}>
+	 */
+	private array $processes = [];
+
+	/**
 	 * Whether a property's authorization declares that reveals are audited.
 	 *
 	 * @param array<string, mixed>|null $propertyRules The property's block.
@@ -115,34 +122,23 @@ class RevealCollector {
 	}//end isAudited()
 
 	/**
-	 * Record that one property of one object was shown to one user.
+	 * Record one reveal, once per request.
 	 *
-	 * @param string $userId Who saw it.
-	 * @param string $objectUuid Which object.
-	 * @param string $property Which property.
-	 * @param int|null $schemaId The schema, for the entry.
-	 * @param int|null $registerId The register, for the entry.
+	 * @param PropertyReveal $reveal     Who saw which property of which object.
+	 * @param int|null       $registerId The register, for the entry.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
-	public function record(
-		string $userId,
-		string $objectUuid,
-		string $property,
-		?int $schemaId = null,
-		?int $registerId = null,
-	): void {
-		if ($userId === '' || $objectUuid === '' || $property === '') {
-			// A reveal that cannot name all three is not an answer to "who saw
-			// what". Recording it would put a row in the trail that no
-			// question can reach.
-			return;
-		}
+	public function recordReveal(PropertyReveal $reveal, ?int $registerId = null): void {
+		// A reveal that cannot name all three is not an answer to "who saw
+		// what". Recording it would put a row in the trail that no question
+		// can reach.
+		$this->countProcessReveals(revealed: 1);
 
-		$key = $userId . '|' . $objectUuid . '|' . $property;
-		if (array_key_exists($key, $this->pending) === true) {
+		$key = $reveal->key();
+		if ($reveal->isComplete() === false || array_key_exists($key, $this->pending) === true) {
 			return;
 		}
 
@@ -153,13 +149,13 @@ class RevealCollector {
 
 		$this->pending[$key] = [
 			'action' => self::ACTION,
-			'user' => $userId,
-			'object' => $objectUuid,
-			'property' => $property,
-			'schema' => $schemaId,
+			'user' => $reveal->userId,
+			'object' => $reveal->objectUuid,
+			'property' => $reveal->property,
+			'schema' => $reveal->schemaId,
 			'register' => $registerId,
 		];
-	}//end record()
+	}//end recordReveal()
 
 	/**
 	 * Record that a trusted internal run read audited properties (D-3).
@@ -169,29 +165,87 @@ class RevealCollector {
 	 * has a better name: the job. The officer's question about a job is which
 	 * job ran, not which of its million rows carried a BSN.
 	 *
-	 * @param string $process The process identity.
-	 * @param string $runId The run, so the entries of one run are a set.
-	 * @param int $revealed How many reveals the run made.
+	 * @param RevealingProcess $run      The process identity and its run, so the entries of one run are a set.
+	 * @param int              $revealed How many reveals the run made.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
-	public function recordProcess(string $process, string $runId, int $revealed): void {
-		if ($process === '') {
+	public function recordProcess(RevealingProcess $run, int $revealed): void {
+		if ($run->process === '') {
 			return;
 		}
 
-		$this->pending['process|' . $process . '|' . $runId] = [
+		$this->pending['process|' . $run->process . '|' . $run->runId] = [
 			'action' => self::ACTION,
-			'user' => $process,
+			'user' => $run->process,
 			'object' => '',
 			'property' => '',
-			'process' => $process,
-			'run' => $runId,
+			'process' => $run->process,
+			'run' => $run->runId,
 			'revealed' => $revealed,
 		];
 	}//end recordProcess()
+
+	/**
+	 * Start counting the reveals of an internal run (export, aggregation job, flow run).
+	 *
+	 * Runs nest: a reveal counts for the innermost run only.
+	 *
+	 * @param RevealingProcess $run The process identity and its run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	public function beginProcess(RevealingProcess $run): void {
+		$this->processes[] = ['run' => $run, 'revealed' => 0];
+	}//end beginProcess()
+
+	/**
+	 * Stop counting the innermost run, and record it when it revealed anything.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	public function endProcess(): void {
+		$frame = array_pop($this->processes);
+		if ($frame === null || $frame['revealed'] === 0) {
+			return;
+		}
+
+		$this->recordProcess(run: $frame['run'], revealed: $frame['revealed']);
+	}//end endProcess()
+
+	/**
+	 * Whether an internal run is being counted.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	public function inProcess(): bool {
+		return $this->processes !== [];
+	}//end inProcess()
+
+	/**
+	 * Count reveals for the innermost run; outside a run this does nothing.
+	 *
+	 * @param int $revealed How many audited values were revealed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	public function countProcessReveals(int $revealed): void {
+		if ($this->processes === [] || $revealed <= 0) {
+			return;
+		}
+
+		$this->processes[array_key_last($this->processes)]['revealed'] += $revealed;
+	}//end countProcessReveals()
 
 	/**
 	 * Take everything collected, leaving the collector empty.

@@ -2,8 +2,10 @@
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
@@ -47,10 +49,10 @@ class DeepLinkRegistryServiceTest extends TestCase {
 
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->container->method('get')->willReturnCallback(function (string $class) {
-			if ($class === RegisterMapper::class) {
+			if ($class === RegisterMapperInterface::class) {
 				return $this->registerMapper;
 			}
-			if ($class === SchemaMapper::class) {
+			if ($class === SchemaMapperInterface::class) {
 				return $this->schemaMapper;
 			}
 			return null;
@@ -69,27 +71,27 @@ class DeepLinkRegistryServiceTest extends TestCase {
 	// --- register ---
 
 	public function testRegisterAddsRegistration(): void {
-		$this->service->register('procest', 'my-register', 'my-schema', '/apps/procest/#/cases/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'my-register', 'my-schema', '/apps/procest/#/cases/{uuid}'));
 
 		$this->assertTrue($this->service->hasRegistrations());
 	}
 
 	public function testRegisterIgnoresDuplicateKey(): void {
-		$this->service->register('procest', 'reg', 'schema', '/apps/procest/{uuid}');
-		$this->service->register('pipelinq', 'reg', 'schema', '/apps/pipelinq/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'reg', 'schema', '/apps/procest/{uuid}'));
+		$this->service->add(new DeepLinkRegistration('pipelinq', 'reg', 'schema', '/apps/pipelinq/{uuid}'));
 
 		// The first registration should win.
 		$this->assertTrue($this->service->hasRegistrations());
 	}
 
 	public function testRegisterWithCustomIcon(): void {
-		$this->service->register('procest', 'reg', 'schema', '/apps/procest/{uuid}', 'custom-icon');
+		$this->service->add(new DeepLinkRegistration('procest', 'reg', 'schema', '/apps/procest/{uuid}', 'custom-icon'));
 
 		$this->assertTrue($this->service->hasRegistrations());
 	}
 
 	public function testRegisterWithDefaultIcon(): void {
-		$this->service->register('procest', 'reg', 'schema', '/apps/procest/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'reg', 'schema', '/apps/procest/{uuid}'));
 
 		$this->assertTrue($this->service->hasRegistrations());
 	}
@@ -104,7 +106,7 @@ class DeepLinkRegistryServiceTest extends TestCase {
 
 	public function testResolveReturnsRegistrationByIds(): void {
 		// Register a deep link.
-		$this->service->register('procest', 'cases', 'case-schema', '/apps/procest/#/cases/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'cases', 'case-schema', '/apps/procest/#/cases/{uuid}'));
 
 		// Mock register mapper to return a register with slug "cases".
 		$register = new Register();
@@ -138,7 +140,7 @@ class DeepLinkRegistryServiceTest extends TestCase {
 	}
 
 	public function testResolveReturnsNullForUnknownIds(): void {
-		$this->service->register('procest', 'cases', 'case-schema', '/apps/procest/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'cases', 'case-schema', '/apps/procest/{uuid}'));
 
 		$this->registerMapper
 			->method('findAll')
@@ -162,7 +164,7 @@ class DeepLinkRegistryServiceTest extends TestCase {
 	}
 
 	public function testResolveUrlResolvesTemplate(): void {
-		$this->service->register('procest', 'cases', 'case-schema', '/apps/procest/#/cases/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'cases', 'case-schema', '/apps/procest/#/cases/{uuid}'));
 
 		$register = new Register();
 		$reflection = new \ReflectionClass($register);
@@ -195,7 +197,7 @@ class DeepLinkRegistryServiceTest extends TestCase {
 	}
 
 	public function testResolveIconReturnsIcon(): void {
-		$this->service->register('procest', 'cases', 'case-schema', '/apps/procest/{uuid}', 'my-icon');
+		$this->service->add(new DeepLinkRegistration('procest', 'cases', 'case-schema', '/apps/procest/{uuid}', 'my-icon'));
 
 		$register = new Register();
 		$reflection = new \ReflectionClass($register);
@@ -241,7 +243,7 @@ class DeepLinkRegistryServiceTest extends TestCase {
 	}
 
 	public function testResolveDisplayNameReturnsExplicitName(): void {
-		$this->service->register('pipelinq', 'cases', 'case-schema', '/url/{uuid}', '', 'Pipelinq');
+		$this->service->add(new DeepLinkRegistration('pipelinq', 'cases', 'case-schema', '/url/{uuid}', '', 'Pipelinq'));
 		$this->wireCasesRegistration();
 
 		$this->assertSame('Pipelinq', $this->service->resolveDisplayName(1, 10));
@@ -249,14 +251,14 @@ class DeepLinkRegistryServiceTest extends TestCase {
 
 	public function testResolveDisplayNameFallsBackToAppId(): void {
 		// No displayName provided → falls back to appId.
-		$this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'cases', 'case-schema', '/url/{uuid}'));
 		$this->wireCasesRegistration();
 
 		$this->assertSame('procest', $this->service->resolveDisplayName(1, 10));
 	}
 
 	public function testResolveDisplayNameReturnsNullForUnclaimedPair(): void {
-		$this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'cases', 'case-schema', '/url/{uuid}'));
 		$this->registerMapper->method('findAll')->willReturn([]);
 		$this->schemaMapper->method('findAll')->willReturn([]);
 
@@ -265,7 +267,7 @@ class DeepLinkRegistryServiceTest extends TestCase {
 
 	public function testRegisterRemainsSourceCompatibleWithoutDisplayName(): void {
 		// Pre-extension argument list must still succeed with displayName = null.
-		$this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'cases', 'case-schema', '/url/{uuid}'));
 		$this->wireCasesRegistration();
 
 		$registration = $this->service->resolve(1, 10);
@@ -280,7 +282,7 @@ class DeepLinkRegistryServiceTest extends TestCase {
 	}
 
 	public function testHasRegistrationsReturnsTrueAfterRegister(): void {
-		$this->service->register('procest', 'reg', 'schema', '/url/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'reg', 'schema', '/url/{uuid}'));
 
 		$this->assertTrue($this->service->hasRegistrations());
 	}
@@ -288,7 +290,7 @@ class DeepLinkRegistryServiceTest extends TestCase {
 	// --- reset ---
 
 	public function testResetClearsAllRegistrations(): void {
-		$this->service->register('procest', 'reg', 'schema', '/url/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'reg', 'schema', '/url/{uuid}'));
 		$this->assertTrue($this->service->hasRegistrations());
 
 		DeepLinkRegistryService::reset();
@@ -299,7 +301,7 @@ class DeepLinkRegistryServiceTest extends TestCase {
 	// --- Edge cases with mapper errors ---
 
 	public function testResolveHandlesRegisterMapperException(): void {
-		$this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'cases', 'case-schema', '/url/{uuid}'));
 
 		$this->registerMapper
 			->method('findAll')
@@ -316,7 +318,7 @@ class DeepLinkRegistryServiceTest extends TestCase {
 	}
 
 	public function testResolveHandlesSchemaMapperException(): void {
-		$this->service->register('procest', 'cases', 'case-schema', '/url/{uuid}');
+		$this->service->add(new DeepLinkRegistration('procest', 'cases', 'case-schema', '/url/{uuid}'));
 
 		$register = new Register();
 		$reflection = new \ReflectionClass($register);

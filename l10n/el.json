@@ -2893,7 +2893,7 @@
         "Complete: {outcome}": "Ολοκλήρωση: {outcome}",
         "Could not load the task": "Δεν ήταν δυνατή η φόρτωση της εργασίας",
         "The task refused that action": "Η εργασία απέρριψε αυτήν την ενέργεια",
-        "Store": "Κατάστημα",
+        "Marketplace": "Κατάστημα",
         "Install registers, schemas and flows that other organisations have published.": "Εγκαταστήστε μητρώα, σχήματα και ροές που έχουν δημοσιεύσει άλλοι οργανισμοί.",
         "No such run": "Δεν υπάρχει τέτοια εκτέλεση",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Η εκτέλεση δεν υπάρχει ή δεν επιτρέπεται να τη δείτε. Η διαγραφή μιας ροής διαγράφει και τις εκτελέσεις της.",

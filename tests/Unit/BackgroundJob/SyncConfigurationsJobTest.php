@@ -8,6 +8,8 @@ use DateTime;
 use Exception;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\BackgroundJob\SyncConfigurationsJob;
+use OCA\OpenRegister\Db\ConfigurationSyncResult;
+use OCA\OpenRegister\Service\Config\ConfigurationRecords;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
@@ -19,6 +21,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\GitHubFileLocation;
 
 class SyncConfigurationsJobTest extends TestCase {
 	private SyncConfigurationsJob $job;
@@ -42,8 +45,7 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$this->job = new SyncConfigurationsJob(
 			$timeFactory,
-			$this->configurationMapper,
-			$this->configurationService,
+			new ConfigurationRecords($this->configurationMapper, $this->configurationService),
 			$this->githubService,
 			$this->gitlabService,
 			$this->httpClient,
@@ -120,7 +122,7 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$this->githubService->expects($this->once())
 			->method('getFileContent')
-			->with('owner', 'repo', 'config.json', 'main')
+			->with(new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'config.json', branch: 'main'))
 			->willReturn($configData);
 
 		$this->configurationService->expects($this->once())
@@ -400,7 +402,7 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		$this->githubService->expects($this->once())
 			->method('getFileContent')
-			->with('owner', 'repo', 'config.json', 'main')
+			->with(new GitHubFileLocation(owner: 'owner', repo: 'repo', path: 'config.json', branch: 'main'))
 			->willReturn(['info' => ['version' => '1.0.0']]);
 
 		$this->configurationService->expects($this->once())->method('importFromApp');
@@ -558,6 +560,102 @@ class SyncConfigurationsJobTest extends TestCase {
 
 		// config2 should still be processed even though config1 fails
 		$this->configurationService->expects($this->once())->method('importFromFilePath');
+
+		$this->runJob(null);
+	}
+
+	/**
+	 * Every source type records the sync as a success, dated now, on the synced configuration.
+	 *
+	 * @return void
+	 */
+	public function testEachSourceTypeRecordsASuccessfulSync(): void {
+		$this->githubService->method('getFileContent')->willReturn(['info' => ['version' => '1.0.0']]);
+		$this->gitlabService->method('getProjectByPath')->willReturn(['id' => 42]);
+		$this->gitlabService->method('getFileContent')->willReturn(['info' => ['version' => '1.0.0']]);
+		$body = $this->createMock(StreamInterface::class);
+		$body->method('getContents')->willReturn('{"info":{"version":"1.0.0"}}');
+		$response = $this->createMock(ResponseInterface::class);
+		$response->method('getBody')->willReturn($body);
+		$this->httpClient->method('request')->willReturn($response);
+		$this->configurationMapper->method('findBySyncEnabled')->willReturn([
+			$this->createConfigEntity(['id' => 11, 'sourceType' => 'github']),
+			$this->createConfigEntity(['id' => 12, 'sourceType' => 'gitlab', 'sourceUrl' => 'https://gitlab.com/ns/p/-/blob/main/c.json']),
+			$this->createConfigEntity(['id' => 13, 'sourceType' => 'url']),
+			$this->createConfigEntity(['id' => 14, 'sourceType' => 'local', 'sourceUrl' => '/tmp/c.json']),
+		]);
+
+		$recorded = [];
+		$this->configurationMapper->method('updateSyncStatus')->willReturnCallback(
+			function (int $id, ConfigurationSyncResult $result) use (&$recorded) {
+				$recorded[] = [$id, $result->status, abs($result->syncDate->getTimestamp() - time()) <= 5];
+				return $this->createConfigEntity(['id' => $id]);
+			}
+		);
+
+		$this->runJob(null);
+
+		$this->assertSame([[11, 'success', true], [12, 'success', true], [13, 'success', true], [14, 'success', true]], $recorded);
+	}
+
+	/**
+	 * A mixed run logs each step and the tally, and records a failure even when the status write fails.
+	 *
+	 * @return void
+	 */
+	public function testAMixedRunLogsEachStepAndTheTally(): void {
+		$this->githubService->method('getFileContent')->willReturn(['info' => ['version' => '1.0.0']]);
+		$this->configurationMapper->method('findBySyncEnabled')->willReturn([
+			$this->createConfigEntity(['id' => 1, 'title' => 'Later', 'lastSyncDate' => new DateTime(), 'syncInterval' => 24]),
+			$this->createConfigEntity(['id' => 2, 'title' => 'Good', 'sourceType' => 'github']),
+			$this->createConfigEntity(['id' => 3, 'title' => 'Odd', 'sourceType' => 'ftp']),
+		]);
+		$statuses = [];
+		$this->configurationMapper->method('updateSyncStatus')->willReturnCallback(
+			function (int $id, ConfigurationSyncResult $result) use (&$statuses) {
+				$statuses[] = "$id {$result->status} {$result->message}";
+				if ($result->status === 'failed') {
+					throw new \Exception('db gone');
+				}
+
+				return $this->createConfigEntity(['id' => $id]);
+			}
+		);
+		$lines = [];
+		foreach (['info', 'error'] as $level) {
+			$this->logger->method($level)->willReturnCallback(function (string $message, array $context = []) use ($level, &$lines) {
+				$lines[] = $level . ' ' . $message . ' ' . basename((string)($context['file'] ?? ''));
+			});
+		}
+
+		$this->runJob(null);
+
+		$file = ' SyncConfigurationsJob.php';
+		$this->assertSame(['2 success ', '3 failed Unsupported source type: ftp'], $statuses);
+		$this->assertSame([
+			'info [SyncConfigurationsJob] Starting configuration sync job' . $file,
+			'info [SyncConfigurationsJob] Found 3 configurations with sync enabled' . $file,
+			'info [SyncConfigurationsJob] Syncing configuration: Good (ID: 2)' . $file,
+			'info [SyncConfigurationsJob] Successfully synced configuration Good' . $file,
+			'info [SyncConfigurationsJob] Syncing configuration: Odd (ID: 3)' . $file,
+			'error [SyncConfigurationsJob] Sync error: Unsupported source type: ftp' . $file,
+			'error [SyncConfigurationsJob] Failed to update sync status: db gone' . $file,
+			'info [SyncConfigurationsJob] Completed: 1 synced, 1 skipped, 1 failed' . $file,
+		], $lines);
+	}
+
+	/**
+	 * A configured GitHub branch is the one the file is read from.
+	 *
+	 * @return void
+	 */
+	public function testRunGitHubReadsTheConfiguredBranch(): void {
+		$this->configurationMapper->method('findBySyncEnabled')->willReturn([
+			$this->createConfigEntity(['githubRepo' => 'acme/conf', 'githubBranch' => 'release', 'githubPath' => 'c.json']),
+		]);
+		$this->githubService->expects($this->once())->method('getFileContent')
+			->with(new GitHubFileLocation(owner: 'acme', repo: 'conf', path: 'c.json', branch: 'release'))
+			->willReturn(['info' => ['version' => '1.0.0']]);
 
 		$this->runJob(null);
 	}

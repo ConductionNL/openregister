@@ -17,10 +17,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
-use OCA\OpenRegister\Controller\FilesController;
+use OCA\OpenRegister\Files\Controller\FilesController;
+use OCA\OpenRegister\Service\File\FileUpload;
+use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\File\AttachNodeHandler;
-use OCA\OpenRegister\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Files\Service\File\AttachNodeHandler;
+use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -69,9 +72,8 @@ class AttachNodeHandlerTest extends TestCase {
 		$fileService = $this->createMock(FileService::class);
 		$fileService->expects($this->once())->method('addFile')
 			->with(
-				$object,
-				'besluit.pdf',
-				$this->callback(static fn ($content): bool => is_resource($content) && stream_get_contents($content) === '%PDF-1.7')
+				$this->callback(fn (FileTarget $target): bool => $target->object === $object),
+				$this->callback(fn (FileUpload $upload): bool => $upload->fileName === 'besluit.pdf' && $this->callback(static fn ($content): bool => is_resource($content) && stream_get_contents($content) === '%PDF-1.7')->evaluate($upload->content, '', true))
 			)
 			->willReturn($written);
 
@@ -129,8 +131,7 @@ class AttachNodeHandlerTest extends TestCase {
 		$fileService = $this->createMock(FileService::class);
 		$fileService->expects($this->never())->method('addFile');
 
-		$controller = new FilesController(
-			'openregister',
+		$controller = FilesControllerFactory::create(
 			$request,
 			$fileService,
 			$objectService,
@@ -175,8 +176,7 @@ class AttachNodeHandlerTest extends TestCase {
 		$fileService->expects($this->once())->method('addFile')->willReturn($this->createMock(File::class));
 		$fileService->method('formatFile')->willReturn(['title' => 'brief.txt']);
 
-		$controller = new FilesController(
-			'openregister',
+		$controller = FilesControllerFactory::create(
 			$request,
 			$fileService,
 			$objectService,

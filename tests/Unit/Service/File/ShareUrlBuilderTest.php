@@ -18,10 +18,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
-use OCA\OpenRegister\Db\FileMapper;
-use OCA\OpenRegister\Service\File\FileOwnershipHandler;
-use OCA\OpenRegister\Service\File\FileSharingHandler;
-use OCA\OpenRegister\Service\File\ShareUrlBuilder;
+use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingHandler;
+use OCA\OpenRegister\Files\Service\File\FileSharingAccounts;
+use OCA\OpenRegister\Files\Service\File\ShareUrlBuilder;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IURLGenerator;
@@ -41,7 +42,7 @@ use ReflectionMethod;
  * `getBaseUrl()` and `getAbsoluteURL()` answer with the request's scheme and
  * host; without one the request host falls back to `localhost`.
  *
- * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
  */
 class ShareUrlBuilderTest extends TestCase {
 
@@ -103,10 +104,12 @@ class ShareUrlBuilderTest extends TestCase {
 	private function handlerLink(ShareUrlBuilder $builder): string {
 		$handler = new FileSharingHandler(
 			shareManager: $this->createMock(IManager::class),
-			userManager: $this->createMock(IUserManager::class),
+			accounts: new FileSharingAccounts(
+				userManager: $this->createMock(IUserManager::class),
+				fileOwnershipHandler: $this->createMock(FileOwnershipHandler::class)
+			),
 			shareUrls: $builder,
-			logger: $this->createMock(LoggerInterface::class),
-			fileOwnershipHandler: $this->createMock(FileOwnershipHandler::class),
+			logger: $this->createMock(LoggerInterface::class)
 		);
 		$share = $this->createMock(IShare::class);
 		$share->method('getToken')->willReturn('abc123');

@@ -38,7 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Service\Flow\FlowRunContextInterface;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
@@ -51,7 +51,8 @@ use Throwable;
  *
  * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
  */
-class AuditFlowAttribution extends QBMapper {
+class AuditFlowAttribution extends QBMapper implements AuditFlowAttributionInterface {
+
 	/**
 	 * Constructor.
 	 *
@@ -83,17 +84,7 @@ class AuditFlowAttribution extends QBMapper {
 	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
 	 */
 	public function apply(AuditTrail $auditTrail): void {
-		try {
-			$context = $this->container->get(FlowRunContext::class);
-		} catch (Throwable $e) {
-			return;
-		}
-
-		if (($context instanceof FlowRunContext) === false) {
-			return;
-		}
-
-		$frame = $context->current();
+		$frame = $this->currentFrame();
 		if ($frame === null) {
 			return;
 		}
@@ -104,7 +95,27 @@ class AuditFlowAttribution extends QBMapper {
 	}//end apply()
 
 	/**
-	 * Every audit row attributed to one flow run, oldest first.
+	 * The innermost flow step executing now, or null outside a run or without a usable run context.
+	 *
+	 * @return array{run: string, node: string, step: int}|null The frame.
+	 */
+	private function currentFrame(): ?array {
+		try {
+			$context = $this->container->get(FlowRunContextInterface::class);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		if (($context instanceof FlowRunContextInterface) === false) {
+			return null;
+		}
+
+		return $context->current();
+	}//end currentFrame()
+
+	/**
+	 * Every write attributed to one flow run, oldest first. Hop rows are left
+	 * out: a run with auditing on must report the same writes as one without.
 	 *
 	 * Ordered by id rather than by `flow_step` so a run that visited the same
 	 * node twice — a loop — reads in the order the writes actually happened
@@ -122,6 +133,7 @@ class AuditFlowAttribution extends QBMapper {
 		$qb->select('*')
 			->from('openregister_audit_trails')
 			->where($qb->expr()->eq('flow_run', $qb->createNamedParameter($runUuid)))
+			->andWhere($qb->expr()->neq('action', $qb->createNamedParameter(self::ACTION_HOP)))
 			->orderBy('id', 'ASC')
 			->setMaxResults($limit);
 

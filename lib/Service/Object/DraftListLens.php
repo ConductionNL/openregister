@@ -101,12 +101,7 @@ class DraftListLens {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
 	 */
 	public function modeFor(array $query, ?Schema $schema = null): string {
-		// The work list of this schema: without the caller's own drafts when
-		// the schema says so (`draftsListed: false`), with them otherwise.
-		$workList = self::EXCLUDE;
-		if ($schema !== null && (new DraftStatusPolicy())->ownDraftsListed(schema: $schema) === false) {
-			$workList = self::NONE;
-		}
+		$workList = $this->workListMode(schema: $schema);
 
 		if (array_key_exists(self::PARAMETER, $query) === false) {
 			if ($this->filtersOnStatus(query: $query) === true) {
@@ -120,6 +115,26 @@ class DraftListLens {
 	}//end modeFor()
 
 	/**
+	 * The mode of a schema's work list.
+	 *
+	 * Without the caller's own drafts when the schema says so (`draftsListed: false`),
+	 * with them otherwise.
+	 *
+	 * @param Schema|null $schema The schema listed.
+	 *
+	 * @return string The mode
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
+	 */
+	private function workListMode(?Schema $schema): string {
+		if ($schema !== null && (new DraftStatusPolicy())->ownDraftsListed(schema: $schema) === false) {
+			return self::NONE;
+		}
+
+		return self::EXCLUDE;
+	}//end workListMode()
+
+	/**
 	 * The lens a `_drafts` value names, or null when it names none.
 	 *
 	 * @param mixed $raw The parameter's value.
@@ -127,12 +142,8 @@ class DraftListLens {
 	 * @return string|null ANY, NONE or ONLY; null for false and for anything unrecognised.
 	 */
 	private function asked(mixed $raw): ?string {
-		$word = null;
-		if (is_string($raw) === true) {
-			$word = strtolower(trim($raw));
-		}
-
-		if ($word === self::ANY || $word === self::NONE) {
+		$word = self::wordOf(raw: $raw);
+		if (in_array($word, [self::ANY, self::NONE], true) === true) {
 			return $word;
 		}
 
@@ -142,6 +153,23 @@ class DraftListLens {
 
 		return null;
 	}//end asked()
+
+	/**
+	 * A string parameter as a lower-cased, trimmed word; anything else is no word.
+	 *
+	 * @param mixed $raw The parameter value.
+	 *
+	 * @return string|null The word
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
+	 */
+	private static function wordOf(mixed $raw): ?string {
+		if (is_string($raw) === true) {
+			return strtolower(trim($raw));
+		}
+
+		return null;
+	}//end wordOf()
 
 	/**
 	 * Whether the query carries a filter on the stored status.
@@ -162,30 +190,40 @@ class DraftListLens {
 	}//end filtersOnStatus()
 
 	/**
-	 * The clause for a lens, or null when it puts no condition on the list.
+	 * The clause for a draft listing, or null when it puts no condition on the list.
 	 *
-	 * @param string      $mode         One of EXCLUDE, ONLY, ANY and NONE.
-	 * @param string      $columnPrefix The table alias with its dot, or empty for an unaliased UNION member.
-	 * @param string|null $owner        The caller, already quoted or bound by the emitter; null for nobody.
+	 * @param DraftListing $listing      The lens mode and the caller.
+	 * @param string       $columnPrefix The table alias with its dot, or empty for an unaliased UNION member.
 	 *
 	 * @return string|null The predicate, without a leading AND.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
 	 */
-	public function sql(string $mode, string $columnPrefix, ?string $owner): ?string {
-		if ($mode === self::ANY) {
-			return null;
-		}
+	public function clauseFor(DraftListing $listing, string $columnPrefix): ?string {
+		return match ($listing->mode) {
+			self::ANY => null,
+			self::ONLY => $columnPrefix . "_status = '" . ObjectEntity::STATUS_DRAFT . "'",
+			self::NONE => (new DraftStatusPolicy())->notADraftSql(columnPrefix: $columnPrefix),
+			default => $this->notADraftOrOwnSql(columnPrefix: $columnPrefix, owner: $listing->owner),
+		};
+	}//end clauseFor()
 
-		if ($mode === self::ONLY) {
-			return $columnPrefix . "_status = '" . ObjectEntity::STATUS_DRAFT . "'";
-		}
-
+	/**
+	 * Not a draft, or a draft of this owner; without an owner, not a draft.
+	 *
+	 * @param string      $columnPrefix The column prefix.
+	 * @param string|null $owner        The quoted owner literal, or null.
+	 *
+	 * @return string The SQL condition
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
+	 */
+	private function notADraftOrOwnSql(string $columnPrefix, ?string $owner): string {
 		$notADraft = (new DraftStatusPolicy())->notADraftSql(columnPrefix: $columnPrefix);
-		if ($mode === self::NONE || $owner === null || $owner === '') {
+		if ((string)$owner === '') {
 			return $notADraft;
 		}
 
 		return '(' . $notADraft . ' OR ' . $columnPrefix . '_owner = ' . $owner . ')';
-	}//end sql()
+	}//end notADraftOrOwnSql()
 }//end class

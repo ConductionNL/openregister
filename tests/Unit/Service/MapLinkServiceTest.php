@@ -29,10 +29,13 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\LinkServiceRuntime;
 use Exception;
 use OCA\OpenRegister\Db\MapLink;
 use OCA\OpenRegister\Db\MapLinkMapper;
 use OCA\OpenRegister\Service\MapLinkService;
+use OCA\OpenRegister\Service\PoiDraft;
+use OCA\OpenRegister\Service\LinkTarget;
 use OCP\App\IAppManager;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -48,6 +51,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  *
  * @group requires-app-maps
+ * @uses \OCA\OpenRegister\Service\LinkTarget
  */
 class MapLinkServiceTest extends TestCase {
 
@@ -90,10 +94,12 @@ class MapLinkServiceTest extends TestCase {
 		$this->service = new MapLinkService(
 			$this->mapper,
 			$this->container,
-			$this->appManager,
-			$this->userSession,
 			$this->urlGenerator,
-			$this->logger
+			new LinkServiceRuntime(
+				$this->appManager,
+				$this->userSession,
+				$this->logger
+			)
 		);
 	}//end setUp()
 
@@ -120,7 +126,7 @@ class MapLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->linkPoi('abc-123', 1, 2, 99);
+		$this->service->linkPoi((new LinkTarget('abc-123', 1))->inSchema(2), 99);
 	}//end testLinkPoiThrowsWhenNoUser()
 
 	public function testLinkPoiThrowsWhenMapsUnavailable(): void {
@@ -130,7 +136,7 @@ class MapLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->linkPoi('abc-123', 1, 2, 99);
+		$this->service->linkPoi((new LinkTarget('abc-123', 1))->inSchema(2), 99);
 	}//end testLinkPoiThrowsWhenMapsUnavailable()
 
 	public function testLinkPoiThrowsOnDuplicate(): void {
@@ -142,7 +148,7 @@ class MapLinkServiceTest extends TestCase {
 		$this->expectExceptionCode(409);
 		$this->expectExceptionMessage('POI already linked to this object');
 
-		$this->service->linkPoi('abc-123', 1, 2, 99);
+		$this->service->linkPoi((new LinkTarget('abc-123', 1))->inSchema(2), 99);
 	}//end testLinkPoiThrowsOnDuplicate()
 
 	public function testCreateAndLinkPoiThrowsWhenNoUser(): void {
@@ -151,7 +157,7 @@ class MapLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(401);
 
-		$this->service->createAndLinkPoi('abc-123', 1, 2, 'Office', 52.37, 4.89);
+		$this->service->createAndLinkPoi((new LinkTarget('abc-123', 1))->inSchema(2), (new PoiDraft('Office'))->locatedAt(52.37, 4.89));
 	}//end testCreateAndLinkPoiThrowsWhenNoUser()
 
 	public function testCreateAndLinkPoiThrowsOnEmptyName(): void {
@@ -160,7 +166,7 @@ class MapLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(400);
 
-		$this->service->createAndLinkPoi('abc-123', 1, 2, '   ', 52.37, 4.89);
+		$this->service->createAndLinkPoi((new LinkTarget('abc-123', 1))->inSchema(2), (new PoiDraft('   '))->locatedAt(52.37, 4.89));
 	}//end testCreateAndLinkPoiThrowsOnEmptyName()
 
 	public function testCreateAndLinkPoiThrowsWhenMapsUnavailable(): void {
@@ -170,7 +176,7 @@ class MapLinkServiceTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionCode(503);
 
-		$this->service->createAndLinkPoi('abc-123', 1, 2, 'Office', 52.37, 4.89);
+		$this->service->createAndLinkPoi((new LinkTarget('abc-123', 1))->inSchema(2), (new PoiDraft('Office'))->locatedAt(52.37, 4.89));
 	}//end testCreateAndLinkPoiThrowsWhenMapsUnavailable()
 
 	public function testUnlinkPoiThrowsWhenNoUser(): void {

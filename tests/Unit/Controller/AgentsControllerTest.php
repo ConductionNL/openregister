@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Controller\Support\AgentsControllerFactory;
 use OCA\OpenRegister\Controller\AgentsController;
-use OCA\OpenRegister\Db\Agent;
-use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Mcp\Db\Agent;
+use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\ToolRegistry;
+use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -34,8 +35,7 @@ class AgentsControllerTest extends TestCase {
 		$this->toolRegistry = $this->createMock(ToolRegistry::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->controller = new AgentsController(
-			'openregister',
+		$this->controller = AgentsControllerFactory::create(
 			$this->request,
 			$this->agentMapper,
 			$this->organisationService,
@@ -215,8 +215,7 @@ class AgentsControllerTest extends TestCase {
 	}
 
 	public function testDestroyNotAuthenticated(): void {
-		$controller = new AgentsController(
-			'openregister',
+		$controller = AgentsControllerFactory::create(
 			$this->request,
 			$this->agentMapper,
 			$this->organisationService,

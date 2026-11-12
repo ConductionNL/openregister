@@ -18,61 +18,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCP\EventDispatcher\Event;
-
 /**
  * Event dispatched for file action: FileUnlockedEvent
  */
-class FileUnlockedEvent extends Event {
-	/**
-	 * Constructor for FileUnlockedEvent
-	 *
-	 * @param string $objectUuid The UUID of the parent object.
-	 * @param int $fileId The file ID.
-	 * @param array $data Additional event data.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/file-actions/spec.md
-	 */
-	public function __construct(
-		private readonly string $objectUuid,
-		private readonly int $fileId,
-		private readonly array $data = [],
-	) {
-		parent::__construct();
-	}//end __construct()
-
-	/**
-	 * Get the object UUID.
-	 *
-	 * @return string The object UUID.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getObjectUuid(): string {
-		return $this->objectUuid;
-	}//end getObjectUuid()
-
-	/**
-	 * Get the file ID.
-	 *
-	 * @return int The file ID.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getFileId(): int {
-		return $this->fileId;
-	}//end getFileId()
-
-	/**
-	 * Get additional event data.
-	 *
-	 * @return array The event data.
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
-	 */
-	public function getData(): array {
-		return $this->data;
-	}//end getData()
+class FileUnlockedEvent extends AbstractObjectFileEvent {
 }//end class

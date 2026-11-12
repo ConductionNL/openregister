@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -30,20 +31,20 @@ class MergeNodeTest extends TestCase {
 	}
 
 	public function testAppendKeepsEveryItem(): void {
-		$out = $this->node->execute($this->items([['n' => 1], ['n' => 2]]), ['mode' => 'append'], []);
+		$out = $this->node->execute(new FlowNodeCall(items: $this->items([['n' => 1], ['n' => 2]]), config: ['mode' => 'append'], context: []));
 		$this->assertSame([1, 2], array_column(array_column($out, 'json'), 'n'));
 	}
 
 	public function testMergeByKeyGroupsAndEnriches(): void {
-		$out = $this->node->execute(
-			$this->items([
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([
 				['id' => 'x', 'a' => 1],
 				['id' => 'y', 'a' => 9],
 				['id' => 'x', 'b' => 2],
 			]),
-			['mode' => 'mergeByKey', 'key' => 'id'],
-			[]
-		);
+			config: ['mode' => 'mergeByKey', 'key' => 'id'],
+			context: []
+		));
 
 		$this->assertCount(2, $out);
 		// x's two records merged; the later branch's fields are present.
@@ -52,11 +53,11 @@ class MergeNodeTest extends TestCase {
 	}
 
 	public function testUniqueDropsLaterDuplicates(): void {
-		$out = $this->node->execute(
-			$this->items([['id' => 'x', 'v' => 1], ['id' => 'x', 'v' => 2], ['id' => 'y', 'v' => 3]]),
-			['mode' => 'unique', 'key' => 'id'],
-			[]
-		);
+		$out = $this->node->execute(new FlowNodeCall(
+			items: $this->items([['id' => 'x', 'v' => 1], ['id' => 'x', 'v' => 2], ['id' => 'y', 'v' => 3]]),
+			config: ['mode' => 'unique', 'key' => 'id'],
+			context: []
+		));
 
 		$this->assertCount(2, $out);
 		$this->assertSame(1, $out[0]['json']['v']); // first x kept

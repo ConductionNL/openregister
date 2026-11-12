@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
-use OCA\OpenRegister\Db\Chunk;
-use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\Chunk;
+use OCA\OpenRegister\Files\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
@@ -13,7 +13,9 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\BackendState;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -45,13 +47,17 @@ class EntityRecognitionHandlerBranchTest extends TestCase {
 		$this->anonymisationBackendService = $this->createMock(AnonymisationBackendService::class);
 
 		$this->handler = new EntityRecognitionHandler(
-			$this->chunkMapper,
-			$this->entityMapper,
-			$this->entityRelationMapper,
-			$this->db,
-			$this->logger,
-			$this->settingsService,
-			$this->anonymisationBackendService
+			stores: new EntityRecognitionStores(
+				chunkMapper: $this->chunkMapper,
+				entityMapper: $this->entityMapper,
+				entityRelationMapper: $this->entityRelationMapper,
+				db: $this->db
+			),
+			backends: new EntityRecognitionBackends(
+				settingsService: $this->settingsService,
+				anonymisationBackendService: $this->anonymisationBackendService
+			),
+			logger: $this->logger
 		);
 	}
 
@@ -228,6 +234,8 @@ class EntityRecognitionHandlerBranchTest extends TestCase {
 			'entity_types' => [EntityRecognitionHandler::ENTITY_TYPE_PHONE],
 		]);
 		$this->assertIsArray($result);
+		// Only the requested phone type is extracted; the e-mail address is skipped.
+		$this->assertSame(['PHONE'], array_column($result['entities'], 'type'));
 	}
 
 	public function testExtractEmailAndCreateEntity(): void {

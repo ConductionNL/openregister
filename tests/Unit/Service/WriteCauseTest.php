@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Service\CauseFrame;
 use OCA\OpenRegister\Service\WriteCause;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -95,9 +96,8 @@ final class WriteCauseTest extends TestCase {
 	 */
 	public function testAFrameNamesTheCauseAndTheRun(): void {
 		$seen = WriteCause::runAs(
-			WriteCause::IMPORT,
-			'run-42',
-			static fn (): array => WriteCause::current()
+			frame: new CauseFrame(cause: WriteCause::IMPORT, run: 'run-42'),
+			operation: static fn (): array => WriteCause::current()
 		);
 
 		self::assertSame(['cause' => 'import', 'run' => 'run-42'], $seen);
@@ -117,12 +117,10 @@ final class WriteCauseTest extends TestCase {
 	 */
 	public function testTheInnermostFrameWins(): void {
 		$seen = WriteCause::runAs(
-			WriteCause::IMPORT,
-			'run-42',
-			static fn (): array => WriteCause::runAs(
-				WriteCause::CASCADE,
-				'write-7',
-				static fn (): array => WriteCause::current()
+			frame: new CauseFrame(cause: WriteCause::IMPORT, run: 'run-42'),
+			operation: static fn (): array => WriteCause::runAs(
+				frame: new CauseFrame(cause: WriteCause::CASCADE, run: 'write-7'),
+				operation: static fn (): array => WriteCause::current()
 			)
 		);
 
@@ -141,10 +139,9 @@ final class WriteCauseTest extends TestCase {
 	 */
 	public function testTheOuterFrameSurvivesTheInnerOne(): void {
 		$after = WriteCause::runAs(
-			WriteCause::IMPORT,
-			'run-42',
-			static function (): array {
-				WriteCause::runAs(WriteCause::CASCADE, 'write-7', static fn (): bool => true);
+			frame: new CauseFrame(cause: WriteCause::IMPORT, run: 'run-42'),
+			operation: static function (): array {
+				WriteCause::runAs(new CauseFrame(WriteCause::CASCADE, 'write-7'), static fn (): bool => true);
 
 				return WriteCause::current();
 			}
@@ -163,9 +160,8 @@ final class WriteCauseTest extends TestCase {
 	public function testAThrowingOperationDoesNotStrandItsFrame(): void {
 		try {
 			WriteCause::runAs(
-				WriteCause::IMPORT,
-				'run-42',
-				static function (): void {
+				frame: new CauseFrame(cause: WriteCause::IMPORT, run: 'run-42'),
+				operation: static function (): void {
 					throw new RuntimeException('the load failed halfway');
 				}
 			);
@@ -189,9 +185,8 @@ final class WriteCauseTest extends TestCase {
 	 */
 	public function testAWordOutsideTheVocabularyIsNotStored(): void {
 		$seen = WriteCause::runAs(
-			'IMPORT-2026-batch-3',
-			'run-42',
-			static fn (): array => WriteCause::current()
+			frame: new CauseFrame(cause: 'IMPORT-2026-batch-3', run: 'run-42'),
+			operation: static fn (): array => WriteCause::current()
 		);
 
 		self::assertSame(
@@ -210,7 +205,7 @@ final class WriteCauseTest extends TestCase {
 	 * @return void
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
-	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
 	 */
 	public function testTheVocabularyIsSevenWords(): void {
 		self::assertCount(7, WriteCause::ALL);
@@ -229,18 +224,19 @@ final class WriteCauseTest extends TestCase {
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
 	 */
 	public function testAClientAttemptIsRecorded(): void {
-		self::assertFalse(WriteCause::clientAttempted());
+		self::assertFalse(WriteCause::clientAttemptedFor(objectUuid: 'u-1'));
 
-		WriteCause::noteClientAttempt();
+		WriteCause::noteClientAttempt(objectUuid: 'u-1');
 
-		self::assertTrue(WriteCause::clientAttempted());
+		self::assertTrue(WriteCause::clientAttemptedFor(objectUuid: 'u-1'));
+		self::assertFalse(WriteCause::clientAttemptedFor(objectUuid: 'u-2'), 'the attempt belongs to the write it came with');
 	}
 	/**
 	 * A lookup made for a person is caused `lookup`, and the frame closes after.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
 	 */
 	public function testALookupForAPersonIsCausedLookup(): void {
 		$seen = WriteCause::asLookup(operation: static fn (): array => WriteCause::current());
@@ -254,12 +250,11 @@ final class WriteCauseTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
 	 */
 	public function testALookupInsideAScheduledJobKeepsTheJob(): void {
 		$seen = WriteCause::runAs(
-			cause: WriteCause::SCHEDULED,
-			run: 'job-7',
+			frame: new CauseFrame(cause: WriteCause::SCHEDULED, run: 'job-7'),
 			operation: static fn (): array => WriteCause::asLookup(
 				operation: static fn (): array => WriteCause::current()
 			)
@@ -273,7 +268,7 @@ final class WriteCauseTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 * @spec openspec/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
 	 */
 	public function testAThrowingLookupClosesItsFrame(): void {
 		try {

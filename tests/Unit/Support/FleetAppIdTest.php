@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace Unit\Support;
 
+use OCA\OpenRegister\Support\FleetApp\FleetAppClass;
+use OCA\OpenRegister\Support\FleetApp\FleetAppPath;
 use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
@@ -256,12 +258,12 @@ class FleetAppIdTest extends TestCase
     {
         $this->assertSame(
             '/apps/openconnector/api/sources',
-            FleetAppId::appPath($this->appManager(['openconnector']), 'integriq', 'api/sources')
+            FleetAppId::appPath($this->appManager(['openconnector']), new FleetAppPath('integriq', 'api/sources'))
         );
 
         $this->assertSame(
             '/apps/integriq/api/sources',
-            FleetAppId::appPath($this->appManager(['integriq']), 'integriq', 'api/sources')
+            FleetAppId::appPath($this->appManager(['integriq']), new FleetAppPath('integriq', 'api/sources'))
         );
 
     }//end testAppPathUsesTheResolvedId()
@@ -276,7 +278,7 @@ class FleetAppIdTest extends TestCase
     public function testAppPathReturnsNullWhenAbsent(): void
     {
         $this->assertNull(
-            FleetAppId::appPath($this->appManager(['openregister']), 'integriq', 'api/sources')
+            FleetAppId::appPath($this->appManager(['openregister']), new FleetAppPath('integriq', 'api/sources'))
         );
 
     }//end testAppPathReturnsNullWhenAbsent()
@@ -291,7 +293,7 @@ class FleetAppIdTest extends TestCase
     {
         $this->assertSame(
             '/apps/integriq',
-            FleetAppId::appPath($this->appManager(['integriq']), 'integriq')
+            FleetAppId::appPath($this->appManager(['integriq']), new FleetAppPath('integriq'))
         );
 
     }//end testAppPathWithoutSuffix()
@@ -328,7 +330,7 @@ class FleetAppIdTest extends TestCase
     public function testAnUnreadNamespaceResolvesToNullRatherThanAGuess(): void
     {
         $this->assertNull(FleetAppId::namespaceForId('filinq', 'filinq'));
-        $this->assertNull(FleetAppId::className($this->appManager(['filinq']), 'filinq', 'Service\\DocumentService'));
+        $this->assertNull(FleetAppId::className($this->appManager(['filinq']), new FleetAppClass('filinq', 'Service\\DocumentService')));
         $this->assertNull(FleetAppId::resolveClass('filinq', 'Service\\DocumentService'));
 
     }//end testAnUnreadNamespaceResolvesToNullRatherThanAGuess()
@@ -343,12 +345,12 @@ class FleetAppIdTest extends TestCase
     {
         $this->assertSame(
             'OCA\\Integriq\\Action\\SynchronizationAction',
-            FleetAppId::className($this->appManager(['integriq']), 'integriq', 'Action\\SynchronizationAction')
+            FleetAppId::className($this->appManager(['integriq']), new FleetAppClass('integriq', 'Action\\SynchronizationAction'))
         );
 
         $this->assertSame(
             'OCA\\OpenConnector\\Action\\SynchronizationAction',
-            FleetAppId::className($this->appManager(['openconnector']), 'integriq', 'Action\\SynchronizationAction')
+            FleetAppId::className($this->appManager(['openconnector']), new FleetAppClass('integriq', 'Action\\SynchronizationAction'))
         );
 
     }//end testClassNameFollowsTheInstalledId()
@@ -364,7 +366,7 @@ class FleetAppIdTest extends TestCase
      */
     public function testClassNameDoesNotRequireTheClassToExist(): void
     {
-        $name = FleetAppId::className($this->appManager(['integriq']), 'integriq', 'Action\\NoSuchActionAnywhere');
+        $name = FleetAppId::className($this->appManager(['integriq']), new FleetAppClass('integriq', 'Action\\NoSuchActionAnywhere'));
 
         $this->assertSame('OCA\\Integriq\\Action\\NoSuchActionAnywhere', $name);
         $this->assertFalse(class_exists($name, false));
@@ -381,7 +383,7 @@ class FleetAppIdTest extends TestCase
     {
         $this->assertSame(
             'OCA\\Integriq\\Action\\SynchronizationAction',
-            FleetAppId::className($this->appManager([]), 'integriq', 'Action\\SynchronizationAction')
+            FleetAppId::className($this->appManager([]), new FleetAppClass('integriq', 'Action\\SynchronizationAction'))
         );
 
     }//end testClassNameFallsBackToTheCanonicalSpelling()

@@ -2909,7 +2909,7 @@
         "Complete: {outcome}": "Pabeigt: {outcome}",
         "Could not load the task": "Neizdevās ielādēt uzdevumu",
         "The task refused that action": "Uzdevums noraidīja šo darbību",
-        "Store": "Veikals",
+        "Marketplace": "Veikals",
         "Install registers, schemas and flows that other organisations have published.": "Instalējiet reģistrus, shēmas un plūsmas, ko publicējušas citas organizācijas.",
         "No such run": "Nav šādas izpildes",
         "The run does not exist, or it is not yours to see. Deleting a flow deletes its runs.": "Izpilde nepastāv, vai jums nav tiesību to redzēt. Dzēšot plūsmu, tiek dzēstas arī tās izpildes.",

@@ -34,21 +34,23 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md
+ * @spec openspec/specs/api-surface-governance/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder;
+use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Controller\Support\WellKnownControllerServices;
+use OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilderInterface;
 use OCP\AppFramework\Controller;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IURLGenerator;
 
@@ -63,23 +65,34 @@ use OCP\IURLGenerator;
 class WellKnownController extends Controller {
 
 	/**
+	 * Builds the administered security contact file.
+	 *
+	 * @var SecurityTxtBuilderInterface
+	 */
+	private readonly SecurityTxtBuilderInterface $securityTxt;
+
+	/**
+	 * Names this instance's own base URL.
+	 *
+	 * @var IURLGenerator
+	 */
+	private readonly IURLGenerator $urlGenerator;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appName The app name.
-	 * @param IRequest $request The incoming request.
-	 * @param SecurityTxtBuilder $securityTxt Builds the administered security contact file.
-	 * @param IURLGenerator $urlGenerator Names this instance's own base URL.
+	 * @param IRequest                    $request  The incoming request.
+	 * @param WellKnownControllerServices $services The controller's collaborators.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		private readonly SecurityTxtBuilder $securityTxt,
-		private readonly IURLGenerator $urlGenerator,
+		WellKnownControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
-
+		parent::__construct(appName: Application::APP_ID, request: $request);
+		$this->securityTxt = $services->securityTxt;
+		$this->urlGenerator = $services->urlGenerator;
 	}//end __construct()
 
 	/**
@@ -87,7 +100,7 @@ class WellKnownController extends Controller {
 	 *
 	 * @return DataDisplayResponse|JSONResponse The file, or a 404 when nothing is administered.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 *
 	 * @contract tests/Unit/Controller/WellKnownControllerTest.php
 	 */
@@ -97,12 +110,7 @@ class WellKnownController extends Controller {
 	public function securityTxt(): DataDisplayResponse|JSONResponse {
 		$body = $this->securityTxt->build();
 		if ($body === null) {
-			return new JSONResponse(
-				data: [
-					'error' => 'No responsible disclosure contact is administered on this instance.',
-				],
-				statusCode: Http::STATUS_NOT_FOUND,
-			);
+			return $this->noDisclosureContact();
 		}
 
 		$response = new DataDisplayResponse(
@@ -117,6 +125,21 @@ class WellKnownController extends Controller {
 	}//end securityTxt()
 
 	/**
+	 * The 404 when no responsible-disclosure contact is administered.
+	 *
+	 * @return JSONResponse The 404.
+	 */
+	private function noDisclosureContact(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'error' => 'No responsible disclosure contact is administered on this instance.',
+			],
+			statusCode: Http::STATUS_NOT_FOUND,
+		);
+
+	}//end noDisclosureContact()
+
+	/**
 	 * What this instance publishes at its well-known paths.
 	 *
 	 * The index exists because a researcher or an integrator reaching an app's
@@ -127,7 +150,7 @@ class WellKnownController extends Controller {
 	 *
 	 * @return JSONResponse The index.
 	 *
-	 * @spec openspec/changes/api-as-a-versioned-surface/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
+	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-the-instance-answers-the-well-known-paths-and-honours-an-administered-proxy-req-avs-004
 	 *
 	 * @contract tests/Unit/Controller/WellKnownControllerTest.php
 	 */

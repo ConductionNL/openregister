@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use DateTime;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFillScope;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
@@ -40,6 +42,7 @@ class ExampleSetValuesTest extends TestCase {
 		$this->context = [
 			'cast'    => ['sanne' => ['bsn' => '999994001', 'address' => ['number' => 14, 'street' => 'Lindelaan']]],
 			'objects' => ['case-1' => ['id' => 'abc', 'identifier' => 'Z-1']],
+			'files'   => ['dossier-1' => [20525, 20526]],
 			'lookups' => ['caseType' => 'type-uuid'],
 			'today'   => new DateTimeImmutable('2026-10-13 12:00', new DateTimeZone('Europe/Amsterdam')),
 			'accounts'      => ['background' => ['uid' => 'demo_background']],
@@ -59,17 +62,18 @@ class ExampleSetValuesTest extends TestCase {
 			'interpolated number'       => ['Lindelaan {{cast:sanne.address.number}}', 'Lindelaan 14'],
 			'date in the past'          => ['{{date:-2}}', '2026-10-11'],
 			'date in the future'        => ['{{date:+13}}', '2026-10-26'],
-			'datetime'                  => ['{{datetime:-1 09:12}}', '2026-10-12T09:12:00+02:00'],
+			'datetime'                  => ['{{datetime:-1 09:12}}', '2026-10-12T07:12:00+00:00'],
 			'object field'              => ['Zaak {{object:case-1.identifier}}', 'Zaak Z-1'],
 			'lookup'                    => ['{{lookup:caseType}}', 'type-uuid'],
 			'nested arrays'             => [['a' => ['{{cast:sanne.bsn}}']], ['a' => ['999994001']]],
 			'plain values pass'         => [true, true],
 			'next thursday'             => ['{{date:+7@thu}}', '2026-10-22'],
 			'today is a tuesday'        => ['{{date:0@tue}}', '2026-10-13'],
-			'a weekday with a time'     => ['{{datetime:+7@tue 19:30}}', '2026-10-20T19:30:00+02:00'],
+			'a weekday with a time'     => ['{{datetime:+7@tue 19:30}}', '2026-10-20T17:30:00+00:00'],
 			'service account'           => ['{{account:background.uid}}', 'demo_background'],
 			'organisation'              => ['{{organisation:zuiddrecht}}', 'org-uuid'],
 			'instance'                  => ['{{instance:baseUrl}}/x', 'https://cloud.example.test/x'],
+			'a file id keeps its type'  => ['{{file:dossier-1.1}}', 20526],
 		];
 	}
 
@@ -78,8 +82,43 @@ class ExampleSetValuesTest extends TestCase {
 	 */
 	public function testFillsEveryForm(mixed $declared, mixed $expected): void {
 		$gaps = [];
-		$this->assertSame($expected, $this->values->fill(value: $declared, context: $this->context, gaps: $gaps));
+		$this->assertSame($expected, $this->values->fill(value: $declared, scope: new ExampleSetFillScope(context: $this->context, gaps: $gaps)));
 		$this->assertSame([], $gaps);
+	}
+
+	/**
+	 * A moment keeps its local time through a datetime column, which stores the wall time without the offset and
+	 * is read back as UTC, in summer and in winter time.
+	 *
+	 * @param string $today The install day, in Amsterdam.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider moments
+	 *
+	 * @spec openspec/specs/example-sets/spec.md#requirement-a-moment-placeholder-keeps-its-local-time-once-stored
+	 */
+	public function testAMomentKeepsItsLocalTimeThroughADatetimeColumn(string $today): void {
+		$gaps      = [];
+		$amsterdam = new DateTimeZone('Europe/Amsterdam');
+		$context   = ['today' => new DateTimeImmutable($today, $amsterdam)];
+		$filled    = $this->values->fill(value: '{{datetime:-1 09:05}}', scope: new ExampleSetFillScope(context: $context, gaps: $gaps));
+
+		$column = (new DateTime($filled))->format('Y-m-d H:i:s');
+		$read   = new DateTime($column, new DateTimeZone('UTC'));
+
+		$this->assertSame(expected: [], actual: $gaps);
+		$this->assertSame(expected: '09:05', actual: $read->setTimezone($amsterdam)->format('H:i'));
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function moments(): array {
+		return [
+			'summer time' => ['2026-10-13 12:00'],
+			'winter time' => ['2026-11-04 12:00'],
+		];
 	}
 
 	/**
@@ -98,6 +137,9 @@ class ExampleSetValuesTest extends TestCase {
 			'unknown weekday'     => ['{{date:+7@thursday}}'],
 			'unknown organisation' => ['{{organisation:nergens}}'],
 			'unknown account'     => ['{{account:nobody.uid}}'],
+			'file past the last'  => ['{{file:dossier-1.2}}'],
+			'file without index'  => ['{{file:dossier-1}}'],
+			'file of elsewhere'   => ['{{file:other.0}}'],
 		];
 	}
 
@@ -108,7 +150,7 @@ class ExampleSetValuesTest extends TestCase {
 	 */
 	public function testAnUnresolvedPlaceholderIsAGapNotAnEmptyString(string $placeholder): void {
 		$gaps   = [];
-		$filled = $this->values->fill(value: ['x' => 'a '.$placeholder], context: $this->context, gaps: $gaps);
+		$filled = $this->values->fill(value: ['x' => 'a '.$placeholder], scope: new ExampleSetFillScope(context: $this->context, gaps: $gaps));
 
 		$this->assertSame([$placeholder], $gaps);
 		$this->assertSame('a '.$placeholder, $filled['x']);
@@ -119,7 +161,7 @@ class ExampleSetValuesTest extends TestCase {
 		$context['objects']['case-2'] = ['id' => 'stand-in', ExampleSetValues::PLANNED => true];
 		$gaps    = [];
 
-		$this->assertSame('example-set-stand-in:case-2.identifier', $this->values->fill(value: '{{object:case-2.identifier}}', context: $context, gaps: $gaps));
+		$this->assertSame('example-set-stand-in:case-2.identifier', $this->values->fill(value: '{{object:case-2.identifier}}', scope: new ExampleSetFillScope(context: $context, gaps: $gaps)));
 		$this->assertSame([], $gaps);
 	}
 }

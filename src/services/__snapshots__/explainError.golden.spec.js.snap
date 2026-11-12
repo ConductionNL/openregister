@@ -1,0 +1,298 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`explainError golden 403 with known slug 1`] = `
+{
+  "ownTexts": {
+    "code": "pack-not-found",
+    "details": [],
+    "message": "Own admin",
+    "status": 403,
+  },
+  "plain": {
+    "code": "pack-not-found",
+    "details": [],
+    "message": "[Only administrators can change migration packs.]",
+    "status": 403,
+  },
+}
+`;
+
+exports[`explainError golden 403 without body 1`] = `
+{
+  "ownTexts": {
+    "code": "",
+    "details": [],
+    "message": "Own admin",
+    "status": 403,
+  },
+  "plain": {
+    "code": "",
+    "details": [],
+    "message": "[Only administrators can change migration packs.]",
+    "status": 403,
+  },
+}
+`;
+
+exports[`explainError golden details not a list 1`] = `
+{
+  "ownTexts": {
+    "code": "invalid-pack",
+    "details": [],
+    "message": "[The pack is not valid.]",
+    "status": 422,
+  },
+  "plain": {
+    "code": "invalid-pack",
+    "details": [],
+    "message": "[The pack is not valid.]",
+    "status": 422,
+  },
+}
+`;
+
+exports[`explainError golden error not a string 1`] = `
+{
+  "ownTexts": {
+    "code": "",
+    "details": [],
+    "message": "Fallback",
+    "status": 400,
+  },
+  "plain": {
+    "code": "",
+    "details": [],
+    "message": "Fallback",
+    "status": 400,
+  },
+}
+`;
+
+exports[`explainError golden generic slug 1`] = `
+{
+  "ownTexts": {
+    "code": "migration-pack-error",
+    "details": [],
+    "message": "Own generic",
+    "status": 500,
+  },
+  "plain": {
+    "code": "migration-pack-error",
+    "details": [],
+    "message": "Fallback",
+    "status": 500,
+  },
+}
+`;
+
+exports[`explainError golden inherited key as slug 1`] = `
+{
+  "ownTexts": {
+    "code": "constructor",
+    "details": [],
+    "message": "m",
+    "status": 400,
+  },
+  "plain": {
+    "code": "constructor",
+    "details": [],
+    "message": "m",
+    "status": 400,
+  },
+}
+`;
+
+exports[`explainError golden known slug 1`] = `
+{
+  "ownTexts": {
+    "code": "pack-not-found",
+    "details": [],
+    "message": "Own not found",
+    "status": 404,
+  },
+  "plain": {
+    "code": "pack-not-found",
+    "details": [],
+    "message": "[This migration pack does not exist.]",
+    "status": 404,
+  },
+}
+`;
+
+exports[`explainError golden known slug with details 1`] = `
+{
+  "ownTexts": {
+    "code": "invalid-pack",
+    "details": [
+      "a",
+      "2",
+      "null",
+    ],
+    "message": "[The pack is not valid.]",
+    "status": 422,
+  },
+  "plain": {
+    "code": "invalid-pack",
+    "details": [
+      "a",
+      "2",
+      "null",
+    ],
+    "message": "[The pack is not valid.]",
+    "status": 422,
+  },
+}
+`;
+
+exports[`explainError golden no error 1`] = `
+{
+  "ownTexts": {
+    "code": "",
+    "details": [],
+    "message": "Fallback",
+    "status": 0,
+  },
+  "plain": {
+    "code": "",
+    "details": [],
+    "message": "Fallback",
+    "status": 0,
+  },
+}
+`;
+
+exports[`explainError golden no response 1`] = `
+{
+  "ownTexts": {
+    "code": "",
+    "details": [],
+    "message": "Fallback",
+    "status": 0,
+  },
+  "plain": {
+    "code": "",
+    "details": [],
+    "message": "Fallback",
+    "status": 0,
+  },
+}
+`;
+
+exports[`explainError golden not a slug 1`] = `
+{
+  "ownTexts": {
+    "code": "",
+    "details": [],
+    "message": "Fallback",
+    "status": 400,
+  },
+  "plain": {
+    "code": "",
+    "details": [],
+    "message": "Fallback",
+    "status": 400,
+  },
+}
+`;
+
+exports[`explainError golden null error 1`] = `
+{
+  "ownTexts": {
+    "code": "",
+    "details": [],
+    "message": "Fallback",
+    "status": 0,
+  },
+  "plain": {
+    "code": "",
+    "details": [],
+    "message": "Fallback",
+    "status": 0,
+  },
+}
+`;
+
+exports[`explainError golden slug with trailing hyphen 1`] = `
+{
+  "ownTexts": {
+    "code": "",
+    "details": [],
+    "message": "Fallback",
+    "status": 400,
+  },
+  "plain": {
+    "code": "",
+    "details": [],
+    "message": "Fallback",
+    "status": 400,
+  },
+}
+`;
+
+exports[`explainError golden status 0 with data 1`] = `
+{
+  "ownTexts": {
+    "code": "pack-slug-exists",
+    "details": [],
+    "message": "[Another pack already has this slug. Choose a different slug.]",
+    "status": 0,
+  },
+  "plain": {
+    "code": "pack-slug-exists",
+    "details": [],
+    "message": "[Another pack already has this slug. Choose a different slug.]",
+    "status": 0,
+  },
+}
+`;
+
+exports[`explainError golden unknown slug with empty message 1`] = `
+{
+  "ownTexts": {
+    "code": "some-other-slug",
+    "details": [],
+    "message": "Own other",
+    "status": 409,
+  },
+  "plain": {
+    "code": "some-other-slug",
+    "details": [],
+    "message": "Fallback",
+    "status": 409,
+  },
+}
+`;
+
+exports[`explainError golden unknown slug with message 1`] = `
+{
+  "ownTexts": {
+    "code": "some-other-slug",
+    "details": [],
+    "message": "Own other",
+    "status": 409,
+  },
+  "plain": {
+    "code": "some-other-slug",
+    "details": [],
+    "message": "Server says",
+    "status": 409,
+  },
+}
+`;
+
+exports[`explainError golden unknown slug with non-string message 1`] = `
+{
+  "ownTexts": {
+    "code": "some-other-slug",
+    "details": [],
+    "message": "Own other",
+    "status": 409,
+  },
+  "plain": {
+    "code": "some-other-slug",
+    "details": [],
+    "message": "Fallback",
+    "status": 409,
+  },
+}
+`;

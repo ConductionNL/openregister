@@ -8,7 +8,9 @@ status: done
 Provides a runtime, client-controlled aggregation primitive over REST and GraphQL that buckets the rows of a register-schema collection by a named field, with optional time-bucketing and count/sum/avg/min/max metrics. Enforces row-level RBAC and multi-tenant filtering before aggregating, generates native SQL per database engine (with a PHP fallback), and caches results for up to 60 seconds with event-driven invalidation.
 
 @e2e exclude Backend aggregation primitive over REST + GraphQL (groupBy, time-bucketing, metric, per-engine SQL dialect generation, validation, multi-tenant filtering, ad-hoc cache eviction). No OpenRegister UI surface — the aggregation result feeds dashboards but the primitive itself is a data-layer/HTTP contract exercised via PHPUnit (dialect/validator units) and Newman (REST/GraphQL contract). Covered by Newman/PHPUnit.
+
 ## Requirements
+
 ### Requirement: The system SHALL expose an ad-hoc aggregation primitive over REST and GraphQL
 
 OpenRegister SHALL surface a runtime, client-controlled aggregation primitive that buckets the rows of a single register-schema collection by a named field, with optional time-bucketing via a `date_trunc`-style interval and optional `from`/`to` bounds. This primitive is distinct from the named-annotation surface (`x-openregister-aggregations` resolved via `/api/objects/aggregations/{register}/{schema}/{name}`): the named surface is schema-author-declared; this primitive is client-controlled per request.
@@ -474,3 +476,20 @@ semantics.
   array-equality that matches none), and the `in` operator over a scalar field
   returns the any-of count rather than `0`.
 
+### Requirement: Aggregation filters accept the list endpoint's empty and filled syntax
+
+An aggregation filter on a field SHALL accept `IS NULL`, `IS NOT NULL` and the
+operator `isnull` (a boolean, read as the list endpoint reads it: true, "true",
+"1", "on", "yes" ask for empty; anything else asks for filled), with the
+meaning the list endpoint gives them: empty is a missing or SQL NULL value.
+Both the native SQL path and the PHP fallback SHALL apply them, and the
+reader's row-level access rules SHALL apply as for any other filter.
+
+#### Scenario: chip counts on a queue of unassigned work
+- GIVEN five cases, two of them without an assignee
+- WHEN the grouped count runs with `assignee=IS NULL` (or `assignee[isnull]=true`)
+- THEN it counts the two unassigned cases, grouped as asked
+
+#### Scenario: the filled form
+- WHEN the count runs with `assignee=IS NOT NULL` (or `assignee[isnull]=false`)
+- THEN it counts the three assigned cases

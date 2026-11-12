@@ -1,0 +1,1490 @@
+{
+    "owner absent": {
+        "failure": "RuntimeException: This flow run has no acting identity (runAs); an object write must be attributable. <- stdClass",
+        "calls": [],
+        "session after": "session"
+    },
+    "owner not a string": {
+        "failure": "RuntimeException: This flow run has no acting identity (runAs); an object write must be attributable. <- stdClass",
+        "calls": [],
+        "session after": "session"
+    },
+    "owner blank": {
+        "failure": "RuntimeException: This flow run has no acting identity (runAs); an object write must be attributable. <- stdClass",
+        "calls": [],
+        "session after": "session"
+    },
+    "owner unknown": {
+        "failure": "RuntimeException: This flow run's acting identity \"ghost\" (runAs) is not a user account; an object write must be attributable. <- stdClass",
+        "calls": [
+            {
+                "user lookup": "ghost"
+            }
+        ],
+        "session after": "session"
+    },
+    "owner disabled": {
+        "failure": "RuntimeException: This flow run's acting identity \"gone\" (runAs) is a disabled account; an object write is refused rather than performed on their behalf. <- stdClass",
+        "calls": [
+            {
+                "user lookup": "gone"
+            }
+        ],
+        "session after": "session"
+    },
+    "owner padded": {
+        "out": [
+            {
+                "json": {
+                    "id": "saved",
+                    "stored": true,
+                    "uuid": "saved",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "saveObject": {
+                    "a": 1
+                },
+                "as": "alice",
+                "uuid": null,
+                "currentUser": "alice",
+                "failIfExists": false,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "session after": "session"
+    },
+    "delete by a disabled owner": {
+        "failure": "RuntimeException: This flow run's acting identity \"gone\" (runAs) is a disabled account; an object write is refused rather than performed on their behalf. <- stdClass",
+        "calls": [
+            {
+                "user lookup": "gone"
+            }
+        ],
+        "session after": "session"
+    },
+    "create": {
+        "out": [
+            {
+                "json": {
+                    "id": "saved",
+                    "stored": true,
+                    "uuid": "saved",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "saveObject": {
+                    "a": 1
+                },
+                "as": "alice",
+                "uuid": null,
+                "currentUser": "alice",
+                "failIfExists": false,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "session after": "session"
+    },
+    "create claims": {
+        "out": [
+            {
+                "json": {
+                    "id": "saved",
+                    "stored": true,
+                    "uuid": "saved",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "saveObject": {
+                    "a": 1
+                },
+                "as": "alice",
+                "uuid": null,
+                "currentUser": "alice",
+                "failIfExists": true,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "session after": "session"
+    },
+    "bulk create": {
+        "out": [
+            {
+                "json": {
+                    "a": 1,
+                    "uuid": "uuid",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "saveObjects": [
+                    {
+                        "a": 1,
+                        "id": "uuid"
+                    }
+                ],
+                "as": "alice",
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "session after": "session"
+    },
+    "update patches": {
+        "out": [
+            {
+                "json": {
+                    "id": "patched",
+                    "stored": true,
+                    "uuid": "patched",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "patchObject": "stored-1",
+                "data": {
+                    "a": 1
+                },
+                "as": "alice",
+                "arguments": [
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    true,
+                    true,
+                    "alice"
+                ]
+            }
+        ],
+        "session after": "session"
+    },
+    "update replaces": {
+        "out": [
+            {
+                "json": {
+                    "id": "saved",
+                    "stored": true,
+                    "uuid": "saved",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "saveObject": {
+                    "a": 1
+                },
+                "as": "alice",
+                "uuid": "stored-1",
+                "currentUser": "alice",
+                "failIfExists": false,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "session after": "session"
+    },
+    "update misses": {
+        "failure": "RuntimeException: An update matched no object; an update never silently inserts one. <- stdClass",
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            }
+        ],
+        "session after": "session"
+    },
+    "upsert inserts": {
+        "out": [
+            {
+                "json": {
+                    "id": "saved",
+                    "stored": true,
+                    "uuid": "saved",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "saveObject": {
+                    "a": 1
+                },
+                "as": "alice",
+                "uuid": null,
+                "currentUser": "alice",
+                "failIfExists": false,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "session after": "session"
+    },
+    "upsert claims": {
+        "out": [
+            {
+                "json": {
+                    "id": "saved",
+                    "stored": true,
+                    "uuid": "saved",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "saveObject": {
+                    "a": 1
+                },
+                "as": "alice",
+                "uuid": null,
+                "currentUser": "alice",
+                "failIfExists": true,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "session after": "session"
+    },
+    "upsert patches": {
+        "out": [
+            {
+                "json": {
+                    "id": "patched",
+                    "stored": true,
+                    "uuid": "patched",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "patchObject": "stored-1",
+                "data": {
+                    "a": 1
+                },
+                "as": "alice",
+                "arguments": [
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    true,
+                    true,
+                    "alice"
+                ]
+            }
+        ],
+        "session after": "session"
+    },
+    "match two": {
+        "failure": "RuntimeException: The match resolved to 2 objects; it must resolve to exactly one. <- stdClass",
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            }
+        ],
+        "session after": "session"
+    },
+    "match the scan limit": {
+        "failure": "RuntimeException: The match resolved to 100 or more objects; it must resolve to exactly one. <- stdClass",
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            }
+        ],
+        "session after": "session"
+    },
+    "match ignores other rows": {
+        "out": [
+            {
+                "json": {
+                    "id": "patched",
+                    "stored": true,
+                    "uuid": "patched",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "patchObject": "stored-1",
+                "data": {
+                    "a": 1
+                },
+                "as": "alice",
+                "arguments": [
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    true,
+                    true,
+                    "alice"
+                ]
+            }
+        ],
+        "session after": "session"
+    },
+    "match only other rows": {
+        "failure": "RuntimeException: An update matched no object; an update never silently inserts one. <- stdClass",
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            }
+        ],
+        "session after": "session"
+    },
+    "match value unresolved": {
+        "failure": "RuntimeException: The match value for \"uuid\" could not be resolved from the item; a match key is never omitted. <- stdClass",
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            }
+        ],
+        "session after": "session"
+    },
+    "match self uuid": {
+        "out": [
+            {
+                "json": {
+                    "id": "patched",
+                    "stored": true,
+                    "uuid": "patched",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "x",
+                            "owner": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "patchObject": "stored-1",
+                "data": {
+                    "a": 1
+                },
+                "as": "alice",
+                "arguments": [
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    true,
+                    true,
+                    "alice"
+                ]
+            }
+        ],
+        "session after": "session"
+    },
+    "match self unknown": {
+        "failure": "RuntimeException: The match names metadata field \"nope\", which does not exist. Matchable metadata fields are: uuid, slug, uri, version, owner, organisation, application, name, created, updated. <- stdClass",
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            }
+        ],
+        "session after": "session"
+    },
+    "match property wins": {
+        "out": [
+            {
+                "json": {
+                    "id": "patched",
+                    "stored": true,
+                    "uuid": "patched",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "name": "x"
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "patchObject": "stored-1",
+                "data": {
+                    "a": 1
+                },
+                "as": "alice",
+                "arguments": [
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    true,
+                    true,
+                    "alice"
+                ]
+            }
+        ],
+        "session after": "session"
+    },
+    "match metadata name": {
+        "out": [
+            {
+                "json": {
+                    "id": "patched",
+                    "stored": true,
+                    "uuid": "patched",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "name": "x",
+                            "owner": "y"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "patchObject": "stored-1",
+                "data": {
+                    "a": 1
+                },
+                "as": "alice",
+                "arguments": [
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    true,
+                    true,
+                    "alice"
+                ]
+            }
+        ],
+        "session after": "session"
+    },
+    "match unknown property": {
+        "failure": "RuntimeException: The match names \"nope\", which is neither a property of this schema nor a metadata field, so it could never match anything. Matchable metadata fields are: uuid, slug, uri, version, owner, organisation, application, name, created, updated. <- stdClass",
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            }
+        ],
+        "session after": "session"
+    },
+    "match unknown, no declaration": {
+        "out": [
+            {
+                "json": {
+                    "id": "patched",
+                    "stored": true,
+                    "uuid": "patched",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "nope": "x"
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "patchObject": "stored-1",
+                "data": {
+                    "a": 1
+                },
+                "as": "alice",
+                "arguments": [
+                    "OCA\\OpenRegister\\Db\\Register",
+                    "OCA\\OpenRegister\\Db\\Schema",
+                    true,
+                    true,
+                    "alice"
+                ]
+            }
+        ],
+        "session after": "session"
+    },
+    "delete soft": {
+        "out": [
+            {
+                "json": {
+                    "uuid": "stored-1",
+                    "register": "reg",
+                    "schema": "2",
+                    "deleted": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "deleteObject": "stored-1",
+                "as": "alice",
+                "rbac": true,
+                "multitenancy": true,
+                "sweep": false,
+                "currentUser": "alice",
+                "permanent": false
+            }
+        ],
+        "session after": "session"
+    },
+    "delete permanent": {
+        "out": [
+            {
+                "json": {
+                    "uuid": "stored-1",
+                    "register": "reg",
+                    "schema": "2",
+                    "deleted": true
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "deleteObject": "stored-1",
+                "as": "alice",
+                "rbac": true,
+                "multitenancy": true,
+                "sweep": false,
+                "currentUser": "alice",
+                "permanent": true
+            }
+        ],
+        "session after": "session"
+    },
+    "delete with output": {
+        "out": [
+            {
+                "json": {
+                    "id": "u1",
+                    "kept": true,
+                    "gone": {
+                        "uuid": "stored-1",
+                        "register": "reg",
+                        "schema": "2",
+                        "deleted": true
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "deleteObject": "stored-1",
+                "as": "alice",
+                "rbac": true,
+                "multitenancy": true,
+                "sweep": false,
+                "currentUser": "alice",
+                "permanent": false
+            }
+        ],
+        "session after": "session"
+    },
+    "delete refused by the service": {
+        "out": [
+            {
+                "json": {
+                    "uuid": "stored-1",
+                    "register": "reg",
+                    "schema": "2",
+                    "deleted": false
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "deleteObject": "stored-1",
+                "as": "alice",
+                "rbac": true,
+                "multitenancy": true,
+                "sweep": false,
+                "currentUser": "alice",
+                "permanent": false
+            }
+        ],
+        "session after": "session"
+    },
+    "delete misses": {
+        "failure": "RuntimeException: A delete matched no object; set \"onNoMatch\" to \"skip\" if that is intended. <- stdClass",
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            }
+        ],
+        "session after": "session"
+    },
+    "delete skips": {
+        "out": [
+            {
+                "json": {
+                    "id": "u1",
+                    "kept": true,
+                    "deleted": false
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            }
+        ],
+        "session after": "session"
+    },
+    "delete skips with output": {
+        "out": [
+            {
+                "json": {
+                    "id": "u1",
+                    "kept": true,
+                    "deleted": false,
+                    "gone": {
+                        "deleted": false
+                    }
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            }
+        ],
+        "session after": "session"
+    },
+    "delete capped": {
+        "failure": "RuntimeException: Step exceeded its write cap of 1 writes; 1 writes were performed and were not rolled back. <- stdClass",
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "2",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            },
+            {
+                "deleteObject": "stored-1",
+                "as": "alice",
+                "rbac": true,
+                "multitenancy": true,
+                "sweep": false,
+                "currentUser": "alice",
+                "permanent": false
+            },
+            {
+                "findAll": {
+                    "filters": {
+                        "register": 1,
+                        "schema": 2,
+                        "@self": {
+                            "uuid": "u1"
+                        }
+                    },
+                    "limit": 100
+                },
+                "as": "alice"
+            }
+        ],
+        "session after": "session"
+    },
+    "schema slug in the register": {
+        "out": [
+            {
+                "json": {
+                    "id": "saved",
+                    "stored": true,
+                    "uuid": "saved",
+                    "register": "reg",
+                    "schema": "2"
+                },
+                "binary": [],
+                "pairedItem": {
+                    "item": 0
+                }
+            }
+        ],
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema slug": "mine",
+                "within": [
+                    2,
+                    3
+                ]
+            },
+            {
+                "saveObject": {
+                    "a": 1
+                },
+                "as": "alice",
+                "uuid": null,
+                "currentUser": "alice",
+                "failIfExists": false,
+                "rbac": true,
+                "multitenancy": true
+            }
+        ],
+        "session after": "session"
+    },
+    "schema slug elsewhere": {
+        "failure": "OCA\\OpenRegister\\Exception\\SchemaNotInRegisterException: Schema slug \"foreign\" is not carried by register \"reg\" (id 1), which carries 2 schema(s). 4 schema(s) elsewhere on this instance carry this slug; none of them is served here, because naming a register makes it a boundary. If the linkage was lost, run `occ openregister:registers:relink-schemas` to inspect and repair it.",
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema slug": "foreign",
+                "within": [
+                    2,
+                    3
+                ]
+            }
+        ],
+        "session after": "session"
+    },
+    "schema id unknown": {
+        "failure": "UnexpectedValueException: The schema \"99\" could not be resolved. <- RuntimeException",
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "1",
+                "rbac": false,
+                "multitenancy": false
+            },
+            {
+                "schema": "99",
+                "rbac": false,
+                "multitenancy": false
+            }
+        ],
+        "session after": "session"
+    },
+    "register unknown": {
+        "failure": "UnexpectedValueException: The register \"99\" could not be resolved. <- RuntimeException",
+        "calls": [
+            {
+                "user lookup": "alice"
+            },
+            {
+                "register": "99",
+                "rbac": false,
+                "multitenancy": false
+            }
+        ],
+        "session after": "session"
+    }
+}

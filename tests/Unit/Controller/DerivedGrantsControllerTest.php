@@ -18,7 +18,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/permission-provenance-and-deny/specs/rbac-scopes/spec.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,6 @@ class DerivedGrantsControllerTest extends TestCase {
 	 */
 	private function controllerFor(DerivedGrantStore $store): DerivedGrantsController {
 		return new DerivedGrantsController(
-			appName: 'openregister',
 			request: $this->createMock(originalClassName: IRequest::class),
 			store: $store
 		);

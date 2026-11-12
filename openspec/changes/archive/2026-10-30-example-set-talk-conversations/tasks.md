@@ -1,0 +1,3 @@
+- [x] 1.1 ExampleSetTalkStore (room, heldCall, roomExists, deleteRoom) over Talk's own services
+- [x] 1.2 ExampleSetTalkConversations part with the TalkLink, wired in EngineKinds, Catalogue and Record
+- [x] 1.3 tests (ExampleSetTalkConversationsTest)

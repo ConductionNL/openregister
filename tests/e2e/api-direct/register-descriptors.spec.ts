@@ -23,7 +23,7 @@
  *
  * Both are claims about the database, so both are tested against one.
  *
- * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+ * @spec openspec/specs/register-descriptor-admin/spec.md
  */
 import type { APIRequestContext } from '@playwright/test'
 

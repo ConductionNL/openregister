@@ -22,7 +22,7 @@
  *      * SchemaMapper, MagicMapper, AuditTrailMapper, RegisterMapper
  *      * IDBConnection (writes hit the actual DB)
  *      * SchemaService, UploadService, OrganisationService,
- *        FacetCacheHandler, IAppConfig, LoggerInterface
+ *        FacetResultCacheClearer, IAppConfig, LoggerInterface
  *  - MOCKED:
  *      * IRequest — used as a thin data carrier so we can inject query params
  *        (`?force=true`) and POST bodies without spinning up a real HTTP stack
@@ -57,10 +57,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
-use OCA\OpenRegister\Service\UploadService;
+use OCA\OpenRegister\Files\Service\UploadService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -70,6 +70,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Service-level integration tests for the runtime-schema-api spec.
@@ -441,8 +443,7 @@ class RuntimeSchemaReloadTest extends TestCase {
 			// persistence not available", skipping a test that could run.
 			$created = $this->objectService->saveObject(
 				object: ['name' => 'guard-fixture'],
-				register: $register,
-				schema: $schema,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema)),
 				_rbac: false,
 				_multitenancy: false
 			);

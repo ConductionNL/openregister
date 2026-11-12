@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Support;
  * emptiness through this class, so the endpoints that count a list and the
  * one that lists it cannot disagree about what "empty" means.
  *
- * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+ * @spec openspec/specs/aggregation-api/spec.md
  */
 final class NullFilter {
 
@@ -68,7 +68,7 @@ final class NullFilter {
 	 *
 	 * @return bool True when the caller asked for IS NULL.
 	 *
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
 	public static function isNullOperatorAsksForNull(mixed $value): bool {
 		return filter_var($value, FILTER_VALIDATE_BOOLEAN) === true;
@@ -86,9 +86,9 @@ final class NullFilter {
 	 *
 	 * @return bool|null True for "must be empty", false for "must be filled", null otherwise.
 	 *
-	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
-	public static function nullCheck(mixed $criterion): ?bool {
+	public static function nullCheck(mixed $criterion): bool|null {
 		if ($criterion === self::IS_NULL) {
 			return true;
 		}
@@ -119,7 +119,7 @@ final class NullFilter {
 	 *
 	 * @return array{0: mixed, 1: bool} The criterion without the modifier, and whether NULL is admitted.
 	 *
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public static function splitOrNull(mixed $criterion): array {
 		if (is_array($criterion) === false || array_key_exists(self::OR_NULL_MODIFIER, $criterion) === false) {
@@ -144,43 +144,57 @@ final class NullFilter {
 	 *
 	 * @return list<string|\Stringable> The conditions to AND into the query.
 	 *
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public static function conditionsFor(mixed $criterion, string $column, callable $build): array {
 		[$criterion, $orNull] = self::splitOrNull(criterion: $criterion);
-		if ($orNull === true && $criterion === []) {
-			return [];
+		if ($orNull === false) {
+			return $build($criterion);
 		}
 
-		return self::admitNull(conditions: $build($criterion), column: $column, orNull: $orNull);
+		return $criterion === [] ? [] : self::admitNull(conditions: $build($criterion), column: $column);
 	}//end conditionsFor()
 
 	/**
 	 * Join one field's conditions into `(a AND b) OR column IS NULL`.
 	 *
-	 * Without `orNull`, or without any condition to widen, the list is
-	 * returned as it came: no condition at all already admits NULL.
+	 * Called only when the caller asked for NULL rows too. Without any
+	 * condition to widen, the list is returned as it came: no condition at
+	 * all already admits NULL.
 	 *
 	 * @param list<T> $conditions The field's conditions, each a SQL predicate.
 	 * @param string  $column     The column reference the conditions test.
-	 * @param bool    $orNull     Whether the caller asked for NULL rows too.
 	 *
 	 * @return list<T|string> The conditions to AND into the query.
 	 *
 	 * @template T of string|\Stringable
 	 *
-	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	public static function admitNull(array $conditions, string $column, bool $orNull): array {
-		if ($orNull === false || $conditions === []) {
+	public static function admitNull(array $conditions, string $column): array {
+		if ($conditions === []) {
 			return $conditions;
 		}
 
+		return ['(' . self::andGroup(conditions: $conditions) . " OR {$column} IS NULL)"];
+	}//end admitNull()
+
+	/**
+	 * AND a non-empty list of conditions into one parenthesised group.
+	 *
+	 * A single condition keeps its one pair of parentheses; two or more are
+	 * wrapped once more so the OR beside them binds to the whole group.
+	 *
+	 * @param non-empty-list<string|\Stringable> $conditions The conditions.
+	 *
+	 * @return string The grouped predicate.
+	 */
+	private static function andGroup(array $conditions): string {
 		$group = implode(' AND ', array_map(static fn (string|\Stringable $condition): string => '(' . $condition . ')', $conditions));
 		if (count($conditions) > 1) {
 			$group = '(' . $group . ')';
 		}
 
-		return ['(' . $group . " OR {$column} IS NULL)"];
-	}//end admitNull()
+		return $group;
+	}//end andGroup()
 }//end class
