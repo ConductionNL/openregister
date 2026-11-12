@@ -59,8 +59,8 @@ class UiControllerTest extends TestCase {
 	 * Contract assertion shared by every explicit SPA-mount test below.
 	 *
 	 * Every deep-link route must answer with the SAME shell: the `index`
-	 * template of the `openregister` app, HTTP 200, and a CSP that permits
-	 * `connect-src *` so the mounted SPA can reach the REST API. A route that
+	 * template of the `openregister` app, HTTP 200, and a CSP whose
+	 * connect-src is the instance's own origin only. A route that
 	 * 500s or renders `error` would still be a TemplateResponse, which is why
 	 * the status and template name are both asserted.
 	 *
@@ -68,16 +68,22 @@ class UiControllerTest extends TestCase {
 	 *
 	 * @return void
 	 */
-	private function assertSpaShell(TemplateResponse $response): void {
+	public static function connectSources(string $policy): string {
+		preg_match('/(?:^|;)connect-src ([^;]*)/', $policy, $match);
+
+		return trim($match[1] ?? '');
+	}
+
+		private function assertSpaShell(TemplateResponse $response): void {
 		$this->assertInstanceOf(TemplateResponse::class, $response);
 		$this->assertSame('index', $response->getTemplateName());
 		$this->assertSame('openregister', $response->getApp());
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame([], $response->getParams());
-		$this->assertMatchesRegularExpression(
-			'/connect-src[^;]*\*/',
-			$response->getContentSecurityPolicy()->buildPolicy(),
-			'SPA shell must relax connect-src so the mounted app can call the REST API'
+		$this->assertSame(
+			"'self'",
+			self::connectSources(policy: $response->getContentSecurityPolicy()->buildPolicy()),
+			'SPA shell may connect to its own origin only'
 		);
 	}
 
