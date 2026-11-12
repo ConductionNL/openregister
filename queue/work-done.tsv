@@ -239,3 +239,4 @@ fix:buildiq:1455:50d05dfc	not reproduced: dockerimage pass, score 84 on rerun at
 merge:decidiq:2061:16da9a35	2061 SKIP	session-20261112T184502-4ecd6072	2026-11-12T20:22:32Z
 cover:stackiq:8cfacb29:9d3a1784	PR #1749: ContractStatusJobTest (5 tests) + @covers on SyncJobsRunTest; suite 2334->2339, no failures	session-20261112T182617-a12dc411	2026-11-12T20:22:56Z
 cover:stackiq:8cfacb29:efa2a923	PR #1750: ModuleComplianceSubscriber 1.7->100%, ProfileContactSync 0->100%, UserProfileUpdatedEventListener 10.6->88% via missing @uses (5 tests)	session-20261112T184439-5c9a5b03	2026-11-12T20:23:20Z
+verify:learniq:2417:a9f4d5db	GREEN: 2417, 2418 (0 new failures, 1 inherited)	session-20261112T200018-e68ecbf8	2026-11-12T20:23:18Z
