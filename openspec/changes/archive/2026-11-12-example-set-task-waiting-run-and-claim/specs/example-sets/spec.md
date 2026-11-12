@@ -40,3 +40,16 @@ A fragment's task MAY declare `runUuid` and `nodeId`, always together, where `no
 ### Requirement: A fragment flow may carry finished runs
 
 A fragment's flow MAY carry runs on a subject object. A run is finished (its status is terminal) unless it is a waiting run as the requirement above describes; a queued or running run SHALL be refused, because the flow worker would execute it.
+
+#### Scenario: a case's run history
+- **GIVEN** a flow entry with a completed and a failed run on a case
+- **WHEN** the set is installed
+- **THEN** the case's finished runs read both, and removing the set removes them
+
+#### Scenario: a waiting run
+- **WHEN** a run declares status `suspended` without a key or a user-task step
+- **THEN** the check refuses it and nothing is written
+
+#### Scenario: a running run
+- **WHEN** a run declares status `running`
+- **THEN** the check refuses it and nothing is written
