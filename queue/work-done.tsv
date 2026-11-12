@@ -187,3 +187,4 @@ merge:decidiq:2002:bdf5f405	merged 9 (2002-2010); last sha was truncated in row,
 cover:dossiq:6ca0231e:d214aba4	PR #6113 @2743b838: 10 tests for 6 Queue classes; suite 11970->11980, failures 19 unchanged	session-20261112T175557-37d60f4f	2026-11-12T20:04:27Z
 verify:hermiq:1583:4132453c	1583 GREEN, 1585 GREEN, 1584 skipped (head moved to d8e968c6)	session-20261112T200014-a0c0c232	2026-11-12T20:04:34Z
 cover:dossiq:6ca0231e:9825f52a	PR #6112: 4 classes, 19 tests (Workflow); suite 11970->11989, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:05:20Z
+verify:hermiq:1584:2f4751d0	1584 GREEN	session-20261112T200014-a0c0c232	2026-11-12T20:05:32Z
