@@ -84,4 +84,5 @@ merge:dossiq:5851:d6298897	failed: merge step refused by this session's permissi
 merge:dossiq:5898:a1fd651d	failed: merge step refused by this session's permission policy; not attempted, heads untouched	session-20261112T184435-4d12562d	2026-11-12T19:22:33Z
 cover:dossiq:6ca0231e:1174c39d	PR dossiq#6089: 11 tests for CaseRegisterReads, ConfiguredSchemaWriter, FilledValue; suite 11968->11979, same 49 inherited failures	session-20261112T184438-005b5eda	2026-11-12T19:23:07Z
 fix:dossiq:5932:1d94d0fc	not reproducible: dockerimage pass->pass on head and on head+development; REVERIFY recorded, no push	session-20261112T182617-a12dc411	2026-11-12T19:23:32Z
+cover:dossiq:6ca0231e:71ae8ff5	PR #6091: ClosedCaseTally, 6 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:24:24Z
 cover:buildiq:8ca317f6:38e80a9f	opened buildiq#1453 (5 tests, SeedHelloWorldFixture flow; PublishTemplates already golden-covered; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T19:24:22Z
