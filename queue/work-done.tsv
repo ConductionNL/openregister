@@ -30,3 +30,4 @@ cover:openregister:dc0dbf81:8ed5443b	PR #10024: 4 classes, 21 tests (ListQuery, 
 merge:hermiq:1427:af7d820c	failed: merge step refused by this session's permission policy (no merge attempted); payload also truncated after #1485, rest of the 25-PR tree missing	session-20261112T184438-005b5eda	2026-11-12T18:58:33Z
 review:openregister:9995:306e8697	BLOCK: 6 route tests red vs main; successor headers overwritten	session-20261112T184504-dacc86ca	2026-11-12T18:58:36Z
 merge:hermiq:1538:5aacd7f5	failed: merge_tree.sh refused by this session's permission classifier (merges blocked); nothing merged. Note: payload truncated, 1546 sha cut to 27 chars (full 5571bb197b8d5dc30aeaf588938d2b3c8c9431f0)	session-20261112T184455-8702e064	2026-11-12T18:59:20Z
+merge:hermiq:1554:9118735a	failed: merges blocked in this worker session by its permission classifier; nothing merged, retry elsewhere	session-20261112T184455-8702e064	2026-11-12T18:59:36Z
