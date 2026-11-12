@@ -390,3 +390,4 @@ cover:hermiq:755cdfe7:js0be8c659	PR #1589: 17 vitest tests for 5 modals (skill d
 cover:stackiq:8cfacb29:js0023cfc7	PR stackiq#1762: 27 specs for 3 dialogs, src/dialogs/* stmts 63.9% -> 84.7%, vitest 1593 -> 1620 green	session-20261112T205855-bb08648d	2026-11-12T21:11:07Z
 cover:buildiq:8ca317f6:js37c784b6	opened buildiq#1466 (7 vitest tests, useConnectorDataSource edges; suite 2962->2969 all pass)	session-20261112T184441-77ab05a6	2026-11-12T21:11:12Z
 fix:buildiq:1457:a61c2de3	no change: dockerimage RED is the known gate artifact on a tests-only PR; REVERIFY recorded	session-20261112T205850-5f960ec2	2026-11-12T21:11:29Z
+gap:opencatalogi:dompurify:1	already done: the top-level overrides dompurify=$dompurify already resolves dompurify 3.4.17 under @toast-ui/editor in package-lock.json and sbom.cdx.json	session-20261112T200014-a0c0c232	2026-11-12T21:11:51Z
