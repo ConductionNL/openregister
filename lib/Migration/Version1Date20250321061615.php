@@ -24,7 +24,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
+use Doctrine\DBAL\Schema\Table;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Schema\ITable;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
@@ -51,332 +53,55 @@ class Version1Date20250321061615 extends SimpleMigrationStep {
 	 * @param array $options Migration options
 	 *
 	 * @return ISchemaWrapper
-	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)       Database migration requires checking many columns
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 
-		// Update the openregister_objects table.
-		$table = $schema->getTable('openregister_objects');
+		$string255 = ['notnull' => false, 'length' => 255];
+		$nullable  = ['notnull' => false];
 
-		// Add organisation column to store organisation name.
-		if ($table->hasColumn('organisation') === false) {
-			$table->addColumn(
-				'organisation',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
+		// Organisation, application, validation rules, deletion details, geo data and retention data.
+		$this->addMissingColumns(
+			table: $schema->getTable('openregister_objects'),
+			columns: [
+				['organisation', Types::STRING, $string255],
+				['application', Types::STRING, $string255],
+				['validation', Types::JSON, $nullable],
+				['deleted', Types::JSON, $nullable],
+				['geo', Types::JSON, $nullable],
+				['retention', Types::JSON, $nullable],
+			]
+		);
 
-		// Add application column to store application name.
-		if ($table->hasColumn('application') === false) {
-			$table->addColumn(
-				'application',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
+		// Slug, owning Nextcloud user, application, organisation, authorization rules and deletion timestamp.
+		$ownedColumns = [
+			['slug', Types::STRING, $string255],
+			['owner', Types::STRING, $string255],
+			['application', Types::STRING, $string255],
+			['organisation', Types::STRING, $string255],
+			['authorization', Types::JSON, $nullable],
+			['deleted', Types::DATETIME, $nullable],
+		];
+		$this->addMissingColumns(table: $schema->getTable('openregister_schemas'), columns: $ownedColumns);
+		$this->addMissingColumns(table: $schema->getTable('openregister_registers'), columns: $ownedColumns);
 
-		// Add validation column to store validation rules in JSON format.
-		if ($table->hasColumn('validation') === false) {
-			$table->addColumn(
-				'validation',
-				Types::JSON,
-				[
-					'notnull' => false,
-				]
-			);
-		}
-
-		// Add deleted column to store deletion details in JSON format.
-		if ($table->hasColumn('deleted') === false) {
-			$table->addColumn(
-				'deleted',
-				Types::JSON,
-				[
-					'notnull' => false,
-				]
-			);
-		}
-
-		// Add geo column to store geo data in JSON format.
-		if ($table->hasColumn('geo') === false) {
-			$table->addColumn(
-				'geo',
-				Types::JSON,
-				[
-					'notnull' => false,
-				]
-			);
-		}
-
-		// Add retention column to store retention data in JSON format.
-		if ($table->hasColumn('retention') === false) {
-			$table->addColumn(
-				'retention',
-				Types::JSON,
-				[
-					'notnull' => false,
-				]
-			);
-		}
-
-		// Update the openregister_schemas table.
-		$table = $schema->getTable('openregister_schemas');
-
-		// Add slug column to store unique identifier for objects.
-		if ($table->hasColumn('slug') === false) {
-			$table->addColumn(
-				'slug',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add owner column to store the Nextcloud user that owns this schema.
-		if ($table->hasColumn('owner') === false) {
-			$table->addColumn(
-				'owner',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add application column to store application name.
-		if ($table->hasColumn('application') === false) {
-			$table->addColumn(
-				'application',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add organisation column to store organisation name.
-		if ($table->hasColumn('organisation') === false) {
-			$table->addColumn(
-				'organisation',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add authorization column to store authorization rules in JSON format.
-		if ($table->hasColumn('authorization') === false) {
-			$table->addColumn(
-				'authorization',
-				Types::JSON,
-				[
-					'notnull' => false,
-				]
-			);
-		}
-
-		// Add deleted column to store deletion timestamp.
-		if ($table->hasColumn('deleted') === false) {
-			$table->addColumn(
-				'deleted',
-				Types::DATETIME,
-				[
-					'notnull' => false,
-				]
-			);
-		}
-
-		// Update the openregister_registers table.
-		$table = $schema->getTable('openregister_registers');
-
-		// Add slug column to store unique identifier for registers.
-		if ($table->hasColumn('slug') === false) {
-			$table->addColumn(
-				'slug',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add owner column to store the Nextcloud user that owns this register.
-		if ($table->hasColumn('owner') === false) {
-			$table->addColumn(
-				'owner',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add application column to store application name.
-		if ($table->hasColumn('application') === false) {
-			$table->addColumn(
-				'application',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add organisation column to store organisation name.
-		if ($table->hasColumn('organisation') === false) {
-			$table->addColumn(
-				'organisation',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add authorization column to store authorization rules in JSON format.
-		if ($table->hasColumn('authorization') === false) {
-			$table->addColumn(
-				'authorization',
-				Types::JSON,
-				[
-					'notnull' => false,
-				]
-			);
-		}
-
-		// Add deleted column to store deletion timestamp.
-		if ($table->hasColumn('deleted') === false) {
-			$table->addColumn(
-				'deleted',
-				Types::DATETIME,
-				[
-					'notnull' => false,
-				]
-			);
-		}
-
-		// Update the openregister_audit_trails table.
-		$table = $schema->getTable('openregister_audit_trails');
-
-		// Add object_uuid column to store unique identifier for objects.
-		if ($table->hasColumn('object_uuid') === false) {
-			$table->addColumn('object_uuid', Types::STRING, ['notnull' => false, 'length' => 255]);
-		}
-
-		// Add register_uuid column to store unique identifier for registers.
-		if ($table->hasColumn('register_uuid') === false) {
-			$table->addColumn('register_uuid', Types::STRING, ['notnull' => false, 'length' => 255]);
-		}
-
-		// Add schema_uuid column to store unique identifier for schemas.
-		if ($table->hasColumn('schema_uuid') === false) {
-			$table->addColumn('schema_uuid', Types::STRING, ['notnull' => false, 'length' => 255]);
-		}
-
-		// Add organisation_id column to store the organization identifier (OIN, RSIN, KVK, etc.).
-		if ($table->hasColumn('organisation_id') === false) {
-			$table->addColumn(
-				'organisation_id',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add organisation_id_type column to store the type of organization identifier used.
-		if ($table->hasColumn('organisation_id_type') === false) {
-			$table->addColumn(
-				'organisation_id_type',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 50,
-				]
-			);
-		}
-
-		// Add processing_activity_id column to store Processing Activity ID.
-		if ($table->hasColumn('processing_activity_id') === false) {
-			$table->addColumn(
-				'processing_activity_id',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add processing_activity_url column to store Processing Activity URL.
-		if ($table->hasColumn('processing_activity_url') === false) {
-			$table->addColumn(
-				'processing_activity_url',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add processing_id column to store Processing ID.
-		if ($table->hasColumn('processing_id') === false) {
-			$table->addColumn(
-				'processing_id',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add confidentiality column to store data confidentiality level.
-		if ($table->hasColumn('confidentiality') === false) {
-			$table->addColumn(
-				'confidentiality',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
-
-		// Add retention_period column to store data retention period.
-		if ($table->hasColumn('retention_period') === false) {
-			$table->addColumn(
-				'retention_period',
-				Types::STRING,
-				[
-					'notnull' => false,
-					'length' => 255,
-				]
-			);
-		}
+		// Object, register and schema identifiers, the organisation identifier (OIN, RSIN, KVK, etc.)
+		// and its type, the processing activity, confidentiality level and retention period.
+		$this->addMissingColumns(
+			table: $schema->getTable('openregister_audit_trails'),
+			columns: [
+				['object_uuid', Types::STRING, $string255],
+				['register_uuid', Types::STRING, $string255],
+				['schema_uuid', Types::STRING, $string255],
+				['organisation_id', Types::STRING, $string255],
+				['organisation_id_type', Types::STRING, ['notnull' => false, 'length' => 50]],
+				['processing_activity_id', Types::STRING, $string255],
+				['processing_activity_url', Types::STRING, $string255],
+				['processing_id', Types::STRING, $string255],
+				['confidentiality', Types::STRING, $string255],
+				['retention_period', Types::STRING, $string255],
+			]
+		);
 
 		// Drop the openregister_object_audit_logs table as it is no longer used.
 		if ($schema->hasTable('openregister_object_audit_logs') === true) {
@@ -385,6 +110,25 @@ class Version1Date20250321061615 extends SimpleMigrationStep {
 
 		return $schema;
 	}//end changeSchema()
+
+	/**
+	 * Add each column the table does not have yet, in the given order.
+	 *
+	 * No native type hint on $table: ISchemaWrapper returns Doctrine's Table before
+	 * Nextcloud 35 and ITable from 35 on, and a hint for either is a TypeError on the other.
+	 *
+	 * @param ITable|Table                                      $table   The table to extend.
+	 * @param array<int, array{0: string, 1: string, 2: array}> $columns Name, type and options per column.
+	 *
+	 * @return void
+	 */
+	private function addMissingColumns($table, array $columns): void {
+		foreach ($columns as [$name, $type, $columnOptions]) {
+			if ($table->hasColumn($name) === false) {
+				$table->addColumn($name, $type, $columnOptions);
+			}
+		}
+	}//end addMissingColumns()
 
 	/**
 	 * Post-schema change operations.

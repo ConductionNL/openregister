@@ -55,7 +55,6 @@ use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
 use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
-use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
@@ -99,7 +98,6 @@ class MessageDispatchController extends Controller {
 	 * @spec openspec/specs/integration-message-dispatch/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function smsSend(): JSONResponse {
 		return $this->relaySend(allowedKinds: ['cmcom-sms', 'messagebird-sms', 'twilio-sms']);
 	}//end smsSend()
@@ -124,7 +122,6 @@ class MessageDispatchController extends Controller {
 	 * @spec openspec/specs/integration-message-dispatch/spec.md
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	public function whatsappSend(): JSONResponse {
 		return $this->relaySend(allowedKinds: ['whatsapp-cloud-api', 'whatsapp-bsp']);
 	}//end whatsappSend()

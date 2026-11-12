@@ -134,8 +134,6 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 */
 	private function scenario(
 		array|string $input,
@@ -156,6 +154,60 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 	): array {
 		$calls = [];
 
+		[$stored, $lookedUp] = $this->entities(ids: $ids, draft: $draft, folder: $folder, forged: $forged);
+
+		$foundRegister = new Register();
+		$foundRegister->setId(5);
+		$foundSchema = new Schema();
+		$foundSchema->setId(9);
+		$passedRegister = new Register();
+		$passedRegister->setId(55);
+		$passedSchema = new Schema();
+		$passedSchema->setId(99);
+
+		$logger = $this->loggerMock(calls: $calls);
+		$handler = new DeleteObject(
+			$this->mapperMock(calls: $calls, lookedUp: $lookedUp, stored: $stored, foundRegister: $foundRegister, foundSchema: $foundSchema, updateFails: $updateFails),
+			$this->cacheMock(calls: $calls, lookedUp: $lookedUp, stored: $stored, cacheFails: $cacheFails),
+			new \OCA\OpenRegister\Service\Object\AuditRecording($this->auditMapperMock(calls: $calls, lookedUp: $lookedUp, stored: $stored), $logger),
+			$this->settingsMock(audit: $audit),
+			new \OCA\OpenRegister\Service\Object\DeletionIntegrity($this->createMock(ReferentialIntegrityService::class), $this->createMock(IDBConnection::class)),
+			new \OCA\OpenRegister\Service\Object\DeletionAttribution($this->sessionMock(user: $user), $this->organisationsMock(calls: $calls, orgFails: $orgFails), $logger, $this->windowServiceMock(calls: $calls, window: $window)),
+			$this->fileServiceMock(calls: $calls, folder: $folder)
+		);
+
+		$object = $input === 'entity' ? $stored : $input;
+		$result = null;
+		$exception = null;
+		try {
+			$result = $handler->delete(
+				object: $object,
+				options: new RemovalOptions(cascadeContext: $cascade, permanent: $permanent, table: ($passRegister === true && $passSchema === true) ? new RegisterSchema(register: $passedRegister, schema: $passedSchema) : null)
+			);
+		} catch (Exception $e) {
+			$exception = [get_class($e), $e->getMessage()];
+		}
+
+		return [
+			'result'    => $result,
+			'exception' => $exception,
+			'calls'     => $calls,
+			'stored'    => $this->entityFacts($stored, $lookedUp, $stored),
+			'lookedUp'  => $this->entityFacts($lookedUp, $lookedUp, $stored),
+		];
+	}//end scenario()
+
+	/**
+	 * The stored entity the caller holds and the entity the lookup returns.
+	 *
+	 * @param array<int, string|null> $ids    The stored register and schema ids.
+	 * @param bool                    $draft  Whether the stored object is a draft.
+	 * @param string|null             $folder Folder behaviour; any value but unbound binds a folder.
+	 * @param bool                    $forged Whether the object data and owner name another user.
+	 *
+	 * @return array{0: ObjectEntity, 1: ObjectEntity}
+	 */
+	private function entities(array $ids, bool $draft, ?string $folder, bool $forged): array {
 		$stored = new ObjectEntity();
 		$stored->setUuid('obj-1');
 		$stored->setRegister($ids[0]);
@@ -189,15 +241,24 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 			$lookedUp->setOwner('mallory');
 		}
 
-		$foundRegister = new Register();
-		$foundRegister->setId(5);
-		$foundSchema = new Schema();
-		$foundSchema->setId(9);
-		$passedRegister = new Register();
-		$passedRegister->setId(55);
-		$passedSchema = new Schema();
-		$passedSchema->setId(99);
+		return [$stored, $lookedUp];
+	}//end entities()
 
+	/**
+	 * A mapper that records its lookups, updates and hard deletes.
+	 *
+	 * @param array<int, mixed> $calls         The call record.
+	 * @param ObjectEntity      $lookedUp      The entity the lookup returns.
+	 * @param ObjectEntity      $stored        The entity the caller passed.
+	 * @param Register          $foundRegister The register the lookup returns.
+	 * @param Schema            $foundSchema   The schema the lookup returns.
+	 * @param bool              $updateFails   Whether the soft-delete update throws.
+	 *
+	 * @return MagicMapper
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 */
+	private function mapperMock(array &$calls, ObjectEntity $lookedUp, ObjectEntity $stored, Register $foundRegister, Schema $foundSchema, bool $updateFails): MagicMapper {
 		$mapper = $this->createMock(MagicMapper::class);
 		$mapper->method('findAcrossAllSources')->willReturnCallback(
 			function (string|int $identifier, bool $includeDeleted = false, bool $_rbac = true, bool $_multitenancy = true) use (&$calls, $lookedUp, $foundRegister, $foundSchema): array {
@@ -228,6 +289,22 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 			}
 		);
 
+		return $mapper;
+	}//end mapperMock()
+
+	/**
+	 * A cache handler that records its invalidations.
+	 *
+	 * @param array<int, mixed> $calls      The call record.
+	 * @param ObjectEntity      $lookedUp   The entity the lookup returns.
+	 * @param ObjectEntity      $stored     The entity the caller passed.
+	 * @param bool              $cacheFails Whether invalidation throws.
+	 *
+	 * @return CacheHandler
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 */
+	private function cacheMock(array &$calls, ObjectEntity $lookedUp, ObjectEntity $stored, bool $cacheFails): CacheHandler {
 		$cache = $this->createMock(CacheHandler::class);
 		$cache->method('invalidateForObjectChange')->willReturnCallback(
 			function (?ObjectEntity $object = null, string $operation = 'unknown', ?int $registerId = null, ?int $schemaId = null) use (&$calls, $cacheFails, $lookedUp, $stored): void {
@@ -238,6 +315,17 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 			}
 		);
 
+		return $cache;
+	}//end cacheMock()
+
+	/**
+	 * A user session for the given user, or without a user.
+	 *
+	 * @param string|null $user The session user, or null for no session.
+	 *
+	 * @return IUserSession
+	 */
+	private function sessionMock(?string $user): IUserSession {
 		$session = $this->createMock(IUserSession::class);
 		$sessionUser = null;
 		if ($user !== null) {
@@ -247,6 +335,19 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($sessionUser);
 
+		return $session;
+	}//end sessionMock()
+
+	/**
+	 * An audit trail mapper that records the audit entries.
+	 *
+	 * @param array<int, mixed> $calls    The call record.
+	 * @param ObjectEntity      $lookedUp The entity the lookup returns.
+	 * @param ObjectEntity      $stored   The entity the caller passed.
+	 *
+	 * @return AuditTrailMapper
+	 */
+	private function auditMapperMock(array &$calls, ObjectEntity $lookedUp, ObjectEntity $stored): AuditTrailMapper {
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
 		$auditMapper->method('createAuditTrail')->willReturnCallback(
 			function (?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null, ?array $cascadeContext = null) use (&$calls, $lookedUp, $stored): AuditTrail {
@@ -261,6 +362,17 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 			}
 		));
 
+		return $auditMapper;
+	}//end auditMapperMock()
+
+	/**
+	 * Settings with the given audit setting; null makes the settings call throw.
+	 *
+	 * @param bool|null $audit The audit setting.
+	 *
+	 * @return SettingsService
+	 */
+	private function settingsMock(?bool $audit): SettingsService {
 		$settings = $this->createMock(SettingsService::class);
 		if ($audit === null) {
 			$settings->method('getRetentionSettingsOnly')->willThrowException(new Exception('settings down'));
@@ -268,6 +380,17 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 			$settings->method('getRetentionSettingsOnly')->willReturn(['auditTrailsEnabled' => $audit]);
 		}
 
+		return $settings;
+	}//end settingsMock()
+
+	/**
+	 * A logger that records every line.
+	 *
+	 * @param array<int, mixed> $calls The call record.
+	 *
+	 * @return LoggerInterface
+	 */
+	private function loggerMock(array &$calls): LoggerInterface {
 		$logger = $this->createMock(LoggerInterface::class);
 		foreach (['info', 'warning', 'error', 'debug'] as $level) {
 			$logger->method($level)->willReturnCallback(
@@ -278,6 +401,20 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 			);
 		}
 
+		return $logger;
+	}//end loggerMock()
+
+	/**
+	 * An organisation mapper that answers only for the acting user.
+	 *
+	 * @param array<int, mixed> $calls    The call record.
+	 * @param bool              $orgFails Whether the lookup throws.
+	 *
+	 * @return OrganisationMapper
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 */
+	private function organisationsMock(array &$calls, bool $orgFails): OrganisationMapper {
 		$organisations = $this->createMock(OrganisationMapper::class);
 		$organisations->method('getActiveOrganisationWithFallback')->willReturnCallback(
 			function (string $userId) use (&$calls, $orgFails): ?string {
@@ -294,6 +431,18 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 			}
 		);
 
+		return $organisations;
+	}//end organisationsMock()
+
+	/**
+	 * A file service with the given folder behaviour, or none when folder is null.
+	 *
+	 * @param array<int, mixed> $calls  The call record.
+	 * @param string|null       $folder Folder behaviour: ok, none, throws, unbound.
+	 *
+	 * @return FileService|null
+	 */
+	private function fileServiceMock(array &$calls, ?string $folder): ?FileService {
 		$fileService = null;
 		if ($folder !== null) {
 			$fileService = $this->createMock(FileService::class);
@@ -319,6 +468,20 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 			);
 		}
 
+		return $fileService;
+	}//end fileServiceMock()
+
+	/**
+	 * A deletion window service when wired, otherwise null.
+	 *
+	 * @param array<int, mixed> $calls  The call record.
+	 * @param bool              $window Whether a deletion window service is wired.
+	 *
+	 * @return DeletionWindowService|null
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+	 */
+	private function windowServiceMock(array &$calls, bool $window): ?DeletionWindowService {
 		$windowService = null;
 		if ($window === true) {
 			$windowService = $this->createMock(DeletionWindowService::class);
@@ -330,41 +493,8 @@ class DeleteObjectDeleteGoldenTest extends TestCase {
 			);
 		}
 
-		$handler = new DeleteObject(
-			$mapper,
-			$cache,
-			$session,
-			new \OCA\OpenRegister\Service\Object\AuditRecording($auditMapper, $logger),
-			$settings,
-			$this->createMock(ReferentialIntegrityService::class),
-			$this->createMock(IDBConnection::class),
-			$organisations,
-			$fileService,
-			null,
-			null,
-			$windowService
-		);
-
-		$object = $input === 'entity' ? $stored : $input;
-		$result = null;
-		$exception = null;
-		try {
-			$result = $handler->delete(
-				object: $object,
-				options: new RemovalOptions(cascadeContext: $cascade, permanent: $permanent, table: ($passRegister === true && $passSchema === true) ? new RegisterSchema(register: $passedRegister, schema: $passedSchema) : null)
-			);
-		} catch (Exception $e) {
-			$exception = [get_class($e), $e->getMessage()];
-		}
-
-		return [
-			'result'    => $result,
-			'exception' => $exception,
-			'calls'     => $calls,
-			'stored'    => $this->entityFacts($stored, $lookedUp, $stored),
-			'lookedUp'  => $this->entityFacts($lookedUp, $lookedUp, $stored),
-		];
-	}//end scenario()
+		return $windowService;
+	}//end windowServiceMock()
 
 	/**
 	 * The facts of an entity that delete() may change, with the deletion moment normalised.

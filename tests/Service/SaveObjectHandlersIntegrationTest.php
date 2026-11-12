@@ -19,8 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Service;
 
-use OCA\OpenRegister\Service\Object\BulkBatchDefaults;
-use OCA\OpenRegister\Service\Object\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationScan;
 use OCA\OpenRegister\Service\Object\CascadeTarget;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -1134,8 +1134,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		try {
 			$result = $this->objectService->saveObjects(
 				objects: [['title' => 'Bulk op test ' . uniqid()]],
-				register: $this->testRegister,
-				schema: $this->testSchema,
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: $this->testRegister, schema: $this->testSchema)
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -1165,8 +1166,9 @@ class SaveObjectHandlersIntegrationTest extends TestCase {
 		try {
 			$result = $this->objectService->saveObjects(
 				objects: [['title' => 'Anonymous bulk ' . uniqid()]],
-				register: $this->testRegister,
-				schema: $this->testSchema,
+				options: new BulkSaveOptions(
+					defaults: new BulkBatchDefaults(register: $this->testRegister, schema: $this->testSchema)
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

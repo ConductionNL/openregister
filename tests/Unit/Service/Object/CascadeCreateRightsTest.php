@@ -44,6 +44,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use ReflectionClass;
 use OCA\OpenRegister\Tests\Unit\Service\Object\SaveObject\SaveLookupsAccess;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 
 /**
  * The acting user is `mallory`, a clerk. Only editors may create notes. `alice` is an editor:
@@ -164,7 +165,7 @@ class CascadeCreateRightsTest extends TestCase {
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$handler->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data): ObjectEntity {
 				if (($data['text'] ?? null) === 'boom') {
 					throw new Exception('storage');
 				}
@@ -173,7 +174,7 @@ class CascadeCreateRightsTest extends TestCase {
 				$created = new ObjectEntity();
 				$created->setUuid(self::CREATED);
 				return $created;
-			}
+			})
 		);
 
 		$reflection = new ReflectionClass(SaveObject::class);
@@ -344,7 +345,7 @@ class CascadeCreateRightsTest extends TestCase {
 		}
 
 		$save->method('saveObject')->willReturnCallback(
-			function ($register, $schema, array $data) use ($failure): ObjectEntity {
+			SaveObjectArgs::callback(callback: function ($register, $schema, array $data) use ($failure): ObjectEntity {
 				if ($failure !== null) {
 					throw $failure;
 				}
@@ -353,7 +354,7 @@ class CascadeCreateRightsTest extends TestCase {
 				$created = new ObjectEntity();
 				$created->setUuid(self::CREATED);
 				return $created;
-			}
+			})
 		);
 
 		return new CascadingHandler(

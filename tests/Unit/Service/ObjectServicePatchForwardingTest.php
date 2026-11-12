@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
@@ -43,6 +44,14 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
  * @uses   \OCA\OpenRegister\Service\Object\PatchDataMerge
  */
 class ObjectServicePatchForwardingTest extends TestCase {
+	/**
+	 * The saveObject() arguments a double records, flattened from ObjectSaveOptions in their former order.
+	 */
+	private const SAVE_ARGUMENTS = [
+		'object', 'extend', 'register', 'schema', 'uuid', '_rbac', '_multitenancy', 'silent', '_validation',
+		'uploadedFiles', 'currentUser', 'failIfExists', '_unowned', '_dedupOverride', '_owner',
+	];
+
 
 	/**
 	 * The identifier the caller holds.
@@ -116,7 +125,8 @@ class ObjectServicePatchForwardingTest extends TestCase {
 			->onlyMethods(['saveObject'])
 			->getMock();
 		$service->method('saveObject')->willReturnCallback(
-			static function (mixed ...$args) use (&$seen, $existing): ObjectEntity {
+			static function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen, $existing): ObjectEntity {
+				$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 				$seen['save'] = $args;
 				return $existing;
 			}
@@ -169,9 +179,9 @@ class ObjectServicePatchForwardingTest extends TestCase {
 
 		$save = $this->patch($rbac, $multitenancy, $user)['save'];
 
-		$this->assertSame($rbac, $this->argument(ObjectService::class, 'saveObject', $save, '_rbac'));
-		$this->assertSame($multitenancy, $this->argument(ObjectService::class, 'saveObject', $save, '_multitenancy'));
-		$this->assertSame($user, $this->argument(ObjectService::class, 'saveObject', $save, 'currentUser'));
+		$this->assertSame($rbac, array_combine(self::SAVE_ARGUMENTS, $save)['_rbac']);
+		$this->assertSame($multitenancy, array_combine(self::SAVE_ARGUMENTS, $save)['_multitenancy']);
+		$this->assertSame($user, array_combine(self::SAVE_ARGUMENTS, $save)['currentUser']);
 	}//end testTheSaveReceivesTheCallersFlagsAndUser()
 
 	public function testTheSaveIsAddressedAtTheObjectThatWasResolved(): void {
@@ -179,7 +189,7 @@ class ObjectServicePatchForwardingTest extends TestCase {
 
 		$save = $this->patch(true, true, null)['save'];
 
-		$this->assertSame('u-1', $this->argument(ObjectService::class, 'saveObject', $save, 'object')['id']);
+		$this->assertSame('u-1', array_combine(self::SAVE_ARGUMENTS, $save)['object']['id']);
 	}//end testTheSaveIsAddressedAtTheObjectThatWasResolved()
 
 	public function testHalfAScopeStillUsesTheCrossTableLookup(): void {

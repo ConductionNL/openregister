@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -50,6 +51,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 
 /**
  * Golden test for PATCH and POST .../{id}/patch: the read before the write, the merge, the save, every refusal.
@@ -254,7 +257,8 @@ class ObjectsControllerPatchGoldenTest extends TestCase {
 			$this->calls[] = 'clearCreatedSubObjects';
 		});
 		$service->method('handleValidationException')->willReturnCallback(fn (...$args) => new JSONResponse(['validation' => ($args['exception'] ?? $args[0])->getMessage()], 400));
-		$service->method('saveObject')->willReturnCallback(function (...$args) use ($setup): ObjectEntity {
+		$service->method('saveObject')->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use ($setup): ObjectEntity {
+			$args = [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner];
 			$this->calls[] = ['saveObject' => $args];
 			if (isset($setup['fails']) === true) {
 				throw $this->failure($setup['fails']);
@@ -329,7 +333,7 @@ class ObjectsControllerPatchGoldenTest extends TestCase {
 	private function storeService(array $setup): ObjectService {
 		$service = $this->createMock(ObjectService::class);
 		$service->method('findSilent')->willReturnCallback(function (...$args) use ($setup): ObjectEntity {
-			$this->calls[] = ['findSilent' => $args];
+			$this->calls[] = ['findSilent' => FindCallShape::findSilent(args: $args)];
 			return match ($setup['read'] ?? 'found') {
 				'found' => $this->entity(($setup['stored'] ?? [])),
 				'gone' => throw new DoesNotExistException('gone'),
@@ -338,8 +342,8 @@ class ObjectsControllerPatchGoldenTest extends TestCase {
 				'fails' => throw new RuntimeException('secret detail'),
 			};
 		});
-		$service->method('unlockObject')->willReturnCallback(function (...$args) {
-			$this->calls[] = ['unlockObject' => $args];
+		$service->method('unlockObject')->willReturnCallback(function (UnlockRequest $request) {
+			$this->calls[] = ['unlockObject' => [$request->identifier, $request->advisory, $request->runUuid]];
 			return true;
 		});
 		return $service;

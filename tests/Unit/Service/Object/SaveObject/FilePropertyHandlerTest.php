@@ -2002,15 +2002,15 @@ class FilePropertyHandlerTest extends TestCase {
 			'document' => ['type' => 'file'],
 		]);
 
-		// An integer file ID is not detected as isFileProperty().
+		// An integer file ID of a file in the object's folder is kept as it is.
 		$object = ['document' => 42];
 
+		$this->fileService->method('getFile')->willReturn($this->createMock(\OCP\Files\File::class));
 		$this->fileService->expects($this->never())
 			->method('addFile');
 
 		$object = $this->handleFile($entity, $object, 'document', $schema);
 
-		// The value should remain unchanged since isFileProperty returns false for int.
 		$this->assertSame(42, $object['document']);
 	}
 

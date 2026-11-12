@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Federation\CreatorPropertyFilter;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FederationShareServiceInterface;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfacesInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -51,6 +52,7 @@ use OCP\IRequest;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
@@ -405,8 +407,9 @@ class FederationController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema())
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -450,9 +453,10 @@ class FederationController extends Controller {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
-				uuid: $target['uuid'],
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $share->getRegister(), schema: $share->getSchema()),
+					uuid: $target['uuid']
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -600,8 +604,7 @@ class FederationController extends Controller {
 		try {
 			$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
-				register: $share->getRegister(),
-				schema: $share->getSchema(),
+				options: new ObjectFindOptions(register: $share->getRegister(), schema: $share->getSchema()),
 				_rbac: false,
 				_multitenancy: false
 			));

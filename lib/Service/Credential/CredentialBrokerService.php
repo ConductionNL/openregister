@@ -41,7 +41,7 @@
  * context, never request input); the broker applies the full guard chain
  * against it, failing closed.
  *
- * MINTING (app-facing): {@see mint()} is the single path that brings a credential
+ * MINTING (app-facing): {@see mintCredential()} is the single path that brings a credential
  * into existence — it writes the metadata object AND the vault secret, atomically
  * from the caller's point of view, and needs no HTTP session. The controller and
  * in-process callers (an openconnector migration repair step folding an inline
@@ -70,6 +70,7 @@ namespace OCA\OpenRegister\Service\Credential;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Sharing\ShareGrantee;
@@ -79,6 +80,7 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
@@ -432,48 +434,6 @@ class CredentialBrokerService {
 	 * handed straight to the {@see CredentialStore} leaf and otherwise untouched
 	 * (the CredentialStore contract).
 	 *
-	 * @param string $name The human-readable credential name (non-empty).
-	 * @param string $provider The provider identifier (the CALLER validates it against the catalogue).
-	 * @param string $owner The owning user's UID (asserted by the trusted caller; never request input).
-	 * @param array<int, string> $allowedApps The app ids permitted to use this credential (Guard 2 at broker time).
-	 * @param string|null $secret The raw secret, or null/'' to mint metadata only (no vault write).
-	 * @param string $scope The ALREADY-RESOLVED scope (`personal`|`organisation`); selects the vault owner.
-	 * @param string|null $organisation The ALREADY-GATED owning organisation UUID; required for the organisation scope.
-	 * @param array<string, mixed> $metadata Additional NON-SECRET properties for an OAuth2 connection (`kind`, `status`,
-	 *                                       `scopes`, `account`, `expiresAt`, `instanceBaseUrl`, `clientId`,
-	 *                                       `clientCredentialRef`). Every key not on that list is DROPPED, so a caller
-	 *                                       cannot smuggle an arbitrary property, and `instanceBaseUrl` is validated
-	 *                                       here because this is the one moment it may be set.
-	 *
-	 * @return ObjectEntity The persisted credential entity (its `getUuid()` is the credential id / credentialRef).
-	 *
-	 * @throws \InvalidArgumentException When the name is empty, an organisation-scoped mint carries no organisation,
-	 *                                   or the supplied instance host is not a safe public https origin.
-	 * @throws Throwable When the object save or the vault write fails (the orphaned object is removed first).
-	 *
-	 * @spec openspec/specs/credential-broker/spec.md
-	 * @spec openspec/specs/credential-broker/spec.md
-	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
-	 */
-	public function mint(
-		string $name,
-		string $provider,
-		string $owner,
-		array $allowedApps = [],
-		#[\SensitiveParameter] ?string $secret = null,
-		string $scope = self::SCOPE_PERSONAL,
-		?string $organisation = null,
-		array $metadata = [],
-	): ObjectEntity {
-		return $this->mintCredential(
-			mint: new CredentialMint(name: $name, provider: $provider, owner: $owner, metadata: $metadata),
-			options: new CredentialMintOptions(allowedApps: $allowedApps, secret: $secret, scope: $scope, organisation: $organisation)
-		);
-	}//end mint()
-
-	/**
-	 * Mint a credential from its required half and its options; see {@see mint()} for the contract.
-	 *
 	 * @param CredentialMint        $mint    The name, provider, owner and connection metadata.
 	 * @param CredentialMintOptions $options The allowed apps, the secret, the resolved scope and the organisation.
 	 *
@@ -508,8 +468,7 @@ class CredentialBrokerService {
 		// below, which already bypasses RBAC for exactly this reason.
 		$saved = $this->sources->objectService->saveObject(
 			object: $data,
-			register: self::REGISTER,
-			schema: self::SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER, schema: self::SCHEMA)),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -731,8 +690,7 @@ class CredentialBrokerService {
 		try {
 			$credential = WriteCause::asLookup(fn () => $this->sources->objectService->find(
 				id: $credentialId,
-				register: self::REGISTER,
-				schema: self::SCHEMA,
+				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
 				_rbac: false
 			));
 		} catch (Throwable $e) {

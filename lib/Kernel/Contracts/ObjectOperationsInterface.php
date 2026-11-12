@@ -29,10 +29,15 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Kernel\Contracts\RenderSelection;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use OCP\IUser;
 
@@ -217,22 +222,16 @@ interface ObjectOperationsInterface {
     /**
      * Finds an object by ID or UUID and renders it.
      *
-     * @param int|string               $id            The object ID or UUID.
-     * @param array|null               $_extend       Properties to extend the object with (unused).
-     * @param bool                     $files         Whether to include file information.
-     * @param Register|string|int|null $register      The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
-     * @param bool                     $_render       Whether to render the entity before returning (default: true).
-     *                                                Pass false when the caller performs its own single render
-     *                                                (e.g. ObjectsController::show()) so the object is not
-     *                                                rendered twice; permission checks and read logging still run.
-     * @param bool                     $_audit        Whether this read is worth an audit-trail row (default: true).
-     *                                                Pass false for machine-to-machine reads inside one
-     *                                                operation; the instance setting is all-or-nothing.
+     * @param int|string             $id            The object ID or UUID.
+     * @param ObjectFindOptions|null $options       Register, schema, extend and files, plus `render`
+     *                                              (false when the caller performs its own single render,
+     *                                              e.g. ObjectsController::show(); permission checks and
+     *                                              read logging still run) and `audit` (false for
+     *                                              machine-to-machine reads inside one operation).
+     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
-     * @return ObjectEntity|null The rendered object (or the raw entity when $_render is false) or null.
+     * @return ObjectEntity|null The rendered object (or the raw entity when `render` is false) or null.
      *
      * @throws Exception If the object is not found.
      *
@@ -244,8 +243,7 @@ interface ObjectOperationsInterface {
      *   read/RBAC/render behavior owned by object-interactions / rbac-scopes / files-render-extension.
      */
     public function find(
-    	int | string $id, ?array $_extend=[], bool $files=false, Register | string | int | null $register=null,
-    	Schema | string | int | null $schema=null, bool $_rbac=true, bool $_multitenancy=true, bool $_render=true, bool $_audit=true
+    	int | string $id, ?ObjectFindOptions $options=null, bool $_rbac=true, bool $_multitenancy=true
     ): ?ObjectEntity;
 
     /**
@@ -254,13 +252,10 @@ interface ObjectOperationsInterface {
      * This method is used internally by other operations (like UPDATE) that need to
      * retrieve an object without logging the read action.
      *
-     * @param string                   $id            The ID of the object to get.
-     * @param array|null               $_extend       Properties to extend the object with (unused).
-     * @param bool                     $files         Include file information.
-     * @param Register|string|int|null $register      The register object or its ID/UUID.
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param string                 $id            The ID of the object to get.
+     * @param ObjectFindOptions|null $options       Register, schema, extend and files; render and audit are ignored.
+     * @param bool                   $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                   $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The retrieved object.
      *
@@ -271,8 +266,7 @@ interface ObjectOperationsInterface {
      * @spec exclude Facade variant of find() that skips audit logging; read behavior owned by object-interactions / audit-trail-immutable.
      */
     public function findSilent(
-    	string $id, ?array $_extend=[], bool $files=false, Register | string | int | null $register=null,
-    	Schema | string | int | null $schema=null, bool $_rbac=true, bool $_multitenancy=true
+    	string $id, ?ObjectFindOptions $options=null, bool $_rbac=true, bool $_multitenancy=true
     ): ObjectEntity;
 
     /**
@@ -374,38 +368,15 @@ interface ObjectOperationsInterface {
      *
      * FOR BULK OPERATIONS: Use saveObjects() method for optimized bulk processing
      *
-     * @param array|ObjectEntity       $object        The object data to save or ObjectEntity instance
-     * @param array|null               $extend        Properties to extend the object with
-     * @param Register|string|int|null $register      The register object or its ID/UUID
-     * @param Schema|string|int|null   $schema        The schema object or its ID/UUID
-     * @param string|null              $uuid          The UUID of the object to update (if updating)
-     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true)
-     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true)
-     * @param bool                     $silent        Whether to skip audit trail creation and events (default: false)
-     * @param bool                     $_validation   Whether to validate the object against its schema (default: true).
-     *                                                Was hardcoded true here, so a bulk importer with pre-validated
-     *                                                rows had no way to decline re-validating every one of them.
-     * @param array|null               $uploadedFiles Uploaded files from multipart/form-data (optional)
-     * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks
-     * @param bool                     $failIfExists  Insert-only: throw ObjectExistsException rather than update when taken (default: false = upsert)
-     * @param bool                     $_unowned      Stamp the SYSTEM identity as owner even when a user session
-     *                                                exists. For a genuinely anonymous write — a citizen submitting
-     *                                                a form on a public portal with no account — where the row must
-     *                                                not be attributed to whoever happens to be signed into the
-     *                                                instance in that browser. Defaults to false, so nothing changes
-     *                                                for any existing caller, and no controller forwards it, so no
-     *                                                REST request can ask to be anonymised.
-     *                                                (forwarded to `ensureObjectFolder` → `assertObjectFolderAccessible`).
-     *                                                Defaults to null → `IUserSession::getUser()` resolution.
-     *                                                Non-HTTP callers (cron, import pipelines, event listeners)
-     *                                                MUST pass an explicit user to avoid the
-     *                                                default-deny fall-through on every folder-bound save.
-     * @param bool                     $_dedupOverride Save through a blocking duplicate match, when the caller is
-     *                                                entitled to. Read from the RAW request by ObjectsController,
-     *                                                because the body filter there strips `_`-prefixed keys.
-     * @param string|null              $_owner        An explicit owner for a NEW object (a draft's scope value such as
-     *                                                `portal:<subjectRef>`, decision 195). Service-level only: no
-     *                                                controller forwards it. An update keeps the stored owner.
+     * @param array|ObjectEntity $object        The object data to save or ObjectEntity instance
+     * @param ObjectSaveOptions  $options       The register and schema (object or ID/UUID), the UUID of the
+     *                                          object to update, the properties to extend the result with,
+     *                                          the files uploaded from multipart/form-data, the save policy
+     *                                          (events and audit, validation, insert-only, duplicate
+     *                                          override) and the actor (explicit acting user, explicit or
+     *                                          SYSTEM owner of a new row). See SavePolicy and SaveActor.
+     * @param bool               $_rbac         Whether to apply RBAC checks (default: true)
+     * @param bool               $_multitenancy Whether to apply multitenancy filtering (default: true)
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -415,16 +386,11 @@ interface ObjectOperationsInterface {
      * Before saving object data, check if user has permission to create/update specific properties
      * based on property-level authorization arrays in the schema.
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Save options are flag-driven; `$currentUser` was added for `@self.folder` access checks.
-     *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function saveObject(
-    	array | ObjectEntity $object, ?array $extend=[], Register | string | int | null $register=null,
-    	Schema | string | int | null $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false,
-    	bool $_validation=true, ?array $uploadedFiles=null, ?IUser $currentUser=null, bool $failIfExists=false, bool $_unowned=false,
-    	bool $_dedupOverride=false, ?string $_owner=null
+    	array | ObjectEntity $object, ObjectSaveOptions $options=new ObjectSaveOptions(), bool $_rbac=true, bool $_multitenancy=true
     ): ObjectEntity;
 
     /**
@@ -928,16 +894,12 @@ interface ObjectOperationsInterface {
      *
      * Locks an object to prevent concurrent modifications.
      *
-     * @param string      $identifier Object ID or UUID
-     * @param string|null $process    Process ID (for tracking who locked it)
-     * @param int|null    $duration   Lock duration in seconds
-     * @param bool        $advisory   When true, treat the identifier as a synthetic
-     *                                pre-creation key and take the appConfig-backed
-     *                                advisory lock without scanning object tables
-     * @param string|null $runUuid    Flow run taking the lock, for a run-scoped lock
-     *                                that refuses every other caller including the
-     *                                run's own runAs user
-     * @param string|null $nodeId     Flow node that took it, recorded for the sweep
+     * @param LockRequest $request  The object, process, duration and flow run step of the lock. A
+     *                              run-scoped lock refuses every other caller including the run's
+     *                              own runAs user.
+     * @param bool        $advisory When true, treat the identifier as a synthetic
+     *                              pre-creation key and take the appConfig-backed
+     *                              advisory lock without scanning object tables
      *
      * @return array Lock information
      *
@@ -945,19 +907,16 @@ interface ObjectOperationsInterface {
      *
      * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
      */
-    public function lockObject(
-    	string $identifier, ?string $process=null, ?int $duration=null, bool $advisory=false, ?string $runUuid=null, ?string $nodeId=null
-    ): array;
+    public function lockObject(LockRequest $request, bool $advisory=false): array;
 
     /**
      * Unlock an object
      *
      * Removes the lock from an object, allowing other processes to modify it.
      *
-     * @param string|int $identifier The object to unlock
-     * @param bool       $advisory   When true, release the appConfig-backed advisory
-     *                               lock for this synthetic key without scanning tables
-     * @param string|null $runUuid   Flow run releasing the lock, for a run-scoped lock
+     * @param UnlockRequest $request The object, the advisory flag and the flow run releasing a
+     *                               run-scoped lock. A request with `break` set is refused;
+     *                               breakObjectLock() breaks a lock.
      *
      * @return bool True if unlocked successfully
      *
@@ -965,7 +924,7 @@ interface ObjectOperationsInterface {
      *
      * @spec exclude One-line delegation to lock handler; unlock behavior owned by object-lifecycle.
      */
-    public function unlockObject(string|int $identifier, bool $advisory=false, ?string $runUuid=null): bool;
+    public function unlockObject(UnlockRequest $request): bool;
 
     /**
      * Bulk Save Operations Orchestrator (HIGH-PERFORMANCE BULK PROCESSING)
@@ -1006,16 +965,14 @@ interface ObjectOperationsInterface {
      * - Time complexity: O(N*M*P) → O(N*M)
      * - Processing speed: 2-3x faster for large datasets
      *
-     * @param array                    $objects        Array of objects in serialized format
-     * @param Register|string|int|null $register       Optional register filter for validation
-     * @param Schema|string|int|null   $schema         Optional schema filter for validation
-     * @param bool                     $_rbac          Whether to apply RBAC filtering
-     * @param bool                     $_multitenancy  Whether to apply multi-organization filtering
-     * @param bool                     $validation     Whether to validate objects against schema definitions
-     * @param bool                     $events         Whether to dispatch object lifecycle events
-     * @param bool                     $deduplicateIds Whether to deduplicate objects with same ID
-     * @param bool                     $enrich         Whether to enrich objects with metadata
-     * @param bool                     $_audit         Whether to write audit trail rows (bulk mirror of `silent`)
+     * @param array           $objects       Array of objects in serialized format
+     * @param BulkSaveOptions $options       The register and schema for rows that name none (optional
+     *                                       filters for validation), whether to validate objects
+     *                                       against schema definitions, whether to dispatch object
+     *                                       lifecycle events, and whether to write audit trail rows
+     *                                       (bulk mirror of `silent`)
+     * @param bool            $_rbac         Whether to apply RBAC filtering
+     * @param bool            $_multitenancy Whether to apply multi-organization filtering
      *
      * @throws \InvalidArgumentException If required fields are missing from any object
      * @throws \OCP\DB\Exception If a database error occurs during bulk operations
@@ -1027,18 +984,10 @@ interface ObjectOperationsInterface {
      *
      * @phpstan-return array<string, mixed>
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every argument after $schema is a per-call
-     *   policy switch that the single-object saveObject() also takes, and the two paths have to
-     *   offer the same switches or a caller cannot move between them — which is exactly what the
-     *   `$_audit` flag exists for. Collapsing them into an options object is worth doing, but it
-     *   is a change to BOTH save paths and all their callers, not to this signature alone.
-     *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function saveObjects(
-    	array $objects, Register|string|int|null $register=null, Schema|string|int|null $schema=null, bool $_rbac=true,
-    	bool $_multitenancy=true, bool $validation=false, bool $events=false, bool $deduplicateIds=true, bool $enrich=true,
-    	bool $_audit=true
+    	array $objects, BulkSaveOptions $options=new BulkSaveOptions(), bool $_rbac=true, bool $_multitenancy=true
     ): array;
 
     /**

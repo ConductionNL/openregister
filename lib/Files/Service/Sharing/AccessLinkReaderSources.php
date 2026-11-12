@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Files\Service\Sharing;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
+use OCP\IUserManager;
 
 /**
  * What an access link reader reads: the object path, the subject parser and the file restrictions.
@@ -38,6 +39,7 @@ final class AccessLinkReaderSources {
 	 * @param ObjectOperationsInterface  $objects      The object read path.
 	 * @param AccessLinkSubjectInterface $subjects     Reads which object a subject names.
 	 * @param FileRestrictionStore|null  $restrictions Refuses a restricted file to a link. Null only in legacy fixtures.
+	 * @param IUserManager|null          $users        Resolves the account that minted a view link; without it a view link serves nothing.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
@@ -45,6 +47,7 @@ final class AccessLinkReaderSources {
 		public readonly ObjectOperationsInterface $objects,
 		public readonly AccessLinkSubjectInterface $subjects,
 		public readonly ?FileRestrictionStore $restrictions = null,
+		public readonly ?IUserManager $users = null,
 	) {
 	}//end __construct()
 }//end class

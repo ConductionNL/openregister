@@ -9,6 +9,7 @@
 - [ ] 2.1 Logo as data URI with the size and type caps, primary colours on the table header, footer lines through `page_text()`. Verify: `ExportServiceTest` renders a PDF with a fake profile and asserts the footer text and the embedded image with a PDF text and image extractor.
 - [ ] 2.2 Custom fonts registered from the profile, DejaVu Sans fallback per role. Verify: the same test with a font that fails to load.
 - [ ] 2.3 Without a profile the output is unchanged. Verify: a byte-level comparison of the text layer against the current output for the same data.
+- [ ] 2.4 Export one record as a PDF: a record route that renders the readable fields with their labels through the same converter and house style, and an "Export as PDF" action on the record page. Verify: an `ExportServiceTest` case that exports one record with a hidden field and asserts the field is absent from the PDF text.
 
 ## 3. Proof and docs
 

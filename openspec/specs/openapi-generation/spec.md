@@ -547,6 +547,19 @@ the response. A withdrawn version SHALL answer 410 naming its successor.
 - **THEN** each describes only its own routes
 - @e2e exclude {generator output, covered by unit tests}
 
+### Requirement: The root OpenAPI document is published by the API itself (REQ-OAS-PUB-001)
+
+`GET /index.php/apps/openregister/api/openapi.json` MUST return the OpenAPI document at `openapi.json` in the repository root without authentication, with `Access-Control-Allow-Origin: *` and with `info.version` set to the installed app version (NL API Design Rules, /core/publish-openapi). When the document is not installed it MUST answer 404. The document MUST pass the Spectral ruleset of the NL API Design Rules (`https://static.developer.overheid.nl/adr/ruleset.yaml`) apart from findings that need a change to existing URLs or error formats.
+
+#### Scenario: anyone can read the root API description
+
+@e2e exclude an anonymous JSON endpoint, not browser behaviour; covered by PHPUnit OpenApiControllerTest.
+
+- GIVEN a client that is not logged in
+- WHEN it requests `/index.php/apps/openregister/api/openapi.json`
+- THEN it MUST receive the OpenAPI document with status 200
+- AND the response MUST carry `Access-Control-Allow-Origin: *`
+
 ## Current Implementation Status
 - **Fully implemented -- OAS generation from schemas**: `OasService` (`lib/Service/OasService.php`) generates OpenAPI specs from register/schema definitions via `createOas()`. It maps schema properties to OpenAPI types, generates paths for CRUD operations, and handles multi-register generation with operationId prefixing.
 - **Fully implemented -- controller and endpoints**: `OasController` (`lib/Controller/OasController.php`) exposes endpoints at `/api/registers/{id}/oas` (single register) and `/api/registers/oas` (all registers). Both are annotated `@PublicPage` and `@NoCSRFRequired` for unauthenticated access. `RegistersController` also provides OAS access and GitHub publishing of generated specs.

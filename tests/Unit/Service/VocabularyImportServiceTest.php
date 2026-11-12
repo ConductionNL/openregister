@@ -31,9 +31,11 @@ namespace Unit\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\VocabularyImportService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\VocabularyImportService
@@ -90,13 +92,16 @@ class VocabularyImportServiceTest extends TestCase {
 		);
 
 		$this->objectService->method('find')->willReturnCallback(
-			function ($id, $_extend = [], $files = false, $register = null, $schema = null, ...$rest) {
+			function (...$args) {
+				[$id, , , , $schema] = FindCallShape::find(args: $args);
 				return $this->fakeFind((string)$id, (string)$schema);
 			}
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function ($object, $extend = [], $register = null, $schema = null, $uuid = null, ...$rest) {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				return $this->fakeSaveObject($object, (string)$schema, $uuid);
 			}
 		);

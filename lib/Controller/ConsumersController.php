@@ -115,8 +115,6 @@ class ConsumersController extends Controller {
 	 *
 	 * @return JSONResponse The created consumer
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function create(): JSONResponse {
@@ -139,8 +137,6 @@ class ConsumersController extends Controller {
 	 * @param int $id The consumer ID
 	 *
 	 * @return JSONResponse The updated consumer or error
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
@@ -168,8 +164,6 @@ class ConsumersController extends Controller {
 	 *
 	 * @return JSONResponse Empty response or error
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */
 	public function destroy(int $id): JSONResponse {
@@ -190,8 +184,6 @@ class ConsumersController extends Controller {
 	 * @param int $id The consumer ID
 	 *
 	 * @return JSONResponse The updated consumer or error
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/openapi-generation/spec.md
 	 */

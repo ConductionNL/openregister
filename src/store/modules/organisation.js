@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { Organisation } from '../../entities/index.js'
 import { loadNextcloudGroupsInto } from '../../services/groupSearch.js'
+import { withRequestToken } from '../../services/requestToken.js'
 import { listStateActions } from './listState.js'
 
 const ORGANISATIONS = '/index.php/apps/openregister/api/organisations'
@@ -56,7 +57,7 @@ function jsonRequest(method, body) {
  * @return {Promise<{response: Response, data: object}>} The answer.
  */
 async function readJson(endpoint, init) {
-	const response = await fetch(endpoint, init)
+	const response = await fetch(endpoint, withRequestToken(init))
 	return { response, data: await response.json() }
 }
 
@@ -99,7 +100,7 @@ function organisationIdOf(organisationData) {
  * @throws {Error} The HTTP status.
  */
 async function fetchJson(endpoint, init) {
-	const response = await fetch(endpoint, init)
+	const response = await fetch(endpoint, withRequestToken(init))
 	if (!response.ok) {
 		throw new Error(`HTTP error! status: ${response.status}`)
 	}
@@ -116,7 +117,7 @@ async function fetchJson(endpoint, init) {
  * @throws {Error} The answer's message, else the HTTP status.
  */
 async function fetchJsonOrExplain(endpoint, init) {
-	const response = await fetch(endpoint, init)
+	const response = await fetch(endpoint, withRequestToken(init))
 	if (!response.ok) {
 		const errorData = await response.json()
 		throw new Error(
@@ -409,9 +410,9 @@ export const useOrganisationStore = defineStore('organisation', {
 
 			const response = await fetch(
 				`/index.php/apps/openregister/api/organisations/${uuid}`,
-				{
+				withRequestToken({
 					method: 'DELETE',
-				},
+				}),
 			)
 
 			this.refreshOrganisationList()

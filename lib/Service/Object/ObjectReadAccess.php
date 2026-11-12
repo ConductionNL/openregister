@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -133,8 +134,7 @@ class ObjectReadAccess implements ObjectReadAccessInterface {
 
 			return WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $ref->id,
-				register: $ref->register,
-				schema: $ref->schema,
+				options: new ObjectFindOptions(register: $ref->register, schema: $ref->schema),
 				_rbac: true,
 				_multitenancy: true
 			));

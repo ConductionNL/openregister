@@ -48,6 +48,8 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
@@ -228,7 +230,10 @@ class GraphQLResolver {
 		$register = $this->findRegisterForSchema(schema: $schema);
 
 		try {
-			return $this->objectToArray(object: $this->objects->objectService->saveObject($input, [], $register, $schema));
+			return $this->objectToArray(object: $this->objects->objectService->saveObject(
+				object: $input,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
+			));
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {
 			throw $this->validationError(cause: $e);
 		}
@@ -266,7 +271,10 @@ class GraphQLResolver {
 				)
 			);
 
-			return $this->objectToArray(object: $this->objects->objectService->saveObject($input, [], $register, $schema, $id));
+			return $this->objectToArray(object: $this->objects->objectService->saveObject(
+				object: $input,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
+			));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			throw $this->notFoundError(schema: $schema, id: $id);
 		} catch (\OCA\OpenRegister\Exception\ValidationException $e) {

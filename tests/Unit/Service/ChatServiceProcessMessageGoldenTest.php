@@ -29,7 +29,7 @@ use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
 use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatReply;
 use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
 /**
  * Records every collaborator call processMessage() makes, in order, and its result,

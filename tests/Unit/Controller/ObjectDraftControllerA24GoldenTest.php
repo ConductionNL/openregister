@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Object\DraftActivation;
 use OCA\OpenRegister\Service\Object\DraftAddress;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectDraftControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -155,7 +156,7 @@ final class ObjectDraftControllerA24GoldenTest extends TestCase {
 		$this->registers->expects($this->once())->method('find')->with('reg', false, false)->willReturn(new Register());
 		$this->schemas->expects($this->once())->method('find')->with('sch', [], false, false)->willReturn(new Schema());
 		$this->objects->expects($this->once())->method('find')
-			->with('d1', [], false, $this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), true, true, false, false)
+			->with(...FindCallShape::findArgs('d1', [], false, $this->isInstanceOf(Register::class), $this->isInstanceOf(Schema::class), true, true, false, false))
 			->willReturn(null);
 		$this->activation->expects($this->never())->method('activateAsUser');
 		$response = $controller->activate('reg', 'sch', 'd1');

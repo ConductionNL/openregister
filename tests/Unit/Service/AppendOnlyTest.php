@@ -70,6 +70,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectPatch;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
@@ -274,7 +276,7 @@ class AppendOnlyTest extends TestCase {
 		// Should NOT throw — INSERT is permitted even on append-only schemas.
 		$result = $this->service->saveObject(
 			object: ['name' => 'entry'],
-			uuid: null
+			options: new ObjectSaveOptions(uuid: null)
 		);
 
 		$this->assertSame($savedEntity, $result);
@@ -304,7 +306,7 @@ class AppendOnlyTest extends TestCase {
 
 		$this->service->saveObject(
 			object: ['name' => 'updated-entry'],
-			uuid: 'existing-uuid-abc'
+			options: new ObjectSaveOptions(uuid: 'existing-uuid-abc')
 		);
 	}//end testSaveObjectUpdateRejectedOnAppendOnlySchema()
 
@@ -357,7 +359,7 @@ class AppendOnlyTest extends TestCase {
 		// Must not throw.
 		$result = $this->service->saveObject(
 			object: ['name' => 'updated'],
-			uuid: 'ordinary-uuid-456'
+			options: new ObjectSaveOptions(uuid: 'ordinary-uuid-456')
 		);
 
 		$this->assertSame($savedEntity, $result);
@@ -501,15 +503,15 @@ class AppendOnlyTest extends TestCase {
 		$this->saveHandler->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (mixed ...$args) use ($savedEntity): ObjectEntity {
+				SaveObjectArgs::callback(callback: function (mixed ...$args) use ($savedEntity): ObjectEntity {
 					$this->assertSame('3f2c6a3e-1111-4222-8333-444455556666', ($args[3] ?? null));
 					$this->assertTrue(($args[11] ?? false), 'an append-only insert must be insert-only down to the mapper');
 					return $savedEntity;
-				}
+				})
 			);
 
 		$result = $this->service->saveObject(
-			object: ['id' => '3f2c6a3e-1111-4222-8333-444455556666', 'verb' => 'completed'],
+			object: ['id' => '3f2c6a3e-1111-4222-8333-444455556666', 'verb' => 'completed']
 		);
 
 		$this->assertSame($savedEntity, $result);
@@ -642,10 +644,10 @@ class AppendOnlyTest extends TestCase {
 		$this->saveHandler->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(
-				function (mixed ...$args) use ($savedEntity, &$failIfExists): ObjectEntity {
+				SaveObjectArgs::callback(callback: function (mixed ...$args) use ($savedEntity, &$failIfExists): ObjectEntity {
 					$failIfExists = ($args[11] ?? null);
 					return $savedEntity;
-				}
+				})
 			);
 
 		$this->assertSame($savedEntity, $this->service->saveObject(object: ['id' => 'fresh-uuid'], _rbac: $rbac));

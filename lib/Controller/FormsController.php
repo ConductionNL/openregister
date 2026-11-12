@@ -294,7 +294,6 @@ class FormsController extends Controller {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */
 	#[NoAdminRequired]
-	#[NoCSRFRequired]
 	#[UserRateLimit(limit: 120, period: 60)]
 	public function draft(string $formId): JSONResponse {
 		try {

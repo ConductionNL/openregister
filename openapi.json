@@ -3,9 +3,15 @@
     "info": {
         "title": "openregister",
         "version": "2.2.0-dev.0",
-        "description": "Open Register",
+        "description": "The OpenRegister API for the endpoints this document covers: the object file actions (upload, download, rename, copy, move, versions, locks, labels, previews and batches) and the GitHub issues proxy behind the features and roadmap menu. OpenRegister serves many more endpoints than are described here; the OpenAPI document of each register is generated at `/api/registers/{id}/oas`.",
         "license": {
-            "name": "EUPL-1.2"
+            "name": "EUPL-1.2",
+            "url": "https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"
+        },
+        "contact": {
+            "name": "Conduction B.V.",
+            "email": "info@conduction.nl",
+            "url": "https://conduction.nl"
         }
     },
     "components": {
@@ -20,30 +26,6 @@
             }
         },
         "schemas": {
-            "OCSMeta": {
-                "type": "object",
-                "required": [
-                    "status",
-                    "statuscode"
-                ],
-                "properties": {
-                    "status": {
-                        "type": "string"
-                    },
-                    "statuscode": {
-                        "type": "integer"
-                    },
-                    "message": {
-                        "type": "string"
-                    },
-                    "totalitems": {
-                        "type": "string"
-                    },
-                    "itemsperpage": {
-                        "type": "string"
-                    }
-                }
-            },
             "GitHubIssueItem": {
                 "type": "object",
                 "description": "GitHub issue payload after the proxy strips sensitive fields (task 1.10).",
@@ -556,79 +538,19 @@
                     }
                 }
             }
+        },
+        "headers": {
+            "API-Version": {
+                "description": "The version of the API that answered (ApiVersionMiddleware).",
+                "schema": {
+                    "type": "string",
+                    "example": "1"
+                }
+            }
         }
     },
     "paths": {
-        "/ocs/v2.php/apps/dsonextcloud/api": {
-            "get": {
-                "operationId": "api-index",
-                "summary": "An example API endpoint",
-                "tags": [
-                    "api"
-                ],
-                "security": [
-                    {
-                        "bearer_auth": []
-                    },
-                    {
-                        "basic_auth": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "OCS-APIRequest",
-                        "in": "header",
-                        "description": "Required to be true for the API request to pass",
-                        "required": true,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Data returned",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "required": [
-                                        "ocs"
-                                    ],
-                                    "properties": {
-                                        "ocs": {
-                                            "type": "object",
-                                            "required": [
-                                                "meta",
-                                                "data"
-                                            ],
-                                            "properties": {
-                                                "meta": {
-                                                    "$ref": "#/components/schemas/OCSMeta"
-                                                },
-                                                "data": {
-                                                    "type": "object",
-                                                    "required": [
-                                                        "message"
-                                                    ],
-                                                    "properties": {
-                                                        "message": {
-                                                            "type": "string"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/index.php/apps/openregister/api/github/issues": {
+        "/github/issues": {
             "get": {
                 "operationId": "github-issues-list",
                 "summary": "List GitHub issues for the configured repository",
@@ -718,6 +640,9 @@
                                         "MISS"
                                     ]
                                 }
+                            },
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
                             }
                         },
                         "content": {
@@ -825,6 +750,11 @@
                                     "$ref": "#/components/schemas/GitHubIssueCreatedResponse"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "400": {
@@ -876,7 +806,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files": {
+        "/objects/{register}/{schema}/{id}/files": {
             "parameters": [
                 {
                     "name": "register",
@@ -921,6 +851,11 @@
                                 "schema": {
                                     "$ref": "#/components/schemas/FileList"
                                 }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
                             }
                         }
                     },
@@ -986,6 +921,11 @@
                                     "$ref": "#/components/schemas/File"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "400": {
@@ -1021,7 +961,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/save": {
+        "/objects/{register}/{schema}/{id}/files/save": {
             "parameters": [
                 {
                     "name": "register",
@@ -1117,6 +1057,11 @@
                                     "$ref": "#/components/schemas/File"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "400": {
@@ -1152,7 +1097,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/filesMultipart": {
+        "/objects/{register}/{schema}/{id}/filesMultipart": {
             "parameters": [
                 {
                     "name": "register",
@@ -1239,6 +1184,11 @@
                                     }
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "400": {
@@ -1264,7 +1214,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}": {
+        "/objects/{register}/{schema}/{id}/files/{fileId}": {
             "parameters": [
                 {
                     "name": "register",
@@ -1316,6 +1266,11 @@
                                     "type": "string",
                                     "format": "binary"
                                 }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
                             }
                         }
                     },
@@ -1379,6 +1334,11 @@
                                     "$ref": "#/components/schemas/File"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "403": {
@@ -1401,7 +1361,8 @@
                             }
                         }
                     }
-                }
+                },
+                "description": "Replaces the content of a file attached to the object, its tags, or both."
             },
             "delete": {
                 "operationId": "files-delete",
@@ -1423,6 +1384,11 @@
                                     }
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "403": {
@@ -1445,10 +1411,11 @@
                             }
                         }
                     }
-                }
+                },
+                "description": "Deletes a file from the object folder."
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/rename": {
+        "/objects/{register}/{schema}/{id}/files/{fileId}/rename": {
             "parameters": [
                 {
                     "name": "register",
@@ -1509,6 +1476,11 @@
                                     "$ref": "#/components/schemas/File"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "400": {
@@ -1554,7 +1526,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/copy": {
+        "/objects/{register}/{schema}/{id}/files/{fileId}/copy": {
             "parameters": [
                 {
                     "name": "register",
@@ -1615,6 +1587,11 @@
                                     "$ref": "#/components/schemas/File"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "400": {
@@ -1650,7 +1627,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/move": {
+        "/objects/{register}/{schema}/{id}/files/{fileId}/move": {
             "parameters": [
                 {
                     "name": "register",
@@ -1711,6 +1688,11 @@
                                     "$ref": "#/components/schemas/File"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "400": {
@@ -1756,7 +1738,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/versions": {
+        "/objects/{register}/{schema}/{id}/files/{fileId}/versions": {
             "parameters": [
                 {
                     "name": "register",
@@ -1807,6 +1789,11 @@
                                     "$ref": "#/components/schemas/FileVersionList"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "403": {
@@ -1832,7 +1819,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/versions/{versionId}/restore": {
+        "/objects/{register}/{schema}/{id}/files/{fileId}/versions/{versionId}/restore": {
             "parameters": [
                 {
                     "name": "register",
@@ -1892,6 +1879,11 @@
                                     "$ref": "#/components/schemas/File"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "403": {
@@ -1917,7 +1909,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/lock": {
+        "/objects/{register}/{schema}/{id}/files/{fileId}/lock": {
             "parameters": [
                 {
                     "name": "register",
@@ -1968,6 +1960,11 @@
                                     "$ref": "#/components/schemas/FileLockResponse"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "403": {
@@ -2003,7 +2000,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/unlock": {
+        "/objects/{register}/{schema}/{id}/files/{fileId}/unlock": {
             "parameters": [
                 {
                     "name": "register",
@@ -2064,6 +2061,11 @@
                                     "$ref": "#/components/schemas/FileLockResponse"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "403": {
@@ -2089,7 +2091,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/batch": {
+        "/objects/{register}/{schema}/{id}/files/batch": {
             "parameters": [
                 {
                     "name": "register",
@@ -2142,6 +2144,11 @@
                                     "$ref": "#/components/schemas/FileBatchResponse"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "207": {
@@ -2151,6 +2158,11 @@
                                 "schema": {
                                     "$ref": "#/components/schemas/FileBatchResponse"
                                 }
+                            }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
                             }
                         }
                     },
@@ -2187,7 +2199,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/preview": {
+        "/objects/{register}/{schema}/{id}/files/{fileId}/preview": {
             "parameters": [
                 {
                     "name": "register",
@@ -2257,6 +2269,11 @@
                                     "format": "binary"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "403": {
@@ -2282,7 +2299,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/labels": {
+        "/objects/{register}/{schema}/{id}/files/{fileId}/labels": {
             "parameters": [
                 {
                     "name": "register",
@@ -2342,6 +2359,11 @@
                                     "$ref": "#/components/schemas/File"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "403": {
@@ -2364,10 +2386,11 @@
                             }
                         }
                     }
-                }
+                },
+                "description": "Replaces every label of a file with the labels in the request."
             }
         },
-        "/index.php/apps/openregister/api/objects/{register}/{schema}/{id}/files/download": {
+        "/objects/{register}/{schema}/{id}/files/download": {
             "parameters": [
                 {
                     "name": "register",
@@ -2411,6 +2434,11 @@
                                     "format": "binary"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "404": {
@@ -2426,7 +2454,7 @@
                 }
             }
         },
-        "/index.php/apps/openregister/api/files/{fileId}/download": {
+        "/files/{fileId}/download": {
             "parameters": [
                 {
                     "name": "fileId",
@@ -2455,6 +2483,11 @@
                                     "format": "binary"
                                 }
                             }
+                        },
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
                         }
                     },
                     "403": {
@@ -2479,6 +2512,59 @@
                     }
                 }
             }
+        },
+        "/openapi.json": {
+            "get": {
+                "operationId": "open-api-show",
+                "summary": "The OpenAPI document of this API",
+                "description": "Returns this document. It needs no authentication and can be read from any origin.",
+                "tags": [
+                    "open-api"
+                ],
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "The OpenAPI document.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            },
+                            "access-control-allow-origin": {
+                                "description": "Always `*`.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "*"
+                                    ]
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The document is not installed.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "tags": [
@@ -2489,6 +2575,22 @@
         {
             "name": "files",
             "description": "Object file actions: upload, download, rename, copy, move, version, lock, batch, preview, and label management."
+        },
+        {
+            "name": "open-api",
+            "description": "The OpenAPI document that describes this API."
+        }
+    ],
+    "servers": [
+        {
+            "url": "https://{host}/index.php/apps/openregister/api",
+            "description": "The OpenRegister API on a Nextcloud instance.",
+            "variables": {
+                "host": {
+                    "default": "localhost",
+                    "description": "The host name of the Nextcloud instance."
+                }
+            }
         }
     ]
 }

@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Configuration\SchemaImportOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportOptions;
@@ -216,8 +217,9 @@ class ImportServiceImportFromJsonGoldenTest extends TestCase {
 		});
 
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('saveObject')->willReturnCallback(function (array $object, $extend = null, $register = null, $schema = null, ?string $uuid = null) {
-			$this->record(method: 'objectService.saveObject', args: func_get_args());
+		$objectService->method('saveObject')->willReturnCallback(function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) {
+			$uuid = $options->uuid;
+			$this->record(method: 'objectService.saveObject', args: [$object, $options->extend, $options->target->register, $options->target->schema, $options->uuid, $_rbac, $_multitenancy, $options->policy->silent, $options->policy->validation, $options->uploadedFiles, $options->actor->currentUser, $options->policy->failIfExists, $options->actor->unowned, $options->policy->dedupOverride, $options->actor->owner]);
 			if (($object['title'] ?? null) === 'Fail me') {
 				throw new Exception('Save refused');
 			}

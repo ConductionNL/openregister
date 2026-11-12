@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Files\Controller;
 
 use DateTimeImmutable;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
@@ -448,7 +449,11 @@ class FilesController extends Controller {
 	private function objectUnderReadCheck(FileAccessCheck $check): ?ObjectEntity {
 		$route = $check->route;
 		$object = WriteCause::asLookup(
-			fn () => $this->objectService->find(id: $route->id, register: $route->register, schema: $route->schema, _rbac: true)
+			fn () => $this->objectService->find(
+				id: $route->id,
+				options: new ObjectFindOptions(register: $route->register, schema: $route->schema),
+				_rbac: true
+			)
 		);
 		if ($object instanceof ObjectEntity === false) {
 			return null;
@@ -921,11 +926,9 @@ class FilesController extends Controller {
 		return WriteCause::asLookup(
 			fn () => $this->objectService->find(
 				id: $route->id,
-				register: $route->register,
-				schema: $route->schema,
+				options: new ObjectFindOptions(register: $route->register, schema: $route->schema, audit: false),
 				_rbac: false,
-				_multitenancy: false,
-				_audit: false
+				_multitenancy: false
 			)
 		);
 	}//end objectWithoutChecks()
@@ -1155,8 +1158,6 @@ class FilesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200|400|403|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
@@ -1238,8 +1239,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200|400|403|404,
 	 *     array{error?: mixed|string, labels?: list<string>,...},
@@ -1338,8 +1337,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200|207|400|403|404,
 	 *     array{error?: string, rejected?: list<array{name: string, error: string}>,
@@ -1682,7 +1679,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse JSON response with updated file or error.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *
@@ -1697,7 +1693,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			$this->objectService->setObject($id);
+			$this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId);
 			return $this->updateFromRequest(fileId: $fileId);
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
@@ -1738,8 +1734,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200|400|404,
 	 *     array{error?: string, success?: bool},
@@ -2009,7 +2003,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2077,7 +2070,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2113,7 +2105,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2342,7 +2333,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 *
@@ -2415,7 +2405,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2478,7 +2467,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2562,7 +2550,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *
@@ -2700,7 +2687,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse The updated metadata, 403, or 404.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -2712,7 +2698,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: the same object-level RBAC updateLabels applies; metadata is no less a mutation for being descriptive.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			$this->routedObject(id: $id);
+			$this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId);
 			return $this->updatePostedMetadata(fileId: $fileId);
 		} catch (Exception $e) {
 			return $this->actionFailed(e: $e);
@@ -2788,7 +2774,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse What changed, what did not, and what was refused.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @contract tests/Unit/Service/File/FileMetadataFormHandlerTest.php
 	 *
@@ -2839,7 +2824,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *
@@ -2853,7 +2837,9 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating labels.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			return $this->labelTarget(target: new FileActionTarget(object: $this->routedObject(id: $id), fileId: $fileId));
+			$object = $this->routedObject(id: $id);
+			$this->routedFile(object: $object, fileId: $fileId);
+			return $this->labelTarget(target: new FileActionTarget(object: $object, fileId: $fileId));
 		} catch (Exception $e) {
 			return $this->actionFailed(e: $e);
 		}

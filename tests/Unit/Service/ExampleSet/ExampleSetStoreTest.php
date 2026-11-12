@@ -40,6 +40,7 @@ use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ObjectCheck;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
@@ -221,7 +222,7 @@ class ExampleSetStoreTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('runAsSystem')->willReturnCallback(static fn (callable $operation) => SystemOperationContext::run($operation));
 		$objects->method('saveObject')->willReturnCallback(
-			function (...$args) use (&$seen, $actions, $saved): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$seen, $actions, $saved): ObjectEntity {
 				$seen[] = ['system' => SystemOperationContext::isActive(), 'declared' => $actions->writesDeclaredState(uuid: 'case-1')];
 				return $saved;
 			}
@@ -279,7 +280,10 @@ class ExampleSetStoreTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('runAsSystem')->willReturnCallback(static fn (callable $operation) => SystemOperationContext::run($operation));
 		$objects->expects($this->once())->method('saveObject')->with(
-			$this->anything(), $this->anything(), 'besluiten', 'decision', null, false, false, false, true, null, null, false, false, false, 'pieter'
+			$this->anything(),
+			$this->callback(static fn (ObjectSaveOptions $options): bool => $options->target->register == 'besluiten' && $options->target->schema == 'decision' && $options->uuid === null && $options->policy->silent === false && $options->policy->validation === true && $options->uploadedFiles === null && $options->actor->currentUser === null && $options->policy->failIfExists === false && $options->actor->unowned === false && $options->policy->dedupOverride === false && $options->actor->owner == 'pieter'),
+			false,
+			false
 		)->willReturn($saved);
 		$system    = [];
 		$ownership = $this->createMock(ObjectOwnershipService::class);
