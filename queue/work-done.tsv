@@ -404,3 +404,4 @@ merge:portaliq:2283:bc58bb68	2287 MERGED 2288 FAIL(conflict) 2290 MERGED 2291 ME
 verify:stackiq:1738:b637988d	GREEN 1738,1754-1757 (0 new failures)	session-20261112T200016-345024b4	2026-11-12T21:15:06Z
 cover:stackiq:8cfacb29:js3f3bfe56	PR #1764: 17 tests (router, App, main/settings/widget entry points); src/* 0%->96.1% lines	session-20261112T202437-4020bd95	2026-11-12T21:15:32Z
 cover:stackiq:8cfacb29:js0671a85c	PR #1765: 25 vitest tests for Settings.vue, StackiqSettings.vue, autoConfigFeedback.js; vitest 1593->1618, all green	session-20261112T202912-56c18a61	2026-11-12T21:16:24Z
+cover:stackiq:8cfacb29:jscfe4189a	PR opened: src/views/cmdb+widgets lines 33.8->96.0% (9 vitest tests)	session-20261112T184439-5c9a5b03	2026-11-12T21:16:43Z
