@@ -150,7 +150,7 @@ class CredentialBrokerService {
 	 *
 	 * @var string
 	 */
-	private const KIND_OAUTH2_TOKEN_SET = 'oauth2-token-set';
+	private const KIND_OAUTH2_SET = 'oauth2-token-set';
 
 	/**
 	 * True only inside {@see requestForBackgroundUser()}: the guards then see no session.
@@ -462,7 +462,7 @@ class CredentialBrokerService {
 		// accident of how a catalogue entry happens to be written, so a future entry that
 		// set both flags would silently start leaking. Both paths then refuse such an
 		// entry, which is the right answer for a catalogue that contradicts itself.
-		if ($this->kindOf(provider: $provider) === self::KIND_OAUTH2_TOKEN_SET) {
+		if ($this->kindOf(provider: $provider) === self::KIND_OAUTH2_SET) {
 			$this->outbound->logger->warning(
 				'[CredentialBroker] resolveInjectable refused for the oauth2-token-set kind: ' . $credentialId
 			);
@@ -1316,7 +1316,7 @@ class CredentialBrokerService {
 		string $scope,
 		?string $actingUserId,
 	): string {
-		if ($this->kindOf(provider: $provider) !== self::KIND_OAUTH2_TOKEN_SET) {
+		if ($this->kindOf(provider: $provider) !== self::KIND_OAUTH2_SET) {
 			$secret = $this->sources->credentialStore->get($credentialId, $scope);
 			if ($secret === null) {
 				$this->deny(reason: 'no secret stored for credential', credentialId: $credentialId);
@@ -1356,8 +1356,8 @@ class CredentialBrokerService {
 	private function kindOf(array $provider): string {
 		$kind = trim((string)($provider['kind'] ?? ''));
 
-		if ($kind === self::KIND_OAUTH2_TOKEN_SET) {
-			return self::KIND_OAUTH2_TOKEN_SET;
+		if ($kind === self::KIND_OAUTH2_SET) {
+			return self::KIND_OAUTH2_SET;
 		}
 
 		return self::KIND_SECRET;

@@ -66,7 +66,16 @@ class PortalSubjectAssertion implements PortalSubjectAssertionInterface {
 	 *
 	 * @var string
 	 */
-	public const CONFIG_SECRET = 'portal_assertion_secret';
+	public const ASSERTION_CONFIG_NAME = 'portal_assertion_secret';
+
+	/**
+	 * Former name of ASSERTION_CONFIG_NAME, kept for existing callers.
+	 *
+	 * @deprecated Use ASSERTION_CONFIG_NAME.
+	 *
+	 * @var string
+	 */
+	public const CONFIG_SECRET = self::ASSERTION_CONFIG_NAME;
 
 	/**
 	 * The issuer portaliq stamps.
@@ -285,7 +294,7 @@ class PortalSubjectAssertion implements PortalSubjectAssertionInterface {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-only-the-matched-party-completes-fail-closed
 	 */
 	private function secret(): string {
-		$own = trim($this->config->getValueString('openregister', self::CONFIG_SECRET, '', lazy: false));
+		$own = trim($this->config->getValueString('openregister', self::ASSERTION_CONFIG_NAME, '', lazy: false));
 		if ($own !== '') {
 			return $own;
 		}
