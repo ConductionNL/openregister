@@ -413,7 +413,10 @@ class ObjectServiceDraftWriteTest extends TestCase {
 		[$register, $schema] = $this->scope();
 
 		try {
-			$this->service->saveObject(object: ['subject' => 'planted'], register: $register, schema: $schema, uuid: '12');
+			$this->service->saveObject(
+				object: ['subject' => 'planted'],
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: '12')
+			);
 			$this->fail('A new object was stored under the uuid "12".');
 		} catch (ValidationException $refused) {
 			$this->assertStringContainsString('only digits', $refused->getMessage());
@@ -434,9 +437,7 @@ class ObjectServiceDraftWriteTest extends TestCase {
 
 		$this->service->saveObject(
 			object: ['subject' => 'imported'],
-			register: $register,
-			schema: $schema,
-			uuid: '12',
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: '12'),
 			_rbac: false,
 			_multitenancy: false
 		);
