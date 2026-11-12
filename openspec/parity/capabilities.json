@@ -6474,7 +6474,8 @@
      "openspec/specs/tmlo-metadata :: Register-level TMLO enablement gate",
      "openspec/specs/tmlo-auto-populate :: Auto-populate TMLO metadata on object creation",
      "openspec/specs/edepot-transfer :: The system MUST generate MDTO-compliant XML metadata per object"
-    ]
+    ],
+    "plan": "archival-conformance"
    },
    "reachedOn": "API: /api/tmlo/{register}/{schema}/...; object Metadata tab",
    "provider": "openregister",
