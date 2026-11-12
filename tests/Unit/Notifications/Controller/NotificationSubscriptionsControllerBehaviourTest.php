@@ -49,6 +49,7 @@ use OCA\OpenRegister\Notifications\Db\SubscriptionKey;
 #[UsesClass(Schema::class)]
 #[UsesClass(NotificationSubscriptionsControllerServices::class)]
 #[UsesClass(NotificationSubscription::class)]
+#[UsesClass(\OCA\OpenRegister\Notifications\Db\SubscriptionKey::class)]
 class NotificationSubscriptionsControllerBehaviourTest extends TestCase {
 
 	private NotificationSubscriptionMapper&MockObject $mapper;

@@ -7,6 +7,7 @@ namespace Unit\Service\Deferral;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Deferral\DeferredEntryObjectResolver;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -33,16 +34,8 @@ class DeferredEntryObjectResolverTest extends TestCase {
 
 		$this->objectService->expects($this->once())->method('find')
 			->willReturnCallback(
-				function (
-					int|string $id,
-					?array $_extend = [],
-					bool $files = false,
-					$register = null,
-					$schema = null,
-					bool $_rbac = true,
-					bool $_multitenancy = true,
-					bool $_render = true,
-				) use ($object) {
+				function (...$args) use ($object) {
+					[$id, $_extend, $files, $register, $schema, $_rbac, $_multitenancy, $_render] = FindCallShape::find(args: $args);
 					$this->assertSame('u1', $id);
 					// Register + schema forwarded → one magic table, no cross-table scan.
 					$this->assertSame('reg', $register);

@@ -46,6 +46,16 @@ use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\NotificationPreferenceService
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\SystemSchemaRules
  * @covers \OCA\OpenRegister\Notifications\Service\Notification\TaskNotificationRules
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Kernel\Contracts\PreferenceAddress
+ * @uses \OCA\OpenRegister\Kernel\Contracts\PreferenceWrite
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\DeclaredNotification
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceLookup
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceResolution
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\PreferenceTopic
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\UserGroupServices
  */
 class A26NotificationPreferenceServiceGoldenTest extends TestCase {
 

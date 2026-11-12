@@ -64,6 +64,9 @@ exports[`organisation.clearCache on a network failure 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/clear-cache",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -90,6 +93,9 @@ exports[`organisation.clearCache on an allowed answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/clear-cache",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -133,6 +139,9 @@ exports[`organisation.clearCache on an allowedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/clear-cache",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -164,6 +173,9 @@ exports[`organisation.clearCache on an refusedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/clear-cache",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -193,6 +205,9 @@ exports[`organisation.clearCache on an refusedWithMessage answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/clear-cache",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -227,6 +242,7 @@ exports[`organisation.createOrganisation on a network failure 1`] = `
         "body": "{"name":"New","slug":"new"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -257,6 +273,7 @@ exports[`organisation.createOrganisation on an allowed answer 1`] = `
         "body": "{"name":"New","slug":"new"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -295,6 +312,7 @@ exports[`organisation.createOrganisation on an allowedBare answer 1`] = `
         "body": "{"name":"New","slug":"new"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -332,6 +350,7 @@ exports[`organisation.createOrganisation on an refusedBare answer 1`] = `
         "body": "{"name":"New","slug":"new"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -362,6 +381,7 @@ exports[`organisation.createOrganisation on an refusedWithMessage answer 1`] = `
         "body": "{"name":"New","slug":"new"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -389,6 +409,9 @@ exports[`organisation.getActiveOrganisation on a network failure 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/active",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -492,6 +515,9 @@ exports[`organisation.getActiveOrganisation on an allowed answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/active",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -515,6 +541,9 @@ exports[`organisation.getActiveOrganisation on an allowedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/active",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -535,6 +564,9 @@ exports[`organisation.getActiveOrganisation on an refusedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/active",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -555,6 +587,9 @@ exports[`organisation.getActiveOrganisation on an refusedWithMessage answer 1`] 
       "fetch",
       "/index.php/apps/openregister/api/organisations/active",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -575,6 +610,9 @@ exports[`organisation.getOrganisation on a network failure 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -601,6 +639,9 @@ exports[`organisation.getOrganisation on an allowed answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -624,6 +665,9 @@ exports[`organisation.getOrganisation on an allowedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -646,6 +690,9 @@ exports[`organisation.getOrganisation on an refusedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -666,6 +713,9 @@ exports[`organisation.getOrganisation on an refusedWithMessage answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -688,6 +738,9 @@ exports[`organisation.getOrganisationAsItem on a network failure 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -714,6 +767,9 @@ exports[`organisation.getOrganisationAsItem on an allowed answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -739,6 +795,9 @@ exports[`organisation.getOrganisationAsItem on an allowedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -761,6 +820,9 @@ exports[`organisation.getOrganisationAsItem on an refusedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -781,6 +843,9 @@ exports[`organisation.getOrganisationAsItem on an refusedWithMessage answer 1`] 
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -806,6 +871,7 @@ exports[`organisation.joinOrganisation on a network failure 1`] = `
         "body": "{}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -836,6 +902,7 @@ exports[`organisation.joinOrganisation on an allowed answer 1`] = `
         "body": "{}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -883,6 +950,7 @@ exports[`organisation.joinOrganisation on an allowedBare answer 1`] = `
         "body": "{}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -918,6 +986,7 @@ exports[`organisation.joinOrganisation on an refusedBare answer 1`] = `
         "body": "{}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -948,6 +1017,7 @@ exports[`organisation.joinOrganisation on an refusedWithMessage answer 1`] = `
         "body": "{}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -978,6 +1048,7 @@ exports[`organisation.joinOrganisationForUser on a network failure 1`] = `
         "body": "{"userId":"alice"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1008,6 +1079,7 @@ exports[`organisation.joinOrganisationForUser on an allowed answer 1`] = `
         "body": "{"userId":"alice"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1055,6 +1127,7 @@ exports[`organisation.joinOrganisationForUser on an allowedBare answer 1`] = `
         "body": "{"userId":"alice"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1090,6 +1163,7 @@ exports[`organisation.joinOrganisationForUser on an refusedBare answer 1`] = `
         "body": "{"userId":"alice"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1120,6 +1194,7 @@ exports[`organisation.joinOrganisationForUser on an refusedWithMessage answer 1`
         "body": "{"userId":"alice"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "POST",
       },
@@ -1147,6 +1222,9 @@ exports[`organisation.leaveOrganisation on a network failure 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1/leave",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -1173,6 +1251,9 @@ exports[`organisation.leaveOrganisation on an allowed answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1/leave",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -1219,6 +1300,9 @@ exports[`organisation.leaveOrganisation on an allowedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1/leave",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -1253,6 +1337,9 @@ exports[`organisation.leaveOrganisation on an refusedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1/leave",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -1279,6 +1366,9 @@ exports[`organisation.leaveOrganisation on an refusedWithMessage answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1/leave",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -1305,6 +1395,9 @@ exports[`organisation.searchAllOrganisations on a network failure 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/search?_limit=50&_offset=0",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -1331,6 +1424,9 @@ exports[`organisation.searchAllOrganisations on an allowed answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/search?_limit=50&_offset=0",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -1355,6 +1451,9 @@ exports[`organisation.searchAllOrganisations on an allowedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/search?_limit=50&_offset=0",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -1375,6 +1474,9 @@ exports[`organisation.searchAllOrganisations on an refusedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/search?_limit=50&_offset=0",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -1401,6 +1503,9 @@ exports[`organisation.searchAllOrganisations on an refusedWithMessage answer 1`]
       "fetch",
       "/index.php/apps/openregister/api/organisations/search?_limit=50&_offset=0",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -1427,6 +1532,9 @@ exports[`organisation.searchOrganisations on a network failure 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/search?query=acme&_limit=10&_offset=20",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -1453,6 +1561,9 @@ exports[`organisation.searchOrganisations on an allowed answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/search?query=acme&_limit=10&_offset=20",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -1477,6 +1588,9 @@ exports[`organisation.searchOrganisations on an allowedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/search?query=acme&_limit=10&_offset=20",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -1497,6 +1611,9 @@ exports[`organisation.searchOrganisations on an refusedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/search?query=acme&_limit=10&_offset=20",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -1523,6 +1640,9 @@ exports[`organisation.searchOrganisations on an refusedWithMessage answer 1`] = 
       "fetch",
       "/index.php/apps/openregister/api/organisations/search?query=acme&_limit=10&_offset=20",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "GET",
       },
     ],
@@ -1549,6 +1669,9 @@ exports[`organisation.setActiveOrganisationById on a network failure 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1/set-active",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -1652,6 +1775,9 @@ exports[`organisation.setActiveOrganisationById on an allowed answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1/set-active",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -1695,6 +1821,9 @@ exports[`organisation.setActiveOrganisationById on an allowedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1/set-active",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -1726,6 +1855,9 @@ exports[`organisation.setActiveOrganisationById on an refusedBare answer 1`] = `
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1/set-active",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -1752,6 +1884,9 @@ exports[`organisation.setActiveOrganisationById on an refusedWithMessage answer 
       "fetch",
       "/index.php/apps/openregister/api/organisations/org-1/set-active",
       {
+        "headers": {
+          "requesttoken": "test-request-token",
+        },
         "method": "POST",
       },
     ],
@@ -1781,6 +1916,7 @@ exports[`organisation.updateById on a network failure 1`] = `
         "body": "{"name":"By id"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1811,6 +1947,7 @@ exports[`organisation.updateById on an allowed answer 1`] = `
         "body": "{"name":"By id"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1847,6 +1984,7 @@ exports[`organisation.updateById on an allowedBare answer 1`] = `
         "body": "{"name":"By id"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1882,6 +2020,7 @@ exports[`organisation.updateById on an refusedBare answer 1`] = `
         "body": "{"name":"By id"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1912,6 +2051,7 @@ exports[`organisation.updateById on an refusedWithMessage answer 1`] = `
         "body": "{"name":"By id"}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1942,6 +2082,7 @@ exports[`organisation.updateOrganisation on a network failure 1`] = `
         "body": "{"name":"Renamed","active":true}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -1972,6 +2113,7 @@ exports[`organisation.updateOrganisation on an allowed answer 1`] = `
         "body": "{"name":"Renamed","active":true}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -2008,6 +2150,7 @@ exports[`organisation.updateOrganisation on an allowedBare answer 1`] = `
         "body": "{"name":"Renamed","active":true}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -2043,6 +2186,7 @@ exports[`organisation.updateOrganisation on an refusedBare answer 1`] = `
         "body": "{"name":"Renamed","active":true}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },
@@ -2073,6 +2217,7 @@ exports[`organisation.updateOrganisation on an refusedWithMessage answer 1`] = `
         "body": "{"name":"Renamed","active":true}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "PUT",
       },

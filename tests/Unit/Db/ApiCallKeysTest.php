@@ -22,6 +22,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\ApiCallKeys
+ * @uses \OCA\OpenRegister\Db\ApiCallKey
  */
 class ApiCallKeysTest extends TestCase {
 

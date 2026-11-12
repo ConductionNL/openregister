@@ -125,8 +125,17 @@ class SftpTransportGoldenTest extends TestCase {
 	 * @return array<string, mixed> The config.
 	 */
 	private function config(): array {
-		return ['host' => 'depot.example', 'username' => 'u', 'password' => 'p', 'remotePath' => '/in/'];
+		return ['host' => 'depot.example', 'username' => 'u', 'password' => 'p', 'remotePath' => '/in/', 'hostKeyFingerprint' => self::pin()];
 	}//end config()
+
+	/**
+	 * The fingerprint of the stub server's host key.
+	 *
+	 * @return string The fingerprint.
+	 */
+	private static function pin(): string {
+		return 'SHA256:' . rtrim(base64_encode(hash('sha256', 'server key', true)), '=');
+	}//end pin()
 
 	/**
 	 * A transfer connects, logs in, uploads and checks the size.
@@ -140,13 +149,12 @@ class SftpTransportGoldenTest extends TestCase {
 		$this->assertTrue($result->isSuccess());
 		$this->assertSame($remote, $result->getTransferReference());
 		$this->assertSame(
-			[['connect', 'depot.example', 22], ['login', 'u', 'p'], ['put', $remote, $this->sip, 1], ['filesize', $remote]],
+			[['connect', 'depot.example', 22], ['hostKey'], ['login', 'u', 'p'], ['put', $remote, $this->sip, 1], ['filesize', $remote]],
 			SFTP::$calls
 		);
 		$this->assertSame(
 			[
 				'info [SftpTransport] Starting SFTP transfer {"host":"depot.example"}',
-				'warning [SftpTransport] No hostKeyFingerprint configured, server identity not verified []',
 				'info [SftpTransport] SFTP transfer successful ' . json_encode(['remotePath' => $remote, 'size' => 5]),
 			],
 			$this->logs
@@ -160,14 +168,14 @@ class SftpTransportGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testKeyLoginAndPort(): void {
-		$config = ['host' => 'h', 'username' => 'u', 'keyPath' => $this->key, 'password' => 'ignored', 'port' => '2222'];
+		$config = ['host' => 'h', 'username' => 'u', 'keyPath' => $this->key, 'password' => 'ignored', 'port' => '2222', 'hostKeyFingerprint' => self::pin()];
 
 		$result = $this->transport()->send($this->sip, $config);
 
 		$this->assertTrue($result->isSuccess());
 		$this->assertSame('/' . basename($this->sip), $result->getTransferReference());
 		$this->assertSame(['connect', 'h', 2222], SFTP::$calls[0]);
-		$this->assertSame(['login', 'u', 'loaded:KEY'], SFTP::$calls[1]);
+		$this->assertSame(['login', 'u', 'loaded:KEY'], SFTP::$calls[2]);
 	}//end testKeyLoginAndPort()
 
 	/**
@@ -178,8 +186,8 @@ class SftpTransportGoldenTest extends TestCase {
 	public function testCredentialsRequired(): void {
 		$transport = $this->transport();
 
-		$this->assertTrue($transport->send($this->sip, ['host' => 'h', 'username' => 'u', 'keyPath' => $this->key])->isSuccess());
-		$this->assertSame(['login', 'u', 'loaded:KEY'], SFTP::$calls[1]);
+		$this->assertTrue($transport->send($this->sip, ['host' => 'h', 'username' => 'u', 'keyPath' => $this->key, 'hostKeyFingerprint' => self::pin()])->isSuccess());
+		$this->assertSame(['login', 'u', 'loaded:KEY'], SFTP::$calls[2]);
 
 		SFTP::$calls = [];
 		$this->assertSame(
@@ -195,9 +203,7 @@ class SftpTransportGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testPinnedHostKeyMatches(): void {
-		$pin = 'SHA256:' . rtrim(base64_encode(hash('sha256', 'server key', true)), '=');
-
-		$result = $this->transport()->send($this->sip, $this->config() + ['hostKeyFingerprint' => $pin]);
+		$result = $this->transport()->send($this->sip, $this->config());
 
 		$this->assertTrue($result->isSuccess());
 		$this->assertSame(['hostKey'], SFTP::$calls[1] ?? null);
@@ -211,12 +217,30 @@ class SftpTransportGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testPinnedHostKeyMismatchSendsNothing(): void {
-		$result = $this->transport()->send($this->sip, $this->config() + ['hostKeyFingerprint' => 'SHA256:other']);
+		$result = $this->transport()->send($this->sip, ['hostKeyFingerprint' => 'SHA256:other'] + $this->config());
 
 		$this->assertSame('SFTP host key does not match hostKeyFingerprint', $result->getErrorMessage());
 		$this->assertSame([['connect', 'depot.example', 22], ['hostKey']], SFTP::$calls);
-		$this->assertFalse($this->transport()->testConnection($this->config() + ['hostKeyFingerprint' => 'SHA256:other']));
+		$this->assertFalse($this->transport()->testConnection(['hostKeyFingerprint' => 'SHA256:other'] + $this->config()));
 	}//end testPinnedHostKeyMismatchSendsNothing()
+
+	/**
+	 * Without a pinned key the server gets no credentials and no file, and the
+	 * refusal names the key it presented.
+	 *
+	 * @return void
+	 */
+	public function testUnpinnedHostKeySendsNothing(): void {
+		$config = ['hostKeyFingerprint' => ''] + $this->config();
+
+		$result = $this->transport()->send($this->sip, $config);
+
+		$this->assertFalse($result->isSuccess());
+		$this->assertStringContainsString('hostKeyFingerprint is not configured', (string)$result->getErrorMessage());
+		$this->assertStringContainsString(self::pin(), (string)$result->getErrorMessage());
+		$this->assertSame([['connect', 'depot.example', 22], ['hostKey']], SFTP::$calls);
+		$this->assertFalse($this->transport()->testConnection($config));
+	}//end testUnpinnedHostKeySendsNothing()
 
 	/**
 	 * A refused login stops before the upload.
@@ -231,8 +255,8 @@ class SftpTransportGoldenTest extends TestCase {
 
 		$this->assertFalse($result->isSuccess());
 		$this->assertSame('SFTP authentication failed', $result->getErrorMessage());
-		$this->assertCount(2, SFTP::$calls);
-		$this->assertSame('error [SftpTransport] SFTP transfer failed {"error":"SFTP authentication failed"}', $this->logs[2]);
+		$this->assertCount(3, SFTP::$calls);
+		$this->assertSame('error [SftpTransport] SFTP transfer failed {"error":"SFTP authentication failed"}', $this->logs[1]);
 	}//end testAuthenticationFailure()
 
 	/**
@@ -247,7 +271,7 @@ class SftpTransportGoldenTest extends TestCase {
 		$result = $transport->send($this->sip, $this->config());
 
 		$this->assertSame('SFTP upload failed: disk full', $result->getErrorMessage());
-		$this->assertCount(3, SFTP::$calls);
+		$this->assertCount(4, SFTP::$calls);
 	}//end testUploadFailure()
 
 	/**
@@ -310,7 +334,7 @@ class SftpTransportGoldenTest extends TestCase {
 	public function testConnection(): void {
 		$this->assertTrue($this->transport()->testConnection($this->config()));
 		$this->assertSame(
-			[['connect', 'depot.example', 22], ['login', 'u', 'p'], ['pwd']],
+			[['connect', 'depot.example', 22], ['hostKey'], ['login', 'u', 'p'], ['pwd']],
 			SFTP::$calls
 		);
 	}//end testConnection()

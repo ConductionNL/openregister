@@ -347,7 +347,7 @@
         "threw": "Exception",
         "message": "File with ID 9 does not exist: File with ID 9 does not exist"
     },
-    "id read handler misses, user folder by id": {
+    "id read handler misses, object given": {
         "calls": [
             {
                 "method": "logger.debug",
@@ -373,28 +373,15 @@
                 ]
             },
             {
-                "method": "folders.getOpenRegisterUserFolder",
-                "args": []
-            },
-            {
-                "method": "userFolder.getById",
+                "method": "logger.error",
                 "args": [
-                    7
-                ]
-            },
-            {
-                "method": "logger.debug",
-                "args": [
-                    "[UpdateFileHandler] updateFile: Found file by ID in user folder: doc.txt (ID: 7)",
+                    "[UpdateFileHandler] updateFile: No file with ID 7 in the object's folder",
                     []
                 ]
             }
         ],
-        "returned": {
-            "node": 7,
-            "name": "doc.txt",
-            "folder": false
-        }
+        "threw": "Exception",
+        "message": "File with ID 7 does not exist in the object's folder"
     },
     "id user folder throws": {
         "calls": [

@@ -34,7 +34,7 @@ use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 /**
  * Every public method of SaveObject. Callers depend on this interface, not on the class.
  */
-interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveObjectWriterInterface {
+interface SaveObjectInterface extends SaveObjectRelationScannerInterface, SaveObjectWriterInterface, SaveObjectRelatedUpdateGuardInterface {
 
 	/**
 	 * Get sub-objects created during cascade operations.

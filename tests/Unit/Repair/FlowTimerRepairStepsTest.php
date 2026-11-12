@@ -43,6 +43,9 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Db\FlowTimerMapper
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Db\TaskMapper
+ * @uses \OCA\OpenRegister\Db\IdCursor
+ * @uses \OCA\OpenRegister\Repair\AppRegisterDescriptor
+ * @uses \OCA\OpenRegister\Repair\RegisterDescriptorImport
  */
 class FlowTimerRepairStepsTest extends TestCase {
 

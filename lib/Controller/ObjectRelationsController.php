@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use OCA\OpenRegister\AppInfo\Application;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\DerivedLineage;
@@ -68,6 +69,8 @@ use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * ObjectRelationsController.
@@ -661,8 +664,9 @@ class ObjectRelationsController extends Controller {
 		try {
 			return $this->objectService->saveObject(
 				object: $data,
-				register: $derivation->register,
-				schema: $derivation->schema
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $derivation->register, schema: $derivation->schema)
+				)
 			);
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
@@ -985,7 +989,7 @@ class ObjectRelationsController extends Controller {
 	private function csvOf(iterable $rows): string {
 		$handle = fopen('php://temp', 'r+');
 		foreach ($rows as $row) {
-			fputcsv($handle, $row, escape: '');
+			fputcsv($handle, SpreadsheetCell::csvRow(row: $row), escape: '');
 		}
 
 		rewind($handle);

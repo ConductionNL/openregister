@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft;
 use GuzzleHttp\Client;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
@@ -209,8 +210,9 @@ class ImportHandlerRelatedItemsGoldenTest extends TestCase {
 			);
 			$noteService = $this->createMock(NoteService::class);
 			$noteService->method('createNote')->willReturnCallback(
-				function (string $uuid, string $message): array {
-					$this->calls[] = ['createNote', $uuid, $message];
+				function (NoteDraft $draft): array {
+					$message = $draft->message;
+					$this->calls[] = ['createNote', $draft->objectUuid, $message];
 					if ($message === 'fail') {
 						throw new \RuntimeException('note failed');
 					}

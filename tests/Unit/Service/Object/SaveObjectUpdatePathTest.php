@@ -45,6 +45,10 @@ use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Stringable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 
 /**
  * What an update through SaveObject::saveObject() does before and around the
@@ -143,11 +147,10 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		[$register, $schema] = $this->target();
 		$handler = $this->handler(case: [], logger: new NullLogger());
 
-		$nested = $handler->saveObject(register: $register, schema: $schema, data: ['title' => 'nested']);
+		$nested = $handler->saveObject(data: ['title' => 'nested'], options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema)));
 		$created = $handler->saveObject(
-			register: $register,
-			schema: $schema,
-			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]]
+			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
 		);
 
 		$this->assertNotSame($nested->getUuid(), $created->getUuid());
@@ -161,9 +164,8 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		[$register, $schema] = $this->target();
 
 		$created = $this->handler(case: [], logger: new NullLogger())->saveObject(
-			register: $register,
-			schema: $schema,
-			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]]
+			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
 		);
 
 		$this->assertArrayNotHasKey(WriteCause::CLIENT_ATTEMPT_KEY, $created->getObject());
@@ -173,9 +175,8 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		[$register, $schema] = $this->target();
 
 		$created = $this->handler(case: [], logger: new NullLogger())->saveObject(
-			register: $register,
-			schema: $schema,
-			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => 'true']]
+			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => 'true']],
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
 		);
 
 		$this->assertFalse(WriteCause::clientAttemptedFor(objectUuid: (string)$created->getUuid()));
@@ -188,10 +189,8 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		[$register, $schema] = $this->target();
 
 		$this->handler(case: [], logger: new NullLogger())->saveObject(
-			register: $register,
-			schema: $schema,
 			data: ['title' => 'new', '@self' => [WriteCause::CLIENT_ATTEMPT_KEY => true]],
-			uuid: self::UUID
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID)
 		);
 
 		$this->assertSame([self::UUID => true], $this->auditedMarks);
@@ -239,17 +238,11 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$args = $case['args'];
 		try {
 			$saved = $handler->saveObject(
-			register: $register,
-			schema: $schema,
 			data: array_merge(['title' => 'new'], ($case['data'] ?? [])),
-			uuid: self::UUID,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: self::UUID, policy: new SavePolicy(silent: ($args['silent'] ?? false), failIfExists: ($args['failIfExists'] ?? false)), actor: new SaveActor(owner: ($args['_owner'] ?? null), unowned: ($args['_unowned'] ?? false))),
 			_rbac: ($args['_rbac'] ?? true),
-			persist: ($args['persist'] ?? true),
-			silent: ($args['silent'] ?? false),
-			failIfExists: ($args['failIfExists'] ?? false),
-			_unowned: ($args['_unowned'] ?? false),
-			_owner: ($args['_owner'] ?? null)
-			);
+			persist: ($args['persist'] ?? true)
+		);
 		} catch (\Exception $e) {
 			return ['trace' => $this->trace, 'thrown' => [$e->getMessage(), $e->getCode()]];
 		}
