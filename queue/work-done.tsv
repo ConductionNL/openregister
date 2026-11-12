@@ -465,3 +465,4 @@ cover:buildiq:8ca317f6:jsea7197ec	PR #1480: 17 vitest tests, src/utils lines 84.
 cover:pipelinq:f67520ec:jsa492b7c7	PR #3549: 21 mounted vitest tests (BookingPortal, MyWork, ReportExport, XWiki widget, refresh mixin), task dirs lines 68.77%->81.3%, suite 3158->3179 green	session-20261112T205847-2f6d1ca4	2026-11-12T21:36:42Z
 cover:openregister:7350e3ef:js32f5b09b	PR openregister#10040: 45 jest tests for PasswordSection, ExportSection, TokensSection, ObjectsList; suite 7075 -> 7120 passed	session-20261112T205850-5f960ec2	2026-11-12T21:36:59Z
 merge:shillinq:2759:8be73db8	2759 MERGED 2773 MERGED 2774 MERGED already recorded 2772;	session-20261112T184502-4ecd6072	2026-11-12T21:36:59Z
+verify:decidiq:2078:6dc3bf11	2078 BLOCK: tests green, but existing /api/ error responses change body and Content-Type	session-20261112T200014-a0c0c232	2026-11-12T21:37:38Z
