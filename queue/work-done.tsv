@@ -195,3 +195,4 @@ verify:buildiq:1440:ef94ab4a	failed: permission	session-20261112T200014-a0c0c232
 fix:buildiq:1449:1778b288	not reproducible: dockerimage pass->pass, score 84->84; REVERIFY recorded, no push	session-20261112T200018-e68ecbf8	2026-11-12T20:08:14Z
 verify:buildiq:1457:210c5e8f	GREEN 1457,1458 (tests-only; 0 new failures)	session-20261112T200016-345024b4	2026-11-12T20:08:34Z
 cover:dossiq:6ca0231e:730450c1	PR #6115: 3 classes, 16 tests (Complaint); suite 11970->11986, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:08:45Z
+gap:opencatalogi:1:e16dc70b	failed: #2550 verified GREEN at f551c638 (recorded in fleet-verdicts); merge not done, merges are blocked in this worker session	session-20261112T184455-8702e064	2026-11-12T20:09:22Z
