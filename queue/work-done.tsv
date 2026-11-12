@@ -633,3 +633,4 @@ cover:launchpad:755175ff:aae6d66c	PR opened: 4 tests for 3 uncovered exceptions 
 cover:hermiq:755cdfe7:be0dcca9	PR hermiq#1605: 33 tests for Mcp/HermiqToolProvider native tools; suite 3578 run, no new failures	session-20261112T221237-836ed3f0	2026-11-12T22:29:46Z
 cover:decidiq:13261b1b:59826f43	PR #2091: 4 tests for AdminSettings (94% lines); suite 3116->3120 OK	session-20261112T221533-911acbf2	2026-11-12T22:29:50Z
 cover:openregister:7350e3ef:jsd29a5f26	PR #10051: 27 jest tests, src/components/cards 72.1->95.6% stmts; suite 7102 green	session-20261112T221239-5f377795	2026-11-12T22:30:37Z
+cover:decidiq:13261b1b:f545d745	PR #2092: DbValueMigrationGateway 8 tests, suite 3116->3124 green	session-20261112T221237-c40cb74c	2026-11-12T22:30:43Z
