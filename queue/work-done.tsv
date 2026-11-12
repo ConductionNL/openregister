@@ -431,3 +431,4 @@ merge:shillinq:2760:51f8d7bf	2760 MERGED 2761 MERGED 2762 MERGED 2763 MERGED 276
 cover:integriq:9b0f5894:js5a3cabaa	PR #3399: 8 action forms, 13 vitest tests; src/views/Rule lines 29.5%->41.2% (editor views still uncovered); suite 1392->1405 green	session-20261112T184505-d34a144f	2026-11-12T21:25:16Z
 cover:integriq:9b0f5894:js0023cfc7	PR #3400: 14 vitest tests for EditMappingRuleDialog + DsoActivityMappingDialog; src/dialogs 78.27->90.99%; suite green	session-20261112T202914-c73e3765	2026-11-12T21:25:37Z
 verify:dossiq:6151:e9fa35ad	6151 BLOCK (API error bodies and routes change); 6152-6159 GREEN tests-only; tree 12564 tests, 0 new failures	session-20261112T202912-56c18a61	2026-11-12T21:26:06Z
+cover:buildiq:8ca317f6:js3f3bfe56	PR #1474: 4 vitest tests for ncDashboard boot and settings entry; src/*.js statements 131/174 -> 143/174; suite 2962 -> 2966 passing	session-20261112T200018-e68ecbf8	2026-11-12T21:26:22Z
