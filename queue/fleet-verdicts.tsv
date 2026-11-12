@@ -4155,3 +4155,4 @@ dossiq	6162	fb95d12fa7c42492a8d053d8bd9e895ebc856964	GREEN	worker-01	phpunit 125
 dossiq	6163	a6fd6789d145bdf6b668813063ffce7a51a29b7e	GREEN	worker-01	phpunit 12517 on 9-PR tree (baseline 12467/19, 0 new); vitest 6249, only the inherited capabilityComparison failure; tests-only diff
 dossiq	6164	718e2b1c482470864acd37297a01a046e5fd8ff0	GREEN	worker-01	phpunit 12517 on 9-PR tree (baseline 12467/19, 0 new); vitest 6249, only the inherited capabilityComparison failure; tests-only diff
 dossiq	6165	7bf088116f5a65a389bcaa49ea88c95a32f3ab89	GREEN	worker-01	phpunit 12517 on 9-PR tree (baseline 12467/19, 0 new); vitest 6249, only the inherited capabilityComparison failure; tests-only diff
+dossiq	6166	b9d9ab52aa9729c08dfe313164eef30a5f3337b1	GREEN	worker-01	phpunit 12517 on 9-PR tree (baseline 12467/19, 0 new); vitest 6249, only the inherited capabilityComparison failure; tests-only diff
