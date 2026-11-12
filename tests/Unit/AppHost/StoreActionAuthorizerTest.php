@@ -92,6 +92,7 @@ class ShapelessActionAuthService {
  * coverage; `@uses`, as GenericStoreControllerTest does for the same reason.
  *
  * @uses \OCA\OpenRegister\AppHost\Service\StoreDescriptor
+ * @uses \OCA\OpenRegister\AppHost\Store\StoreActionCheck
  */
 class StoreActionAuthorizerTest extends TestCase {
 	/**

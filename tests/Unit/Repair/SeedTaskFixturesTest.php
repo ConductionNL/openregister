@@ -46,6 +46,8 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Repair\SeedTaskFixtures
  * @covers \OCA\OpenRegister\Db\Task
  * @covers \OCA\OpenRegister\Db\TaskAudit
+ * @uses \OCA\OpenRegister\Repair\Support\ApprovalTaskStores
+ * @uses \OCA\OpenRegister\Repair\Support\RepairPlatform
  */
 class SeedTaskFixturesTest extends TestCase {
 

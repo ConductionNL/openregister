@@ -29,6 +29,8 @@ use PHPUnit\Framework\TestCase;
  * The archived and frozen refusals, byte for byte.
  *
  * @covers \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
  */
 class ObjectStateWriteExceptionGoldenTest extends TestCase {
 	/**

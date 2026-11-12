@@ -59,6 +59,9 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\FlowTimer
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarDefinition
  * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarRules
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHoursDeclaration
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarHolidays
  */
 class WorkingCalendarGuardListenersTest extends TestCase {
 

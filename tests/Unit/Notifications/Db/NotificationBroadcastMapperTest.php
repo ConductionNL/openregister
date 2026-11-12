@@ -36,6 +36,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Notifications\Db\NotificationBroadcast
  * @uses   \OCA\OpenRegister\Notifications\Db\BroadcastMessage
  * @uses   \OCA\OpenRegister\Notifications\Db\BroadcastWindow
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\OutgoingBroadcast
  */
 final class NotificationBroadcastMapperTest extends TestCase {
 	use RecordingQueryBuilderTrait;

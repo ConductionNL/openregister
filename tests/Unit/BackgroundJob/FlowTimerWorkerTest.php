@@ -36,6 +36,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\FlowTimerWorker
+ * @uses \OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime
  */
 class FlowTimerWorkerTest extends TestCase {
 

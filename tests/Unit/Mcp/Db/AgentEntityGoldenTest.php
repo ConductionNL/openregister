@@ -19,6 +19,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Mcp\Db\Agent
  * @covers \OCA\OpenRegister\Mcp\Db\Conversation
+ * @uses \OCA\OpenRegister\Mcp\Db\AgentColumns
  */
 class AgentEntityGoldenTest extends TestCase
 {

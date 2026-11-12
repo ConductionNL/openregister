@@ -37,6 +37,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry;
  * @covers \OCA\OpenRegister\Listener\TaskBlockerReleaseListener
  * @uses \OCA\OpenRegister\Db\Task
  * @uses \OCA\OpenRegister\Event\TaskTerminalEvent
+ * @uses \OCA\OpenRegister\Event\AbstractTaskEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TaskAuditEntry
  */
 class TaskBlockerReleaseListenerTest extends TestCase {
 

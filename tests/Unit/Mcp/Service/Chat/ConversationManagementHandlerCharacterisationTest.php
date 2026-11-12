@@ -29,6 +29,14 @@ use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
  * and the summarisation trigger without reaching a real LLM endpoint.
  *
  * @covers \OCA\OpenRegister\Mcp\Service\Chat\ConversationManagementHandler
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim
+ * @uses \OCA\OpenRegister\Mcp\Db\Conversation
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ConversationStores
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\FireworksBaseUrl
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\PromptTarget
+ * @uses \OCA\OpenRegister\Notifications\Db\Message
  */
 class ConversationManagementHandlerCharacterisationTest extends TestCase
 {

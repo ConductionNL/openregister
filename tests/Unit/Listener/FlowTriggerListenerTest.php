@@ -55,6 +55,11 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Event\ObjectUnlockedEvent
  * @uses \OCA\OpenRegister\Event\ObjectRevertedEvent
  * @uses \OCA\OpenRegister\Event\ObjectTransitionedEvent
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionActor
+ * @uses \OCA\OpenRegister\Service\Lifecycle\TransitionMove
  */
 class FlowTriggerListenerTest extends TestCase {
 	private FlowTriggerService $triggers;

@@ -55,6 +55,31 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @covers \OCA\OpenRegister\Mcp\Tool\SchemaTool
  * @covers \OCA\OpenRegister\Mcp\Tool\RegisterTool
  * @covers \OCA\OpenRegister\Mcp\Tool\ObjectsTool
+ * @uses \OCA\OpenRegister\Db\Application
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Mcp\Db\Agent
+ * @uses \OCA\OpenRegister\Mcp\Tool\AbstractTool
+ * @uses \OCA\OpenRegister\Mcp\Tool\CreateAgentCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\CreateObjectCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\CreateRegisterCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\ListSchemasQuery
+ * @uses \OCA\OpenRegister\Mcp\Tool\ToolCallTrail
+ * @uses \OCA\OpenRegister\Mcp\Tool\UpdateAgentCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\UpdateApplicationCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\UpdateRegisterCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\UpdateSchemaCommand
+ * @uses \OCA\OpenRegister\Service\Schema\IncomingDefinition
+ * @uses \OCA\OpenRegister\Service\Schema\SchemaChangeRecord
+ * @uses \OCA\OpenRegister\Service\Schema\SchemaChangeSet
+ * @uses \OCA\OpenRegister\Mcp\Tool\CreateApplicationCommand
+ * @uses \OCA\OpenRegister\Mcp\Tool\CreateSchemaCommand
  */
 class CrudToolsCharacterisationTest extends TestCase
 {

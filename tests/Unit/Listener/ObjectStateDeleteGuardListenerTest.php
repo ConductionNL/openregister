@@ -41,6 +41,9 @@ use OCA\OpenRegister\Service\Flow\FlowRunFrame;
  * @uses   \OCA\OpenRegister\Exception\LockedException
  * @uses   \OCA\OpenRegister\Exception\ObjectStateWriteException
  * @uses   \OCA\OpenRegister\Service\Flow\FlowRunContext
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunFrame
+ * @uses \OCA\OpenRegister\Exception\ObjectStateMarker
  */
 class ObjectStateDeleteGuardListenerTest extends TestCase {
 

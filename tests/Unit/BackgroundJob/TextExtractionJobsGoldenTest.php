@@ -40,6 +40,8 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\BackgroundJob\AbstractTextExtractionJob
  * @covers \OCA\OpenRegister\BackgroundJob\FileTextExtractionJob
  * @covers \OCA\OpenRegister\BackgroundJob\ObjectTextExtractionJob
+ * @uses \OCA\OpenRegister\BackgroundJob\ConfiguredJobRuntime
+ * @uses \OCA\OpenRegister\Files\Service\FileExtractionOptions
  */
 class TextExtractionJobsGoldenTest extends TestCase {
 

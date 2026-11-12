@@ -20,6 +20,8 @@ use PHPUnit\Framework\TestCase;
  * Only a conversation's owner reads or changes it.
  *
  * @covers \OCA\OpenRegister\Mcp\Db\ConversationMapper
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ConversationScope
+ * @uses \OCA\OpenRegister\Mcp\Db\Conversation
  */
 class ConversationMapperOwnerRulesTest extends TestCase
 {
