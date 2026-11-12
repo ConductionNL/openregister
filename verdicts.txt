@@ -2614,3 +2614,4 @@
 10043 ddfa95036c4691f8b7e8d69b63fa4aac11ef03af APPROVE Adds one jest spec only, no production code; jest src/views/register 84/84 green merged with main, eslint clean.
 10041 01db7c32f7cda2f851ea14fa37351997627ab619 APPROVE Adds three jest specs only, no production code; jest settings sections 321/321 green merged with main, eslint clean.
 10044 ed11c5d6c04be757fa7c281e1f75616ce04b372d APPROVE Tests only (2 jest specs); 62/62 schema view tests pass merged with main; eslint clean; no production code changed.
+4731 7afdc06715e2d32d4e99ae0b5440ae62809eec22 APPROVE delta since d80187a93b is a main merge plus regenerated sbom (--check current); head contains main 1574bc5db5: range ^3.5.44, lock resolves vue 3.5.45; npm ci ok, jest 464/464 suites (7075 tests, as main), build ok (17 warnings, as main); overlaps #7739 (same packages)
