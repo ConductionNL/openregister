@@ -2618,3 +2618,4 @@
 4983 a398e13d0dcce9f4c738e89c84a2762cd3315a3c APPROVE delta since 625f31eeec is a main merge plus regenerated sbom (--check current); head contains main 1574bc5db5: @nextcloud/webpack-vue-config 7.1.0, npm ci ok, npm run build ok (17 warnings, as main), jest 464/464 suites (7075 tests, as main)
 10047 b8a0583942cd709f5803bf388fbf4f17a27eb991 APPROVE Docs only: openspec change files and capabilities.json notes/evidence; JSON valid, requirement arrays match the existing shape, no code or tests touched.
 10045 92c0349266ba8c3674c0e0f1eaad4b32f92d834c APPROVE Tests only (2 jest specs); 250/250 sidebar tests pass merged with main; eslint clean; no clock-pinned tests; no production code changed.
+10049 a150a080bdae424a4dabb352c230ac4f4664a1c8 APPROVE Docs and openspec only: spec deltas, tasks and capabilities.json evidence/requirement updates; JSON valid, array requirement form already used on main, no code reads the file.
