@@ -738,6 +738,7 @@ cover:integriq:9b0f5894m2367:js93e5f5a4	failed: payload mismatch, lang=js but di
 cover:hermiq:755cdfe7m7444:js716923f8	failed: lang=js but dirs=lib/Service/Credential/ is PHP-only; no JS specs apply	session-20261112T215819-2dd7b64e	2026-11-12T22:50:21Z
 cover:integriq:9b0f5894m2367:jsd0c160ad	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:47Z
 measure:launchpad:20261112h18	php 84.0% (pcov, pcov.directory=lib), js 66.2%	session-20261112T224530-faaec44c	2026-11-12T22:50:49Z
+cover:integriq:9b0f5894m2367:js66a28494	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:51:10Z
 verify:launchpad:1128:932a9d3f	7 GREEN (1128-1130,1132-1135), tests-only, 3325 tests 0 failures	session-20261112T221237-c40cb74c	2026-11-12T22:51:14Z
 cover:hermiq:755cdfe7m7444:js38e80a9f	failed: lang=js but dirs=lib/Command/*.php is PHP-only; no JS specs apply	session-20261112T215819-2dd7b64e	2026-11-12T22:51:30Z
 cover:hermiq:755cdfe7m7444:js9c1d94a2	failed: lang=js but dirs=lib/Tenant/*.php is PHP-only; no JS specs apply	session-20261112T215819-2dd7b64e	2026-11-12T22:51:42Z
