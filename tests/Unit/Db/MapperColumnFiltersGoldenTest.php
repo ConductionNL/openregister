@@ -48,6 +48,16 @@ use ReflectionNamedType;
  * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses   \OCA\OpenRegister\Db\QueryPage
  * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Db\RegisterMapperServices
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace
+ * @uses \OCA\OpenRegister\Db\Support\ConfigServices
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterOptions
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
+ * @uses \OCA\OpenRegister\Search\Db\ViewMapper
+ * @uses \OCA\OpenRegister\Db\Tenancy\EntityRbacTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait
  */
 class MapperColumnFiltersGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

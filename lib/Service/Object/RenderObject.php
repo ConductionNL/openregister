@@ -3903,6 +3903,9 @@ class RenderObject implements RenderObjectInterface {
 	/**
 	 * Extend every entry of the list at the run's key with the key's nested extends.
 	 *
+	 * Only object entries have nested keys to extend; a scalar entry, such as a
+	 * uuid in a list of references, is left as it is.
+	 *
 	 * @param ExtendDotRun $run The extend pass, on one wildcard root.
 	 *
 	 * @return void
@@ -3916,6 +3919,10 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		foreach ($data as $key => $date) {
+			if (is_array($date) === false) {
+				continue;
+			}
+
 			$tmpExtends = $run->keyExtends;
 			$nested = new ExtendDotRun();
 			$nested->depth = $run->depth;

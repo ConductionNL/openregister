@@ -636,18 +636,21 @@ final class NotificationAnnotationValidator implements NotificationAnnotationVal
 	}//end validateChannelTargets()
 
 	/**
-	 * Whether a `webhook` block lacks a valid `url`.
+	 * Whether a `webhook` block lacks a valid absolute http or https `url`.
 	 *
 	 * @param mixed $hook The declared webhook block.
 	 *
 	 * @return bool
 	 */
 	private function isWebhookUrlMissing(mixed $hook): bool {
-		if (is_array($hook) === false) {
+		if (is_array($hook) === false || empty($hook['url']) === true || is_string($hook['url']) === false
+			|| filter_var($hook['url'], FILTER_VALIDATE_URL) === false
+		) {
 			return true;
 		}
 
-		return empty($hook['url']) === true || filter_var($hook['url'], FILTER_VALIDATE_URL) === false;
+		$scheme = strtolower((string)parse_url($hook['url'], PHP_URL_SCHEME));
+		return in_array($scheme, ['http', 'https'], true) === false;
 	}//end isWebhookUrlMissing()
 
 	/**

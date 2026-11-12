@@ -246,6 +246,7 @@ exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confi
         "body": "{"ids":["a","b"]}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -284,6 +285,7 @@ exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confi
         "body": "{"ids":["a","b"]}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -322,6 +324,7 @@ exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confi
         "body": "{"ids":["a","b"]}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -360,6 +363,7 @@ exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confi
         "body": "{"ids":["a","b"]}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -398,6 +402,7 @@ exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confi
         "body": "{"ids":["a","b"]}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -432,6 +437,7 @@ exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confi
         "body": "{"ids":["a","b"]}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -466,6 +472,7 @@ exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confi
         "body": "{"ids":["a","b"]}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },
@@ -500,6 +507,7 @@ exports[`SearchTrailIndex bulk delete and cleanup bulk deletes 2 selected, confi
         "body": "{"ids":["a","b"]}",
         "headers": {
           "Content-Type": "application/json",
+          "requesttoken": "test-request-token",
         },
         "method": "DELETE",
       },

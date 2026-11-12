@@ -37,6 +37,8 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Middleware\PublicApiCorsMiddleware
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
+ * @uses \OCA\OpenRegister\Middleware\DispatchedMethod
+ * @uses \OCA\OpenRegister\Middleware\InboundCall
  */
 class PublicApiCorsMiddlewareTest extends TestCase {
 

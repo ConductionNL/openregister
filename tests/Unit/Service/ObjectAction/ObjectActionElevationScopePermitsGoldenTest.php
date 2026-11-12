@@ -70,7 +70,7 @@ class ObjectActionElevationScopePermitsGoldenTest extends TestCase {
 
 		[$permitted, $attribution] = ObjectActionElevationScope::run(
 			$elevation,
-			static fn (): array => [ObjectActionElevationScope::permits($write), ObjectActionElevationScope::attributionFor($write->schemaId, $write->verb)]
+			static fn (): array => [ObjectActionElevationScope::permits($write), ObjectActionElevationScope::attributionFor($write->registerId, $write->schemaId, $write->verb)]
 		);
 
 		$this->assertSame($expected, $permitted);
@@ -85,4 +85,31 @@ class ObjectActionElevationScopePermitsGoldenTest extends TestCase {
 	public function testNothingIsPermittedOutsideARun(): void {
 		$this->assertFalse(ObjectActionElevationScope::permits(new ElevatedWrite(schemaId: 7, registerId: 3, verb: 'update')));
 	}//end testNothingIsPermittedOutsideARun()
+
+	/**
+	 * An elevated write in one register does not attribute a write to the same schema and verb in another.
+	 *
+	 * @return void
+	 */
+	public function testAttributionIsKeptToTheRegisterWrittenTo(): void {
+		$elevation = new ActionElevation(
+			action: 'publish',
+			person: 'ann',
+			entries: [['register' => '3', 'schema' => '7', 'verbs' => ['update']]]
+		);
+
+		[$here, $elsewhere] = ObjectActionElevationScope::run(
+			$elevation,
+			static function (): array {
+				ObjectActionElevationScope::permits(new ElevatedWrite(schemaId: 7, registerId: 3, verb: 'update'));
+				return [
+					ObjectActionElevationScope::attributionFor(3, 7, 'update'),
+					ObjectActionElevationScope::attributionFor(4, 7, 'update'),
+				];
+			}
+		);
+
+		$this->assertSame(['elevatedBy' => 'publish', 'triggeredBy' => 'ann', 'runAs' => 'system'], $here);
+		$this->assertNull($elsewhere);
+	}//end testAttributionIsKeptToTheRegisterWrittenTo()
 }//end class

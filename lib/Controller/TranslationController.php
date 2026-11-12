@@ -269,8 +269,6 @@ class TranslationController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with the updated row.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */
 	public function setStatus(string $uuid, string $property, string $language, ?string $status = null): JSONResponse {
@@ -320,8 +318,6 @@ class TranslationController extends Controller {
 	 * @param string[]|null $properties Optional whitelist of property names.
 	 *
 	 * @return JSONResponse JSON response with translation result.
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/register-i18n/spec.md
 	 */

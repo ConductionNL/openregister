@@ -16,6 +16,13 @@ on:
 
 permissions: read-all
 
+# One run per event and ref. A newer run replaces an older one that is still
+# waiting; a run in progress is cancelled only on pull requests, so a push to
+# `main` or the weekly scan always uploads its results.
+concurrency:
+  group: codeql-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})

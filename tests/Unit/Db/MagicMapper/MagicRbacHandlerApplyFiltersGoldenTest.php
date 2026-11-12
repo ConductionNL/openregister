@@ -57,6 +57,21 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
  * @uses   \OCA\OpenRegister\Service\Rbac\RecordMetadataConditions
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacAccessCall
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacMatchSql
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacQueryMatch
+ * @uses \OCA\OpenRegister\Db\MagicMapper\RbacSqlDialect
+ * @uses \OCA\OpenRegister\Service\Rbac\AuthorizationColumn
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyQuestion
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyRowTest
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantedRows
+ * @uses \OCA\OpenRegister\Service\Rbac\McpScope
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacCollaborators
+ * @uses \OCA\OpenRegister\Service\Rbac\RbacFallbacks
+ * @uses \OCA\OpenRegister\Service\Object\PermissionCheckOptions
  */
 class MagicRbacHandlerApplyFiltersGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

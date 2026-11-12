@@ -263,8 +263,6 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with created agent
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
@@ -313,8 +311,6 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 	 * @param int $id Agent ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with updated agent
 	 *
@@ -370,7 +366,6 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 	 * @return JSONResponse JSON response with updated agent or error.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
@@ -387,8 +382,6 @@ class AgentsController extends Controller implements ChatFamilyControllerInterfa
 	 * @param int $id Agent ID
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse Success message
 	 *

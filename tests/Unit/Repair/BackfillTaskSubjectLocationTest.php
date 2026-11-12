@@ -33,6 +33,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Repair\BackfillTaskSubjectLocation
+ * @uses \OCA\OpenRegister\Repair\TaskSubjectLocationBackfill
  */
 final class BackfillTaskSubjectLocationTest extends TestCase {
 	use RecordingQueryBuilderTrait;
