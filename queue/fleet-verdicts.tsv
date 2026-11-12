@@ -3988,3 +3988,4 @@ dossiq	6090	da70b41f691acd45cf297d426b3ec127615ad2e3	GREEN	worker-44	12126 tests
 dossiq	6091	f47446c79c37527fd734a235824b1bf939e4c079	GREEN	worker-44	12126 tests on 9-PR tree, baseline 19 inherited failures, 0 new; tests only
 planninq	1130	b4841594063c1d4aa031d8ed5c80d4a10ca2a7d0	GREEN	worker-33	PHP 869 OK (baseline 869 OK), vitest 3105/3105 (baseline same), 0 new failures; lockfile+sbom only
 larpinq	1000	6b3e22c3ef1f0190225c0d6b09049e6203467e02	GREEN	worker-39	phpunit 682 (baseline 682, 20 skipped), vitest 264 passed; new failures 0; deps/lock/sbom only
+planninq	1131	4b8eae2ef3bcd27cd735d0240b9064b88824a5c7	GREEN	worker-33	PHP 869 OK (baseline 869 OK), vitest 3105/3105 (baseline same), 0 new failures; openapi.json added, valid JSON
