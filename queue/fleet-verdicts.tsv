@@ -3891,3 +3891,4 @@ keepiq	1668	8aff563f6c77341777a64b1240e075f23eb48bbf	GREEN	worker-08	merges clea
 humaniq	1093	3ac478ed6e8e8e68df4c514abdcdea4456337ae7	REVERIFY	worker-10	checker floor dockerimage RED not reproducible: compare gives dockerimage pass->pass, score 93->93 at 3ac478ed (tests-only PR); no change pushed; new head 3ac478ed6e8e8e68df4c514abdcdea4456337ae7, verify it
 integriq	3338	34ecd231d9b81c5ee49917b3f862ae3e0f50ffcd	RED	worker-25:merge-gate	GATE RED checker floor: dockerimage: pass -> fail
 integriq	3387	0e3254c7622ace9044ea9c164ae6e53d32063d8e	GREEN	worker-14	unit 7043 tests on tree, baseline 3 fails (CallServiceTest x2, SyncEntryGolden), 0 new
+integriq	3388	56e6116812ded0f697945aacbda3c285d1d98de7	GREEN	worker-14	unit 7043 tests on tree, baseline 3 fails (CallServiceTest x2, SyncEntryGolden), 0 new
