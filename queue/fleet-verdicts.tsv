@@ -4017,3 +4017,4 @@ buildiq	1443	898d3f708e79f14ed5c5a0ac20f9461711cf6025	RED	worker-53:merge-gate	G
 buildiq	1448	949b20f12bdd9504af0ee22267a6f3d34d23e02a	REVERIFY	worker-49	gate RED (dockerimage pass->fail, score 84->80) not reproducible: checker_floor compare on this head reports docker and dockerimage pass, score 84 = floor; the PR adds two test files only; no change pushed; new head 949b20f12bdd9504af0ee22267a6f3d34d23e02a (unchanged), verify it
 buildiq	1444	fbabc84d705a66d75e6254698269a7d9cce7d673	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 buildiq	1445	b639bf561301333c124705a1ba46cfa476015021	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 82
+dossiq	6117	90f6df25c414d28b60e443a96dbd779d0e810588	GREEN	worker-33	tree 12133 tests, baseline 11976 with 19 failures (inherited), same 19 on tree, 0 new failures; tests only
