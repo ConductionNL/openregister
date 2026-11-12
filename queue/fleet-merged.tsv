@@ -113,3 +113,4 @@ decidiq	2007	ff20e9fda8bfa9e5ac606231f7944e6750be2ee2	MERGED	worker-19	GATE OK s
 decidiq	2008	d2664b5d2e7d99ed77c667759fa2ba77bdffee01	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 buildiq	1449	1778b288c6272018d3d751a49a07ffc7ca9ec099	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 decidiq	2009	1c88853773f30c2aada80ea4dfa1e62ac34285f9	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+buildiq	1450	7acddd265e8ea3bae368b51611120772cfd6e146	RED	worker-53	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
