@@ -24,3 +24,4 @@ review:openregister:10011:23523b4a	APPROVE: tests-only, 26 new tests pass merged
 review:openregister:9999:be959c66	APPROVE: tests-only, 57 new tests pass, no new failures	session-20261112T184441-b0114b7a	2026-11-12T18:56:45Z
 review:openregister:10019:81daf429	APPROVE: tests-only coverage metadata, suites green	session-20261112T184505-0168c933	2026-11-12T18:57:17Z
 gap:openregister:3:475d3f06	failed: no route answers on /api/v{major}; openspec api-nl-design-rules-conformance D-4 declares /core/uri-version a deliberate deviation (fleet URL pattern ADR-002, version via API-Version header). Needs an owner decision on URI versioning, not a spec edit	session-20261112T184438-005b5eda	2026-11-12T18:57:39Z
+review:openregister:10014:16ee830c	APPROVE: tests only, suites green, 9 inherited SourcesControllerTest errors	session-20261112T184441-77ab05a6	2026-11-12T18:57:50Z
