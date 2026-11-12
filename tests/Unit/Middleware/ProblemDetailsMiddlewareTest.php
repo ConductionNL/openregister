@@ -42,14 +42,17 @@ class ProblemDetailsMiddlewareTest extends TestCase {
 	 *
 	 * @return JSONResponse|DataDisplayResponse The response after the middleware.
 	 */
-	private function decorate(JSONResponse|DataDisplayResponse $response, string $path = '/apps/openregister/api/objects/1/2/3/files'): JSONResponse|DataDisplayResponse {
-		$request = $this->createMock(IRequest::class);
+	private function decorate(
+		JSONResponse|DataDisplayResponse $response,
+		string $path = '/apps/openregister/api/objects/1/2/3/files'
+	): JSONResponse|DataDisplayResponse {
+		$request = $this->createMock(originalClassName: IRequest::class);
 		$request->method('getPathInfo')->willReturn($path);
 		$request->method('getRequestUri')->willReturn('/index.php' . $path . '?token=secret');
 
-		$middleware = new ProblemDetailsMiddleware($request, new ProblemDetailsBuilder());
+		$middleware = new ProblemDetailsMiddleware(request: $request, problems: new ProblemDetailsBuilder());
 
-		return $middleware->afterController($this->createMock(Controller::class), 'index', $response);
+		return $middleware->afterController(controller: $this->createMock(originalClassName: Controller::class), methodName: 'index', response: $response);
 	}//end decorate()
 
 	/**
