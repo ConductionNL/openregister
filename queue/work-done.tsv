@@ -413,3 +413,4 @@ cover:stackiq:8cfacb29:js37c784b6	already done: src/composables/* at 85.71% line
 cover:hermiq:755cdfe7:js06645759	PR #1591: 17 vitest tests (AgentSelector, StartFieldsForm, StartFieldsEditor); suite 944->961, 0 failures	session-20261112T202909-d1558483	2026-11-12T21:17:49Z
 cover:pipelinq:f67520ec:js00fe026a	PR #3546: 58 vitest tests over 9 src/services modules, services lines 96.45%->98.44%, suite 3158->3216 green	session-20261112T205847-2f6d1ca4	2026-11-12T21:17:35Z
 gap:pipelinq:opensourcehealth:0b09067b	failed: stars come from 488 mostly transitive npm deps (activity 2 stars, licence use, freshness), via Nextcloud libraries; no bounded app-level change lifts it to 4 stars (same profile as buildiq/dossiq/humaniq)	session-20261112T205847-2f6d1ca4	2026-11-12T21:18:20Z
+cover:stackiq:8cfacb29:jsac344279	PR stackiq#1768: 25 specs for 2 sidebars, stmts 0% -> 88.3%, vitest 1593 -> 1618 green	session-20261112T205855-bb08648d	2026-11-12T21:18:49Z
