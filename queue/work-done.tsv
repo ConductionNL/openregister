@@ -588,3 +588,47 @@ measure:hermiq:20261112h18	php 82.56% (pcov; unit suite 3536 tests, 142 errors/2
 cover:openregister:7350e3ef:js518b3200	failed: lang=js but lib/Service/Task/ holds only PHP files (no js/vue/ts), so no JS spec can cover it; task row looks mis-generated	session-20261112T220141-9622e2a0	2026-11-12T22:19:34Z
 cover:launchpad:755175ff:b67d52c3	PR opened: 8 tests pinning FeedRefreshJob logging/order/interval; suite 3256->3264 green	session-20261112T215819-2dd7b64e	2026-11-12T22:19:50Z
 cover:openregister:7350e3ef:jse98782c5	failed: lang=js but lib/Notifications/Service/ holds only PHP files, no JS spec can cover it; task row looks mis-generated	session-20261112T220141-9622e2a0	2026-11-12T22:19:57Z
+cover:hermiq:755cdfe7:01b56ade	PR #1600: 26 tests for 8 Llm classes, suite 3536->3562 no new failures	session-20261112T221235-39b35722	2026-11-12T22:20:25Z
+measure:pipelinq:20261112h18	php 81.8% (pcov, 1 inherited failure CrmPrivilegeRefusalGoldenTest), js 78.47%	session-20261112T221520-70f29253	2026-11-12T22:20:29Z
+verify:pipelinq:3554:f179669f	failed: permission (npm ci refused; JS PRs 3554,3556,3557,3558,3560 unverified). Recorded GREEN 3555,3559,3562; CONFLICT 3561	session-20261112T221533-911acbf2	2026-11-12T22:21:04Z
+verify:launchpad:1122:726d584e	1122-1125 GREEN; 3303 tests, 0 new failures, tests-only	session-20261112T215819-2dd7b64e	2026-11-12T22:21:24Z
+verify:decidiq:2082:59f88077	5 GREEN (2082-2086), tests-only, 3159 tests 0 failures	session-20261112T221237-c40cb74c	2026-11-12T22:21:52Z
+verify:portaliq:2367:5ef59120	BLOCK 2367: behaviour change (API error bodies/content-type rewritten, route aliases); tests green	session-20261112T221235-9e827ed1	2026-11-12T22:22:06Z
+verify:pipelinq:3562:2e620028	3 GREEN (3562,3563,3564); 5834 tests, 1 inherited failure, 0 new	session-20261112T221537-97382091	2026-11-12T22:22:20Z
+verify:hermiq:1598:1005c106	1598 BLOCK: tests green (0 new failures), but API error bodies/content-type change via new ApiContractMiddleware	session-20261112T221237-836ed3f0	2026-11-12T22:22:33Z
+verify:integriq:3410:2d266f89	GREEN (0 new failures, additive headers/aliases)	session-20261112T220138-f0050f42	2026-11-12T22:22:47Z
+cover:openregister:7350e3ef:js32df05fd	failed: lang=js but lib/Files/Service/ contains only PHP; no JS subjects to cover	session-20261112T221239-5f377795	2026-11-12T22:22:56Z
+cover:decidiq:13261b1b:6f346b68	PR #2089: SettingsSection 6 tests, suite 3109->3115 green	session-20261112T221237-c40cb74c	2026-11-12T22:23:17Z
+measure:stackiq:20261112h18	php 54.75% js 68.65% @c51c6ab (pcov.directory=lib needed)	session-20261112T221531-958a2fbc	2026-11-12T22:23:07Z
+verify:thematiq:1662:b7390a28	GREEN 1662 (2858 tests, 0 new failures)	session-20261112T221532-752808b3	2026-11-12T22:23:17Z
+cover:launchpad:755175ff:f91e7417	PR #1132: 5 tests, ConnectionReporter 117/117, Observations 55/55; suite 3256->3261 green	session-20261112T215819-2dd7b64e	2026-11-12T22:23:25Z
+cover:openregister:7350e3ef:js7fcefd39	failed: lang=js but lib/Search/Service/Vectorization/ holds only PHP (27 files); no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:23:28Z
+verify:shillinq:2799:7bbd7273	GREEN 2799 (9031 tests, 0 new failures)	session-20261112T221234-13fcfd6a	2026-11-12T22:23:27Z
+cover:openregister:7350e3ef:js0b640b77	failed: lang=js but lib/Service/ObjectSource/ holds only PHP (66 files, no JS to cover); task row malformed	session-20261112T220138-f0050f42	2026-11-12T22:23:30Z
+cover:openregister:7350e3ef:jse5d2a780	failed: lang=js but dirs=lib/Service/Rbac/*.php is PHP; task row malformed	session-20261112T220138-f0050f42	2026-11-12T22:23:47Z
+verify:keepiq:1678:aae43ca2	GREEN keepiq#1678: 3763 tests, 0 new failures	session-20261112T221530-7c794770	2026-11-12T22:23:57Z
+measure:dossiq:20261112h18	failed: permission	session-20261112T221235-91821e68	2026-11-12T22:24:11Z
+cover:openregister:7350e3ef:js913a213e	failed: lang=js but dirs=lib/Service/Flow/*.php is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:24:00Z
+cover:openregister:7350e3ef:js0c3677df	failed: row inconsistent: lang=js but dirs=lib/Service/ExampleSet/*.php (PHP); needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:24:27Z
+cover:openregister:7350e3ef:js5a1ec62c	failed: lang=js but every listed lib/Service/* dir holds only PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:24:35Z
+measure:buildiq:20261112h18	php 79.08% (pcov, needs openregister sibling + pcov.directory=lib), js 78.41% @5495c2c	session-20261112T221532-ade53a05	2026-11-12T22:25:10Z
+cover:openregister:7350e3ef:js3421d638	failed: payload lang=js but dirs lib/Service/Flow/Nodes/ holds only PHP files; requeue as lang=php	session-20261112T221235-91821e68	2026-11-12T22:25:18Z
+cover:openregister:7350e3ef:jsdea2a4f3	failed: row inconsistent: lang=js but dirs=lib/Notifications/Db/ (PHP); needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:25:15Z
+cover:hermiq:755cdfe7:34f5c300	PR #1602: 25 tests for 4 Service classes, suite 3536->3561 no new failures	session-20261112T221235-39b35722	2026-11-12T22:25:18Z
+cover:openregister:7350e3ef:jsfa1de263	already done: src/modals/webhook/ at 98.2% stmts / 93.9% branch on main (46 tests), above 80 target; no PR	session-20261112T221239-5f377795	2026-11-12T22:25:50Z
+cover:hermiq:755cdfe7:js3f3bfe56	PR hermiq#1603: 22 vitest tests for companion.js, integration-leaf.js, settings.js; suite 944->966 green	session-20261112T221237-836ed3f0	2026-11-12T22:26:33Z
+verify:larpinq:1005:9d190ca5	GREEN 1005 (697 tests, 0 new failures)	session-20261112T221532-752808b3	2026-11-12T22:26:44Z
+cover:pipelinq:f67520ec:6b926386	PR #3566: 29 tests for BrokerCredentialReader, BlueskyAdapter, XAdapter; Social dir ~81.6% -> ~96%; suite 5773->5802, no new failures	session-20261112T221533-911acbf2	2026-11-12T22:26:57Z
+cover:launchpad:755175ff:d39f9857	PR #1133: 13 tests pinning FleetAppId rename order; suite 3256->3269 green	session-20261112T215819-2dd7b64e	2026-11-12T22:27:03Z
+cover:pipelinq:f67520ec:jsa5192f20	failed: permission (npm ci refused in this session)	session-20261112T221533-911acbf2	2026-11-12T22:27:12Z
+cover:pipelinq:f67520ec:js96ca8195	failed: permission (npm ci refused in this session)	session-20261112T221533-911acbf2	2026-11-12T22:27:27Z
+measure:integriq:20261112h18	php 88.0% (pcov, 7110 tests), js 72.18%	session-20261112T221235-9e827ed1	2026-11-12T22:27:39Z
+cover:launchpad:755175ff:e372e6ff	already done: DashboardDeletedEvent 6/6 lines, every getter asserted; only getter-only tests possible, no PR	session-20261112T215819-2dd7b64e	2026-11-12T22:28:06Z
+cover:launchpad:755175ff:d8ac3ddd	PR #1134: 24 tests for 4 cleanup categories (3256->3280 OK)	session-20261112T221532-752808b3	2026-11-12T22:28:25Z
+cover:hermiq:755cdfe7:jsea7197ec	PR #1604: 11 vitest specs for 4 utils, 944->955 passing	session-20261112T221235-39b35722	2026-11-12T22:28:39Z
+cover:decidiq:13261b1b:7505aeb4	PR #2090: Activity filter/setting/provider 19 tests, suite 3116->3135 green	session-20261112T221237-c40cb74c	2026-11-12T22:28:45Z
+cover:pipelinq:f67520ec:e78626a8	PR #3567: 52 tests for 6 Marketing classes (ListObjectStore 100%); suite 5773->5825, same 1 inherited failure	session-20261112T221520-70f29253	2026-11-12T22:29:12Z
+cover:openregister:7350e3ef:js0b5eefce	PR #10050: 17 jest tests, src/modals/object lines 69.29->73.97%	session-20261112T221531-958a2fbc	2026-11-12T22:29:29Z
+cover:launchpad:755175ff:aae6d66c	PR opened: 4 tests for 3 uncovered exceptions (10/10 lines); suite 3256->3260 green	session-20261112T215819-2dd7b64e	2026-11-12T22:29:39Z
+cover:hermiq:755cdfe7:be0dcca9	PR hermiq#1605: 33 tests for Mcp/HermiqToolProvider native tools; suite 3578 run, no new failures	session-20261112T221237-836ed3f0	2026-11-12T22:29:46Z
+cover:decidiq:13261b1b:59826f43	PR #2091: 4 tests for AdminSettings (94% lines); suite 3116->3120 OK	session-20261112T221533-911acbf2	2026-11-12T22:29:50Z
