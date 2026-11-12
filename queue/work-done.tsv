@@ -821,3 +821,4 @@ cover:pipelinq:f67520ecm9d2c:0a8f160f	PR opened: 16 tests SlaPolicyQuery/SlaReci
 cover:pipelinq:f67520ecm9d2c:a215617b	PR #3581: 7 tests, lib/Integration leaf providers all 100%; suite 5773->5780, same 1 inherited failure	session-20261112T221520-70f29253	2026-11-12T23:06:35Z
 cover:keepiq:d76c2121:38e80a9f	PR keepiq#1692: 13 tests for lib/Command (4 classes), suite 3722->3735 green	session-20261112T221532-ade53a05	2026-11-12T23:07:04Z
 verify:keepiq:1682:32fecc34	GREEN 1682,1683,1684: 3781 tests vs baseline 3722, no failures	session-20261112T221528-d486fac0	2026-11-12T23:07:15Z
+cover:pipelinq:f67520ecm9d2c:50cc8442	PR pipelinq#3583: 29 tests for 13 lib/Util traits; suite 5773->5802, same 1 inherited failure	session-20261112T224530-a1180ad3	2026-11-12T23:07:50Z
