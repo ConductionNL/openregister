@@ -166,10 +166,12 @@ decidiq	2041	fe108f18cdda3fa46214d319cb8b77479a83a7aa	MERGED	worker-19	GATE OK s
 decidiq	2060	29f702e3ea4170ee7e8f19a59c5d242f7b9799da	RED	worker-19	GATE RED checker floor: dockerimage: pass -> fail; score: 91 -> 89
 learniq	2185	f412e75438eaf9da9eae61a6c07eeeade1e03763	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2061	1c7a84fe89783426637f8e1a0f9cba46258cb701	SKIP	worker-19	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
+learniq	2186	fa2c74c43e373182249bd3a7d82a966ce20e15aa	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2011	94e516a50094b6d20a2f70ad1ea6aebc65727713	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2012	7fa0670463c4147bd48505c6d9c7f61b4497bd35	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2013	493068f55e282c3dfdc44c02d8abab45b63b3ed0	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2015	261ae07b9a91a65a3e4eafeb4738b484fb366b7a	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2204	f28e08371f29779501c5e5b8ef09005a1bde583c	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2017	b658e50782600b5976a359959be986dcff326dbb	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2018	fbc196aa2598d0e9568d65efb895c72a0924ad0f	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2021	0f9cb0032eedaa323b612853e20c0d5c23abe6f4	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
