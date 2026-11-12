@@ -3495,3 +3495,4 @@ stackiq	1703	e59770925496542af6bd98810f24affa968cfec6	GREEN	fv11-17:s1	unit 2212
 stackiq	1705	57be6eee692eff69350a992149f1341701d98f32	GREEN	fv11-17:s1	unit 2212 OK (baseline 2210 OK), vitest 1197 pass; diff review clean (behaviour-preserving extraction)
 stackiq	1707	ad4e3ddeaf410ec8fe22e6da6f77b56376d1ca0b	GREEN	fv11-17:s1	unit 2212 OK (baseline 2210 OK), vitest 1197 pass; diff review clean (behaviour-preserving extraction)
 stackiq	1708	0ba2f25fc399d5eedd39d5aedebdb695d65fdec0	GREEN	fv11-17:s1	unit 2212 OK (baseline 2210 OK), vitest 1197 pass; diff review clean (behaviour-preserving extraction)
+buildiq	1272	2b92e8f73f46f45ce340b0d11d6b22a26b56d122	GREEN	fv11-17:b1	unit 2115, 5 errors same as baseline (listener tests); diff review clean (register config assembly moved to RegisterConfigAssembler, messages kept)
