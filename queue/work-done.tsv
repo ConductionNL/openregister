@@ -508,3 +508,4 @@ merge:learniq:2306:33e30c58	merge-local run over 12 learniq tasks: merged=63 red
 merge:learniq:2203:bf18640a	merge-local run over 12 learniq tasks: merged=63 red=3 fail=1 skip=0; already in development 15; truncated dropped 0	session-20261112T195928-07e649d9	2026-11-12T21:47:41Z
 cover:pipelinq:f67520ec:js3a5df78e	PR #3554: 17 mounted vitest tests over 5 marketing sections, src/components/marketing lines 65.45%->82.41%, suite 3158->3175 green	session-20261112T205847-2f6d1ca4	2026-11-12T21:47:47Z
 verify:decidiq:2079:a3bdce43	3 GREEN (2079-2081)	session-20261112T200014-a0c0c232	2026-11-12T21:48:14Z
+merge:shillinq:2740:6df373fe	2741 MERGED 2742 MERGED 2743 MERGED 2744 MERGED 2745 MERGED 2746 MERGED 2747 MERGED 2748 MERGED already recorded 2740;	session-20261112T184502-4ecd6072	2026-11-12T21:48:24Z
