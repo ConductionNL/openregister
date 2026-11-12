@@ -4168,3 +4168,4 @@ stackiq	1769	d6eec6435bc4c5d5cb9e937aae30933adfe13dbc	GREEN	worker-25	PHP unit 2
 stackiq	1770	69b3cf52c0c4ef04f0bf1aca113f64e0126fabf6	GREEN	worker-25	PHP unit 2334 on tree, baseline 2334 (0 failing), 0 new; vitest 1714/1714 passed; tests only
 stackiq	1771	e8fe52b8674a18ce469b7c8224a34dc62f02d20a	GREEN	worker-25	PHP unit 2334 on tree, baseline 2334 (0 failing), 0 new; vitest 1714/1714 passed; tests only
 stackiq	1772	5b0413991f169e9f1f72a9b1159ab64799f7ac8c	GREEN	worker-25	PHP unit 2334 on tree, baseline 2334 (0 failing), 0 new; vitest 1714/1714 passed; tests only
+integriq	3398	e73bc30d8d0f986ab9c211e147b37a45c25ffedf	GREEN	worker-42	phpunit 7110 run, baseline 3 failing (inherited), 0 new; vitest 1455 passed; tests-only additions
