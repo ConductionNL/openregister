@@ -358,3 +358,4 @@ cover:stackiq:8cfacb29:js1306cddf	PR @925f047b: 9 tests StatisticsOverview+Moder
 cover:dossiq:6ca0231e:0eb04fa4	PR #6175: 13 tests for Product (ProductOutcome, issuer branches), suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T21:02:22Z
 cover:dossiq:6ca0231e:a797d42e	PR #6174: 13 tests for CasePlanBlob/CasePlanMigrationService edge paths; suite 11976->11989, 19 inherited failures	session-20261112T202909-d1558483	2026-11-12T21:02:00Z
 fix:buildiq:1441:39c17463	not reproducible: dockerimage passes locally, score 84 = floor; tests-only PR; REVERIFY recorded, nothing pushed	session-20261112T184441-77ab05a6	2026-11-12T21:02:21Z
+merge:portaliq:2281:7c13dbcf	2281 SKIP 2282 SKIP 	session-20261112T184502-4ecd6072	2026-11-12T21:03:14Z
