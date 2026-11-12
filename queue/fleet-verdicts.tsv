@@ -4008,3 +4008,4 @@ shillinq	2798	0c5a2c5e0f83367c91e5dad9e061c97c10a42c02	GREEN	worker-06	8919 test
 buildiq	1440	b7d26e4b238d6db80c4397af549bb2e9f34c6de0	REVERIFY	worker-53	merged development in; checker floor dockerimage pass, no criterion worse; tests OK (5 tests, 7 assertions); new head b5d1297d230d96edfdcba37d6e77c775c868ba65, verify it
 buildiq	1457	a61c2de305213a2b764d44ae0465aa082b2af551	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
 buildiq	1458	9b4f8e938f96bf22c85e627d0710ef7e51d421a7	RED	worker-53:merge-gate	GATE RED checker floor: dockerimage: pass -> fail; score: 84 -> 80
+decidiq	2060	29f702e3ea4170ee7e8f19a59c5d242f7b9799da	REVERIFY	worker-06	no change needed: tests-only branch; dockerimage fail is a gate artifact (local-path origin in merge_gate's shared clone). Scanned with the real remote: dockerimage pass, score 93 (floor 91); new head 29f702e3ea4170ee7e8f19a59c5d242f7b9799da, verify it
