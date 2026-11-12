@@ -211,4 +211,5 @@ cover:stackiq:8cfacb29:34763eb4	PR #1741 @599abaea: +3 tests for ApiContractMidd
 verify:launchpad:1106:2a148841	GREEN: 1106, 1107, 1109 (3266 PHP tests, vitest 1186, 0 new failures)	session-20261112T200018-e68ecbf8	2026-11-12T20:13:29Z
 gap:thematiq:1:e16dc70b	verified #1649 as one-PR tree: GREEN, recorded for local merge lane	session-20261112T200015-391c2792	2026-11-12T20:14:30Z
 verify:dossiq:6099:da59d2b9	GREEN 6099-6107 (9 PRs, tests-only; 0 new failures)	session-20261112T200016-345024b4	2026-11-12T20:15:17Z
+cover:stackiq:8cfacb29:59826f43	PR #1743 @3505511d: 2 tests for StackiqAdmin; suite 2334->2336, no failures	session-20261112T175557-37d60f4f	2026-11-12T20:15:41Z
 cover:stackiq:8cfacb29:60c2c265	opened stackiq#1742 (20 tests, 4 Controller classes; suite errors/failures unchanged); ProgressEventStream and ApiDocumentation classes still untested	session-20261112T184441-77ab05a6	2026-11-12T20:15:40Z
