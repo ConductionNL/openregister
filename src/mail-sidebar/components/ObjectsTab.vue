@@ -210,6 +210,66 @@ export default {
 		},
 
 		/**
+		 * The endpoint listing the objects linked to the open message.
+		 *
+		 * @return {string} The URL
+		 */
+		linkedObjectsUrl() {
+			const base = generateUrl('/apps/openregister/api/linked/mail')
+			return `${base}/${this.accountId}/${this.messageId}`
+		},
+
+		/**
+		 * Fetch the objects linked to the open message.
+		 *
+		 * @return {Promise<Array<object>>} The objects
+		 */
+		async fetchLinkedObjects() {
+			const response = await axios.get(this.linkedObjectsUrl(), {
+				timeout: 10000,
+			})
+			return response.data?.results || []
+		},
+
+		/**
+		 * The endpoint that unlinks an object from the open message.
+		 *
+		 * @param {object} obj The linked object
+		 * @return {string} The URL
+		 */
+		unlinkUrl(obj) {
+			const base = generateUrl(
+				'/apps/openregister/api/objects/{uuid}/_linked/mail',
+				{
+					uuid: obj.uuid,
+				},
+			)
+			return `${base}/${this.accountId}/${this.messageId}`
+		},
+
+		/**
+		 * Log a failed load and show no objects.
+		 *
+		 * @param {Error} err What went wrong
+		 * @return {void}
+		 */
+		showLoadFailure(err) {
+			console.error('[ObjectsTab] Load failed:', err)
+			this.objects = []
+		},
+
+		/**
+		 * Say the connection was removed, close the dialog and reload.
+		 *
+		 * @return {void}
+		 */
+		showUnlinked() {
+			showSuccess(t('openregister', 'Connection removed'))
+			this.removeTarget = null
+			this.loadObjects()
+		},
+
+		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async loadObjects() {
@@ -221,13 +281,9 @@ export default {
 
 			this.loading = true
 			try {
-				const base = generateUrl('/apps/openregister/api/linked/mail')
-				const url = `${base}/${this.accountId}/${this.messageId}`
-				const response = await axios.get(url, { timeout: 10000 })
-				this.objects = response.data?.results || []
+				this.objects = await this.fetchLinkedObjects()
 			} catch (err) {
-				console.error('[ObjectsTab] Load failed:', err)
-				this.objects = []
+				this.showLoadFailure(err)
 			} finally {
 				this.loading = false
 				this.$emit('count', this.objects.length)
@@ -266,17 +322,8 @@ export default {
 			}
 			this.removing = true
 			try {
-				const base = generateUrl(
-					'/apps/openregister/api/objects/{uuid}/_linked/mail',
-					{
-						uuid: obj.uuid,
-					},
-				)
-				const url = `${base}/${this.accountId}/${this.messageId}`
-				await axios.delete(url)
-				showSuccess(t('openregister', 'Connection removed'))
-				this.removeTarget = null
-				this.loadObjects()
+				await axios.delete(this.unlinkUrl(obj))
+				this.showUnlinked()
 			} catch (err) {
 				showError(t('openregister', 'Failed to remove connection'))
 				console.error('[ObjectsTab] Unlink failed:', err)
@@ -343,36 +390,68 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async uploadAttachmentToObject(attachment, target) {
-			const response = await fetch(attachment.downloadUrl, {
-				credentials: 'same-origin',
-			})
-			if (!response.ok) {
-				throw new Error(
-					`Attachment download failed with status ${response.status}`,
-				)
-			}
-			const blob = await response.blob()
-			const fileName =
-				attachment.fileName || `attachment-${attachment.attachmentId}`
-			const file = new File([blob], fileName, {
-				type: attachment.mime || blob.type || 'application/octet-stream',
-			})
+			const file = await downloadAttachment(attachment)
 			const formData = new FormData()
 			formData.append('files[]', file)
-			const uploadUrl = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/filesMultipart',
-				{
-					register: target.register,
-					schema: target.schema,
-					id: target.objectId,
-				},
-			)
-			await axios.post(uploadUrl, formData, {
+			await axios.post(objectFilesUrl(target), formData, {
 				headers: { 'Content-Type': 'multipart/form-data' },
 				timeout: 20000,
 			})
 		},
 	},
+}
+
+/**
+ * Download a mail attachment as a file, named and typed as the attachment
+ * says, or as the download does.
+ *
+ * @param {object} attachment The dropped attachment
+ * @return {Promise<File>} The file
+ */
+async function downloadAttachment(attachment) {
+	const response = await fetch(attachment.downloadUrl, {
+		credentials: 'same-origin',
+	})
+	if (!response.ok) {
+		throw new Error(
+			`Attachment download failed with status ${response.status}`,
+		)
+	}
+	const blob = await response.blob()
+	return attachmentFile(attachment, blob)
+}
+
+/**
+ * A downloaded attachment as a file, named and typed as the attachment says,
+ * or as the download does.
+ *
+ * @param {object} attachment The dropped attachment
+ * @param {Blob} blob The downloaded content
+ * @return {File} The file
+ */
+function attachmentFile(attachment, blob) {
+	const fileName =
+		attachment.fileName || `attachment-${attachment.attachmentId}`
+	return new File([blob], fileName, {
+		type: attachment.mime || blob.type || 'application/octet-stream',
+	})
+}
+
+/**
+ * The endpoint that takes multipart file uploads for an object.
+ *
+ * @param {{register: string, schema: string, objectId: string}} target The object
+ * @return {string} The URL
+ */
+function objectFilesUrl(target) {
+	return generateUrl(
+		'/apps/openregister/api/objects/{register}/{schema}/{id}/filesMultipart',
+		{
+			register: target.register,
+			schema: target.schema,
+			id: target.objectId,
+		},
+	)
 }
 </script>
 
