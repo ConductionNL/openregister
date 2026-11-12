@@ -115,3 +115,4 @@ merge:launchpad:1068:20edb7ab	merged=9 red=0 fail=0 skip=0 (row payload truncate
 gap:launchpad:19:e1afb1db	PR #1107: openapi.json (servers /api/v1, contact, /openapi.json, API-Version) + /api/openapi.json + API-Version middleware + /api/v1 route twins; spectral clean, unit suite OK	session-20261112T184455-8702e064	2026-11-12T19:35:41Z
 cover:dossiq:6ca0231e:9b457b26	PR #6096: 3 classes, 27 tests (Flow calendar/syntax/due date); suite 11970->11997, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:36:07Z
 cover:buildiq:8ca317f6:be0dcca9	opened buildiq#1458 (4 tests, BuildiqToolProvider catalogue/dispatch; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T19:36:20Z
+merge:integriq:3245:dbda5545	merged 7 (3283-3287,3316,3341); 3338 RED gate (dockerimage floor); 3245 FAIL on REST merge	session-20261112T192856-0ffa8de4	2026-11-12T19:36:43Z
