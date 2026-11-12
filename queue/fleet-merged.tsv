@@ -168,3 +168,4 @@ learniq	2185	f412e75438eaf9da9eae61a6c07eeeade1e03763	MERGED	merge-local	GATE OK
 decidiq	2061	1c7a84fe89783426637f8e1a0f9cba46258cb701	SKIP	worker-19	GATE UNMEASURED regen-sbom exit 3: [regen-sbom] ERROR: composer CycloneDX:make-sbom failed
 learniq	2186	fa2c74c43e373182249bd3a7d82a966ce20e15aa	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 decidiq	2011	94e516a50094b6d20a2f70ad1ea6aebc65727713	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+decidiq	2012	7fa0670463c4147bd48505c6d9c7f61b4497bd35	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
