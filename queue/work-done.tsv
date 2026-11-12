@@ -897,4 +897,5 @@ cover:hermiq:755cdfe7m7444:568ec52a	PR hermiq#1625: AiFeatureDpoAckGuard +10 tes
 cover:pipelinq:f67520ecm9d2c:59826f43	PR pipelinq#3598: AdminSettings +4 tests, suite 5773->5777, no new failures	session-20261112T231638-72e59130	2026-11-12T23:32:38Z
 verify:hermiq:1599:a5644d60	9 GREEN (1599 already in development); tests only, PHP 3628 + vitest 966 green	session-20261112T224529-41d77a96	2026-11-12T23:32:59Z
 cover:pipelinq:f67520ecm9d2c:jsdfaef732	failed: lang=js but dirs=lib/Notification/*.php is PHP; task row mis-mapped, nothing to cover in JS	session-20261112T231638-72e59130	2026-11-12T23:33:33Z
+cover:pipelinq:f67520ecm9d2c:168f7791	PR #3599: 6 PHP tests checking the dossiq case type against the ticket schema; suite 5773->5779, 1 inherited failure	session-20261112T231633-96ffe7b8	2026-11-12T23:33:49Z
 cover:keepiq:d76c2121m70b5:ca1d90c4	opened keepiq#1700 (VaultKeyProofRequired, 5 tests; suite 3722 -> 3727 OK)	session-20261112T231639-4c562de9	2026-11-12T23:33:42Z
