@@ -78,6 +78,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\Support\SaveObjectArgs;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
 
 /**
@@ -176,13 +177,13 @@ class ObjectServiceCascadeScopeTest extends TestCase {
 			}
 		);
 		$this->saveHandler->method('saveObject')->willReturnCallback(
-			function (...$arguments): ObjectEntity {
+			SaveObjectArgs::callback(callback: function (...$arguments): ObjectEntity {
 				$this->calls[] = 'save';
 				$this->savedData = $arguments[2];
 				$entity = new ObjectEntity();
 				$entity->setUuid('11111111-1111-1111-1111-111111111111');
 				return $entity;
-			}
+			})
 		);
 
 		$validator = $this->createMock(ValidateObject::class);
