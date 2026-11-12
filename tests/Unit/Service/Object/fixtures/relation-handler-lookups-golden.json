@@ -2340,21 +2340,6 @@
                     }
                 },
                 {
-                    "id": "n1",
-                    "relation": {
-                        "descriptor": {
-                            "label": "L:n"
-                        },
-                        "direction": "outgoing",
-                        "path": "n"
-                    },
-                    "@self": {
-                        "name": "n1",
-                        "owner": "bob",
-                        "schema": null
-                    }
-                },
-                {
                     "id": "x1",
                     "relation": {
                         "descriptor": {
@@ -2370,7 +2355,7 @@
                     }
                 }
             ],
-            "total": 3,
+            "total": 2,
             "limit": 30,
             "offset": 0
         },
@@ -2635,7 +2620,7 @@
                             "b1",
                             "x1"
                         ],
-                        "foundCount": 3
+                        "foundCount": 2
                     }
                 ]
             ],
@@ -2664,24 +2649,6 @@
                     },
                     "outgoing",
                     "b"
-                ]
-            ],
-            [
-                "descriptorFor",
-                [
-                    "Schema#2",
-                    "n",
-                    "nl"
-                ]
-            ],
-            [
-                "row",
-                [
-                    {
-                        "label": "L:n"
-                    },
-                    "outgoing",
-                    "n"
                 ]
             ],
             [
@@ -2724,24 +2691,9 @@
                         "owner": "alice",
                         "schema": "3"
                     }
-                },
-                {
-                    "id": "n1",
-                    "relation": {
-                        "descriptor": {
-                            "label": "L:n"
-                        },
-                        "direction": "outgoing",
-                        "path": "n"
-                    },
-                    "@self": {
-                        "name": "n1",
-                        "owner": "bob",
-                        "schema": null
-                    }
                 }
             ],
-            "total": 2,
+            "total": 1,
             "limit": 30,
             "offset": 0
         },
@@ -3063,7 +3015,7 @@
                             "b1",
                             "x1"
                         ],
-                        "foundCount": 2
+                        "foundCount": 1
                     }
                 ]
             ],
@@ -3092,24 +3044,6 @@
                     },
                     "outgoing",
                     "b"
-                ]
-            ],
-            [
-                "descriptorFor",
-                [
-                    "Schema#2",
-                    "n",
-                    "nl"
-                ]
-            ],
-            [
-                "row",
-                [
-                    {
-                        "label": "L:n"
-                    },
-                    "outgoing",
-                    "n"
                 ]
             ]
         ]
