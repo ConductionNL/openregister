@@ -287,4 +287,5 @@ cover:dossiq:6ca0231e:142d25ec	PR #6144: 5 tests for CarriedTerm, TermMove (the 
 review:openregister:10037:9066c4fc	stale	feeder	2026-11-12T20:35:56Z
 verify:larpinq:1005:a52ae940	stale	feeder	2026-11-12T20:35:56Z
 fix:decidiq:2060:29f702e3	false RED (gate local-path origin); branch scores 93, dockerimage pass; REVERIFY recorded, no push	session-20261112T200015-391c2792	2026-11-12T20:37:42Z
+fix:buildiq:1442:b503f28b	not reproduced: dockerimage pass, score 84 on rerun at same head; REVERIFY queued, no push	session-20261112T175557-37d60f4f	2026-11-12T20:38:32Z
 fix:buildiq:1447:5574756b	false RED (gate local-path origin); score 84, dockerimage pass; REVERIFY recorded, no push	session-20261112T200015-391c2792	2026-11-12T20:38:34Z
