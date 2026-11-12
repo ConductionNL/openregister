@@ -3518,3 +3518,4 @@ dossiq	5908	d690d97f068490a8bab56704d03e24e4144f8950	GREEN	fv11-16:d1	unit 11914
 dossiq	5909	51df02c53316b17932fbf0f6e7e2ab92d025044e	GREEN	fv11-16:d1	unit 11914 tests, 19 failures all baseline (no new); no JS touched; diff review clean (gates/reads extracted into helpers, same messages and status codes)
 dossiq	5995	16cb4db02a48d60368436c30ef30ab843e283361	GREEN	fv11-16:d1	unit 11914 tests, 19 failures all baseline (no new); no JS touched; diff review clean (gates/reads extracted into helpers, same messages and status codes)
 dossiq	6012	c7710323dcee43d3e8630f5fd75f06729f61badb	GREEN	fv11-16:d1	unit 11914 tests, 19 failures all baseline (no new); no JS touched; diff review clean (gates/reads extracted into helpers, same messages and status codes)
+stackiq	1621	063f804d56ed62a981aa9c69d4b38f3ab2b301a8	GREEN	fv11-16:s1	unit 2213 OK (baseline 2210 OK, 0 failures); no JS touched; diff review clean (loop and failure response extracted, same messages)
