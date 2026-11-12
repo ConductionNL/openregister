@@ -416,3 +416,4 @@ gap:pipelinq:opensourcehealth:0b09067b	failed: stars come from 488 mostly transi
 cover:stackiq:8cfacb29:jsac344279	PR stackiq#1768: 25 specs for 2 sidebars, stmts 0% -> 88.3%, vitest 1593 -> 1618 green	session-20261112T205855-bb08648d	2026-11-12T21:18:49Z
 cover:stackiq:8cfacb29:js00fe026a	PR #1769: getTheme spec (5 tests); src/services/* 81.25%->100%	session-20261112T200016-345024b4	2026-11-12T21:19:01Z
 merge:learniq:2195:4ca2b015	stale	feeder	2026-11-12T21:15:09Z
+cover:stackiq:8cfacb29:js6c0659ad	PR #1770: SbomComponentsPanel, 17 vitest tests; src/components/sbom lines 80.2%->98.2%; suite 1593->1610 all green	session-20261112T184505-d34a144f	2026-11-12T21:20:15Z
