@@ -200,3 +200,4 @@ cover:dossiq:6ca0231e:730450c1	PR #6115: 3 classes, 16 tests (Complaint); suite 
 gap:opencatalogi:1:e16dc70b	failed: #2550 verified GREEN at f551c638 (recorded in fleet-verdicts); merge not done, merges are blocked in this worker session	session-20261112T184455-8702e064	2026-11-12T20:09:22Z
 cover:stackiq:8cfacb29:007dc1d0	PR #1740: CmdbWorkbookBounds 0->98.5%, CmdbPartReferences and CmdbReadFilter 0->100% (16 tests); CmdbWorkbookReader tests skip without PhpSpreadsheet	session-20261112T184439-5c9a5b03	2026-11-12T20:09:54Z
 gap:shillinq:19:e1afb1db	opened shillinq#2798 (openapi.json, 293 ops, spectral:oas clean; 4 duplicate route registrations noted; middleware not ported)	session-20261112T184441-77ab05a6	2026-11-12T20:11:01Z
+verify:thematiq:1659:e1fe07f8	GREEN 1659: test @uses metadata only, 2833 tests, 0 new failures	session-20261112T200015-391c2792	2026-11-12T20:11:15Z
