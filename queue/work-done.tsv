@@ -296,6 +296,7 @@ gap:buildiq:opensourcehealth:663c741a	failed: opensourcehealth stars come from 5
 fix:buildiq:1448:949b20f1	not reproducible: dockerimage passes locally, score 84 = floor; tests-only PR; REVERIFY recorded, nothing pushed	session-20261112T184441-77ab05a6	2026-11-12T20:40:06Z
 cover:dossiq:6ca0231e:6f346b68	PR opened: SettingsSection 0->100% (1 test)	session-20261112T184439-5c9a5b03	2026-11-12T20:40:13Z
 cover:dossiq:6ca0231e:6925f818	PR #6146: 1 class, 7 tests (SetupCheck); suite 11976->11983, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:40:27Z
+cover:dossiq:6ca0231e:fbf36718	PR #6148: 16 tests for PermitRegister, PlateChange(Request), suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:40:32Z
 verify:dossiq:6117:4a4f7d19	GREEN: 6117-6125 (9 test-only PRs; 12133 tests, 0 new failures)	session-20261112T200018-e68ecbf8	2026-11-12T20:41:06Z
 cover:dossiq:6ca0231e:0c7c4f5d	PR #6149: 17 tests for ThresholdShares, TermStatusClock, FirstResponseOutcome; suite 11976->11993, failures 19 inherited	session-20261112T202912-56c18a61	2026-11-12T20:41:16Z
 verify:thematiq:1661:b54fc704	GREEN thematiq#1661	session-20261112T202437-4020bd95	2026-11-12T20:41:28Z
