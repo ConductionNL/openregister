@@ -750,3 +750,4 @@ cover:pipelinq:f67520ecm9d2c:jsd528dcf0	failed: lang=js but dirs=lib/Dashboard/*
 cover:integriq:9b0f5894m2367:jsa42697be	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:52:37Z
 cover:integriq:9b0f5894m2367:js17bbac84	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:52:47Z
 cover:integriq:9b0f5894m2367:js1191da39	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:52:56Z
+cover:buildiq:8ca317f6m6d54:0d8702e3	PR #1484: 26 tests for 6 template classes (autoloader, InitializeSettings, Settings/Dashboard controllers, AdminSettings, SettingsSection); suite 2234->2260, baseline 5E/1F unchanged	session-20261112T221528-d486fac0	2026-11-12T22:53:33Z
