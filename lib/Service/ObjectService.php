@@ -4311,10 +4311,10 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     }//end deleteAnswersToOrganisation()
 
     /**
-     * Refuse a delete in a register or schema the caller's organisation only consumes.
+     * Refuse a delete or move in a register or schema the caller's organisation only consumes.
      *
      * The organisation boundary answers a read question and lets a consumer of shared
-     * master data see the holder's rows. A delete is a write, as for a save.
+     * master data see the holder's rows. A delete or a move is a write, as for a save.
      *
      * @param int|null $registerId The register deleted from.
      * @param int|null $schemaId   The schema deleted from.
@@ -6462,6 +6462,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @throws OcpDoesNotExistException If register or schema not found.
      * @throws NotAuthorizedException If the caller may not create objects in the target schema.
+     * @throws SharedMasterDataWriteException If the caller's organisation only consumes the source or target.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
@@ -6474,6 +6475,16 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         }
 
         $this->permissionHandler->checkPermission(schema: $targetSchema, action: 'create');
+
+        // A move removes rows from the source and writes rows into the target.
+        $targetRegister = $this->utilityHandler->normalizeEntity(entity: $migration->target->register, type: 'register');
+        $targetRegisterId = null;
+        if ($targetRegister instanceof Register) {
+            $targetRegisterId = $targetRegister->getId();
+        }
+
+        $this->rejectSharedMasterDataDelete(registerId: $source->register->getId(), schemaId: $source->schema->getId());
+        $this->rejectSharedMasterDataDelete(registerId: $targetRegisterId, schemaId: $targetSchema->getId());
 
         $permitted = $this->migratableObjectIds(table: $source, objectIds: $migration->objectIds);
         $report    = $this->migrationHandler->migrateObjects(
