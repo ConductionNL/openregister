@@ -47,6 +47,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Feedback
  * @uses   \OCA\OpenRegister\Notifications\Db\Message
  * @uses   \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
  */
 class ChatControllerFeedbackGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/chat-feedback-golden.json';

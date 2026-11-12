@@ -98,6 +98,17 @@ use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
  * @uses   \OCA\OpenRegister\Service\ObjectSource\DbalWriteException
  * @uses   \OCA\OpenRegister\Service\Rules\ExpressionDefaultException
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Db\AuditTrail\NamedActor
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest
+ * @uses \OCA\OpenRegister\Service\WritePhase
  */
 class ObjectsControllerUpdateGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/objects-update-golden.json';

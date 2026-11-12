@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  * Set UPDATE_GOLDEN=1 to rewrite the fixture.
  *
  * @covers \OCA\OpenRegister\Controller\Settings\CacheSettingsController
+ * @uses \OCA\OpenRegister\Controller\Support\CacheSettingsControllerServices
  */
 class CacheSettingsControllerActionsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/cache-settings-actions-golden.json';
