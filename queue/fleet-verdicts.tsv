@@ -3491,3 +3491,7 @@ decidiq	2040	e19ded4e2411000f7582b8eea56d8afc7fc847b6	GREEN	vm2:d1	unit 2993 OK 
 decidiq	2041	fe108f18cdda3fa46214d319cb8b77479a83a7aa	GREEN	vm2:d1	unit 2993 OK (baseline 0), vitest 2590 pass, floor holds; diff review clean (guards moved into named helpers, error fallbacks kept)
 stackiq	1704	a7c43c8237aae2f91257d6bd193842f3a3813c58	CONFLICT	fv11-17:s1	conflicts with development in src/modals/object/ViewObject.vue
 stackiq	1706	90bd57866963e6150475bb4000700de8e177aff1	CONFLICT	fv11-17:s1	conflicts with development in src/modals/object/ViewObject.vue
+stackiq	1703	e59770925496542af6bd98810f24affa968cfec6	GREEN	fv11-17:s1	unit 2212 OK (baseline 2210 OK), vitest 1197 pass; diff review clean (behaviour-preserving extraction)
+stackiq	1705	57be6eee692eff69350a992149f1341701d98f32	GREEN	fv11-17:s1	unit 2212 OK (baseline 2210 OK), vitest 1197 pass; diff review clean (behaviour-preserving extraction)
+stackiq	1707	ad4e3ddeaf410ec8fe22e6da6f77b56376d1ca0b	GREEN	fv11-17:s1	unit 2212 OK (baseline 2210 OK), vitest 1197 pass; diff review clean (behaviour-preserving extraction)
+stackiq	1708	0ba2f25fc399d5eedd39d5aedebdb695d65fdec0	GREEN	fv11-17:s1	unit 2212 OK (baseline 2210 OK), vitest 1197 pass; diff review clean (behaviour-preserving extraction)
