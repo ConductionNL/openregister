@@ -3950,3 +3950,6 @@ launchpad	1107	3f7f87e667fa28876d87ef6312010b8dbb69bdcd	GREEN	worker-33	PHP 3266
 launchpad	1109	c9075734883c11bb9c5297fbda1a7761da702f4d	GREEN	worker-33	PHP 3266 tests on tree (baseline 3256 OK), vitest 1186/1186, 0 new failures; constant renames with aliases, same values
 dossiq	6099	8068ae3c9155599636c23cb473d2064acf619d20	GREEN	worker-50	phpunit 12143 tests (baseline 11970), same 21 inherited failures, 0 new; tests-only
 thematiq	1649	7d268c1e860546ea9006628d50d576f31c7256b7	GREEN	worker-06	2833 tests; baseline 1 failure (MigrateOverrideValueTypesTest, inherited); 0 new; deploy files only (Dockerfile, compose, chart, workflow)
+dossiq	6100	baba856624e28880fefbec2ecc68a2c57bbe333e	GREEN	worker-50	phpunit 12143 tests (baseline 11970), same 21 inherited failures, 0 new; tests-only
+dossiq	6101	fc26f327f22d470f061bf81bec3a94ceff0c23cc	GREEN	worker-50	phpunit 12143 tests (baseline 11970), same 21 inherited failures, 0 new; tests-only
+dossiq	6102	4daf2b6bd04267f35b75a6beb12289da66001c9b	GREEN	worker-50	phpunit 12143 tests (baseline 11970), same 21 inherited failures, 0 new; tests-only
