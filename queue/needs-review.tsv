@@ -4,3 +4,4 @@
 10027	032a57cba29d220b46ce03d809d8d79f5a94c57f	-	tests only: frontend coverage batch 3 (orcovb)
 10029	bdd094ea5214546067ca218a4c694e4f5529ef68	-	tests only: frontend coverage batch 4 (orcovb)
 10032	28e26df8650382222a59bd7b48bff384beec0458	-	tests only: @uses metadata, remaining tests/Unit dirs (orcovb)
+10055	0f5d134c006057c6e1cb4c29d44819d6db69b368	-	scope-file only: licence exclude for every @nextcloud package (license2)
