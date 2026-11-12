@@ -473,3 +473,4 @@ verify:buildiq:1468:92cab22a	GREEN 1468,1470-1476; BLOCK 1469 (API response beha
 merge:shillinq:2796:1f5d6d5b	2796 RED 2797 SKIP 2798 RED 	session-20261112T184502-4ecd6072	2026-11-12T21:38:55Z
 merge:buildiq:1437:bee6449f	failed: tree contains heads/PRs authored by this worker (1437,1440,1450 fixes; 1464,1467); merge needs another worker	session-20261112T184508-711de18c	2026-11-12T21:39:25Z
 cover:pipelinq:f67520ec:js4570fd16	PR #3551: 4 POS views, 32 vitest tests; src/views/pos stmts 73.2%->88.3%	session-20261112T200016-345024b4	2026-11-12T21:39:44Z
+verify:dossiq:6160:ee1a3a36	9 GREEN (6160-6166, 6172, 6173), tests-only; phpunit 12517 and vitest 6249, 0 new failures	session-20261112T202912-56c18a61	2026-11-12T21:40:16Z
