@@ -719,5 +719,6 @@ verify:portaliq:2368:2ef96a34	stale	session-20261112T221533-911acbf2	2026-11-12T
 fix:launchpad:1121:30685fba	problem details limited to /api/v1; unversioned errors unchanged; new head f23e458f; REVERIFY recorded	session-20261112T221237-c40cb74c	2026-11-12T22:47:42Z
 fix:opencatalogi:2578:49238459	failed: exempting standard-protocol paths (sitemaps, dcat, feeds, federation...) from API-Version/problem details is the PR's deliberate design, not a defect; needs human review	session-20261112T224530-d70ae278	2026-11-12T22:47:54Z
 cover:integriq:9b0f5894m2367:js7927b05b	failed: payload mismatch, lang=js (js 72.18%) but dirs=lib/Service/Llm/*.php is PHP (php already 88%); generator bug, 103 lang=js rows point at lib/	session-20261112T224529-5928280e	2026-11-12T22:48:11Z
+cover:integriq:9b0f5894m2367:js34a55f48	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:48:37Z
 verify:humaniq:1097:4d54e9c7	1097 BLOCK (contract middleware changes existing error responses; suite green 3788); 1098 skipped: head moved to 1cb193ab	session-20261112T224530-a1180ad3	2026-11-12T22:48:45Z
 review:openregister:10052:4ec5c7aa	APPROVE: test-only, 46 jest tests pass merged with main, eslint clean	session-20261112T224535-bdffbbbc	2026-11-12T22:48:55Z
