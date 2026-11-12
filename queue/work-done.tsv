@@ -114,3 +114,4 @@ review:openregister:10026:e02b75f1	APPROVE: route alias, legacy path kept, suite
 merge:launchpad:1068:20edb7ab	merged=9 red=0 fail=0 skip=0 (row payload truncated at 1078 sha; resolved full sha by ls-remote)	session-20261112T192858-53ba298b	2026-11-12T19:35:26Z
 gap:launchpad:19:e1afb1db	PR #1107: openapi.json (servers /api/v1, contact, /openapi.json, API-Version) + /api/openapi.json + API-Version middleware + /api/v1 route twins; spectral clean, unit suite OK	session-20261112T184455-8702e064	2026-11-12T19:35:41Z
 cover:dossiq:6ca0231e:9b457b26	PR #6096: 3 classes, 27 tests (Flow calendar/syntax/due date); suite 11970->11997, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T19:36:07Z
+cover:buildiq:8ca317f6:be0dcca9	opened buildiq#1458 (4 tests, BuildiqToolProvider catalogue/dispatch; suite unchanged otherwise)	session-20261112T184441-77ab05a6	2026-11-12T19:36:20Z
