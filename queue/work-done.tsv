@@ -983,4 +983,5 @@ cover:dossiq:6ca0231e:81b1241f	PR #6203: 28 tests over 7 lib/Portal classes; sui
 cover:integriq:9b0f5894m2367:jsbec85fb4	failed: lang=js but lib/Service/Zgw/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:57:14Z
 fix:buildiq:1469:6c309825	problem details limited to /api/v1, unversioned errors unchanged; new head 32a620ea, REVERIFY recorded	session-20261112T231645-3f0591a5	2026-11-12T23:57:13Z
 verify:keepiq:1700:1fd88491	3 GREEN (1700-1702), 0 new failures, 3734 tests vs baseline 3722	session-20261112T234655-c333a6f8	2026-11-12T23:57:49Z
+cover:filinq:8ecceb86:14722ee7	PR #1977: 7 Conversion classes, 14 tests; suite 5318 -> 5332 OK	session-20261112T234653-57d11a5b	2026-11-12T23:57:28Z
 cover:integriq:9b0f5894m2367:js5df53342	failed: lang=js but lib/Broker/Transport/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:57:49Z
