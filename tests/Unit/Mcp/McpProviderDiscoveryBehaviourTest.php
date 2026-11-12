@@ -52,6 +52,8 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\AuditTrail\AuditedObject
  * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
  * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
+ * @uses \OCA\OpenRegister\Mcp\McpDiscoveryRun
+ * @uses \OCA\OpenRegister\Mcp\McpSchemaOwnership
  */
 class McpProviderDiscoveryBehaviourTest extends TestCase {
 

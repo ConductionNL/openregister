@@ -1,7 +1,7 @@
 # flow-bpmn-interchange Specification
 
 ## Purpose
-TBD - created by archiving change flow-bpmn-interchange. Update Purpose after archive.
+Getting flows out as BPMN 2.0 XML and bringing a documented subset back in, as an interchange format and never as an execution semantic.
 
 ## Requirements
 

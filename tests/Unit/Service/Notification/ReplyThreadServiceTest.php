@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\ReplyThreadResolver;
 use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -59,7 +60,7 @@ class ReplyThreadServiceTest extends TestCase {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->method('find')->willReturnCallback(
 			function (...$arguments) use ($readable): ?ObjectEntity {
-				$this->reads[] = $arguments;
+				$this->reads[] = FindCallShape::find(args: $arguments);
 				$outcome = ($readable[$arguments[0]] ?? null);
 				if ($outcome instanceof \Throwable) {
 					throw $outcome;

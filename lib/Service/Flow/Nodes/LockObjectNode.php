@@ -78,6 +78,8 @@ use OCP\WorkflowEngine\IManager;
 use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
 
 /**
  * Take a run-scoped object lock, parking the run while it is contended.
@@ -470,12 +472,12 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 			$this->objects->runAs(
 				$hold->owner,
 				fn (): array => $this->objects->lockObject(
-					identifier: $attempt->uuid,
-					process: $hold->process,
-					duration: $hold->duration,
-					advisory: false,
-					runUuid: $hold->runUuid,
-					nodeId: $attempt->resume->nodeId()
+					request: new LockRequest(
+						identifier: $attempt->uuid,
+						process: $hold->process,
+						duration: $hold->duration,
+						runStep: new LockRunStep(runUuid: $hold->runUuid, nodeId: $attempt->resume->nodeId())
+					)
 				)
 			);
 		} catch (Throwable $e) {

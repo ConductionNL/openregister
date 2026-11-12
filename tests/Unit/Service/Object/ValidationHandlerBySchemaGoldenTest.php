@@ -23,6 +23,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Db\SchemaCatalog;
@@ -70,7 +72,16 @@ class ValidationHandlerBySchemaGoldenTest extends TestCase {
 		$result = $handler->validateObjectsBySchema(
 			9,
 			function (...$args) use (&$calls): void {
-				$calls[] = $args;
+				$options = $args[1];
+				$calls[] = [
+					$args[0],
+					$options->target->register,
+					$options->target->schema,
+					$options->uuid,
+					$options->policy->silent,
+					$args[2],
+					$args[3],
+				];
 				match ($args[0]['title']) {
 					'bad' => throw new ValidationException('title too short'),
 					'custom' => throw new CustomValidationException('custom rule', ['x' => 'y']),
@@ -82,11 +93,11 @@ class ValidationHandlerBySchemaGoldenTest extends TestCase {
 
 		$this->assertSame(
 			[
-				[['id' => 'u-ok', 'title' => 'ok'], [], '3', 9, 'u-ok', false, false, true],
-				[['id' => 'u-bad', 'title' => 'bad'], [], '3', 9, 'u-bad', false, false, true],
-				[['id' => 'u-custom', 'title' => 'custom'], [], '3', 9, 'u-custom', false, false, true],
-				[['id' => 'u-boom', 'title' => 'boom'], [], '3', 9, 'u-boom', false, false, true],
-				[['id' => 'u-ok2', 'title' => 'ok2'], [], '3', 9, 'u-ok2', false, false, true],
+				[['id' => 'u-ok', 'title' => 'ok'], '3', 9, 'u-ok', true, false, false],
+				[['id' => 'u-bad', 'title' => 'bad'], '3', 9, 'u-bad', true, false, false],
+				[['id' => 'u-custom', 'title' => 'custom'], '3', 9, 'u-custom', true, false, false],
+				[['id' => 'u-boom', 'title' => 'boom'], '3', 9, 'u-boom', true, false, false],
+				[['id' => 'u-ok2', 'title' => 'ok2'], '3', 9, 'u-ok2', true, false, false],
 			],
 			$calls
 		);
@@ -106,4 +117,46 @@ class ValidationHandlerBySchemaGoldenTest extends TestCase {
 		);
 		$this->assertSame([['[ValidationHandler] Unexpected error during validation', 4, 'db down', 'openregister']], $logged);
 	}//end testEachObjectIsSavedSilentlyAndSortedByOutcome()
+
+	/**
+	 * The callback is ObjectService::saveObject itself, so the call must fit that signature.
+	 */
+	public function testTheCallFitsTheSaveObjectSignature(): void {
+		$object = new ObjectEntity();
+		$object->setId(1);
+		$object->setUuid('u-1');
+		$object->setRegister('3');
+		$object->setObject(['title' => 'one']);
+
+		$mapper = $this->createMock(MagicMapper::class);
+		$mapper->method('findBySchema')->willReturn([$object]);
+		$handler = new ValidationHandler(
+			validateHandler: $this->createMock(ValidateObject::class),
+			catalog: new SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper),
+			logger: $this->createMock(LoggerInterface::class)
+		);
+
+		$received = [];
+		$save = function (
+			array|ObjectEntity $object,
+			ObjectSaveOptions $options=new ObjectSaveOptions(),
+			bool $_rbac=true,
+			bool $_multitenancy=true
+		) use (&$received): ObjectEntity {
+			$received = [$options->uuid, $options->policy->silent, $_rbac, $_multitenancy];
+			return new ObjectEntity();
+		};
+
+		$saveObject = new \ReflectionMethod(ObjectService::class, 'saveObject');
+		$this->assertSame(
+			array_map(static fn (\ReflectionParameter $p): string => $p->getName() . ':' . $p->getType(), $saveObject->getParameters()),
+			array_map(static fn (\ReflectionParameter $p): string => $p->getName() . ':' . $p->getType(), (new \ReflectionFunction($save))->getParameters())
+		);
+
+		$result = $handler->validateObjectsBySchema(9, $save);
+
+		$this->assertSame([], $result['invalid']);
+		$this->assertCount(1, $result['valid']);
+		$this->assertSame(['u-1', true, false, false], $received);
+	}//end testTheCallFitsTheSaveObjectSignature()
 }//end class

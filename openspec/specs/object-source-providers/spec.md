@@ -1,7 +1,7 @@
 # object-source-providers Specification
 
 ## Purpose
-TBD - created by archiving change object-source-providers. Update Purpose after archive.
+A schema's objects can be read live from a source outside OpenRegister, such as a CalDAV collection, through a read-only provider. The objects are built in memory and never copied into OpenRegister storage.
 
 ## Requirements
 

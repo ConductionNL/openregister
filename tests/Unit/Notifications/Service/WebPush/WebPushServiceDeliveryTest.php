@@ -33,6 +33,7 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Notifications\Service\WebPush\WebPushService
  * @uses   \OCA\OpenRegister\Notifications\Db\PushSubscription
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
  */
 final class WebPushServiceDeliveryTest extends TestCase {
 

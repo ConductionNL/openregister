@@ -29,7 +29,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Integration;
 
 use OCA\OpenRegister\Kernel\Contracts\LinkedTaskDraft;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectNotesQuery;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -46,6 +48,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\IL10N;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
@@ -108,8 +111,8 @@ class BuiltinProvidersMetadataTest extends TestCase {
 	public function testNotesProviderListDelegatesToService(): void {
 		$noteService = $this->createMock(NoteService::class);
 		$noteService->expects($this->once())
-			->method('getNotesForObject')
-			->with('object-uuid', 50, 0)
+			->method('listNotes')
+			->with(new ObjectNotesQuery(objectUuid: 'object-uuid', page: new ListQuery(limit: 50, offset: 0)))
 			->willReturn([['id' => 1, 'message' => 'hello']]);
 
 		$provider = new NotesProvider($noteService, $this->buildL10n());
@@ -150,7 +153,7 @@ class BuiltinProvidersMetadataTest extends TestCase {
 		$schemaMapper->expects($this->once())->method('find')->with('my-schema')->willReturn($schema);
 		$objectService->expects($this->once())
 			->method('find')
-			->with('obj-uuid-1', [], false, $register, $schema)
+			->with(...FindCallShape::findArgs('obj-uuid-1', [], false, $register, $schema))
 			->willReturn($object);
 
 		$taskService->expects($this->once())

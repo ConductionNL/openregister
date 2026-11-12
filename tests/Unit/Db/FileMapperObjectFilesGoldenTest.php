@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Files\Db\FileMapper
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class FileMapperObjectFilesGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

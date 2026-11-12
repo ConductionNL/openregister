@@ -27,7 +27,7 @@ reads `platform`, and the write path refuses to touch them.
 ## Read the report
 
 ```bash
-curl -u admin:pass \
+curl -H 'OCS-APIRequest: true' -u admin:pass \
   https://your-instance/index.php/apps/openregister/api/hardening/report
 ```
 
@@ -86,7 +86,7 @@ upload ceiling exactly backwards.
 The shipped baseline is the weakest any floor may be. Raise one:
 
 ```bash
-curl -u admin:pass -X PUT \
+curl -H 'OCS-APIRequest: true' -u admin:pass -X PUT \
   https://your-instance/index.php/apps/openregister/api/hardening/floors \
   -H 'Content-Type: application/json' \
   -d '{"floors": {"auth.rateLimit.lockoutSeconds": 1800}}'
@@ -109,7 +109,7 @@ Four numbers and one list are administered here. Everything else is read only.
 | `origins.allowlistEntries` | `atLeast` | 0 |
 
 ```bash
-curl -u admin:pass -X PUT \
+curl -H 'OCS-APIRequest: true' -u admin:pass -X PUT \
   https://your-instance/index.php/apps/openregister/api/hardening/controls \
   -H 'Content-Type: application/json' \
   -d '{"controls": {"auth.rateLimit.lockoutSeconds": 3600}}'
@@ -138,7 +138,7 @@ from this instance, which is how it behaved before this control existed. Name
 the websites and the rest get nothing:
 
 ```bash
-curl -u admin:pass -X PUT \
+curl -H 'OCS-APIRequest: true' -u admin:pass -X PUT \
   https://your-instance/index.php/apps/openregister/api/hardening/controls \
   -H 'Content-Type: application/json' \
   -d '{"allowedOrigins": ["https://www.gemeente.nl", "https://portaal.gemeente.nl"]}'

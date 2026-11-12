@@ -54,9 +54,38 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectRelationsController
+ * @uses \OCA\OpenRegister\Controller\Support\DerivedLineage
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectDerivation
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectLinkRoute
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsControllerServices
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsGraph
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsGuards
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsMappers
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsPurposeScope
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsRequest
+ * @uses \OCA\OpenRegister\Controller\Support\ProseReference
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\ObjectRelation
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
+ * @uses \OCA\OpenRegister\Service\Audit\PurposeRefusedException
+ * @uses \OCA\OpenRegister\Service\Relation\Derivation
+ * @uses \OCA\OpenRegister\Service\Relation\ExternalLink
+ * @uses \OCA\OpenRegister\Service\Relation\GraphExportOptions
+ * @uses \OCA\OpenRegister\Service\Relation\ObjectTreeQuery
+ * @uses \OCA\OpenRegister\Service\Relation\ParentInheritance
+ * @uses \OCA\OpenRegister\Service\Relation\ProseMention
+ * @uses \OCA\OpenRegister\Service\Relation\ProvenanceLink
+ * @uses \OCA\OpenRegister\Service\Relation\RelationEndpoint
  */
 class ObjectRelationsControllerA24GoldenTest extends TestCase {
 
@@ -375,7 +404,7 @@ class ObjectRelationsControllerA24GoldenTest extends TestCase {
 			->with($this->callback(fn (ParentInheritance $i): bool => $i->parent instanceof ObjectEntity && $i->childData === ['t' => 1] && $i->inherits === ['zaaktype']))
 			->willReturn(['data' => ['t' => 1, 'zaaktype' => 'z'], 'inherited' => ['zaaktype' => 'z']]);
 		$created = $this->object(uuid: 'child');
-		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1, 'zaaktype' => 'z'], [], 'r', 's')->willReturn($created);
+		$this->objects->expects($this->once())->method('saveObject')->with(['t' => 1, 'zaaktype' => 'z'], $this->callback(static fn (ObjectSaveOptions $options): bool => $options->extend == [] && $options->target->register == 'r' && $options->target->schema == 's'))->willReturn($created);
 		$this->relations->expects($this->never())->method('recordSplit');
 		$this->relations->expects($this->once())->method('recordDerived')
 			->with($this->callback(fn (Derivation $derivation): bool => $derivation->parent instanceof ObjectEntity

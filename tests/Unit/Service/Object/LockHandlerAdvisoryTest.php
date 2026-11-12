@@ -19,15 +19,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Service\Object\UnlockRequest;
-use OCA\OpenRegister\Service\Object\LockRunStep;
-use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRunStep;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Service\Object\AdvisoryLockStore;
 use OCA\OpenRegister\Service\Object\LockAuthorization;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\LockStores;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -83,7 +84,7 @@ class LockHandlerAdvisoryTest extends TestCase {
 				advisory: new AdvisoryLockStore($this->appConfig, $this->userSession, $this->logger)
 			),
 			$this->logger,
-			new LockAuthorization($this->userSession, $this->groupManager, $this->schemaMapper)
+			new LockAuthorization($this->userSession, $this->groupManager, $this->schemaMapper, $this->createMock(PermissionHandlerInterface::class))
 		);
 	}//end setUp()
 

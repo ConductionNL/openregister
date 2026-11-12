@@ -31,6 +31,8 @@ namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\CredentialMintOptions;
+use OCA\OpenRegister\Service\Credential\CredentialMint;
 use OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientResolver;
 use OCA\OpenRegister\Service\Credential\OAuth2CodeExchange;
@@ -208,10 +210,10 @@ class OAuth2ReauthorisationTest extends TestCase {
 		}
 
 		$broker = $this->createMock(CredentialBrokerService::class);
-		$broker->method('mint')->willReturnCallback(
-			function (string $name, string $provider, string $owner, array $allowedApps = []): ObjectEntity {
+		$broker->method('mintCredential')->willReturnCallback(
+			function (CredentialMint $mint, CredentialMintOptions $options): ObjectEntity {
 				$this->mints++;
-				$this->mintedApps = $allowedApps;
+				$this->mintedApps = $options->allowedApps;
 				$minted = new ObjectEntity();
 				$minted->setUuid('minted-uuid');
 				return $minted;
