@@ -989,6 +989,7 @@ cover:integriq:9b0f5894m2367:js5df53342	failed: lang=js but lib/Broker/Transport
 cover:integriq:9b0f5894m2367:js63ce5d61	failed: lang=js but lib/PropertySource/Provider/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:58:11Z
 cover:integriq:9b0f5894m2367:js321a31a4	failed: lang=js but lib/Service/Oso/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:58:30Z
 cover:dossiq:6ca0231e:518b3200	PR #6204: 29 tests, lib/Service/Task 86.4%->96.7%, suite 19 inherited failures unchanged	session-20261112T234655-599f9c9a	2026-11-12T23:58:38Z
+cover:integriq:9b0f5894m2367:js0323ad91	PR #3420: OtlpTraceExporterTest 5 tests (dir is PHP; already ~97% covered), suite 7111->7116, 2 inherited errors	session-20261112T234653-efce95ba	2026-11-12T23:58:50Z
 cover:dossiq:6ca0231e:1b97f731	PR #6205: 46 tests for 6 Listener classes; suite 12970->13016, same 19 inherited failures	session-20261112T234655-0bdbf2be	2026-11-12T23:58:53Z
 cover:integriq:9b0f5894m2367:js872d5d33	failed: lang=js but lib/Broker/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:58:55Z
 cover:integriq:9b0f5894m2367:js6daf52ad	failed: lang=js but lib/Outbound/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:59:05Z
