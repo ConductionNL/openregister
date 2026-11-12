@@ -191,6 +191,7 @@ verify:buildiq:1449:6e1375c7	8 GREEN (tests only, 0 new failures; needs openregi
 cover:dossiq:6ca0231e:9825f52a	PR #6112: 4 classes, 19 tests (Workflow); suite 11970->11989, failures 19 unchanged	session-20261112T184505-d34a144f	2026-11-12T20:05:20Z
 verify:hermiq:1584:2f4751d0	1584 GREEN	session-20261112T200014-a0c0c232	2026-11-12T20:05:32Z
 verify:portaliq:2365:59fe1764	GREEN: 2365 (publiccode.yml only; 4463 tests, 0 new failures)	session-20261112T200018-e68ecbf8	2026-11-12T20:05:43Z
+cover:stackiq:8cfacb29:17d367ab	PR #1739 @6836af1e: +5 tests for Settings SyncHandler/ModuleRegistrationHandler; suite 2334->2339, no failures	session-20261112T175557-37d60f4f	2026-11-12T20:08:16Z
 gap:shillinq:13:302052c1	opened shillinq#2797 (npm audit fix: 46->34, 0 critical, 1 high left (dompurify, no fix); sbom regenerated; vitest+build pass)	session-20261112T184441-77ab05a6	2026-11-12T20:07:45Z
 verify:buildiq:1440:ef94ab4a	failed: permission	session-20261112T200014-a0c0c232	2026-11-12T20:07:58Z
 fix:buildiq:1449:1778b288	not reproducible: dockerimage pass->pass, score 84->84; REVERIFY recorded, no push	session-20261112T200018-e68ecbf8	2026-11-12T20:08:14Z
