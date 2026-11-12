@@ -782,3 +782,4 @@ cover:integriq:9b0f5894m2367:js28cccfd9	failed: payload mismatch, lang=js but di
 cover:integriq:9b0f5894m2367:js38e80a9f	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:58:50Z
 cover:hermiq:755cdfe7m7444:b97b9aec	PR hermiq#1622: 9 tests, Approval bridge/verdict gaps covered (only class-missing branch unreachable); suite 3569, no new failures	session-20261112T221237-836ed3f0	2026-11-12T22:59:16Z
 cover:hermiq:755cdfe7:05cc1463	PR #1623: 16 tests for TalkApprovalBinding, TalkAgentBinding; suite 3561->3577, 0 failures	session-20261112T224531-d3b6ae48	2026-11-12T22:59:18Z
+verify:filinq:1972:f3e5ba3f	1972 BLOCK (response behaviour change on protocol paths, tests green); 1973 skipped: head moved (9f0e6625 != 2977e087)	session-20261112T224526-3200a03f	2026-11-12T22:59:43Z
