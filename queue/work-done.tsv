@@ -683,4 +683,5 @@ verify:hermiq:1595:7693f8c3	8/8 GREEN (1595,1596,1597,1600,1602,1603,1604,1605):
 cover:openregister:7350e3ef:js73d71100	failed: row inconsistent: lang=js but dirs are PHP under lib/; needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:40:28Z
 cover:openregister:7350e3ef:js0d575fbe	failed: row inconsistent: lang=js but dirs are PHP under lib/; needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:40:39Z
 cover:openregister:7350e3ef:js35e29a7a	failed: row inconsistent: lang=js but dirs are PHP under lib/; needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:40:52Z
+cover:openregister:7350e3ef:jsa01f8b82	failed: row inconsistent: lang=js but dirs are PHP under lib/; needs requeue as lang=php	session-20261112T221531-958a2fbc	2026-11-12T22:41:10Z
 cover:keepiq:d76c2121:a4b15ae4	PR #1684: 15 tests for lib/Event/Audit (3 classes, 100% lines), suite 3722->3737, 0 failures	session-20261112T221530-7c794770	2026-11-12T22:41:06Z
