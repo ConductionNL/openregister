@@ -722,3 +722,4 @@ cover:integriq:9b0f5894m2367:js34a55f48	failed: payload mismatch, lang=js but di
 verify:humaniq:1097:4d54e9c7	1097 BLOCK (contract middleware changes existing error responses; suite green 3788); 1098 skipped: head moved to 1cb193ab	session-20261112T224530-a1180ad3	2026-11-12T22:48:45Z
 review:openregister:10052:4ec5c7aa	APPROVE: test-only, 46 jest tests pass merged with main, eslint clean	session-20261112T224535-bdffbbbc	2026-11-12T22:48:55Z
 cover:integriq:9b0f5894m2367:js06285390	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:12Z
+cover:integriq:9b0f5894m2367:js0f20d6d0	failed: payload mismatch, lang=js but dirs under lib/ are PHP; generator bug, needs src/ dirs	session-20261112T224529-5928280e	2026-11-12T22:49:21Z
