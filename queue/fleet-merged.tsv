@@ -276,3 +276,4 @@ portaliq	2313	67dcfdbb9a169a7b0f94a1aaacbdd40716be5179	MERGED	worker-19	GATE OK 
 learniq	2320	776da154ce7c4ffd6115bafe2f7ba6eb82ee6724	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
 portaliq	2284	b2a0155204176795c00218d83ecbed38e0434b82	SKIP	worker-19	GATE UNMEASURED checker_floor exit 2: [checker-floor] NO RESULT: the scan did not measure secretscanning; this is not a pass
 portaliq	2287	acc890bc8e1c639fb657566a13410f3bae3c9585	MERGED	worker-19	GATE OK sbom, checker floor and maintainability floor hold
+learniq	2321	d739dc35bddc0d0f82e955e37a34aced72bf774f	MERGED	merge-local	GATE OK sbom, checker floor and maintainability floor hold
