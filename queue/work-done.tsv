@@ -250,3 +250,4 @@ fix:buildiq:1456:b29d7e5d	false RED (gate local-path origin); branch scores 84, 
 verify:larpinq:1000:d76b1030	GREEN larpinq#1000	session-20261112T202437-4020bd95	2026-11-12T20:26:33Z
 cover:dossiq:6ca0231e:4bcfe3d9	PR #6126 @42bbf385: 11 tests for AdviceAuthorizationGuard + AdviceNotifier; suite 11970->11981, failures 19 unchanged	session-20261112T175557-37d60f4f	2026-11-12T20:26:49Z
 verify:planninq:1130:c3a2a8b6	GREEN: 1130, 1131 (869 PHP, 3105 vitest, 0 new failures)	session-20261112T200018-e68ecbf8	2026-11-12T20:26:55Z
+merge:decidiq:2010:b5538c21	merged 7 (2011-2021); 2010, 2022 already merged	session-20261112T184502-4ecd6072	2026-11-12T20:27:31Z
