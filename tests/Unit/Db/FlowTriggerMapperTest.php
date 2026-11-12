@@ -30,6 +30,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\FlowTriggerMapper
+ * @uses \OCA\OpenRegister\Db\Flow\FlowTriggerSet
+ * @uses \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef
  */
 class FlowTriggerMapperTest extends TestCase {
 	use RecordsQueries;

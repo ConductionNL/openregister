@@ -53,6 +53,12 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Audit\PurposeRefusedException
  * @uses \OCA\OpenRegister\Service\Relation\RelationGraphService
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsPurposeScope
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsReachability
+ * @uses \OCA\OpenRegister\Controller\Support\ObjectRelationsRequest
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ObjectRef
+ * @uses \OCA\OpenRegister\Service\Relation\GraphExportOptions
+ * @uses \OCA\OpenRegister\Service\Relation\ObjectTreeQuery
  */
 class ObjectRelationsControllerTreeTest extends TestCase {
 

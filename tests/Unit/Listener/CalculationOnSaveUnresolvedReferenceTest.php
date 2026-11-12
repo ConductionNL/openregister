@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\SequenceService;
 use OCA\OpenRegister\Service\SharedMasterDataService;
+use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -225,7 +226,7 @@ class CalculationOnSaveUnresolvedReferenceTest extends TestCase {
 	public function testAnAnonymousSaveComputesFromTheReference(): void {
 		$this->objectService->expects($this->once())
 			->method('find')
-			->with('ct-1', $this->anything(), $this->anything(), '22', 'caseType', false, false)
+			->with(...FindCallShape::findArgs('ct-1', $this->anything(), $this->anything(), '22', 'caseType', false, false))
 			->willReturn($this->caseType(organisation: 'org-a'));
 		$case = $this->storedCase();
 

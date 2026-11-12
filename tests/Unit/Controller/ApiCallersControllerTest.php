@@ -45,6 +45,10 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\ApiCallRecord
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
  * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
+ * @uses \OCA\OpenRegister\Controller\Support\ApiCallersControllerServices
+ * @uses \OCA\OpenRegister\Db\ApiCall\ApiCallPeriod
+ * @uses \OCA\OpenRegister\Db\TypedFieldsJson
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionLifecycle
  */
 class ApiCallersControllerTest extends TestCase {
 

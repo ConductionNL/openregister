@@ -150,6 +150,29 @@ npm run build
 php occ app:enable openregister
 ```
 
+### Try it with Docker
+
+The repository builds an evaluation image: the official Nextcloud image with openregister and OpenRegister installed and enabled. It is meant for trying the app out and for test environments. For production, install the app from the Nextcloud App Store.
+
+```bash
+docker compose -f docker/docker-compose.yml up -d --build
+```
+
+Open http://localhost:8080/apps/openregister/ and sign in as `admin` with password `admin`. The first start takes a minute or two. Set `NEXTCLOUD_ADMIN_PASSWORD` and `APP_PORT` to change the password and the port; `docker/docker-compose.yml` lists every setting. `docker compose -f docker/docker-compose.yml down -v` removes the stack and its data.
+
+Released versions are published as `ghcr.io/conductionnl/openregister`, so leaving out `--build` uses the published image.
+
+### Run it on Kubernetes
+
+`charts/openregister` wraps the official [Nextcloud Helm chart](https://github.com/nextcloud/helm) and runs the same image with PostgreSQL:
+
+```bash
+helm dependency build charts/openregister
+helm install openregister charts/openregister --set nextcloud.nextcloud.host=openregister.example.org
+```
+
+Change the passwords in `charts/openregister/values.yaml` before you install it anywhere that matters.
+
 ## Development
 
 ### Start the environment
@@ -185,6 +208,12 @@ composer phpmetrics     # HTML metrics report
 npm run lint            # ESLint
 npm run stylelint       # CSS linting
 ```
+
+### Test coverage
+
+<!-- coverage:start -->
+Measured test coverage: 83.4% of statements (PHP 84.0% of 211,192 statements, JavaScript 76.1% of 16,315 statements), at commit `fd738bfa2f` on 2026-11-12. The figures come from [`coverage-summary.json`](coverage-summary.json); refresh them with `composer coverage:publish`.
+<!-- coverage:end -->
 
 ## Tech Stack
 

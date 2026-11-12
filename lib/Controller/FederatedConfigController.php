@@ -148,11 +148,8 @@ class FederatedConfigController extends Controller {
 	 *
 	 * @return JSONResponse The bundle, 403 when the caller may not publish, or a 4xx.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	#[NoCSRFRequired]
 	public function bundle(): JSONResponse {
 		if ($this->access->canPublish(user: $this->userSession->getUser()) === false) {
 			return new JSONResponse(['error' => 'You are not allowed to package configuration for sharing.'], Http::STATUS_FORBIDDEN);
@@ -181,11 +178,9 @@ class FederatedConfigController extends Controller {
 	 *                      source is not allowlisted.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	#[NoCSRFRequired]
 	public function install(): JSONResponse {
 		if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
 			return new JSONResponse(['error' => 'You are not allowed to install shared configuration.'], Http::STATUS_FORBIDDEN);
@@ -254,11 +249,9 @@ class FederatedConfigController extends Controller {
 	 * @return JSONResponse `{published, path, status}`, or a 4xx.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	#[NoCSRFRequired]
 	public function publish(): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($this->access->canPublish(user: $user) === false) {
@@ -382,11 +375,8 @@ class FederatedConfigController extends Controller {
 	 *       accept. The body rejects non-admins, and #2342 removed the #[NoAdminRequired] that used
 	 *       to contradict it; this states the posture rather than leaving it to a default.
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	#[NoCSRFRequired]
 	public function setTrust(): JSONResponse {
 		if ($this->isAdmin() === false) {
 			return new JSONResponse(['error' => 'Only an administrator may change the trust configuration.'], Http::STATUS_FORBIDDEN);

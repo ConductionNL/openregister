@@ -33,10 +33,13 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\OpenRegisterActionAuthService;
 use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 
 /**
  * Corrects a value on a record and records that it was a correction.
@@ -142,7 +145,13 @@ class CorrectionService implements CorrectionServiceInterface {
 		$existing  = $this->storedRecord(target: $target);
 		$before    = ($existing->getObject() ?? []);
 		$merged    = array_merge($before, $correction->values);
-		$corrected = $this->objectService->saveObject(object: $merged, register: $target->register, schema: $target->schema, uuid: $existing->getUuid());
+		$corrected = $this->objectService->saveObject(
+			object: $merged,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $target->register, schema: $target->schema),
+				uuid: $existing->getUuid()
+			)
+		);
 
 		$fields  = self::fieldChanges(before: $before, values: $correction->values);
 		$context = ['correction' => ['reason' => $correction->reason, 'right' => self::RIGHT, 'actor' => $user->getUID(), 'fields' => $fields]];
@@ -163,7 +172,10 @@ class CorrectionService implements CorrectionServiceInterface {
 		$this->objectService->setSchema(schema: $target->schema);
 
 		return $this->objectService->findSilent(
-			id: $target->id, _extend: [], files: false, register: $target->register, schema: $target->schema, _rbac: false, _multitenancy: false
+			id: $target->id,
+			options: new ObjectFindOptions(register: $target->register, schema: $target->schema),
+			_rbac: false,
+			_multitenancy: false
 		);
 	}//end storedRecord()
 

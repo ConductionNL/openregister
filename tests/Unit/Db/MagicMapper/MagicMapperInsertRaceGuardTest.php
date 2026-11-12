@@ -89,6 +89,20 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Rbac\RuleColumns
  * @uses   \OCA\OpenRegister\Service\Rbac\UnknownRuleKeyFindings
  * @uses \OCA\OpenRegister\Service\Rbac\StoredRuleBlocks
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicObjectChange
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicObjectInsert
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicTableSql
+ * @uses \OCA\OpenRegister\Db\RegisterSchema
+ * @uses \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses \OCA\OpenRegister\Event\AbstractObjectEntityEvent
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
+ * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses \OCA\OpenRegister\Service\WritePhase
  *
  * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md
  */

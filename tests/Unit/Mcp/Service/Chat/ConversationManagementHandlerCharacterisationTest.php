@@ -22,13 +22,21 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Mcp\Service\Chat\ConversationStores;
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
 /**
  * Pins the observable outcomes of title generation, unique-title numbering
  * and the summarisation trigger without reaching a real LLM endpoint.
  *
  * @covers \OCA\OpenRegister\Mcp\Service\Chat\ConversationManagementHandler
+ * @uses \OCA\OpenRegister\AppInfo\ClassAliasMap
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim
+ * @uses \OCA\OpenRegister\Mcp\Db\Conversation
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\ConversationStores
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\FireworksBaseUrl
+ * @uses \OCA\OpenRegister\Mcp\Service\Chat\PromptTarget
+ * @uses \OCA\OpenRegister\Notifications\Db\Message
  */
 class ConversationManagementHandlerCharacterisationTest extends TestCase
 {
@@ -157,7 +165,7 @@ class ConversationManagementHandlerCharacterisationTest extends TestCase
     public function testUniqueTitleReturnsBaseWhenNoMatches(): void
     {
         $this->conversationMapper->expects($this->once())->method('findTitlesByUserAgent')
-            ->with('u1', 3, 'Title%')->willReturn([]);
+            ->with(new TitleClaim('Title', 'u1', 3))->willReturn([]);
         $this->assertSame('Title', $this->handler([])->ensureUniqueTitle(new TitleClaim('Title', 'u1', 3)));
     }
 

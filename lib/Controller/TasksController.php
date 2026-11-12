@@ -383,7 +383,6 @@ class TasksController extends Controller {
 	 * @return JSONResponse JSON response with the created task
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
@@ -402,7 +401,6 @@ class TasksController extends Controller {
 	 * @return JSONResponse JSON response with the updated task
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
@@ -424,7 +422,6 @@ class TasksController extends Controller {
 	 * @return JSONResponse JSON response confirming deletion
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */

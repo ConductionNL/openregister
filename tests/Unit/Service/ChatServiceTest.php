@@ -22,7 +22,7 @@ use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceStores;
 use OCA\OpenRegister\Mcp\Service\Chat\ChatServiceHandlers;
 use OCA\OpenRegister\Mcp\Service\ChatMessageRequest;
 use OCA\OpenRegister\Mcp\Service\Chat\ReplyGrounding;
-use OCA\OpenRegister\Mcp\Service\Chat\TitleClaim;
+use OCA\OpenRegister\Kernel\Contracts\Value\TitleClaim;
 
 class ChatServiceTest extends TestCase {
 

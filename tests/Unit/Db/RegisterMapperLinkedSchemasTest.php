@@ -43,6 +43,11 @@ use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * @covers \OCA\OpenRegister\Db\RegisterMapper
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\RegisterMapperServices
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Tenancy\TenancyServices
  */
 final class RegisterMapperLinkedSchemasTest extends TestCase {
 	/**

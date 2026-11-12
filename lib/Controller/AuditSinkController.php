@@ -163,7 +163,6 @@ class AuditSinkController extends Controller {
 	 * @return JSONResponse The cleared status.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
