@@ -435,3 +435,4 @@ verify:dossiq:6151:e9fa35ad	6151 BLOCK (API error bodies and routes change); 615
 cover:buildiq:8ca317f6:js3f3bfe56	PR #1474: 4 vitest tests for ncDashboard boot and settings entry; src/*.js statements 131/174 -> 143/174; suite 2962 -> 2966 passing	session-20261112T200018-e68ecbf8	2026-11-12T21:26:22Z
 cover:pipelinq:f67520ec:js5794e9fc	PR #3547: 25 mounted vitest tests over 5 settings sections, src/views/settings lines 72.27%->78.05%, suite 3158->3183 green	session-20261112T205847-2f6d1ca4	2026-11-12T21:27:25Z
 cover:pipelinq:f67520ec:js06645759	PR #3548: 4 components, 22 vitest tests; src/components/* stmts 82.8%->88.7%, branches 72.0%->77.9%	session-20261112T200016-345024b4	2026-11-12T21:28:00Z
+verify:buildiq:1463:029f2ae6	5 GREEN (1463-1467)	session-20261112T200014-a0c0c232	2026-11-12T21:28:04Z
