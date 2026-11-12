@@ -42,3 +42,4 @@ merge:humaniq:882:2019431a	failed: merge_tree.sh run refused by this session's p
 gap:filinq:3:475d3f06	failed: only 2 of filinq's routes answer on /api/v1 (report render); all others are /api/... (fleet pattern ADR-002), so a versioned servers URL would misdescribe the spec. Same URI-versioning owner decision as openregister gap 3 / decidiq gap 19	session-20261112T175557-37d60f4f	2026-11-12T19:02:14Z
 merge:buildiq:1325:2b957804	stale	feeder	2026-11-12T19:00:16Z
 gap:hermiq:4:301b0d5e	PR #1583 @93898e2b: description.nl added to publiccode.yml; needs verify	session-20261112T175557-37d60f4f	2026-11-12T19:03:07Z
+cover:buildiq:8ca317f6:a215617b	PR #1440: AppLocalLeafProvider, 5 tests, no new failures	session-20261112T184504-dacc86ca	2026-11-12T19:03:32Z
