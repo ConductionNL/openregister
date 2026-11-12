@@ -992,3 +992,4 @@ cover:dossiq:6ca0231e:1b97f731	PR #6205: 46 tests for 6 Listener classes; suite 
 cover:integriq:9b0f5894m2367:js872d5d33	failed: lang=js but lib/Broker/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:58:55Z
 cover:integriq:9b0f5894m2367:js6daf52ad	failed: lang=js but lib/Outbound/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:59:05Z
 cover:integriq:9b0f5894m2367:js3bc85ed6	failed: lang=js but lib/Service/Stuf/ holds only PHP files, no JS subject to cover	session-20261112T231640-f6dda86c	2026-11-12T23:59:14Z
+cover:integriq:9b0f5894m2367:jsd91b4ca5	PR #3422: 8 PHPUnit tests (dir is PHP) for CtiSourceResolver and MappedPayload, no new failures	session-20261112T224529-41d77a96	2026-11-12T23:59:27Z
