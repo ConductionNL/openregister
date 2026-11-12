@@ -76,28 +76,6 @@ class ConfigurationDraftMapper extends QBMapper implements ConfigurationDraftMap
 	/**
 	 * The pending value one set holds for one address, when it holds one.
 	 *
-	 * @param string      $setUuid   The set uuid.
-	 * @param string      $layer     The layer.
-	 * @param string|null $layerRef  The layer reference, null at instance level.
-	 * @param string      $configKey The configuration key.
-	 *
-	 * @return ConfigurationDraft|null The draft, or null when the set holds none.
-	 *
-	 * @spec openspec/changes/configuration-as-a-deployment/specs/configuration-deployment/spec.md
-	 */
-	public function findAtAddress(
-		string $setUuid,
-		string $layer,
-		?string $layerRef,
-		string $configKey
-	): ?ConfigurationDraft {
-		$address = new ConfigurationAddress(layer: $layer, layerRef: $layerRef, configKey: $configKey);
-		return $this->findAt(setUuid: $setUuid, address: $address);
-	}//end findAtAddress()
-
-	/**
-	 * The pending value one set holds for one address, when it holds one.
-	 *
 	 * @param string               $setUuid The set uuid.
 	 * @param ConfigurationAddress $address The layer, layer reference and configuration key.
 	 *

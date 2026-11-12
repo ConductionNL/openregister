@@ -157,7 +157,7 @@ class FilePublishingHandlerTest extends TestCase {
 
 		$this->fileMapper->expects($this->once())
 			->method('publishFile')
-			->with(42, 'openregister', 'openregister')
+			->with(new \OCA\OpenRegister\Files\Db\PublicShareRequest(fileId: 42, sharedBy: 'openregister', shareOwner: 'openregister'))
 			->willReturn([
 				'id' => 1,
 				'token' => 'abc123',

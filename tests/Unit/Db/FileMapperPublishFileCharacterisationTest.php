@@ -38,7 +38,7 @@ class FileMapperPublishFileCharacterisationTest extends TestCase {
 
 	public function testANewPublicationWritesAReadOnlyPublicLinkShare(): void {
 		$this->queuedRows = [[], []];
-		$result = $this->mapper()->publishFile(42, 'alice', 'bob');
+		$result = $this->mapper()->publishFile(new \OCA\OpenRegister\Files\Db\PublicShareRequest(fileId: 42, sharedBy: 'alice', shareOwner: 'bob'));
 
 		$params = $this->insertedParameters();
 		$this->assertSame(self::param('3', IQueryBuilder::PARAM_INT), $params[0], 'share_type: public link');
@@ -58,7 +58,7 @@ class FileMapperPublishFileCharacterisationTest extends TestCase {
 
 	public function testADepublicationDateBecomesTheShareExpiration(): void {
 		$this->queuedRows = [[], []];
-		$this->mapper()->publishFile(42, 'alice', 'alice', depublished: new DateTime('2031-02-03 04:05:06'));
+		$this->mapper()->publishFile(new \OCA\OpenRegister\Files\Db\PublicShareRequest(fileId: 42, sharedBy: 'alice', shareOwner: 'alice', depublished: new DateTime('2031-02-03 04:05:06')));
 
 		$params = $this->insertedParameters();
 		$this->assertSame(self::param('1', IQueryBuilder::PARAM_INT), $params[11], 'permissions: read only');
@@ -67,7 +67,7 @@ class FileMapperPublishFileCharacterisationTest extends TestCase {
 
 	public function testAnExistingPublicShareIsAnsweredWithoutASecondInsert(): void {
 		$this->queuedRows = [[['id' => 9, 'token' => 'tok9', 'stime' => 1700000000]]];
-		$result = $this->mapper()->publishFile(42, 'alice', 'bob');
+		$result = $this->mapper()->publishFile(new \OCA\OpenRegister\Files\Db\PublicShareRequest(fileId: 42, sharedBy: 'alice', shareOwner: 'bob'));
 
 		$this->assertSame(9, $result['id']);
 		$this->assertSame('tok9', $result['token']);

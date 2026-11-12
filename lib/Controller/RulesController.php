@@ -32,11 +32,14 @@ use OCA\OpenRegister\Controller\Support\RuleReplayRequest;
 use OCA\OpenRegister\Controller\Support\RulesControllerServices;
 use OCA\OpenRegister\Controller\Support\SchemaRule;
 use OCA\OpenRegister\Exception\BulkJobRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Rules\RuleReplayRequest as ReplayAsk;
 use OCA\OpenRegister\Service\Rules\RuleReplaySelection;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetDateValue;
+use OCA\OpenRegister\Db\RuleRunFilter;
 use OCA\OpenRegister\Db\RuleRunMapperInterface;
+use OCA\OpenRegister\Db\RuleRunSelection;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Rules\RuleEnablementServiceInterface;
@@ -428,8 +431,9 @@ class RulesController extends Controller {
 		$limit = (int)($this->request->getParam('limit') ?? RuleRunMapperInterface::DEFAULT_LIMIT);
 		$offset = (int)($this->request->getParam('offset') ?? 0);
 
-		$runs = $this->runs->findByRule(ruleId: $ruleId, verdict: $verdict, since: $since, until: $until, limit: $limit, offset: $offset);
-		$total = $this->runs->countByRule(ruleId: $ruleId, verdict: $verdict, since: $since, until: $until);
+		$selection = new RuleRunSelection(ruleId: $ruleId, filter: new RuleRunFilter(verdict: $verdict, since: $since, until: $until));
+		$runs = $this->runs->findRuns(selection: $selection, page: new ListQuery(limit: $limit, offset: $offset));
+		$total = $this->runs->countRuns(selection: $selection);
 
 		return new JSONResponse(['ruleId' => $ruleId, 'total' => $total, 'runs' => array_map(static fn ($run): array => $run->jsonSerialize(), $runs)]);
 
