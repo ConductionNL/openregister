@@ -1198,10 +1198,10 @@ class SaveObjects {
 	 * The stored row was found past the read filters, and the update rule it is
 	 * judged by next does not look at organisations, while the writer upserts the
 	 * row and stamps the caller as its owner and organisation. So a row outside the
-	 * caller's organisation scope is refused unless the caller can read it, the
-	 * same boundary ObjectService::checkSavePermissions keeps for a single write. A
-	 * row the caller reads (a rule that reaches across organisations) is left to the
-	 * update rule. Asked before the appendOnly gate, and answered as a refused
+	 * caller's organisation scope is refused unless the caller can read it and it
+	 * has no organisation or an update rule marked `crossOrganisation: true`
+	 * admits the caller, the same boundary ObjectService keeps for a single
+	 * write. Asked before the appendOnly gate, and answered as a refused
 	 * create, so the row's existence stays unannounced. Skipped when the write does
 	 * not keep to the caller's organisations (an administrator).
 	 *
@@ -1240,9 +1240,29 @@ class SaveObjects {
 	 * @return bool
 	 */
 	private function callerMayOverwriteStoredRow(BulkSafeguardRun $run): bool {
-		return $this->stores->catalog->tables()->callerOrganisationsHold(row: $run->rowExisting) === true
-			|| $this->callerReadsStoredRow(run: $run) === true;
+		if ($this->stores->catalog->tables()->callerOrganisationsHold(row: $run->rowExisting) === true) {
+			return true;
+		}
+
+		return $this->mayCrossToStoredRow(run: $run) === true && $this->callerReadsStoredRow(run: $run) === true;
 	}//end callerMayOverwriteStoredRow()
+
+	/**
+	 * Whether a row outside the caller's organisations may be updated at all: it has no organisation, or a marked update rule reaches it.
+	 *
+	 * The single-object save asks the same in ObjectService::refuseACrossingUpdate().
+	 *
+	 * @param BulkSafeguardRun $run The safeguard pass, its stored row set
+	 *
+	 * @return bool
+	 */
+	private function mayCrossToStoredRow(BulkSafeguardRun $run): bool {
+		if (trim((string) $run->rowExisting->getOrganisation()) === '') {
+			return true;
+		}
+
+		return $this->checks->permissionHandler?->updateCrossesOrganisations(schema: $run->rowSchema, row: $run->rowExisting) === true;
+	}//end mayCrossToStoredRow()
 
 	/**
 	 * Whether the caller's own read finds the row the current bulk row updates.

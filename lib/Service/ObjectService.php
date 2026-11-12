@@ -3098,10 +3098,43 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             schema: $this->currentSchema
         );
 
+        $this->refuseACrossingUpdate(stored: $existingObject, request: $request);
         $this->assertMayUpdate(stored: $existingObject, _rbac: $request->rbac);
 
         return $existingObject->getUuid();
     }//end assertMayUpdateStored()
+
+    /**
+     * Refuse an update of a row of another organisation that no marked update rule allows.
+     *
+     * The caller sees the row, possibly through a read rule that reaches across
+     * organisations, and the update rule it is judged by next does not look at
+     * organisations. So a row inside the caller's organisations, or with no
+     * organisation, is left to the update rule; any other row only to an update
+     * rule marked `crossOrganisation: true`. Skipped when the write does not keep
+     * to the caller's organisations or RBAC is off (an administrator, a job).
+     *
+     * @param ObjectEntity      $stored  The stored row the caller sees.
+     * @param SaveAccessRequest $request What the save asks for.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When no marked update rule reaches the row.
+     *
+     * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+     */
+    private function refuseACrossingUpdate(ObjectEntity $stored, SaveAccessRequest $request): void
+    {
+        if ($request->rbac === false || $request->multitenancy === false
+            || trim((string) $stored->getOrganisation()) === ''
+            || $this->objectMapper->callerOrganisationsHold(row: $stored) === true
+            || $this->permissionHandler->updateCrossesOrganisations(schema: $this->currentSchema, row: $stored) === true
+        ) {
+            return;
+        }
+
+        throw new NotAuthorizedException(message: 'You may not change this object.');
+    }//end refuseACrossingUpdate()
 
     /**
      * Ask the permissions of a write to a uuid the caller does not see: new, or stored and hidden.

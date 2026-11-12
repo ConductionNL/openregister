@@ -74,4 +74,20 @@ interface PermissionCheckInterface {
 		?ObjectEntity $object = null,
 		?string $register = null,
 	): bool;
+
+	/**
+	 * Whether an update rule marked `crossOrganisation: true` lets the signed-in caller change a row.
+	 *
+	 * Asked before a row of another organisation is updated: the update rules
+	 * do not look at organisations, so only a rule marked for crossing may
+	 * reach such a row. A schema without a marked update rule answers false.
+	 *
+	 * @param Schema       $schema The row's schema.
+	 * @param ObjectEntity $row    The stored row.
+	 *
+	 * @return bool True when a marked update rule admits the caller.
+	 *
+	 * @spec openspec/changes/rbac-cross-organisation-is-explicit/specs/rbac-scopes/spec.md
+	 */
+	public function updateCrossesOrganisations(Schema $schema, ObjectEntity $row): bool;
 }//end interface
