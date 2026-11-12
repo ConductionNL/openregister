@@ -18,6 +18,7 @@
       "script": {
         "type": "text/javascript",
         "exec": [
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
           "const isInitialized = pm.collectionVariables.get('_sot_initialized');",
           "if (!isInitialized || isInitialized === '') {",
           "    const ts = Date.now();",

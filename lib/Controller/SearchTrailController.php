@@ -738,8 +738,6 @@ class SearchTrailController extends Controller {
 	 *
 	 * @return JSONResponse JSON response containing cleanup operation results
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<
 	 *     200|400|500,
 	 *     array{
@@ -898,8 +896,6 @@ class SearchTrailController extends Controller {
 	 *
 	 * @param int $id The search trail ID to delete
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @return JSONResponse JSON response with deletion result
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
@@ -934,8 +930,6 @@ class SearchTrailController extends Controller {
 
 	/**
 	 * Delete multiple search trail logs based on filters or specific IDs
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @return JSONResponse JSON response with multiple deletion result
 	 *
@@ -1005,8 +999,6 @@ class SearchTrailController extends Controller {
 	 * Clear all search trail logs
 	 *
 	 * @return JSONResponse A JSON response indicating success or failure
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-3
 	 */

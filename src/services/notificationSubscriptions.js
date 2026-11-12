@@ -15,6 +15,8 @@
  * notification preferences".
  */
 
+import { withRequestToken } from './requestToken.js'
+
 const BASE = '/index.php/apps/openregister/api/notification-subscriptions'
 
 /**
@@ -47,11 +49,11 @@ export async function listSubscriptions() {
  * @spec openspec/specs/notificatie-engine/spec.md
  */
 export async function subscribe({ registerId = null, schemaId = null } = {}) {
-	const response = await fetch(BASE, {
+	const response = await fetch(BASE, withRequestToken({
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({ registerId, schemaId }),
-	})
+	}))
 	if (!response.ok) {
 		throw new Error(`Failed to subscribe: HTTP ${response.status}`)
 	}
@@ -73,10 +75,10 @@ export async function unsubscribe({ registerId = null, schemaId = null } = {}) {
 	if (registerId !== null) qs.set('registerId', String(registerId))
 	if (schemaId !== null) qs.set('schemaId', String(schemaId))
 
-	const response = await fetch(`${BASE}?${qs.toString()}`, {
+	const response = await fetch(`${BASE}?${qs.toString()}`, withRequestToken({
 		method: 'DELETE',
 		headers: { 'Content-Type': 'application/json' },
-	})
+	}))
 	if (!response.ok) {
 		throw new Error(`Failed to unsubscribe: HTTP ${response.status}`)
 	}

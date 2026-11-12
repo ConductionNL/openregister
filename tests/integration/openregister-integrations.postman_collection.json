@@ -26,6 +26,7 @@
       "script": {
         "type": "text/javascript",
         "exec": [
+          "pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
           "// Derive baseUrl from the standard `base_url` env-var so the collection",
           "// targets whatever server CI/newman points at (default http://localhost:8080).",
           "const injected = pm.variables.get('base_url');",

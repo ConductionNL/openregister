@@ -26,6 +26,7 @@
       "script": {
         "type": "text/javascript",
         "exec": [
+          "if (!pm.info.requestName.includes('without OCS-APIRequest')) { pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' }); }",
           "// Nextcloud answers a basic-auth request with a session cookie; newman's jar would replay it on the",
           "// next request and authenticate it as the previous caller. Clear it so each request is only its own auth.",
           "pm.cookies.jar().clear(pm.variables.replaceIn('{{base_url}}'), () => {});"

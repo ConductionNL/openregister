@@ -1158,8 +1158,6 @@ class FilesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @NoCSRFRequired
-	 *
 	 * @psalm-return JSONResponse<200|400|403|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
@@ -1241,8 +1239,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200|400|403|404,
 	 *     array{error?: mixed|string, labels?: list<string>,...},
@@ -1341,8 +1337,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200|207|400|403|404,
 	 *     array{error?: string, rejected?: list<array{name: string, error: string}>,
@@ -1685,7 +1679,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse JSON response with updated file or error.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *
@@ -1741,8 +1734,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 *
-	 * @NoCSRFRequired
 	 *
 	 * @psalm-return JSONResponse<200|400|404,
 	 *     array{error?: string, success?: bool},
@@ -2012,7 +2003,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2080,7 +2070,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2116,7 +2105,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2345,7 +2333,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 *
@@ -2418,7 +2405,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2481,7 +2467,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 *
@@ -2565,7 +2550,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *
@@ -2703,7 +2687,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse The updated metadata, 403, or 404.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -2791,7 +2774,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse What changed, what did not, and what was refused.
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @contract tests/Unit/Service/File/FileMetadataFormHandlerTest.php
 	 *
@@ -2842,7 +2824,6 @@ class FilesController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
 	 *

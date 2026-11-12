@@ -242,13 +242,13 @@ After each optimization, test with:
 
 ```bash
 # Simple query (no tools)
-curl -X POST /api/chat/send -d '{"message": "Hello"}'
+curl -H 'OCS-APIRequest: true' -X POST /api/chat/send -d '{"message": "Hello"}'
 
 # Complex query (with tools)
-curl -X POST /api/chat/send -d '{"message": "List all registers"}'
+curl -H 'OCS-APIRequest: true' -X POST /api/chat/send -d '{"message": "List all registers"}'
 
 # Measure response time
-time curl -X POST /api/chat/send -d '{"message": "Hello"}'
+time curl -H 'OCS-APIRequest: true' -X POST /api/chat/send -d '{"message": "Hello"}'
 ```
 
 ## Expected Performance

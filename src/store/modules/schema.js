@@ -12,6 +12,7 @@ import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
 import { Schema } from '../../entities/index.js'
 import { getJson, objectAnswer, okJson, sendJson } from '../../services/listPage.js'
+import { withRequestToken } from '../../services/requestToken.js'
 import { listStateActions, listStateFields } from './listState.js'
 
 // Module-scoped single-flight for refreshSchemaList; same rationale as the
@@ -587,7 +588,7 @@ export const useSchemaStore = defineStore('schema', {
 		async updateSchemaFromExploration(schemaId, propertyUpdates) {
 			const endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/update-from-exploration`
 
-			const response = await fetch(endpoint, {
+			const response = await fetch(endpoint, withRequestToken({
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -595,7 +596,7 @@ export const useSchemaStore = defineStore('schema', {
 				body: JSON.stringify({
 					properties: propertyUpdates,
 				}),
-			})
+			}))
 
 			const data = await okJson(response)
 

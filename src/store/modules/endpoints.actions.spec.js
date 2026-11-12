@@ -83,7 +83,7 @@ describe('endpoint store — list, delete and test actions', () => {
 				.mockResolvedValueOnce(answer(true, { results: [] }))
 			await store.deleteEndpoint({ id: 4 })
 			await flush()
-			expect(global.fetch).toHaveBeenNthCalledWith(1, `${API}/4`, { method: 'DELETE' })
+			expect(global.fetch).toHaveBeenNthCalledWith(1, `${API}/4`, { method: 'DELETE', headers: { requesttoken: 'test-request-token' } })
 			expect(global.fetch).toHaveBeenNthCalledWith(2, API, { method: 'GET' })
 			expect(store.endpointItem).toBeNull()
 			expect(store.endpointList).toEqual([])
@@ -117,7 +117,7 @@ describe('endpoint store — list, delete and test actions', () => {
 			await expect(store.testEndpoint({ id: 3 }, { q: 1 })).resolves.toEqual({ status: 200, body: 'ok' })
 			expect(global.fetch).toHaveBeenCalledWith(`${API}/3/test`, {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers: { 'Content-Type': 'application/json', requesttoken: 'test-request-token' },
 				body: JSON.stringify({ data: { q: 1 } }),
 			})
 		})

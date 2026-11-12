@@ -11,6 +11,7 @@
 			"script": {
 				"type": "text/javascript",
 				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
 					"// Every request authenticates on its own basic-auth header: drop the Nextcloud session cookie",
 					"// so a non-admin or anonymous request never rides on the admin session (and vice versa).",
 					"pm.cookies.jar().clear(pm.variables.replaceIn('{{base_url}}'), function () {});"

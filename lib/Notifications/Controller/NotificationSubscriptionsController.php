@@ -142,7 +142,6 @@ class NotificationSubscriptionsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
 	 */
@@ -237,7 +236,6 @@ class NotificationSubscriptionsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @NoAdminRequired
-	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
 	 */
