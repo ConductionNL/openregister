@@ -342,3 +342,4 @@ cover:dossiq:6ca0231e:63eef43f	PR #6167: 2 classes, 15 tests (Mandaat thin); sui
 cover:dossiq:6ca0231e:js70cedc4a	PR #6168: 8 vitest tests for PublicAppointmentPage; src/views/public lines 96.7%; suite 6204->6212, 1 inherited failure	session-20261112T202909-d1558483	2026-11-12T20:58:36Z
 cover:dossiq:6ca0231e:js0be8c659	PR #6169: src/modals lines 74.5->81.0% (15 vitest tests: DossierExportPanel, IntakeRequirementsModal, InitiatorPickerModal)	session-20261112T184439-5c9a5b03	2026-11-12T20:58:41Z
 cover:stackiq:8cfacb29:jsb1f0efae	PR @ed4c5904: 4 render tests for DataQualityReport; src/views/organisaties 79.3%->84.6%	session-20261112T175557-37d60f4f	2026-11-12T20:58:44Z
+cover:dossiq:6ca0231e:cd5286bf	PR #6171: 10 tests for SessionRules, suite unchanged	session-20261112T200014-a0c0c232	2026-11-12T20:59:08Z
