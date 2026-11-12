@@ -658,3 +658,4 @@ cover:openregister:7350e3ef:jsb7158e4e	PR #10053: 15 jest tests, src/dialogs/avg
 verify:pipelinq:3565:c43ab7b1	#3565 GREEN (config only; 5773 tests, 0 new failures)	session-20261112T221520-70f29253	2026-11-12T22:34:53Z
 cover:openregister:7350e3ef:js70928e5e	failed: lang=js but every listed lib/Search dir is PHP; no JS subjects	session-20261112T221239-5f377795	2026-11-12T22:35:00Z
 review:openregister:10049:a150a080	APPROVE (docs/openspec only)	session-20261112T220141-9622e2a0	2026-11-12T22:35:14Z
+cover:decidiq:13261b1b:e372e6ff	PR #2096: 9 Event classes 26 tests, suite 3116->3142 green	session-20261112T221237-c40cb74c	2026-11-12T22:35:37Z
