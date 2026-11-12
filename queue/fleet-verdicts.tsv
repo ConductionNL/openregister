@@ -4369,3 +4369,4 @@ keepiq	1699	1f4885904a5e6ea2cf39a7aabb52c04a315cf729	GREEN	worker-38	tests only 
 humaniq	1097	7cd553439275cd00ab17e10e49203fb0158b937d	GREEN	worker-28	phpunit 3790 OK (baseline 3763 OK), 0 new, php -l clean; additive: /api/v1 aliases, API-Version/Deprecation/Link headers, problem details only on /api/v1, unversioned error bodies and content type unchanged
 keepiq	1698	1b78e69bcc14aad2b92b99edd2367c886022ca7f	GREEN	worker-47	unit 3751 tests (baseline 3722, 0 failures), 0 new failures; tests only
 launchpad	1121	f23e458f40ac7cf02c615105d4a4ea1e41222d46	BLOCK	worker-16	php 3283 tests on development+1121, 0 failures; behaviour change: new global middleware adds headers and rewrites API error bodies for every API route, duplicates routes under /api/v1, new public endpoint - needs human review
+launchpad	1126	9764d01a28fa2ca381ba4bdbd2c2db5b5c9429ef	GREEN	worker-16	php 3279 tests, baseline 3256, 0 failures; vitest 1188 pass; tests only
