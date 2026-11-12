@@ -4133,3 +4133,4 @@ larpinq	1005	b93230762c8bb7a545e4246405f31bd191dd669f	BLOCK	worker-11	697 tests 
 dossiq	6181	ca72f0229ca6fc4317c0e1431a696c77e3780374	GREEN	worker-01	phpunit 12497 on 4-PR tree (baseline 12467/19, 0 new); vitest 6217, only the inherited capabilityComparison failure; tests-only diff
 dossiq	6182	7ecde457013cde890f801241165a0d127d7379bb	GREEN	worker-01	phpunit 12497 on 4-PR tree (baseline 12467/19, 0 new); vitest 6217, only the inherited capabilityComparison failure; tests-only diff
 dossiq	6183	d53b2e2249c8556935229d97a152f0d40b677899	GREEN	worker-01	phpunit 12497 on 4-PR tree (baseline 12467/19, 0 new); vitest 6217, only the inherited capabilityComparison failure; tests-only diff
+dossiq	6184	c336683a3727b19ddccaa12ac6666a5ab0dde326	GREEN	worker-01	phpunit 12497 on 4-PR tree (baseline 12467/19, 0 new); vitest 6217, only the inherited capabilityComparison failure; tests-only diff
